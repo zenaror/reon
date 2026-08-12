@@ -306,7 +306,7 @@
 			return 0;
 		}
 
-		public function createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn) {
+		public function createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions = "e,f,d,s,i,p,u,j", $customPokemonNewsOptIn = 0) {
 			if (!isset($email)) return 1;
 			if (!self::$instance->isDionEmailValidAndFree($reonEmail)) return 2;
 			if ($password != $passwordConfirm) return 3;
