@@ -1,0 +1,79 @@
+{% extends "main.twig" %}
+{% set nav_item = "games" %}
+{% set body_class = "mariokart-theme" %}
+
+{% block title %}Mario Kart{% endblock %}
+
+{% block head %}
+<link href="{{ asset('/css/mariokart.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="mkgba-page">
+    <h1 class="mkgba-title">Mario Kart: Super Circuit</h1>
+
+    <table class="mariokart-rankings mkgba-table">
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>Player</th>
+                <th>Driver</th>
+                <th>Time</th>
+                <th>Date Set</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for i in 0..19 %}
+            {% if ghosts[i] is defined %}
+                {% set ghost = ghosts[i] %}
+            {% else %}
+                {% set ghost = null %}
+            {% endif %}
+            {% set course = 'mario-kart.tracks.' ~ i %}
+            {% set default_track_icon_slug = track_icon_by_course[i]|default('peach_circuit') %}
+            {% set track_icon_slug = default_track_icon_slug %}
+            {% if ghost and ghost.track_icon_slug is defined %}
+                {% set track_icon_slug = ghost.track_icon_slug %}
+            {% endif %}
+            <tr>
+                <td class="mkgba-course-cell">
+                    <div class="mkgba-main-text">{{ course|trans }}</div>
+                    <img
+                        class="mkgba-track-icon"
+                        src="/images/mariokart/icon_track_{{ track_icon_slug }}.png"
+                        alt="{{ course|trans }}"
+                        loading="lazy"
+                    >
+                </td>
+                {% if ghost %}
+                {% set driver_key = 'mario-kart.drivers.' ~ ghost.driver %}
+                {% set date_set = (ghost.timestamp is defined and ghost.timestamp) ? (ghost.timestamp|date('Y-m-d')) : 'n/a' %}
+                <td class="mkgba-player-cell">{{ ghost.player_name_display|default(ghost.player_name) }}</td>
+                <td class="mkgba-driver-cell">
+                    <div class="mkgba-main-text">{{ driver_key|trans }}</div>
+                    <img
+                        class="mkgba-driver-icon"
+                        src="/images/mariokart/icon_big_{{ ghost.driver_icon_slug|default('mario') }}.png"
+                        alt="{{ driver_key|trans }}"
+                        loading="lazy"
+                    >
+                </td>
+                <td class="mkgba-time-cell">{{ ghost.formatted_time }}</td>
+                <td class="mkgba-date-cell">{{ date_set }}</td>
+                {% else %}
+                <td class="mkgba-player-cell"><em>No record</em></td>
+                <td class="mkgba-driver-cell"><em>n/a</em></td>
+                <td class="mkgba-time-cell"><em>n/a</em></td>
+                <td class="mkgba-date-cell"><em>n/a</em></td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block body %}
+<script src="{{ asset('/js/side-backgrounds.js') }}"></script>
+<script>initReonSideBackgrounds("mkgba");</script>
+{% endblock %}

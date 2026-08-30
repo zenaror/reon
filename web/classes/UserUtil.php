@@ -1,5 +1,6 @@
 <?php
 	use PHPMailer\PHPMailer\PHPMailer;
+	use PHPMailer\PHPMailer\SMTP;
 	use PHPMailer\PHPMailer\Exception;
 
 	require_once dirname(__DIR__)."/vendor/autoload.php";
@@ -164,7 +165,25 @@
 			$mail = new PHPMailer();
 			$mail->CharSet = PHPMailer::CHARSET_UTF8;
 			$mail->Encoding = PHPMailer::ENCODING_QUOTED_PRINTABLE;
-			$mail->isSendmail();
+
+			$smtp_host = ConfigUtil::getInstance()->getConfig()["smtp_host"];
+			if (!isset($smtp_host) || $smtp_host == "") {
+				$mail->isSendmail();
+			} else {
+				$mail->isSMTP();
+				$mail->Host = $smtp_host;
+				$mail->Port = ConfigUtil::getInstance()->getConfig()["smtp_port"];
+				$mail->SMTPAuth = ConfigUtil::getInstance()->getConfig()["smtp_auth"];
+				if ($mail->SMTPAuth) {
+					$mail->Username = ConfigUtil::getInstance()->getConfig()["smtp_user"];
+					$mail->Password = ConfigUtil::getInstance()->getConfig()["smtp_pass"];
+				}
+				switch (ConfigUtil::getInstance()->getConfig()["smtp_secure"]) {
+					case 'smtps': $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; break;
+					case 'starttls': $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; break;
+				}
+			}
+
 			$mail->setFrom($from);
 			$mail->addAddress($to);
 			$mail->Subject = $subject;
@@ -188,7 +207,7 @@
 		
 		public function verifyResetPassword($id, $key) {
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and secret = ? and time > date_sub(now(), interval 1 day)");
+			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and secret = ? and timestamp > date_sub(now(), interval 1 day)");
 			$stmt->bind_param("is", $id, $key);
 			$stmt->execute();
 			if ($stmt->get_result()->fetch_assoc()["count(*)"] == 0) return 1;
@@ -210,6 +229,15 @@
 			for ($i = 0; $i < 8; $i++) {
 				$password .= $allowed_chars[random_int(0, strlen($allowed_chars) - 1)];
 			}
+			if (trim($password, substr($allowed_chars, 0, 10)) === "") {
+				// all digits, add a random letter.
+				// this has less than a .00005% chance of happening, but hey.
+				$password[random_int(0, 7)] = $allowed_chars[random_int(10, strlen($allowed_chars) - 1)];
+			} elseif (trim($password, substr($allowed_chars, 10)) === "") {
+				// all letters, add a random digit.
+				// this has nearly a 24.5% chance of happening.
+				$password[random_int(0, 7)] = $allowed_chars[random_int(0, 9)];
+			}
 			return $password;
 		}
 		
@@ -225,7 +253,7 @@
 			$row = $stmt->get_result()->fetch_assoc();
 			if (isset($row)) return 0;
 			
-			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and time > date_sub(now(), interval 5 minute)");
+			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and timestamp > date_sub(now(), interval 5 minute)");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
 			if ($stmt->get_result()->fetch_assoc()["count(*)"] > 0) return 0;
@@ -253,7 +281,7 @@
 		
 		public function verifySignupRequest($id, $key) {
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select email from sys_signup where id = ? and secret = ? and time > date_sub(now(), interval 1 day)");
+			$stmt = $db->prepare("select email from sys_signup where id = ? and secret = ? and timestamp > date_sub(now(), interval 1 day)");
 			$stmt->bind_param("ss", $id, $key);
 			$stmt->execute();
 			$email = $stmt->get_result()->fetch_assoc()["email"];
@@ -262,25 +290,41 @@
 			return $email;
 		}
 		
-		public function completeSignupAction($id, $key, $reonEmail, $password, $passwordConfirm) {
+		public function completeSignupAction($id, $key, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn) {
 			$email = self::$instance->verifySignupRequest($id, $key);
-			if (!isset($email)) return 1;
-			if (!self::$instance->isDionEmailValidAndFree($reonEmail)) return 2;
-			if ($password != $passwordConfirm) return 3;
-			if (!self::$instance->validatePasswordConstraints($password)) return 4;
-			
-			$password_hash = self::$instance->getPasswordHash($password);
-			$dion_ppp_id = self::$instance->generatePPPId();
-			$log_in_password = self::$instance->generateLogInPassword();
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("insert into sys_users (email, password, dion_ppp_id, dion_email_local, log_in_password, money_spent) values (?,?,?,?,?,0)");
-			$stmt->bind_param("sssss", $email, $password_hash, $dion_ppp_id, $reonEmail, $log_in_password);
-			$stmt->execute();
-			
+
+			$result = self::$instance->createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn);
+			if ($result > 0) {
+				return $result;
+			}
+            
+            $db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("delete from sys_signup where email = ?");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
 			
+			return 0;
+		}
+
+		public function createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions = "e,f,d,s,i,p,u,j", $customPokemonNewsOptIn = 0) {
+			if (!isset($email)) return 1;
+			if (!self::$instance->isDionEmailValidAndFree($reonEmail)) return 2;
+			if ($password != $passwordConfirm) return 3;
+			if (!self::$instance->validatePasswordConstraints($password)) return 4;
+   
+            if (!in_array($tradeRegions,array("e,f,d,s,i,p,u,j","efdsipu,j","efdsipuj")))
+                $tradeRegions = "e,f,d,s,i,p,u,j";
+			
+			$opt_in = ($customPokemonNewsOptIn == 1) ? 1 : 0;
+
+			$password_hash = self::$instance->getPasswordHash($password);
+			$dion_ppp_id = self::$instance->generatePPPId();
+			$log_in_password = self::$instance->generateLogInPassword();
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("insert into sys_users (email, password, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in) values (?,?,?,?,?,0,?,?)");
+			$stmt->bind_param("ssssssi", $email, $password_hash, $dion_ppp_id, $reonEmail, $log_in_password, $tradeRegions, $opt_in);
+			$stmt->execute();
+
 			return 0;
 		}
 		

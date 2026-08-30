@@ -1,5 +1,8 @@
 <?php
+	// SPDX-License-Identifier: MIT
 	require_once(CORE_PATH."/monopoly.php");
+
+	$config = getConfig();
 
 	$input = fopen("php://input", "rb");
 	$name = fread($input, 4);
@@ -18,11 +21,15 @@
 		//http_response_code(400); // the game explicitly says that bad data will be accepted, but not saved
 		return;
 	}
-	if (ord($name) == 0xFF || str_contains(rtrim($name, "\xFF"), "\xFF")) {
+	if (ord($name) == 0xFF) {
 		//http_response_code(400);
 		return;
 	}
-	if (substr($email, 8) !== "@reon.dion.ne.jp") {
+	if (str_contains(substr(rtrim($name, "\0"), 0, -1), "\xFF")) {
+		//http_response_code(400);
+		return;
+	}
+	if (substr($email, 8) !== "@".$config["email_domain_dion"]) {
 		//http_response_code(400);
 		return;
 	}
@@ -32,8 +39,15 @@
 	}
 
 	$db = connectMySQL();
+	
+	$game_region = getCurrentGameRegion();
+	if ($game_region === null) {
+		http_response_code(500);
+		return;
+	}
+
 	$stmt = $db->prepare("select dion_email_local from sys_users where id = ?");
-	$stmt->bind_param("s", $_SESSION["userId"]);
+	$stmt->bind_param("i", $_SESSION['userId']);
 	$stmt->execute();
 	$result = fancy_get_result($stmt);
 
@@ -42,17 +56,20 @@
 		return;
 	}
 
-	$config = getConfig();
+	$time = date_create_immutable_from_format("j,u", "1,0", timezone_open("+0900"));
+	$year = $time->format("Y");
+	$month = $time->format("m");
 
 	if ($today == 0) {
+		$timestamp = $time->setTimezone(timezone_open(date_default_timezone_get()))->format("Y-m-d H:i:s");
 		$db->begin_transaction();
 		try {
-			$stmt = $db->prepare("delete ignore from amoj_ranking where today = 0 and name = ? and email = ? and gender = ? and age = ? and state = ?");
-			$stmt->bind_param("ssiii", $name, $email, $gender, $age, $state);
+			$stmt = $db->prepare("delete ignore from amo_ranking where (valid = 0 or timestamp >= ?) and acc_id = ? and name = ? and gender = ? and age = ? and state = ? and game_region = ?");
+			$stmt->bind_param("sisiiis", $timestamp, $_SESSION['userId'], $name, $gender, $age, $state, $game_region);
 			$stmt->execute();
 
-			$stmt = $db->prepare("insert into amoj_ranking (name, email, points, money, gender, age, state) values (?,?,?,?,?,?,?)");
-			$stmt->bind_param("ssiiiii", $name, $email, $points, $money, $gender, $age, $state);
+			$stmt = $db->prepare("insert into amo_ranking (game_region, acc_id, name, email, points, money, gender, age, state) values (?,?,?,?,?,?,?,?,?)");
+			$stmt->bind_param("sissiiiii", $game_region, $_SESSION['userId'], $name, $email, $points, $money, $gender, $age, $state);
 			$stmt->execute();
 		} catch (mysqli_sql_exception $e) {
 			$db->rollback();
@@ -61,26 +78,22 @@
 		}
 		$db->commit();
 	} else {
-		$year = date("Y", time() + 32400) % 16;
-		$month = date("m", time() + 32400);
-		if (($today >> 4) != $year || ($today & 0xF) != $month) {
+		if (($today >> 4) != ($year % 16) || ($today & 0xF) != $month) {
+			$stmt = $db->prepare("delete ignore from amo_ranking where valid = 0 and acc_id = ? and name = ? and points = ? and money = ? and gender = ? and age = ? and state = ? and game_region = ?");
+			$stmt->bind_param("isiiiiis", $_SESSION['userId'], $name, $points, $money, $gender, $age, $state, $game_region);
+			$stmt->execute();
 			//http_response_code(400);
 			return;
 		}
-		$stmt = $db->prepare("select id from amoj_ranking where today2 = 0 and name = ? and email = ? and points = ? and money = ? and gender = ? and age = ? and state = ?");
-		$stmt->bind_param("ssiiiii", $name, $email, $points, $money, $gender, $age, $state);
-		$stmt->execute();
-		$result = fancy_get_result($stmt);
-		if (sizeof($result) == 0) {
-			//http_response_code(400);
+		if (empty($config["amoj_regist"])) {
 			return;
 		}
-		$stmt = $db->prepare("update amoj_ranking set today = ?, today2 = ? where id = ?");
-		$stmt->bind_param("iii", empty($config["amoj_regist"]) ? 0 : $today, $today, $result[0]["id"]);
+		$stmt = $db->prepare("update amo_ranking set valid = 1 where acc_id = ? and name = ? and points = ? and money = ? and gender = ? and age = ? and state = ? and game_region = ?");
+		$stmt->bind_param("isiiiiis", $_SESSION['userId'], $name, $points, $money, $gender, $age, $state, $game_region);
 		$stmt->execute();
-		if (substr($config["amoj_regist"], 0, 1) === "h") {
-			http_response_code(intval(substr($config["amoj_regist"], 1)));
-		} else if (substr($config["amoj_regist"], 0, 1) === "g") {
+		if ($config["amoj_regist"][0] === "h") {
+			http_response_code(substr($config["amoj_regist"], 1));
+		} else if ($config["amoj_regist"][0] === "g") {
 			header("Gb-Status: ".substr($config["amoj_regist"], 1));
 		}
 	}

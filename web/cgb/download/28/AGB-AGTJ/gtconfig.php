@@ -1,0 +1,84 @@
+<?php
+	// SPDX-License-Identifier: MIT
+	require_once(CORE_PATH."/zen_nihon.php");
+
+	$excrs = getExtraCourse();
+
+	if ($excrs) {
+		echo "\0";
+		$cksum = 0;
+	} else {
+		echo "\x01";
+		$cksum = 1;
+	}
+
+	$db = connectMySQL();
+	
+	$game_region = getCurrentGameRegion();
+	if ($game_region === null) {
+		http_response_code(500);
+		return;
+	}
+
+	$ghosts_avail = 0x7F;
+	for ($i = 0; $i < ($excrs ? 7 : 6); $i++) {
+		if ($i != 6) {
+			$j = $i + 9;
+			$stmt = $db->prepare("select count(*) from agt_ghosts where (course = ? or course = ?) and dl_ok is not null and game_region = ? limit 1");
+			$stmt->bind_param("iis", $i, $j, $game_region);
+		} else {
+			$stmt = $db->prepare("select count(*) from agt_ghosts where (course = 6 or course = 7 or course = 8 or course = 15 or course = 16 or course = 17) and dl_ok is not null and excrs = ? and game_region = ? limit 1");
+			$stmt->bind_param("is", $excrs, $game_region);
+		}
+		$stmt->execute();
+		$result = fancy_get_result($stmt);
+		$ghosts_avail &= ~($result[0]["count(*)"] << $i);
+	}
+	echo pack("C", $ghosts_avail);
+	$cksum = $cksum + $ghosts_avail;
+
+	echo pack("C", $excrs);
+	$cksum = $cksum + $excrs;
+	echo pack("C", $excrs);
+	$cksum = $cksum + $excrs;
+
+	$ranking_prefix = "gameboy.datacenter.ne.jp/cgb/download?name=/28/AGB-AGTJ/0.";
+	echo $ranking_prefix;
+	$i = 0;
+	while ($i < strlen($ranking_prefix)) {
+		$cksum = $cksum + ord($ranking_prefix[$i]);
+		$i++;
+	}
+	while ($i < 0x40) {
+		echo "\0";
+		$i++;
+	}
+
+	$config = getConfig();
+	$ghost_email = $config["agtj_email"];
+	echo $ghost_email;
+	$i = 0;
+	while ($i < strlen($ghost_email)) {
+		$cksum = $cksum + ord($ghost_email[$i]);
+		$i++;
+	}
+	while ($i < 0x40) {
+		echo "\0";
+		$i++;
+	}
+
+	$config = getConfig();
+	$track_email = $config["agtj_track"];
+	echo $track_email;
+	$i = 0;
+	while ($i < strlen($track_email)) {
+		$cksum = $cksum + ord($track_email[$i]);
+		$i++;
+	}
+	while ($i < 0x40) {
+		echo "\0";
+		$i++;
+	}
+
+	echo pack("V", $cksum);
+?>

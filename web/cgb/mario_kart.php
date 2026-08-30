@@ -1,6 +1,15 @@
 <?php
 	// SPDX-License-Identifier: MIT
 	require_once(CORE_PATH."/database.php");
+	require_once(CORE_PATH."/timezone.php");
+
+	function getDownloadGameRegions() {
+		$game_region = getCurrentGameRegion();
+		if ($game_region === "j" || $game_region === "e") {
+			return array("j", "e");
+		}
+		return array($game_region, $game_region);
+	}
 
 	function validatePlayerID($month, $day, $hour, $minute, $email_id, $email_svr, $name0) {
 		if ($month == 0 || $month > 12) return false;
@@ -16,7 +25,7 @@
 		if (!str_contains($email_chars.".", substr($email_svr, 1))) return false;
 
 		if (ord($name0) == 0) return false;
-		if (str_contains(rtrim($name0, "\x00"), "\x00")) return false;
+		if (str_contains(rtrim($name0, "\0"), "\0")) return false;
 
 		return true;
 	}
@@ -71,55 +80,38 @@
 		);
 	}
 
-	function checkPlayerID($myid, $dion_id) {
+	function checkPlayerID($myid, $user_id = null) {
+		$config = getConfig();
+
 		$decoded = decodePlayerID($myid);
-		if (!$decoded["valid"] || $decoded["email_svr"] !== "on") {
+		if (!$decoded["valid"] || $decoded["email_svr"] !== substr($config["email_domain_dion"], 2, 2)) {
 			return false;
 		}
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select dion_ppp_id from sys_users where dion_email_local = ?");
+		$stmt = $db->prepare("select id from sys_users where dion_email_local = ?");
 		$stmt->bind_param("s", $decoded["email_id"]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		if (sizeof($result) == 0) {
 			return false;
 		}
-		
-		if (!is_null($dion_id) && !in_array(array("dion_ppp_id" => $dion_id), $result)) {
-			return false;
-		}
-		if (sizeof($result) == 1) {
-			$dion_id = $result[0]["dion_ppp_id"];
-		}
 
-		$stmt = $db->prepare("select user_id from amkj_user_map where player_id = ?");
-		$stmt->bind_param("s", $myid);
-		$stmt->execute();
-		$result = fancy_get_result($stmt);
-		if (sizeof($result) == 1) {
-			if (is_null($result[0]["user_id"])) {
-				if (!is_null($dion_id)) {
-					$stmt = $db->prepare("update amkj_user_map set user_id = ? where player_id = ?");
-					$stmt->bind_param("ss", $dion_id, $myid);
-					$stmt->execute();
-				}
-				return true;
-			}
-			if (!is_null($dion_id) && $result[0]["user_id"] != $dion_id) {
-				return false;
-			}
+		if (is_null($user_id)) {
+			return $result[0]["id"];
+		} elseif ($result[0]["id"] !== $user_id) {
+			return false;
+		} else {
 			return true;
 		}
-		$stmt = $db->prepare("insert into amkj_user_map values (?,?)");
-		$stmt->bind_param("ss", $myid, $dion_id);
-		$stmt->execute();
-		return true;
 	}
 
 	function getCurrentMobileGP() {
+		$datestamp = date("Y-m-d", time() + 32400);
 		$db = connectMySQL();
-		$stmt = $db->prepare("select id from amkj_rule order by id desc limit 1");
+		$stmt = $db->prepare("select id from amk_rule where start_date <= ? and game_region = ? order by id desc limit 1");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("ss", $datestamp, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		if (sizeof($result) == 0) {
@@ -130,8 +122,9 @@
 
 	function getTotalRankingEntries($course) { // total.cgb
 		$db = connectMySQL();
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ?");
-		$stmt->bind_param("i", $course);
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and game_region in (?, ?)");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iss", $course, $regions[0], $regions[1]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		return $result[0]["count(*)"];
@@ -139,8 +132,9 @@
 
 	function getTotalRankingEntriesState($course, $state) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ? and state = ?");
-		$stmt->bind_param("ii", $course, $state);
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and state = ? and game_region = ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iis", $course, $state, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		return $result[0]["count(*)"];
@@ -148,8 +142,9 @@
 
 	function getTotalRankingEntriesDriver($course, $driver) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ? and driver = ?");
-		$stmt->bind_param("ii", $course, $driver);
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and driver = ? and game_region in (?, ?)");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iiss", $course, $driver, $regions[0], $regions[1]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		return $result[0]["count(*)"];
@@ -157,8 +152,9 @@
 
 	function getTotalRankingEntriesMobileGP($gp_id) { // total.cgb
 		$db = connectMySQL();
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where gp_id = ?");
-		$stmt->bind_param("i", $gp_id);
+		$stmt = $db->prepare("select count(*) from amk_ghosts where gp_id = ? and game_region in (?, ?)");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iss", $gp_id, $regions[0], $regions[1]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		return $result[0]["count(*)"];
@@ -167,8 +163,9 @@
 	function getOwnRank($course, $myid) {
 		$db = connectMySQL();
 
-		$stmt = $db->prepare("select id, time, driver from amkj_ghosts where course = ? and player_id = ?");
-		$stmt->bind_param("is", $course, $myid);
+		$stmt = $db->prepare("select id, time, driver from amk_ghosts where course = ? and player_id = ? and game_region = ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iss", $course, $myid, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		if (sizeof($result) == 0) {
@@ -181,9 +178,10 @@
 		$time = $result[0]["time"];
 		$driver = $result[0]["driver"];
 		
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ? and (time < ? or (time = ? and id <= ?))");
-		$stmt->bind_param("iiii", $course, $time, $time, $id);
-		$stmt->execute;
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and game_region in (?, ?) and (time < ? or (time = ? and id <= ?))");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issiii", $course, $regions[0], $regions[1], $time, $time, $id);
+		$stmt->execute();
 		$result = fancy_get_result($stmt);
 
 		return array(
@@ -196,8 +194,9 @@
 	function getOwnRankState($course, $myid, $state) {
 		$db = connectMySQL();
 
-		$stmt = $db->prepare("select id, time, driver, state from amkj_ghosts where course = ? and player_id = ?");
-		$stmt->bind_param("is", $course, $myid);
+		$stmt = $db->prepare("select id, time, driver, state from amk_ghosts where course = ? and player_id = ? and game_region = ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iss", $course, $myid, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		if (sizeof($result) == 0 || $result[0]["state"] != $state) {
@@ -210,9 +209,10 @@
 		$time = $result[0]["time"];
 		$driver = $result[0]["driver"];
 		
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ? and state = ? and (time < ? or (time = ? and id <= ?))");
-		$stmt->bind_param("iiiii", $course, $state, $time, $time, $id);
-		$stmt->execute;
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and state = ? and game_region = ? and (time < ? or (time = ? and id <= ?))");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iisiii", $course, $state, $game_region, $time, $time, $id);
+		$stmt->execute();
 		$result = fancy_get_result($stmt);
 
 		return array(
@@ -225,8 +225,9 @@
 	function getOwnRankDriver($course, $myid, $driver) {
 		$db = connectMySQL();
 
-		$stmt = $db->prepare("select id, time, driver from amkj_ghosts where course = ? and player_id = ?");
-		$stmt->bind_param("is", $course, $myid);
+		$stmt = $db->prepare("select id, time, driver from amk_ghosts where course = ? and player_id = ? and game_region = ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iss", $course, $myid, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		if (sizeof($result) == 0 || $result[0]["driver"] != $driver) {
@@ -238,9 +239,10 @@
 		$id = $result[0]["id"];
 		$time = $result[0]["time"];
 		
-		$stmt = $db->prepare("select count(*) from amkj_ghosts where course = ? and driver = ? and (time < ? or (time = ? and id <= ?))");
-		$stmt->bind_param("iiiii", $course, $driver, $time, $time, $id);
-		$stmt->execute;
+		$stmt = $db->prepare("select count(*) from amk_ghosts where course = ? and driver = ? and game_region in (?, ?) and (time < ? or (time = ? and id <= ?))");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iissiii", $course, $driver, $regions[0], $regions[1], $time, $time, $id);
+		$stmt->execute();
 		$result = fancy_get_result($stmt);
 
 		return array(
@@ -253,7 +255,7 @@
 	function getOwnRankMobileGP($gp_id, $myid) {
 		$db = connectMySQL();
 
-		$stmt = $db->prepare("select id, time, driver from amkj_ghosts_mobilegp where gp_id = ? and player_id = ?");
+		$stmt = $db->prepare("select id, time, driver from amk_ghosts_mobilegp where gp_id = ? and player_id = ?");
 		$stmt->bind_param("is", $gp_id, $myid);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
@@ -267,9 +269,9 @@
 		$time = $result[0]["time"];
 		$driver = $result[0]["driver"];
 		
-		$stmt = $db->prepare("select count(*) from amkj_ghosts_mobilegp where gp_id = ? and (time < ? or (time = ? and id <= ?))");
+		$stmt = $db->prepare("select count(*) from amk_ghosts_mobilegp where gp_id = ? and (time < ? or (time = ? and id <= ?))");
 		$stmt->bind_param("iiiii", $gp_id, $time, $time, $id);
-		$stmt->execute;
+		$stmt->execute();
 		$result = fancy_get_result($stmt);
 
 		return array(
@@ -280,11 +282,12 @@
 	}
 
 	function makeGhostDownload($result, $course) {
-		$output = pack("n", date("Y", time() + 32400)) // Year
-		         .pack("C", date("m", time() + 32400)) // Month
-		         .pack("C", date("d", time() + 32400)) // Day
-		         .pack("C", date("H", time() + 32400)) // Hour
-		         .pack("C", date("i")); // Minute
+		$time = get_user_local_time();
+		$output = pack("n", $time->format("Y")) // Year
+		         .pack("C", $time->format("m")) // Month
+		         .pack("C", $time->format("d")) // Day
+		         .pack("C", $time->format("H")) // Hour
+		         .pack("C", $time->format("i")); // Minute
 
 		$total = getTotalRankingEntries($course);
 		
@@ -299,8 +302,8 @@
 			$output = $output.$result[0]["player_id"];
 			$output = $output.pack("N", $total);
 			$output = $output.pack("N", $total);
-			$output = $output.pack("N", getTotalRankingEntriesState($result[0]["state"], $course));
-			$output = $output.pack("N", getTotalRankingEntriesDriver($result[0]["driver"], $course));
+			$output = $output.pack("N", getTotalRankingEntriesState($course, $result[0]["state"]));
+			$output = $output.pack("N", getTotalRankingEntriesDriver($course, $result[0]["driver"]));
 		} else {
 			$output = $output.pack("N", $total); // Player's rank
 		}
@@ -322,8 +325,9 @@
 		$ghostrank = $ghostrank - 1;
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select * from amkj_ghosts where course = ? order by time asc limit 1 offset ?");
-		$stmt->bind_param("ii", $course, $ghostrank);
+		$stmt = $db->prepare("select * from amk_ghosts where course = ? and game_region in (?, ?) order by time asc limit 1 offset ?");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issi", $course, $regions[0], $regions[1], $ghostrank);
 		$stmt->execute();
 
 		return makeGhostDownload(fancy_get_result($stmt), $course);
@@ -342,8 +346,9 @@
 		}
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select * from amkj_ghosts where course = ? and time < ? order by time desc limit 1");
-		$stmt->bind_param("ii", $course, $ghostrank);
+		$stmt = $db->prepare("select * from amk_ghosts where course = ? and game_region in (?, ?) and time < ? order by time desc limit 1");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issi", $course, $regions[0], $regions[1], $ghostscore);
 		$stmt->execute();
 
 		return makeGhostDownload(fancy_get_result($stmt), $course);
@@ -365,8 +370,9 @@
 		}
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select * from amkj_ghosts where course = ? and player_id = ?");
-		$stmt->bind_param("is", $course, $myid);
+		$stmt = $db->prepare("select * from amk_ghosts where course = ? and player_id = ? and game_region = ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iss", $course, $myid, $game_region);
 		$stmt->execute();
 
 		return makeGhostDownload(fancy_get_result($stmt), $course);
@@ -386,15 +392,18 @@
 		$ghostrank = $ghostrank - 1;
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id from amkj_ghosts where course = ? order by time asc limit 1 offset ?");
-		$stmt->bind_param("ii", $course, $ghostrank);
+		$stmt = $db->prepare("select player_id from amk_ghosts where course = ? and game_region in (?, ?) order by time asc limit 1 offset ?");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issi", $course, $regions[0], $regions[1], $ghostrank);
 		$stmt->execute();
+		$result = fancy_get_result($stmt);
 
-		$output = pack("n", date("Y", time() + 32400)) // Year
-		         .pack("C", date("m", time() + 32400)) // Month
-		         .pack("C", date("d", time() + 32400)) // Day
-		         .pack("C", date("H", time() + 32400)) // Hour
-		         .pack("C", date("i")); // Minute
+		$time = get_user_local_time();
+		$output = pack("n", $time->format("Y")) // Year
+		         .pack("C", $time->format("m")) // Month
+		         .pack("C", $time->format("d")) // Day
+		         .pack("C", $time->format("H")) // Hour
+		         .pack("C", $time->format("i")); // Minute
 		
 		$output = $output.pack("N", getTotalRankingEntries($course)); // Seems to indicate if something was found
 		$output = $output.pack("n", sizeof($result)); // Seems to indicate if data is present
@@ -421,15 +430,18 @@
 		$ghostrank = $ghostrank - 1;
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id from amkj_ghosts where course = ? and state = ? order by time asc limit 1 offset ?");
-		$stmt->bind_param("iii", $course, $state, $ghostrank);
+		$stmt = $db->prepare("select player_id from amk_ghosts where course = ? and state = ? and game_region = ? order by time asc limit 1 offset ?");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iisi", $course, $state, $game_region, $ghostrank);
 		$stmt->execute();
+		$result = fancy_get_result($stmt);
 
-		$output = pack("n", date("Y", time() + 32400)) // Year
-		         .pack("C", date("m", time() + 32400)) // Month
-		         .pack("C", date("d", time() + 32400)) // Day
-		         .pack("C", date("H", time() + 32400)) // Hour
-		         .pack("C", date("i")); // Minute
+		$time = get_user_local_time();
+		$output = pack("n", $time->format("Y")) // Year
+		         .pack("C", $time->format("m")) // Month
+		         .pack("C", $time->format("d")) // Day
+		         .pack("C", $time->format("H")) // Hour
+		         .pack("C", $time->format("i")); // Minute
 		
 		$output = $output.pack("N", getTotalRankingEntriesState($course, $state)); // Seems to indicate if something was found
 		$output = $output.pack("n", sizeof($result)); // Seems to indicate if data is present
@@ -456,15 +468,18 @@
 		$ghostrank = $ghostrank - 1;
 
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id from amkj_ghosts where course = ? and driver = ? order by time asc limit 1 offset ?");
-		$stmt->bind_param("iii", $course, $driver, $ghostrank);
+		$stmt = $db->prepare("select player_id from amk_ghosts where course = ? and driver = ? and game_region in (?, ?) order by time asc limit 1 offset ?");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iissi", $course, $driver, $regions[0], $regions[1], $ghostrank);
 		$stmt->execute();
+		$result = fancy_get_result($stmt);
 
-		$output = pack("n", date("Y", time() + 32400)) // Year
-		         .pack("C", date("m", time() + 32400)) // Month
-		         .pack("C", date("d", time() + 32400)) // Day
-		         .pack("C", date("H", time() + 32400)) // Hour
-		         .pack("C", date("i")); // Minute
+		$time = get_user_local_time();
+		$output = pack("n", $time->format("Y")) // Year
+		         .pack("C", $time->format("m")) // Month
+		         .pack("C", $time->format("d")) // Day
+		         .pack("C", $time->format("H")) // Hour
+		         .pack("C", $time->format("i")); // Minute
 		
 		$output = $output.pack("N", getTotalRankingEntriesDriver($course, $driver)); // Seems to indicate if something was found
 		$output = $output.pack("n", sizeof($result)); // Seems to indicate if data is present
@@ -487,8 +502,9 @@
 	
 	function getTop10($course) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id, name, driver, time from amkj_ghosts where course = ? order by time asc limit 11");
-		$stmt->bind_param("i", $course);
+		$stmt = $db->prepare("select player_id, name, driver, time from amk_ghosts where course = ? and game_region in (?, ?) order by time asc limit 11");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iss", $course, $regions[0], $regions[1]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		
@@ -501,14 +517,15 @@
 	
 	function getRivals($course, $myid) {
 		$myrank = getOwnRank($course, $myid);
-		if ($myrank <= 11) {
+		if ($myrank["rank"] <= 11) {
 			return array();
 		}
 		$myrankOffset = $myrank["rank"] - 12;
 		
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id, name, driver, time from amkj_ghosts where course = ? order by time asc limit 11 offset ?");
-		$stmt->bind_param("ii", $course, $myrankOffset);
+		$stmt = $db->prepare("select player_id, name, driver, time from amk_ghosts where course = ? and game_region in (?, ?) order by time asc limit 11 offset ?");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issi", $course, $regions[0], $regions[1], $myrankOffset);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		
@@ -523,8 +540,9 @@
 		$offset = $rank - 1;
 		
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id, name, driver, time from amkj_ghosts where course = ? order by time asc limit 1 offset ?");
-		$stmt->bind_param("ii", $course, $offset);
+		$stmt = $db->prepare("select player_id, name, driver, time from amk_ghosts where course = ? and game_region in (?, ?) order by time asc limit 1 offset ?");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("issi", $course, $regions[0], $regions[1], $offset);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		
@@ -535,8 +553,9 @@
 	
 	function getTop10State($course, $state) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id, name, driver, time from amkj_ghosts where course = ? and state = ? order by time asc limit 11");
-		$stmt->bind_param("i", $course, $state);
+		$stmt = $db->prepare("select player_id, name, driver, time from amk_ghosts where course = ? and state = ? and game_region = ? order by time asc limit 11");
+		$game_region = getCurrentGameRegion();
+		$stmt->bind_param("iis", $course, $state, $game_region);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		
@@ -549,8 +568,9 @@
 	
 	function getTop10Driver($course, $driver) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select player_id, name, driver, time from amkj_ghosts where course = ? and driver = ? order by time asc limit 11");
-		$stmt->bind_param("i", $course, $driver);
+		$stmt = $db->prepare("select player_id, name, driver, time from amk_ghosts where course = ? and driver = ? and game_region in (?, ?) order by time asc limit 11");
+		$regions = getDownloadGameRegions();
+		$stmt->bind_param("iiss", $course, $driver, $regions[0], $regions[1]);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
 		
@@ -582,7 +602,8 @@
 			return;
 		}
 		$myid = hex2bin($params["myid"]);
-		if (!checkPlayerID($myid, null)) {
+		$user_id = checkPlayerID($myid);
+		if ($user_id === false) {
 			http_response_code(400);
 			return;
 		}
@@ -593,11 +614,12 @@
 			array_push($rk, hexdec($params["rk_".$i]));
 		}
 		
-		echo pack("n", date("Y", time() + 32400)); // Year
-		echo pack("C", date("m", time() + 32400)); // Month
-		echo pack("C", date("d", time() + 32400)); // Day
-		echo pack("C", date("H", time() + 32400)); // Hour
-		echo pack("C", date("i")); // Minute
+		$time = get_user_local_time($user_id);
+		echo pack("n", $time->format("Y")); // Year
+		echo pack("C", $time->format("m")); // Month
+		echo pack("C", $time->format("d")); // Day
+		echo pack("C", $time->format("H")); // Hour
+		echo pack("C", $time->format("i")); // Minute
 		
 		echo pack("N", getTotalRankingEntries($course)); // Probably total amount of ranked players
 		
@@ -643,11 +665,11 @@
 
 	// --- State top 10 --- //
 		
-		echo pack("n", date("Y", time() + 32400)); // Year
-		echo pack("C", date("m", time() + 32400)); // Month
-		echo pack("C", date("d", time() + 32400)); // Day
-		echo pack("C", date("H", time() + 32400)); // Hour
-		echo pack("C", date("i")); // Minute
+		echo pack("n", $time->format("Y")); // Year
+		echo pack("C", $time->format("m")); // Month
+		echo pack("C", $time->format("d")); // Day
+		echo pack("C", $time->format("H")); // Hour
+		echo pack("C", $time->format("i")); // Minute
 		
 		echo pack("N", getTotalRankingEntriesState($course, $state)); // Probably total amount of ranked players
 		
@@ -677,11 +699,11 @@
 
 	// --- Driver top 10 --- //
 		
-		echo pack("n", date("Y", time() + 32400)); // Year
-		echo pack("C", date("m", time() + 32400)); // Month
-		echo pack("C", date("d", time() + 32400)); // Day
-		echo pack("C", date("H", time() + 32400)); // Hour
-		echo pack("C", date("i")); // Minute
+		echo pack("n", $time->format("Y")); // Year
+		echo pack("C", $time->format("m")); // Month
+		echo pack("C", $time->format("d")); // Day
+		echo pack("C", $time->format("H")); // Hour
+		echo pack("C", $time->format("i")); // Minute
 		
 		echo pack("N", getTotalRankingEntriesDriver($course, $driver)); // Probably total amount of ranked players
 		
@@ -715,7 +737,7 @@
 	function parseGhostUpload($input) {
 		$data = array();
 		$data["player_id"] = fread($input, 0x10);
-		$data["course_no"] = unpack("C", fread($input, 0x1))[1];
+		$data["course"] = unpack("C", fread($input, 0x1))[1];
 		$data["driver"] = unpack("C", fread($input, 0x1))[1];
 		$data["name"] = fread($input, 0x5);
 		$data["state"] = unpack("C", fread($input, 0x1))[1];
@@ -729,6 +751,62 @@
 		return $data;
 	}
 
+	function validateGhostUpload($data) {
+		$k = ord($data["player_id"]);
+		for ($i = 1; $i < 16; $i++) {
+			$k += ord($data["player_id"][$i]);
+		}
+		if (($k ^ $data["course"]) & 1) {
+			$a = $data["driver"] + $k * ($k + 1);
+			$b = $data["driver"] + $data["course"] - $k;
+		} else {
+			$a = $data["driver"] + $k * ($k - 1);
+			$b = $data["driver"] - $data["course"] - $k;
+		}
+
+		for ($i = 0; $i < 5; $i++) {
+			$k = ord($data["name"][$i]);
+			if (($b ^ $k) & 1) {
+				$a += $k;
+				$b -= $k;
+			} else {
+				$a -= $k;
+				$b += $k;
+			}
+		}
+
+		$k = $data["state"] + ($data["time"] >> 8);
+		$a = ($a + $k) | $data["time"];
+		$b = ($b + $k) ^ $data["time"];
+
+		for ($i = 0; $i < 4096; $i++) {
+			$k = ord($data["input_data"][$i]);
+			$a ^= $k;
+			$b += $k;
+		}
+		for ($i = 0; $i < 16; $i++) {
+			$k = ord($data["full_name"][$i]);
+			$a += $k;
+			$b ^= $k;
+		}
+		for ($i = 0; $i < 12; $i++) {
+			$k = ord($data["phone_number"][$i]);
+			$a ^= $k;
+			$b -= $k;
+		}
+		for ($i = 0; $i < 8; $i++) {
+			$k = ord($data["postal_code"][$i]);
+			$a -= $k;
+			$b += $k;
+		}
+		for ($i = 0; $i < 128; $i++) {
+			$k = ord($data["address"][$i]);
+			$a ^= $k;
+			$b ^= $k;
+		}
+		return $data["unk18"] == (($a & 0xff) << 8 | ($b & 0xff));
+	}
+
 	function entry($course) { // 0.entry.cgb
 		$size = (int) $_SERVER['CONTENT_LENGTH'];
 		if ($size != 0x10c0) {
@@ -736,34 +814,38 @@
 			return;
 		}
 		$data = parseGhostUpload(fopen("php://input", "rb"));
-		
-		if ($data["driver"] > 7) {
+
+		if ($data["course"] != $course || $data["driver"] > 7) {
 			http_response_code(400);
 			return;
 		}
-		
-		$data["course"] = $course;
-		
+
+		if (!validateGhostUpload($data)) {
+			http_response_code(400);
+			return;
+		}
+
 		// Validate sent player ID
 		if (!checkPlayerID($data["player_id"], $_SESSION['userId'])) {
-			// Player ID claimed by a different user
+			// Player ID invalid (eg email mismatch)
 			http_response_code(400);
 			return;
 		}
-		
+
 		$db = connectMySQL();
 		$db->begin_transaction();
 		try {
 			// Delete existing record
-			$stmt = $db->prepare("delete ignore from amkj_ghosts where player_id = ? and course = ?");
-			$stmt->bind_param("si", $data["player_id"], $data["course"]);
+			$stmt = $db->prepare("delete ignore from amk_ghosts where course = ? and player_id = ?");
+			$stmt->bind_param("is", $course, $data["player_id"]);
 			$stmt->execute();
-			
+
 			// Insert new record
-			$stmt = $db->prepare("insert into amkj_ghosts (player_id, course_no, driver, name, state, unk18, course, time, input_data, full_name, phone_number, postal_code, address) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			$stmt->bind_param("iisiiiiisssss", $data["player_id"], $data["course_no"], $data["name"], $data["state"], $data["unk18"], $data["course"], $data["driver"], $data["time"], $data["input_data"], $data["full_name"], $data["phone_number"], $data["postal_code"], $data["address"]);
+			$stmt = $db->prepare("insert into amk_ghosts (game_region, acc_id, course, player_id, name, state, driver, time, input_data, full_name, phone_number, postal_code, address) values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			$game_region = getCurrentGameRegion();
+			$stmt->bind_param("siissiiisssss", $game_region, $_SESSION['userId'], $course, $data["player_id"], $data["name"], $data["state"], $data["driver"], $data["time"], $data["input_data"], $data["full_name"], $data["phone_number"], $data["postal_code"], $data["address"]);
 			$stmt->execute();
-			
+
 			$db->commit();
 		} catch (mysqli_sql_exception $e) {
 			$db->rollback();

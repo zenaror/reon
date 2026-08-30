@@ -1,0 +1,2221 @@
+const fs = require("fs");
+const path = require("path");
+// mysql2 compat: some installs (or older versions) don't expose the /promise entrypoint.
+// We support both:
+//   - require('mysql2/promise') (preferred)
+//   - require('mysql2') + pool.promise() (fallback)
+let mysql2;
+let mysql2Mode = "promise";
+try {
+  mysql2 = require("mysql2/promise");
+} catch (e) {
+  mysql2Mode = "callback";
+  mysql2 = require("mysql2");
+}
+const { Command } = require("commander");
+
+const program = new Command();
+
+// Main Reon config (DB, etc.) – usually reon/config.json
+const defaultMainConfigPath = path.resolve(__dirname, "..", "..", "config.json");
+// Separate news config – lives next to this script by default
+const defaultNewsConfigPath = path.resolve(__dirname, "bxt_news_cycle.config.json");
+const defaultRotationConfigPath = path.resolve(__dirname, "file_rotation.config.json");
+const defaultFeatureAvailabilityConfigPath = path.resolve(__dirname, "feature_availability.config.json");
+
+program
+  .option("-c, --config <path>", "Main Reon config file path.", defaultMainConfigPath)
+  .option("-n, --news-config <path>", "News cycle config file path.", defaultNewsConfigPath)
+  .option("-r, --rotation-config <path>", "File rotation config file path.", defaultRotationConfigPath)
+  .option("-f, --feature-config <path>", "Timed feature availability config file path.", defaultFeatureAvailabilityConfigPath)
+  .option("--refresh", "Re-apply the current expected news and clear bxt_ranking.")
+  .option("--override <file>", "Apply a specific scheduled news file/article id, such as june_2002.bin.")
+  .argument("[mode]", "Optional mode. Use \"refresh\" to re-apply the current expected news.")
+  .parse(process.argv);
+
+const options = program.opts();
+const refreshMode =
+  !!options.refresh ||
+  program.args.some((arg) => String(arg || "").toLowerCase() === "refresh");
+const overrideArticleName = normalizeOverrideArticleName(options.override);
+function parseJsonFile(filePath) {
+  const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+  return JSON.parse(raw);
+}
+
+const mainConfig = parseJsonFile(options.config);
+const newsConfigRaw = parseJsonFile(options.newsConfig);
+let rotationConfigRaw = null;
+try {
+  if (options.rotationConfig && fs.existsSync(options.rotationConfig)) {
+    rotationConfigRaw = parseJsonFile(options.rotationConfig);
+  }
+} catch (e) {
+  console.error("Failed to load rotation config:", e);
+  rotationConfigRaw = null;
+}
+
+let featureAvailabilityConfigRaw = null;
+try {
+  if (options.featureConfig && fs.existsSync(options.featureConfig)) {
+    featureAvailabilityConfigRaw = parseJsonFile(options.featureConfig);
+  }
+} catch (e) {
+  console.error("Failed to load feature availability config:", e);
+  featureAvailabilityConfigRaw = null;
+}
+
+/**
+ * Helper: create a MySQL connection pool using the standard Reon config keys.
+ */
+function createPool(cfg) {
+  const pool = mysql2.createPool({
+    host: cfg.mysql_host,
+    user: cfg.mysql_user,
+    password: cfg.mysql_password,
+    database: cfg.mysql_database,
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0,
+  });
+
+  // mysql2/promise already returns a promise-based pool.
+  // mysql2 (callback) supports pool.promise() to get the same interface.
+  if (mysql2Mode === "callback" && typeof pool.promise === "function") {
+    return pool.promise();
+  }
+  return pool;
+}
+
+/**
+ * Load the shared bxt_encoding.json.
+ */
+function loadEncoding(rootDir) {
+  const encPath = path.resolve(rootDir, "web", "scripts", "bxt_encoding.json");
+  const raw = fs.readFileSync(encPath, "utf8");
+  return JSON.parse(raw);
+}
+
+/**
+ * Default configuration for the news cycle app.
+ * These can be overridden / extended in the *news* config file
+ * (by default app/auto-schedule/bxt_news_cycle.config.json).
+ */
+const defaultNewsConfig = {
+  // Relative to this index.js; normally app/auto-schedule/files
+  articles_dir: path.resolve(__dirname, "files"),
+
+  /**
+   * Map game_region letters to folder names under files/.
+   * Can be customized; missing regions will be skipped.
+   */
+  region_folder_map: {
+    j: "bxt/j",
+    e: "bxt/e",
+    f: "bxt/f",
+    d: "bxt/d",
+    s: "bxt/s",
+    i: "bxt/i",
+    p: "bxt/p",
+    u: "bxt/u",
+  },
+
+  /**
+   * Map game_region letters to encoding table names for message_decode.
+   * The raw message bytes themselves are read from each article's .message file.
+   */
+  region_message_encoding: {
+    j: "jp",
+    e: "en",
+    f: "fr_de",
+    d: "fr_de",
+    s: "es_it",
+    i: "es_it",
+    p: "en",
+    u: "en",
+  },
+
+  /**
+   * Map game_region to the ranking-category table name prefix in bxt_encoding.json.
+   * The actual key used is `${prefix}_ranking_category`.
+   */
+  region_ranking_prefix: {},
+
+  /**
+   * ranking_map[region][`${tableId}:${categoryIndex}`] = categoryNumber
+   */
+  ranking_map: {},
+
+  /**
+   * schedule[region][articleId] = scheduleEntry
+   * where scheduleEntry is:
+   *   - "YYYY-MM-DD"
+   *   - "MM-DD"
+   *   - { "date": "MM-DD", "file": "relative.bin", "message_file": "relative.bin.message", "slot": N, "ranking_categories": [c1, c2, c3]? }
+   */
+  schedule: {},
+
+  /**
+   * Optional global display region override ("e", "j", etc.).
+   * If set, ranking categories are decoded using this region instead of
+   * the actual game_region.
+   */
+  global_display_region: null,
+};
+
+/**
+ * Load the *news* config file and merge it over the defaults.
+ *
+ * The JSON file can be either:
+ *   {
+ *     "news_cycle": {
+ *       ...keys here...
+ *     }
+ *   }
+ * or:
+ *   {
+ *     ...direct news_cycle keys here...
+ *   }
+ */
+function loadNewsConfig(rootDir) {
+  const root =
+    newsConfigRaw &&
+    typeof newsConfigRaw === "object" &&
+    newsConfigRaw.news_cycle &&
+    typeof newsConfigRaw.news_cycle === "object"
+      ? newsConfigRaw.news_cycle
+      : newsConfigRaw;
+
+  const merged = { ...defaultNewsConfig };
+
+  for (const key of [
+    "articles_dir",
+    "region_folder_map",
+    "region_message_encoding",
+    "region_ranking_prefix",
+    "ranking_map",
+    "schedule",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(root, key)) {
+      if (
+        typeof merged[key] === "object" &&
+        merged[key] !== null &&
+        !Array.isArray(merged[key]) &&
+        typeof root[key] === "object" &&
+        root[key] !== null &&
+        !Array.isArray(root[key])
+      ) {
+        merged[key] = { ...merged[key], ...root[key] };
+      } else {
+        merged[key] = root[key];
+      }
+    }
+  }
+
+  // global override
+  const overrideRegion = loadGlobalDisplayRegion(rootDir);
+  if (
+    overrideRegion &&
+    (!merged.global_display_region ||
+      merged.global_display_region === null ||
+      merged.global_display_region === "")
+  ) {
+    merged.global_display_region = overrideRegion;
+  }
+
+  // Normalize articles_dir.
+  // Rules:
+  // - Absolute path: use as-is.
+  // - If it starts with "app/" or "web/", treat as relative to the Reon rootDir.
+  // - Otherwise, treat as relative to this script directory.
+  if (typeof merged.articles_dir === "string" && !path.isAbsolute(merged.articles_dir)) {
+    const norm = merged.articles_dir.replace(/^[./\\]+/, "");
+    if (
+      norm.startsWith("app/") ||
+      norm.startsWith("web/") ||
+      norm.startsWith("app\\") ||
+      norm.startsWith("web\\")
+    ) {
+      merged.articles_dir = path.resolve(rootDir, norm);
+    } else {
+      merged.articles_dir = path.resolve(__dirname, norm);
+    }
+  }
+
+  // Normalize articles_dir if overridden as a relative path.
+  if (typeof merged.articles_dir === "string" && !path.isAbsolute(merged.articles_dir)) {
+    merged.articles_dir = path.resolve(__dirname, merged.articles_dir);
+  }
+  // Ensure schedule is an object map.
+  if (!merged.schedule || typeof merged.schedule !== "object" || Array.isArray(merged.schedule)) {
+    merged.schedule = {};
+  }
+
+  return merged;
+}
+/**
+ * Load the optional Pokemon News custom-track config (pokemon_news_custom_cycle).
+ *
+ * If missing or malformed, returns null.
+ */
+function loadPokemonNewsCustomConfig(rootDir) {
+  if (!newsConfigRaw || typeof newsConfigRaw !== "object") {
+    return null;
+  }
+  const root =
+    newsConfigRaw.pokemon_news_custom_cycle &&
+    typeof newsConfigRaw.pokemon_news_custom_cycle === "object"
+      ? newsConfigRaw.pokemon_news_custom_cycle
+      : null;
+
+  if (!root) return null;
+
+  const merged = { ...defaultNewsConfig };
+
+  for (const key of [
+    "articles_dir",
+    "region_folder_map",
+    "region_message_encoding",
+    "region_ranking_prefix",
+    "ranking_map",
+    "schedule",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(root, key)) {
+      if (
+        typeof merged[key] === "object" &&
+        merged[key] !== null &&
+        !Array.isArray(merged[key]) &&
+        typeof root[key] === "object" &&
+        root[key] !== null &&
+        !Array.isArray(root[key])
+      ) {
+        merged[key] = { ...merged[key], ...root[key] };
+      } else {
+        merged[key] = root[key];
+      }
+    }
+  }
+
+  // Normalize articles_dir if overridden as a relative path.
+  if (typeof merged.articles_dir === "string" && !path.isAbsolute(merged.articles_dir)) {
+    merged.articles_dir = path.resolve(__dirname, merged.articles_dir);
+  }
+  // Ensure schedule is an object map. (Step 4 uses an empty array to disable.)
+  if (!merged.schedule || typeof merged.schedule !== "object" || Array.isArray(merged.schedule)) {
+    merged.schedule = {};
+  }
+
+  return merged;
+}
+
+/**
+ * Normalize and expose the file rotation config.
+ *
+ * Supports either:
+ *   { "file_rotation": { "source_root": "...", "jobs": [ ... ] } }
+ * or:
+ *   { "source_root": "...", "jobs": [ ... ] }
+ */
+function loadFeatureAvailabilityConfig(rootDir) {
+  if (!featureAvailabilityConfigRaw || typeof featureAvailabilityConfigRaw !== "object") {
+    return null;
+  }
+
+  const root =
+    featureAvailabilityConfigRaw.feature_availability &&
+    typeof featureAvailabilityConfigRaw.feature_availability === "object"
+      ? featureAvailabilityConfigRaw.feature_availability
+      : featureAvailabilityConfigRaw;
+
+  if (!root || typeof root !== "object") {
+    return null;
+  }
+
+  const cfg = {
+    bxt_config_path: path.resolve(rootDir, "web", "cgb", "pokemon", "bxt_config.php"),
+    windows: [],
+  };
+
+  if (typeof root.bxt_config_path === "string" && root.bxt_config_path.length) {
+    if (path.isAbsolute(root.bxt_config_path)) {
+      cfg.bxt_config_path = root.bxt_config_path;
+    } else {
+      const norm = root.bxt_config_path.replace(/^[./\\]+/, "");
+      if (
+        norm.startsWith("app/") ||
+        norm.startsWith("web/") ||
+        norm.startsWith("app\\") ||
+        norm.startsWith("web\\")
+      ) {
+        cfg.bxt_config_path = path.resolve(rootDir, norm);
+      } else {
+        cfg.bxt_config_path = path.resolve(__dirname, norm);
+      }
+    }
+  }
+
+  if (Array.isArray(root.windows)) {
+    cfg.windows = root.windows;
+  } else if (Array.isArray(root.jobs)) {
+    cfg.windows = root.jobs;
+  }
+
+  return cfg;
+}
+
+function parseDateTimeSpec(spec) {
+  if (!spec || typeof spec !== "string") return null;
+  const s = spec.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const d = new Date(`${s}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?$/.test(s)) {
+    const normalized = s.replace(" ", "T");
+    const d = new Date(normalized);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  return null;
+}
+
+function parseFeatureDateTimeSpec(spec) {
+  if (!spec || typeof spec !== "string") return null;
+  const s = spec.trim();
+
+  const full = parseDateTimeSpec(s);
+  if (full) {
+    return {
+      kind: "full",
+      date: full,
+      month: full.getMonth() + 1,
+      day: full.getDate(),
+      hour: full.getHours(),
+      minute: full.getMinutes(),
+      second: full.getSeconds(),
+    };
+  }
+
+  const m = s.match(/^(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (!m) return null;
+
+  const month = Number(m[1]);
+  const day = Number(m[2]);
+  const hour = m[3] !== undefined ? Number(m[3]) : 0;
+  const minute = m[4] !== undefined ? Number(m[4]) : 0;
+  const second = m[5] !== undefined ? Number(m[5]) : 0;
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) return null;
+  if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return null;
+  if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null;
+  if (!Number.isInteger(second) || second < 0 || second > 59) return null;
+
+  return {
+    kind: "md",
+    date: null,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+  };
+}
+
+function buildFeatureWindowDate(year, parsed) {
+  if (!parsed) return null;
+  return new Date(
+    year,
+    parsed.month - 1,
+    parsed.day,
+    parsed.hour || 0,
+    parsed.minute || 0,
+    parsed.second || 0,
+    0
+  );
+}
+
+function getYearlessWindowBounds(startSpec, endSpec, now) {
+  if (!startSpec || !endSpec) return null;
+  if (startSpec.kind !== "md" || endSpec.kind !== "md") return null;
+
+  const candidateYears = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
+  for (const year of candidateYears) {
+    const start = buildFeatureWindowDate(year, startSpec);
+    let end = buildFeatureWindowDate(year, endSpec);
+    if (!start || !end) continue;
+
+    if (end <= start) {
+      end = buildFeatureWindowDate(year + 1, endSpec);
+    }
+    if (!end || end <= start) continue;
+
+    if (now >= start && now < end) {
+      return { start, end };
+    }
+  }
+
+  return null;
+}
+
+function resolveFeatureWindowCycleTrack(window) {
+  const raw = String(window && (window.attach_to || window.cycle || window.track || "news")).toLowerCase();
+  switch (raw) {
+    case "news":
+    case "news_cycle":
+    case "vanilla":
+    case "default":
+      return "news";
+    case "pokemon_news_custom":
+    case "news_custom":
+    case "custom":
+    case "custom_news":
+      return "pokemon_news_custom";
+    default:
+      return raw;
+  }
+}
+
+function resolveFeatureWindowCycleRegion(window, newsCfg, cycleStateKey, cycleState) {
+  const explicit = typeof window.region === "string" ? window.region.trim().toLowerCase() : "";
+  if (explicit) return explicit;
+
+  const cycleRegionState =
+    cycleState && cycleState[cycleStateKey] && typeof cycleState[cycleStateKey] === "object"
+      ? cycleState[cycleStateKey]
+      : null;
+
+  if (cycleRegionState) {
+    const stateRegions = Object.keys(cycleRegionState).filter((key) => /^[a-z]$/i.test(key));
+    if (stateRegions.length) {
+      stateRegions.sort();
+      return stateRegions[0].toLowerCase();
+    }
+  }
+
+  if (newsCfg && newsCfg.schedule && typeof newsCfg.schedule === "object") {
+    const cfgRegions = Object.keys(newsCfg.schedule).filter((key) => /^[a-z]$/i.test(key));
+    if (cfgRegions.length) {
+      cfgRegions.sort();
+      return cfgRegions[0].toLowerCase();
+    }
+  }
+
+  return null;
+}
+
+function getFeatureWindowActiveCycleSlot(window, cycleState, newsCfg) {
+  if (!window || typeof window !== "object") return null;
+
+  const slotValue =
+    window.slot !== undefined && window.slot !== null
+      ? Number(window.slot)
+      : window.schedule && typeof window.schedule === "object" && window.schedule.slot !== undefined && window.schedule.slot !== null
+      ? Number(window.schedule.slot)
+      : null;
+
+  if (slotValue === null) return null;
+  if (!Number.isInteger(slotValue)) return null;
+
+  const cycleStateKey = resolveFeatureWindowCycleTrack(window);
+  const region = resolveFeatureWindowCycleRegion(window, newsCfg, cycleStateKey, cycleState);
+  if (!region) return null;
+
+  const regionState =
+    cycleState &&
+    cycleState[cycleStateKey] &&
+    cycleState[cycleStateKey][region] &&
+    typeof cycleState[cycleStateKey][region] === "object"
+      ? cycleState[cycleStateKey][region]
+      : null;
+
+  if (!regionState || !Number.isInteger(regionState.lastSlot)) return null;
+
+  return {
+    requiredSlot: slotValue,
+    activeSlot: regionState.lastSlot,
+    region,
+    cycleStateKey,
+  };
+}
+
+function getFeatureFlagKeys(featureName) {
+  switch (String(featureName || "").toLowerCase()) {
+    case "trade_corner":
+    case "trade-corner":
+    case "tradecorner":
+      return ["trade_corner_enabled"];
+    case "battle_tower":
+    case "battle-tower":
+    case "battletower":
+      return ["battle_tower_enabled"];
+    case "pokemon_news":
+    case "pokemon-news":
+    case "pokemonnews":
+    case "news":
+      return ["news_distribution_enabled", "news_ranking_enabled"];
+    case "pokemon_news_distribution":
+    case "pokemon-news-distribution":
+    case "pokemonnewsdistribution":
+    case "news_distribution":
+    case "news-distribution":
+      return ["news_distribution_enabled"];
+    case "pokemon_news_ranking":
+    case "pokemon-news-ranking":
+    case "pokemonnewsranking":
+    case "news_ranking":
+    case "news-ranking":
+      return ["news_ranking_enabled"];
+    default:
+      return [];
+  }
+}
+
+function getFeatureWindowRepeatDays(window) {
+  if (!window || typeof window !== "object") return null;
+
+  const repeatSpec =
+    (typeof window.repeat === "string" && window.repeat) ||
+    (window.schedule &&
+      typeof window.schedule === "object" &&
+      typeof window.schedule.repeat === "string" &&
+      window.schedule.repeat) ||
+    null;
+
+  if (!repeatSpec) return null;
+  return repeatKindToDays(normalizeRepeat(repeatSpec));
+}
+
+function evaluateFeatureWindowActive(window, now, cycleState, newsCfg) {
+  if (!window || typeof window !== "object") return false;
+  if (window.disabled === true) return false;
+
+  const startRaw = window.start || window.starts_at || window.from;
+  const endRaw = window.end || window.ends_at || window.until;
+  const start = parseFeatureDateTimeSpec(startRaw);
+  const end = parseFeatureDateTimeSpec(endRaw);
+  if (!start || !end) return false;
+
+  if (start.kind === "full" || end.kind === "full") {
+    if (start.kind !== "full" || end.kind !== "full") return false;
+    if (end.date <= start.date) return false;
+
+    const repeatDays = getFeatureWindowRepeatDays(window);
+    if (!repeatDays) {
+      return now >= start.date && now < end.date;
+    }
+
+    const durationMs = end.date.getTime() - start.date.getTime();
+    const repeatMs = repeatDays * 24 * 60 * 60 * 1000;
+    const deltaMs = now.getTime() - start.date.getTime();
+    if (deltaMs < 0) return false;
+
+    const offsetMs = deltaMs % repeatMs;
+    return offsetMs >= 0 && offsetMs < durationMs;
+  }
+
+  const bounds = getYearlessWindowBounds(start, end, now);
+  if (!bounds) return false;
+
+  const slotInfo = getFeatureWindowActiveCycleSlot(window, cycleState, newsCfg);
+  if (slotInfo && slotInfo.activeSlot !== slotInfo.requiredSlot) {
+    return false;
+  }
+
+  return now >= bounds.start && now < bounds.end;
+}
+
+function ensureBooleanFlagInPhpConfig(phpText, flagName, defaultValue) {
+  const re = new RegExp(`'${flagName}'\\s*=>\\s*(true|false)`);
+  if (re.test(phpText)) {
+    return phpText.replace(re, `'${flagName}' => ${defaultValue ? "true" : "false"}`);
+  }
+
+  const anchor = "// Map of cartridge IDs to our internal single-letter region codes.";
+  if (phpText.includes(anchor)) {
+    return phpText.replace(
+      anchor,
+      `    '${flagName}' => ${defaultValue ? "true" : "false"},
+
+    ${anchor}`
+    );
+  }
+
+  return phpText;
+}
+
+function writeJsonAtomic(filePath, data) {
+  const tmp = `${filePath}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2) + "\n", "utf8");
+  fs.renameSync(tmp, filePath);
+}
+
+function applyTimedFeatureAvailability(rootDir, featureCfg, cycleState, now, newsCfg) {
+  if (!featureCfg || !Array.isArray(featureCfg.windows) || featureCfg.windows.length === 0) {
+    return;
+  }
+
+  const bxtConfigPath = featureCfg.bxt_config_path || path.resolve(rootDir, "web", "cgb", "pokemon", "bxt_config.php");
+  if (!fs.existsSync(bxtConfigPath) || !fs.statSync(bxtConfigPath).isFile()) {
+    console.warn(`[feature_availability] bxt_config.php not found at ${bxtConfigPath}; skipping`);
+    return;
+  }
+
+  const runtimeStatePath = featureCfg.runtime_state_path
+    ? (path.isAbsolute(featureCfg.runtime_state_path)
+        ? featureCfg.runtime_state_path
+        : path.resolve(rootDir, featureCfg.runtime_state_path))
+    : path.resolve(path.dirname(bxtConfigPath), "bxt_runtime_state.json");
+
+  if (!cycleState.featureAvailability || typeof cycleState.featureAvailability !== "object") {
+    cycleState.featureAvailability = {};
+  }
+
+  const desiredFlags = {
+    trade_corner_enabled: true,
+    battle_tower_enabled: true,
+    news_distribution_enabled: true,
+    news_ranking_enabled: true,
+  };
+
+  for (const window of featureCfg.windows) {
+    const keys = getFeatureFlagKeys(window && window.feature);
+    if (!keys.length) continue;
+    if (evaluateFeatureWindowActive(window, now, cycleState, newsCfg)) {
+      for (const key of keys) {
+        desiredFlags[key] = false;
+      }
+    }
+  }
+
+  let phpText = fs.readFileSync(bxtConfigPath, "utf8");
+  let phpChanged = false;
+
+  for (const [flagName, desiredValue] of Object.entries(desiredFlags)) {
+    const before = phpText;
+    phpText = ensureBooleanFlagInPhpConfig(phpText, flagName, desiredValue);
+    if (phpText !== before) {
+      phpChanged = true;
+    }
+    cycleState.featureAvailability[flagName] = {
+      value: desiredValue,
+      updatedAt: now.toISOString(),
+    };
+  }
+
+  if (phpChanged) {
+    const tmp = `${bxtConfigPath}.tmp`;
+    fs.writeFileSync(tmp, phpText, "utf8");
+    fs.renameSync(tmp, bxtConfigPath);
+    console.log(`[feature_availability] updated ${bxtConfigPath}`);
+  }
+
+  const runtimeState = {
+    generated_at: now.toISOString(),
+    flags: desiredFlags,
+  };
+  writeJsonAtomic(runtimeStatePath, runtimeState);
+  console.log(`[feature_availability] updated ${runtimeStatePath}`);
+}
+
+function loadRotationConfig(rootDir) {
+  if (!rotationConfigRaw || typeof rotationConfigRaw !== "object") {
+    return null;
+  }
+
+  const root =
+    rotationConfigRaw.file_rotation &&
+    typeof rotationConfigRaw.file_rotation === "object"
+      ? rotationConfigRaw.file_rotation
+      : rotationConfigRaw;
+
+  const cfg = {
+    source_root: rootDir,
+    jobs: [],
+  };
+
+  if (typeof root.source_root === "string") {
+    if (path.isAbsolute(root.source_root)) {
+      cfg.source_root = root.source_root;
+    } else {
+      const norm = root.source_root.replace(/^[./\\]+/, "");
+      if (
+        norm.startsWith("app/") ||
+        norm.startsWith("web/") ||
+        norm.startsWith("app\\") ||
+        norm.startsWith("web\\")
+      ) {
+        cfg.source_root = path.resolve(rootDir, norm);
+      } else {
+        cfg.source_root = path.resolve(__dirname, norm);
+      }
+    }
+  }
+
+  if (Array.isArray(root.jobs)) {
+    cfg.jobs = root.jobs;
+  } else if (Array.isArray(root.schedule)) {
+    cfg.jobs = root.schedule;
+  } else {
+    cfg.jobs = [];
+  }
+
+  if (!cfg.jobs.length) {
+    return null;
+  }
+
+  return cfg;
+}
+
+/**
+ * Execute file rotation jobs based on schedule and cycle state.
+ *
+ * Each job shape (after config normalization):
+ *   {
+ *     id: "job id" (optional; otherwise derived),
+ *     source: "path/to/source.bin",
+ *     dest_dir: "path/to/dest/dir",
+ *     filename: "optional_override_filename.bin",
+ *     date: "YYYY-MM-DD" | "MM-DD" | { date: "...", slot?: N }
+ *   }
+ *
+ * Rules:
+ *   - Missing source files are skipped and do not crash the program.
+ *   - Destination files are overwritten only if they are older than the
+ *     effective scheduled date.
+ *   - Per-job state is stored under cycleState.rotation[jobId].
+ */
+
+function parseTimeOfDay(str) {
+  if (!str || typeof str !== "string") return null;
+  const m = str.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}
+
+function normalizeRepeat(spec) {
+  if (!spec || typeof spec !== "string") return "daily";
+  const s = spec.toLowerCase().trim();
+
+  if (s === "daily") return "daily";
+  if (s === "bidaily" || s === "bi-daily" || s === "every-2-days" || s === "every2days") {
+    return "bidaily";
+  }
+  if (s === "weekly") return "weekly";
+  if (s === "biweekly" || s === "bi-weekly") return "biweekly";
+
+  // Fallback to daily if unknown
+  return "daily";
+}
+
+function repeatKindToDays(kind) {
+  switch (kind) {
+    case "bidaily":
+      return 2;
+    case "weekly":
+      return 7;
+    case "biweekly":
+      return 14;
+    case "daily":
+    default:
+      return 1;
+  }
+}
+
+function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
+  if (
+    !rotationCfg ||
+    !rotationCfg.jobs ||
+    !Array.isArray(rotationCfg.jobs) ||
+    rotationCfg.jobs.length === 0
+  ) {
+    return;
+  }
+
+  if (!cycleState.rotation || typeof cycleState.rotation !== "object") {
+    cycleState.rotation = {};
+  }
+  const rotationState = cycleState.rotation;
+  const now = new Date();
+
+  for (const job of rotationCfg.jobs) {
+    if (!job) continue;
+    if (job.disabled) continue;
+
+    const jobId =
+      typeof job.id === "string" && job.id.length
+        ? job.id
+        : [
+            job.source_dir || "",
+            job.dest_dir || job.destination_dir || job.target_dir || "",
+            job.filename || job.source || job.file || "",
+          ].join("|");
+
+    const hasDate =
+      typeof job.date === "string" ||
+      (job.date && typeof job.date === "object") ||
+      typeof job.schedule === "string" ||
+      (job.schedule && typeof job.schedule === "object");
+
+    const timeSpec =
+      (typeof job.time === "string" && job.time) ||
+      (job.schedule &&
+        typeof job.schedule === "object" &&
+        typeof job.schedule.time === "string" &&
+        job.schedule.time) ||
+      null;
+
+    const timeOfDay = parseTimeOfDay(timeSpec);
+
+    // ───────────────────────────────────────────────
+    // Branch 1: jobs WITH explicit date (backwards-compatible)
+    // ───────────────────────────────────────────────
+    if (hasDate) {
+      let scheduleSpec = null;
+      if (typeof job.date === "string" || (job.date && typeof job.date === "object")) {
+        scheduleSpec = job.date;
+      } else if (
+        typeof job.schedule === "string" ||
+        (job.schedule && typeof job.schedule === "object")
+      ) {
+        scheduleSpec = job.schedule;
+      }
+
+      if (!scheduleSpec) continue;
+
+      const parsed = parseScheduleEntry(scheduleSpec);
+      if (!parsed) continue;
+
+      let candidateDate = null;
+      if (parsed.kind === "full" && parsed.date) {
+        const d = parsed.date;
+        if (d > todayDate) continue;
+        candidateDate = d;
+      } else if (parsed.kind === "md") {
+        const year = todayDate.getFullYear();
+        let d = new Date(year, parsed.month - 1, parsed.day);
+        if (d > todayDate) {
+          d = new Date(year - 1, parsed.month - 1, parsed.day);
+        }
+        candidateDate = d;
+      } else {
+        // Slot-based or unsupported for rotation
+        continue;
+      }
+
+      if (!candidateDate || candidateDate > todayDate) {
+        continue;
+      }
+
+      // Time gate: if a time was given, do not run before that time
+      if (timeOfDay) {
+        const scheduledDateTime = new Date(
+          candidateDate.getFullYear(),
+          candidateDate.getMonth(),
+          candidateDate.getDate(),
+          timeOfDay.hour,
+          timeOfDay.minute,
+          0,
+          0
+        );
+        if (now < scheduledDateTime) {
+          continue;
+        }
+      }
+
+      const stateForJob = rotationState[jobId];
+      if (stateForJob && stateForJob.lastApplied) {
+        const lastApplied = new Date(stateForJob.lastApplied);
+        if (!Number.isNaN(lastApplied.getTime()) && lastApplied >= candidateDate) {
+          continue;
+        }
+      }
+
+      let srcPath = job.source || job.source_file || job.file;
+      if (!srcPath) continue;
+
+      if (!path.isAbsolute(srcPath)) {
+        const base =
+          (typeof job.source_root === "string" && job.source_root.length
+            ? job.source_root
+            : rotationCfg.source_root) || rootDir;
+        srcPath = path.resolve(base, srcPath);
+      }
+
+      let destDir = job.dest_dir || job.destination_dir || job.target_dir;
+      if (!destDir) continue;
+
+      if (!path.isAbsolute(destDir)) {
+        destDir = path.resolve(rootDir, destDir);
+      }
+
+      const filename =
+        job.filename && typeof job.filename === "string" && job.filename.length
+          ? job.filename
+          : path.basename(srcPath);
+      const destPath = path.join(destDir, filename);
+
+      try {
+        if (!fs.existsSync(srcPath) || !fs.statSync(srcPath).isFile()) {
+          console.warn(
+            `[rotation] job=${jobId}: source file missing, skipping (${srcPath})`
+          );
+          continue;
+        }
+
+        fs.mkdirSync(destDir, { recursive: true });
+
+        let destUpToDate = false;
+        if (fs.existsSync(destPath)) {
+          const stat = fs.statSync(destPath);
+          if (stat && stat.mtime && stat.mtime >= candidateDate) {
+            destUpToDate = true;
+          }
+        }
+
+        if (destUpToDate) {
+          console.log(
+            `[rotation] job=${jobId}: destination already up to date at ${destPath}`
+          );
+          rotationState[jobId] = {
+            lastApplied: candidateDate.toISOString().slice(0, 10),
+            src: srcPath,
+            dest: destPath,
+          };
+          continue;
+        }
+
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
+        rotationState[jobId] = {
+          lastApplied: candidateDate.toISOString().slice(0, 10),
+          src: srcPath,
+          dest: destPath,
+        };
+      } catch (e) {
+        console.error(
+          `[rotation] job=${jobId}: failed to copy ${srcPath} -> ${destPath}:`,
+          e
+        );
+      }
+
+      continue;
+    }
+
+    // ───────────────────────────────────────────────
+    // Branch 2: jobs WITHOUT any date
+    //   → recurring based on repeat + optional time
+    // ───────────────────────────────────────────────
+
+    const repeatSpec =
+      (typeof job.repeat === "string" && job.repeat) ||
+      (job.schedule &&
+        typeof job.schedule === "object" &&
+        typeof job.schedule.repeat === "string" &&
+        job.schedule.repeat) ||
+      null;
+
+    const repeatKind = normalizeRepeat(repeatSpec);
+    const repeatDays = repeatKindToDays(repeatKind);
+
+    const stateForJob = rotationState[jobId];
+    let lastAppliedDateTime = null;
+    if (stateForJob && stateForJob.lastApplied) {
+      const d = new Date(stateForJob.lastApplied);
+      if (!Number.isNaN(d.getTime())) {
+        lastAppliedDateTime = d;
+      }
+    }
+
+    let ready = false;
+    if (!lastAppliedDateTime) {
+      ready = true;
+    } else {
+      const earliestNext = new Date(
+        lastAppliedDateTime.getTime() + repeatDays * 24 * 60 * 60 * 1000
+      );
+      if (now >= earliestNext) {
+        ready = true;
+      }
+    }
+
+    if (!ready) {
+      continue;
+    }
+
+    // Time gate for recurring jobs:
+    if (timeOfDay) {
+      const todayAtTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        timeOfDay.hour,
+        timeOfDay.minute,
+        0,
+        0
+      );
+      if (now < todayAtTime) {
+        continue;
+      }
+    }
+
+    const candidateDate = toDateOnly(now);
+
+    let srcPath = job.source || job.source_file || job.file;
+    if (!srcPath) continue;
+
+    if (!path.isAbsolute(srcPath)) {
+      const base =
+        (typeof job.source_root === "string" && job.source_root.length
+          ? job.source_root
+          : rotationCfg.source_root) || rootDir;
+      srcPath = path.resolve(base, srcPath);
+    }
+
+    let destDir = job.dest_dir || job.destination_dir || job.target_dir;
+    if (!destDir) continue;
+
+    if (!path.isAbsolute(destDir)) {
+      destDir = path.resolve(rootDir, destDir);
+    }
+
+    const filename =
+      job.filename && typeof job.filename === "string" && job.filename.length
+        ? job.filename
+        : path.basename(srcPath);
+    const destPath = path.join(destDir, filename);
+
+    try {
+      if (!fs.existsSync(srcPath) || !fs.statSync(srcPath).isFile()) {
+        console.warn(
+          `[rotation] job=${jobId}: source file missing, skipping (${srcPath})`
+        );
+        continue;
+      }
+
+      fs.mkdirSync(destDir, { recursive: true });
+
+      let destUpToDate = false;
+      if (fs.existsSync(destPath)) {
+        const stat = fs.statSync(destPath);
+        if (stat && stat.mtime && stat.mtime >= candidateDate) {
+          destUpToDate = true;
+        }
+      }
+
+      if (destUpToDate) {
+        console.log(
+          `[rotation] job=${jobId}: destination already up to date at ${destPath}`
+        );
+        rotationState[jobId] = {
+          lastApplied: now.toISOString(),
+          src: srcPath,
+          dest: destPath,
+        };
+        continue;
+      }
+
+      fs.copyFileSync(srcPath, destPath);
+      console.log(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
+      rotationState[jobId] = {
+        lastApplied: now.toISOString(),
+        src: srcPath,
+        dest: destPath,
+      };
+    } catch (e) {
+      console.error(
+        `[rotation] job=${jobId}: failed to copy ${srcPath} -> ${destPath}:`,
+        e
+      );
+    }
+  }
+}
+
+function decodeMessageBytes(buf, tableName, encoding) {
+  const table = encoding && typeof encoding === "object" ? encoding[tableName] : null;
+  if (!table) return null;
+
+  let out = "";
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] === 0x50 || buf[i] === 0x00) break;
+    const hex = buf[i].toString(16).toUpperCase().padStart(2, "0");
+    const ch = table[hex];
+    out += ch !== undefined ? ch : "?";
+  }
+  return out;
+}
+
+function resolveMessageEncodingTableForRegion(newsCfg, region) {
+  const normalizedRegion = String(region || "").toLowerCase();
+  const sourceDefault = {
+    j: "jp",
+    e: "en",
+    p: "en",
+    u: "en",
+    f: "fr_de",
+    d: "fr_de",
+    s: "es_it",
+    i: "es_it",
+  };
+  const fallback = sourceDefault[normalizedRegion] || "en";
+  const configured =
+    newsCfg &&
+    newsCfg.region_message_encoding &&
+    typeof newsCfg.region_message_encoding === "object"
+      ? newsCfg.region_message_encoding[normalizedRegion]
+      : null;
+  if (typeof configured === "string" && configured.trim().length > 0) {
+    return configured.trim();
+  }
+  return fallback;
+}
+
+function resolveArticleAssetPath(articlesDir, regionDir, configuredPath) {
+  const raw = String(configuredPath || "").trim();
+  if (!raw) return null;
+  if (path.isAbsolute(raw)) return raw;
+
+  const regionRelativePath = path.join(regionDir, raw);
+  if (fs.existsSync(regionRelativePath)) {
+    return regionRelativePath;
+  }
+
+  return path.join(articlesDir, raw);
+}
+function readArticleMessageFile(binPath, tableName, encoding, configuredMessagePath = null) {
+  const messagePath = configuredMessagePath || `${binPath}.message`;
+  if (!fs.existsSync(messagePath) || !fs.statSync(messagePath).isFile()) {
+    return null;
+  }
+
+  const messageBuf = fs.readFileSync(messagePath);
+  if (!messageBuf.length) {
+    return null;
+  }
+
+  return {
+    messagePath,
+    messageBuf,
+    messageDecode: decodeMessageBytes(messageBuf, tableName, encoding),
+  };
+}
+
+/**
+ * Find up to three ranking category slots in a news binary.
+ *
+ * We treat a "slot" as the sequence:
+ *
+ *   23 <table_addr_lo> CD <table_id>
+ *   23 <cat_addr_lo>   CD <category_index>
+ *
+ * Where:
+ *   - Japanese binaries use table_addr_lo = 0x62, cat_addr_lo = 0x63
+ *   - International binaries use table_addr_lo = 0x6E, cat_addr_lo = 0x6F
+ *
+ * and table_id/category_index are single bytes.
+ */
+function findRankingSlots(buf) {
+  const results = [];
+  const patterns = [
+    { tableLo: 0x6e, catLo: 0x6f },
+    { tableLo: 0x62, catLo: 0x63 },
+  ];
+
+  for (const pat of patterns) {
+    for (let i = 0; i + 8 < buf.length; i++) {
+      if (
+        buf[i] === 0x23 && // setval
+        buf[i + 1] === pat.tableLo &&
+        buf[i + 2] === 0xcd &&
+        buf[i + 4] === 0x23 &&
+        buf[i + 5] === pat.catLo &&
+        buf[i + 6] === 0xcd
+      ) {
+        const tableId = buf[i + 3];
+        const categoryIndex = buf[i + 7];
+
+        results.push({
+          offset: i,
+          tableId,
+          categoryIndex,
+        });
+      }
+    }
+    if (results.length) break; // prefer the first pattern that matches
+  }
+
+  // Sort by offset and return at most 3.
+  results.sort((a, b) => a.offset - b.offset);
+  return results.slice(0, 3);
+}
+
+/**
+ * Resolve a (region, tableId, categoryIndex) tuple to a concrete ranking
+ * category number using the config's ranking_map.
+ */
+function resolveRankingCategory(region, tableId, categoryIndex, rankingMap) {
+  const regionMap = rankingMap[region] || {};
+  const key = `${tableId}:${categoryIndex}`;
+  if (Object.prototype.hasOwnProperty.call(regionMap, key)) {
+    return regionMap[key];
+  }
+  return null;
+}
+
+/**
+ * Given a game_region and a ranking category number, decode its label
+ * using the appropriate ranking_category table in bxt_encoding.json.
+ */
+function decodeRankingCategory(region, categoryNumber, encoding, newsCfg) {
+  if (categoryNumber === null || categoryNumber === undefined) return null;
+
+  const displayRegion =
+    newsCfg.global_display_region && newsCfg.global_display_region.length
+      ? newsCfg.global_display_region
+      : region;
+
+  const prefix =
+    (newsCfg.region_ranking_prefix &&
+      newsCfg.region_ranking_prefix[displayRegion]) ||
+    (newsCfg.region_ranking_prefix &&
+      newsCfg.region_ranking_prefix[region]);
+
+  if (!prefix) return null;
+
+  const key = `${prefix}_ranking_category`;
+  const table = encoding[key];
+  if (!table) return null;
+
+  const label = table[String(categoryNumber)];
+  return label !== undefined ? label : null;
+}
+
+/**
+ * Convert Date -> midnight date-only (for comparisons).
+ */
+function toDateOnly(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Parse a schedule entry, which can be:
+ *   - "YYYY-MM-DD" (absolute date)
+ *   - "MM-DD"      (recurring every year)
+ *   - { "date": "MM-DD", "file": "relative.bin", "message_file": "relative.bin.message", "slot": N, "ranking_categories": [...]? }
+ */
+function parseScheduleEntry(entry) {
+  if (typeof entry === "string") {
+    // Full "YYYY-MM-DD"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(entry)) {
+      const d = new Date(entry);
+      if (Number.isNaN(d.getTime())) return null;
+      return {
+        kind: "full",
+        date: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        slot: null,
+        file: null,
+        messageFile: null,
+        rankingCategories: null,
+      };
+    }
+
+    // Yearless "MM-DD"
+    if (/^\d{2}-\d{2}$/.test(entry)) {
+      const [mm, dd] = entry.split("-");
+      const month = Number(mm);
+      const day = Number(dd);
+      if (!Number.isInteger(month) || !Number.isInteger(day)) return null;
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+      return {
+        kind: "md",
+        date: null,
+        month,
+        day,
+        slot: null,
+        file: null,
+        messageFile: null,
+        rankingCategories: null,
+      };
+    }
+
+    return null;
+  }
+
+  if (entry && typeof entry === "object") {
+    const dateStr = entry.date;
+    if (!dateStr || typeof dateStr !== "string") return null;
+
+    const base = parseScheduleEntry(dateStr);
+    if (!base) return null;
+
+    const slot =
+      entry.slot !== undefined && entry.slot !== null
+        ? Number(entry.slot)
+        : null;
+    const rankingCategories = Array.isArray(entry.ranking_categories)
+      ? entry.ranking_categories.map((x) =>
+          x !== null && x !== undefined ? Number(x) : null
+        )
+      : null;
+    const file =
+      typeof entry.file === "string" && entry.file.trim().length > 0
+        ? entry.file.trim()
+        : null;
+    const messageFile =
+      typeof entry.message_file === "string" && entry.message_file.trim().length > 0
+        ? entry.message_file.trim()
+        : typeof entry.messageFile === "string" && entry.messageFile.trim().length > 0
+          ? entry.messageFile.trim()
+          : null;
+
+    if (slot !== null && !Number.isInteger(slot)) return null;
+
+    return {
+      kind: base.kind,
+      date: base.date,
+      month: base.month,
+      day: base.day,
+      slot,
+      file,
+      messageFile,
+      rankingCategories,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Compute months difference (b - a) in whole months.
+ */
+function monthsBetween(a, b) {
+  return (
+    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+  );
+}
+
+/**
+ * Find the best scheduled article for a region WITHOUT slots.
+ * Uses:
+ *   - absolute dates: date <= today && date > lastDate
+ *   - MM-DD dates: treat as recurring each year:
+ *       candidate = this year's MM-DD if <= today; else last year's
+ *       require candidate <= today && candidate > lastDate
+ */
+function selectArticleForRegionDateOnly(regionEntries, lastTimestamp, todayDate) {
+  const lastDate = lastTimestamp ? toDateOnly(lastTimestamp) : null;
+
+  let bestId = null;
+  let bestCandidateDate = null;
+
+  for (const { articleId, parsed } of regionEntries) {
+    if (!parsed) continue;
+    if (parsed.slot !== null) continue; // date-only mode ignores slot entries
+
+    let candidateDate = null;
+
+    if (parsed.kind === "full" && parsed.date) {
+      const d = parsed.date;
+      if (d > todayDate) continue;
+      candidateDate = d;
+    } else if (parsed.kind === "md") {
+      const year = todayDate.getFullYear();
+      let d = new Date(year, parsed.month - 1, parsed.day);
+      if (d > todayDate) {
+        d = new Date(year - 1, parsed.month - 1, parsed.day);
+      }
+      candidateDate = d;
+    } else {
+      continue;
+    }
+
+    if (!candidateDate) continue;
+
+    if (lastDate && candidateDate <= lastDate) {
+      continue;
+    }
+    if (candidateDate > todayDate) {
+      continue;
+    }
+
+    if (!bestCandidateDate || candidateDate > bestCandidateDate) {
+      bestCandidateDate = candidateDate;
+      bestId = articleId;
+    }
+  }
+
+  if (!bestId) return null;
+  return { articleId: bestId, date: bestCandidateDate };
+}
+
+/**
+ * Load and save cycle state (news + rotations) from a JSON log file in the files root.
+ *
+ * Canonical filename:
+ *   cycle_state.json
+ *
+ * Canonical shape:
+ *   {
+ *     "news": {
+ *       "e": { "lastSlot": 5 },
+ *       "j": { "lastSlot": 12 }
+ *     },
+ *     "rotation": {
+ *       "jobId": {
+ *         "lastApplied": "YYYY-MM-DD",
+ *         "src": "/abs/source/path",
+ *         "dest": "/abs/dest/path"
+ *       }
+ *     }
+ *   }
+ *
+ * Backwards compatibility:
+ *   - If only a flat object like { "e": { "lastSlot": 0 }, ... } is present,
+ *     it is interpreted as { news: <flat>, rotation: {} }.
+ *   - If legacy news_cycle_state.json exists, it is read if cycle_state.json
+ *     is missing.
+ */
+const STATE_FILENAME = "cycle_state.json";
+const LEGACY_STATE_FILENAME = "news_cycle_state.json";
+
+function loadCycleState(filesDir) {
+  const primaryPath = path.join(filesDir, STATE_FILENAME);
+  const legacyPath = path.join(filesDir, LEGACY_STATE_FILENAME);
+
+  let raw = null;
+
+  if (fs.existsSync(primaryPath)) {
+    try {
+      raw = fs.readFileSync(primaryPath, "utf8");
+    } catch (e) {
+      console.error("Failed to read cycle_state.json:", e);
+      return { news: {}, rotation: {} };
+    }
+  } else if (fs.existsSync(legacyPath)) {
+    try {
+      raw = fs.readFileSync(legacyPath, "utf8");
+    } catch (e) {
+      console.error("Failed to read legacy news_cycle_state.json:", e);
+      return { news: {}, rotation: {} };
+    }
+  } else {
+    return { news: {}, rotation: {} };
+  }
+
+  try {
+    const data = JSON.parse(raw);
+
+    // If it already has news/rotation keys, assume canonical.
+    if (data && typeof data === "object" && (data.news || data.rotation)) {
+      if (!data.news || typeof data.news !== "object") data.news = {};
+      if (!data.rotation || typeof data.rotation !== "object")
+        data.rotation = {};
+      return data;
+    }
+
+    // Otherwise, treat as the old flat format: just per-region slots.
+    const news = data && typeof data === "object" ? data : {};
+    return { news, rotation: {} };
+  } catch (e) {
+    console.error("Failed to parse cycle state JSON:", e);
+    return { news: {}, rotation: {} };
+  }
+}
+
+function saveCycleState(filesDir, state) {
+  if (!state || typeof state !== "object") {
+    state = { news: {}, rotation: {} };
+  }
+  if (!state.news || typeof state.news !== "object") state.news = {};
+  if (!state.rotation || typeof state.rotation !== "object")
+    state.rotation = {};
+
+  const primaryPath = path.join(filesDir, STATE_FILENAME);
+  const legacyPath = path.join(filesDir, LEGACY_STATE_FILENAME);
+  const tmp = primaryPath + ".tmp";
+
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2), "utf8");
+  fs.renameSync(tmp, primaryPath);
+
+  // Remove legacy file if it exists; canonical is now cycle_state.json.
+  if (fs.existsSync(legacyPath)) {
+    try {
+      fs.unlinkSync(legacyPath);
+    } catch (e) {
+      console.error("Failed to remove legacy state file:", e);
+    }
+  }
+}
+
+/**
+ * Find a .bin file in an article directory. Returns abs path or null.
+ */
+function findBinInDir(dir) {
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    return null;
+  }
+  const entries = fs.readdirSync(dir);
+  for (const name of entries) {
+    if (name.toLowerCase().endsWith(".bin")) {
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isFile()) {
+        return full;
+      }
+    }
+  }
+  return null;
+}
+function normalizeOverrideArticleName(value) {
+  const raw = String(value || "").trim();
+  return raw ? raw : null;
+}
+
+function scheduleEntryMatchesOverride(entry, overrideName) {
+  const raw = normalizeOverrideArticleName(overrideName);
+  if (!entry || !raw) return false;
+
+  const wanted = raw.replace(/\\/g, "/").toLowerCase();
+  const wantedBase = path.basename(wanted).toLowerCase();
+  const candidates = [
+    entry.articleId,
+    entry.parsed && entry.parsed.file,
+    entry.parsed && entry.parsed.messageFile,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = String(candidate).replace(/\\/g, "/").toLowerCase();
+    const candidateBase = path.basename(normalized).toLowerCase();
+    if (normalized === wanted || candidateBase === wantedBase) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function selectOverrideScheduledEntry(regionEntries, overrideName) {
+  return (regionEntries || []).find((entry) => scheduleEntryMatchesOverride(entry, overrideName)) || null;
+}
+
+function scheduleHasAnyEntries(cfg) {
+  if (!cfg || !cfg.schedule || typeof cfg.schedule !== "object" || Array.isArray(cfg.schedule)) {
+    return false;
+  }
+  for (const region of Object.keys(cfg.schedule)) {
+    const regionObj = cfg.schedule[region];
+    if (
+      regionObj &&
+      typeof regionObj === "object" &&
+      !Array.isArray(regionObj) &&
+      Object.keys(regionObj).length > 0
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function updatedRegionsFromMaps(...updatedMaps) {
+  const regions = new Set();
+  for (const updatedMap of updatedMaps) {
+    if (!updatedMap || typeof updatedMap !== "object") continue;
+    for (const [region, updated] of Object.entries(updatedMap)) {
+      if (updated) regions.add(region);
+    }
+  }
+  return Array.from(regions).sort();
+}
+
+function configuredRegionsForRefresh(...configs) {
+  const regions = new Set();
+  for (const cfg of configs) {
+    if (!cfg || !cfg.region_folder_map || typeof cfg.region_folder_map !== "object") continue;
+    for (const region of Object.keys(cfg.region_folder_map)) {
+      regions.add(region);
+    }
+  }
+  return Array.from(regions).sort();
+}
+
+function isMonthDayOnOrBefore(month, day, todayDate) {
+  const todayMonth = todayDate.getMonth() + 1;
+  const todayDay = todayDate.getDate();
+  return month < todayMonth || (month === todayMonth && day <= todayDay);
+}
+
+function scheduledOccurrenceOnOrBefore(entry, todayDate) {
+  if (!entry || !entry.parsed || !entry.parsed.month || !entry.parsed.day) {
+    return null;
+  }
+
+  let occurrence = new Date(
+    todayDate.getFullYear(),
+    entry.parsed.month - 1,
+    entry.parsed.day
+  );
+  if (occurrence > todayDate) {
+    occurrence = new Date(
+      todayDate.getFullYear() - 1,
+      entry.parsed.month - 1,
+      entry.parsed.day
+    );
+  }
+  return occurrence;
+}
+
+function selectCurrentScheduledEntry(regionEntries, todayDate) {
+  let candidate = null;
+  let candidateDate = null;
+
+  for (const entry of regionEntries) {
+    const occurrence = scheduledOccurrenceOnOrBefore(entry, todayDate);
+    if (!occurrence) continue;
+    if (!candidateDate || occurrence > candidateDate) {
+      candidate = entry;
+      candidateDate = occurrence;
+    }
+  }
+
+  return candidate || regionEntries[0] || null;
+}
+
+function selectDueScheduledEntry(regionEntries, todayDate, lastSlot, lastTimestamp) {
+  if (!Number.isInteger(lastSlot) || lastSlot < 0 || !lastTimestamp) {
+    return selectCurrentScheduledEntry(regionEntries, todayDate);
+  }
+
+  let maxSlot = -1;
+  for (const entry of regionEntries) {
+    if (entry.parsed.slot !== null && entry.parsed.slot > maxSlot) {
+      maxSlot = entry.parsed.slot;
+    }
+  }
+  const cycleLength = maxSlot >= 0 ? maxSlot + 1 : 24;
+  const lastDate = toDateOnly(lastTimestamp);
+  let selected = null;
+
+  for (let step = 1; step < cycleLength; step++) {
+    const nextSlot = (lastSlot + step) % cycleLength;
+    const entry = regionEntries.find((item) => item.parsed.slot === nextSlot);
+    if (!entry) continue;
+
+    const occurrence = scheduledOccurrenceOnOrBefore(entry, todayDate);
+    if (occurrence && occurrence >= lastDate && occurrence <= todayDate) {
+      selected = entry;
+    }
+  }
+
+  return selected;
+}
+
+async function getLatestBxtNewsRow(conn, region, isCustom) {
+  const [rows] = await conn.execute(
+    "SELECT id, timestamp, ranking_category_1, ranking_category_2, ranking_category_3 " +
+      "FROM bxt_news WHERE game_region = ? AND is_custom = ? ORDER BY timestamp DESC LIMIT 1",
+    [region, isCustom ? 1 : 0]
+  );
+  return rows.length ? rows[0] : null;
+}
+
+async function getBxtNewsPayloadById(conn, id) {
+  const [rows] = await conn.execute(
+    "SELECT ranking_category_1, ranking_category_1_decode, " +
+      "ranking_category_2, ranking_category_2_decode, " +
+      "ranking_category_3, ranking_category_3_decode, " +
+      "message, message_decode, news_binary, timestamp " +
+      "FROM bxt_news WHERE id = ? LIMIT 1",
+    [id]
+  );
+  return rows.length ? rows[0] : null;
+}
+
+async function mirrorVanillaToCustom(conn, region, vanillaId, existingCustomId) {
+  const payload = await getBxtNewsPayloadById(conn, vanillaId);
+  if (!payload) return existingCustomId || null;
+
+  if (existingCustomId != null) {
+    await conn.execute(
+      "UPDATE bxt_news SET ranking_category_1 = ?, ranking_category_1_decode = ?, " +
+        "ranking_category_2 = ?, ranking_category_2_decode = ?, " +
+        "ranking_category_3 = ?, ranking_category_3_decode = ?, " +
+        "message = ?, message_decode = ?, news_binary = ?, timestamp = ? " +
+        "WHERE id = ?",
+      [
+        payload.ranking_category_1,
+        payload.ranking_category_1_decode,
+        payload.ranking_category_2,
+        payload.ranking_category_2_decode,
+        payload.ranking_category_3,
+        payload.ranking_category_3_decode,
+        payload.message,
+        payload.message_decode,
+        payload.news_binary,
+        payload.timestamp instanceof Date ? payload.timestamp : new Date(payload.timestamp),
+        existingCustomId,
+      ]
+    );
+    return existingCustomId;
+  }
+
+  const [res] = await conn.execute(
+    "INSERT INTO bxt_news " +
+      "(is_custom, game_region, ranking_category_1, ranking_category_1_decode, " +
+      " ranking_category_2, ranking_category_2_decode, " +
+      " ranking_category_3, ranking_category_3_decode, " +
+      " message, message_decode, news_binary, timestamp) " +
+      "VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [
+      region,
+      payload.ranking_category_1,
+      payload.ranking_category_1_decode,
+      payload.ranking_category_2,
+      payload.ranking_category_2_decode,
+      payload.ranking_category_3,
+      payload.ranking_category_3_decode,
+      payload.message,
+      payload.message_decode,
+      payload.news_binary,
+      payload.timestamp instanceof Date ? payload.timestamp : new Date(payload.timestamp),
+    ]
+  );
+  return res.insertId;
+}
+
+async function clearRankingsForRegions(conn, regions, reason) {
+  const uniqueRegions = Array.from(new Set((regions || []).filter(Boolean))).sort();
+  for (const region of uniqueRegions) {
+    await conn.execute("DELETE FROM bxt_ranking WHERE game_region = ?", [region]);
+    console.log(
+      `[news] Cleared bxt_ranking entries for region=${region}` +
+        (reason ? ` (${reason})` : "")
+    );
+  }
+}
+
+async function processPokemonNewsCycle(
+  conn,
+  encoding,
+  newsCfg,
+  cycleState,
+  cycleStateKey,
+  todayDate,
+  isCustom,
+  trackLabel,
+  runOptions = {}
+) {
+  const updatedByRegion = {};
+  const refresh = !!(runOptions && runOptions.refresh);
+  const overrideArticle = normalizeOverrideArticleName(runOptions && runOptions.overrideArticle);
+
+  for (const [region, folderName] of Object.entries(newsCfg.region_folder_map)) {
+    const regionDir = path.join(newsCfg.articles_dir, folderName);
+
+    if (!fs.existsSync(regionDir) || !fs.statSync(regionDir).isDirectory()) {
+      continue; // silently skip missing region folders
+    }
+
+    // Look up last bxt_news row for this region/track.
+    const [rows] = await conn.execute(
+      "SELECT id, timestamp FROM bxt_news WHERE game_region = ? AND is_custom = ? ORDER BY timestamp DESC LIMIT 1",
+      [region, isCustom ? 1 : 0]
+    );
+
+    let existingId = null;
+    let lastTs = null;
+    if (rows.length > 0) {
+      existingId = rows[0].id;
+      lastTs =
+        rows[0].timestamp instanceof Date ? rows[0].timestamp : new Date(rows[0].timestamp);
+    }
+
+    const regionScheduleRaw = (newsCfg.schedule && newsCfg.schedule[region]) || {};
+    const regionEntries = [];
+    let hasSlots = false;
+
+    for (const [articleId, rawEntry] of Object.entries(regionScheduleRaw)) {
+      const parsed = parseScheduleEntry(rawEntry);
+      if (!parsed) continue;
+      if (parsed.slot !== null) hasSlots = true;
+      regionEntries.push({ articleId, parsed });
+    }
+
+    if (!regionEntries.length) {
+      continue;
+    }
+
+    let chosenArticleId = null;
+
+    if (overrideArticle) {
+      const candidate = selectOverrideScheduledEntry(regionEntries, overrideArticle);
+      if (!candidate) {
+        console.warn(
+          `[news:${trackLabel}] override ${overrideArticle} has no schedule entry for region=${region}`
+        );
+        continue;
+      }
+      chosenArticleId = candidate.articleId;
+    } else if (hasSlots) {
+      // Slot-based cycle, using the schedule dates and JSON log file.
+      let lastSlot = -1;
+      if (
+        cycleState[cycleStateKey] &&
+        cycleState[cycleStateKey][region] &&
+        Number.isInteger(cycleState[cycleStateKey][region].lastSlot)
+      ) {
+        lastSlot = cycleState[cycleStateKey][region].lastSlot;
+      }
+
+      const candidate = refresh
+        ? selectCurrentScheduledEntry(regionEntries, todayDate)
+        : selectDueScheduledEntry(regionEntries, todayDate, lastSlot, lastTs);
+
+      if (!candidate) {
+        continue;
+      }
+
+      chosenArticleId = candidate.articleId;
+
+      // Refresh re-applies the current expected article without advancing the logged cycle.
+      if (!refresh) {
+        if (!cycleState[cycleStateKey] || typeof cycleState[cycleStateKey] !== "object") {
+          cycleState[cycleStateKey] = {};
+        }
+        cycleState[cycleStateKey][region] = { lastSlot: candidate.parsed.slot };
+      }
+    } else {
+      // Pure date-based mode, no slots.
+      const selection = refresh
+        ? selectCurrentScheduledEntry(regionEntries, todayDate)
+        : selectArticleForRegionDateOnly(regionEntries, lastTs, todayDate);
+      if (!selection) {
+        continue;
+      }
+      chosenArticleId = selection.articleId;
+      // No cycle state to update in this mode.
+    }
+
+    if (!chosenArticleId) {
+      continue;
+    }
+
+    // Per-article schedule entry for this chosen article (for ranking_categories overrides)
+    let chosenEntry = null;
+    for (const entry of regionEntries) {
+      if (entry.articleId === chosenArticleId) {
+        chosenEntry = entry;
+        break;
+      }
+    }
+    const chosenRankingCategories =
+      chosenEntry && chosenEntry.parsed && chosenEntry.parsed.rankingCategories
+        ? chosenEntry.parsed.rankingCategories
+        : null;
+
+    const chosenArticleFile =
+      chosenEntry && chosenEntry.parsed && chosenEntry.parsed.file
+        ? chosenEntry.parsed.file
+        : String(chosenArticleId);
+    const chosenMessageFile =
+      chosenEntry && chosenEntry.parsed && chosenEntry.parsed.messageFile
+        ? chosenEntry.parsed.messageFile
+        : null;
+
+    const binPath = resolveArticleAssetPath(newsCfg.articles_dir, regionDir, chosenArticleFile);
+    if (!fs.existsSync(binPath) || !fs.statSync(binPath).isFile()) {
+      console.warn(
+        `[news:${trackLabel}] configured article ${chosenArticleId} for region=${region} but file not found at ${binPath}`
+      );
+      continue; // configured but no .bin present
+    }
+
+    const binData = fs.readFileSync(binPath);
+
+    // 1) message + message_decode
+    const encTableName = resolveMessageEncodingTableForRegion(newsCfg, region);
+    const configuredMessagePath = chosenMessageFile
+      ? resolveArticleAssetPath(newsCfg.articles_dir, regionDir, chosenMessageFile)
+      : null;
+    const articleMessage = readArticleMessageFile(
+      binPath,
+      encTableName,
+      encoding,
+      configuredMessagePath
+    );
+    if (!articleMessage) {
+      console.warn(
+        `[news:${trackLabel}] configured article ${chosenArticleId} for region=${region} but .message file not found at ${configuredMessagePath || `${binPath}.message`}`
+      );
+      continue;
+    }
+
+    const messageBuf = articleMessage.messageBuf;
+    const messageDecode = articleMessage.messageDecode;
+
+    // 2) ranking categories
+    const slots = findRankingSlots(binData);
+    const rankingNumbers = [null, null, null];
+    const rankingDecodes = [null, null, null];
+
+    if (chosenRankingCategories && chosenRankingCategories.length) {
+      // Per-article override: ranking_categories array in schedule
+      for (let idx = 0; idx < 3; idx++) {
+        const catNum = idx < chosenRankingCategories.length ? chosenRankingCategories[idx] : null;
+        rankingNumbers[idx] = catNum;
+        if (catNum !== null) {
+          rankingDecodes[idx] = decodeRankingCategory(region, catNum, encoding, newsCfg);
+        }
+      }
+    } else {
+      // Default: derive from file slots
+      for (let idx = 0; idx < 3; idx++) {
+        const slot = idx < slots.length ? slots[idx] : null;
+        if (slot !== null) {
+          rankingNumbers[idx] = slot;
+          rankingDecodes[idx] = decodeRankingCategory(region, slot, encoding, newsCfg);
+        }
+      }
+    }
+
+    // 3) Upsert into bxt_news
+    if (existingId != null) {
+      await conn.execute(
+        "UPDATE bxt_news SET ranking_category_1 = ?, ranking_category_1_decode = ?, " +
+          "ranking_category_2 = ?, ranking_category_2_decode = ?, " +
+          "ranking_category_3 = ?, ranking_category_3_decode = ?, " +
+          "message = ?, message_decode = ?, news_binary = ?, timestamp = CURRENT_TIMESTAMP() " +
+          "WHERE id = ?",
+        [
+          rankingNumbers[0],
+          rankingDecodes[0],
+          rankingNumbers[1],
+          rankingDecodes[1],
+          rankingNumbers[2],
+          rankingDecodes[2],
+          messageBuf,
+          messageDecode,
+          binData,
+          existingId,
+        ]
+      );
+      updatedByRegion[region] = true;
+      console.log(
+        `[news:${trackLabel}] Updated bxt_news for region=${region}, id=${existingId}, article=${chosenArticleId}`
+      );
+    } else {
+      const [res] = await conn.execute(
+        "INSERT INTO bxt_news " +
+          "(is_custom, game_region, ranking_category_1, ranking_category_1_decode, " +
+          " ranking_category_2, ranking_category_2_decode, " +
+          " ranking_category_3, ranking_category_3_decode, " +
+          " message, message_decode, news_binary) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          isCustom ? 1 : 0,
+          region,
+          rankingNumbers[0],
+          rankingDecodes[0],
+          rankingNumbers[1],
+          rankingDecodes[1],
+          rankingNumbers[2],
+          rankingDecodes[2],
+          messageBuf,
+          messageDecode,
+          binData,
+        ]
+      );
+      updatedByRegion[region] = true;
+      console.log(
+        `[news:${trackLabel}] Inserted bxt_news for region=${region}, id=${res.insertId}, article=${chosenArticleId}`
+      );
+    }
+  }
+
+  return { updatedByRegion };
+}
+
+async function finalizePokemonNewsCustomAndRankings(
+  conn,
+  vanillaCfg,
+  customCfg,
+  vanillaUpdated,
+  customUpdatedReal,
+  customEnabled
+) {
+  const regions = Object.keys(vanillaCfg.region_folder_map || {});
+  const customMirroredByRegion = {};
+
+  for (const region of regions) {
+    const vanillaRow = await getLatestBxtNewsRow(conn, region, false);
+    if (!vanillaRow) continue;
+
+    let customRow = await getLatestBxtNewsRow(conn, region, true);
+
+    // Ensure the custom row exists (even if custom scheduling is disabled) so opt-in
+    // can safely fall back to vanilla.
+    if (!customRow) {
+      const newId = await mirrorVanillaToCustom(conn, region, vanillaRow.id, null);
+      customRow = await getLatestBxtNewsRow(conn, region, true);
+      if (customRow) {
+        console.log(
+          `[news] Created missing custom bxt_news row for region=${region} id=${newId} (mirrored from vanilla)`
+        );
+      }
+    }
+
+    // If the custom schedule is disabled, keep custom mirrored to vanilla whenever vanilla updates.
+    if (!customEnabled && vanillaUpdated && vanillaUpdated[region]) {
+      await mirrorVanillaToCustom(conn, region, vanillaRow.id, customRow ? customRow.id : null);
+      customRow = await getLatestBxtNewsRow(conn, region, true);
+      customMirroredByRegion[region] = true;
+      console.log(
+        `[news] Mirrored vanilla -> custom for region=${region} (custom track disabled)`
+      );
+    }
+
+
+  }
+}
+
+async function main() {
+  const rootDir = path.resolve(__dirname, "..", "..");
+  const encoding = loadEncoding(rootDir);
+
+  const newsCfg = loadNewsConfig(rootDir);
+  const pokemonNewsCustomCfg = loadPokemonNewsCustomConfig(rootDir);
+
+  const rotationCfg = loadRotationConfig(rootDir);
+  const featureAvailabilityCfg = loadFeatureAvailabilityConfig(rootDir);
+
+  const pokemonNewsCustomEnabled = scheduleHasAnyEntries(pokemonNewsCustomCfg);
+
+  console.log("[news] rootDir:", rootDir);
+  console.log("[news] articles_dir:", newsCfg.articles_dir);
+  console.log("[news] pokemon_news_custom_enabled:", pokemonNewsCustomEnabled);
+  console.log("[news] refresh:", refreshMode);
+  console.log("[news] override:", overrideArticleName || false);
+
+  const pool = createPool(mainConfig);
+
+  const todayDate = toDateOnly(new Date());
+  console.log("[news] today (server local):", todayDate.toISOString().slice(0, 10));
+
+  const cycleState = loadCycleState(newsCfg.articles_dir);
+
+  try {
+    const conn = await pool.getConnection();
+
+    try {
+      // 1) Vanilla cycle (always)
+      const vanillaRes = await processPokemonNewsCycle(
+        conn,
+        encoding,
+        newsCfg,
+        cycleState,
+        "news",
+        todayDate,
+        false,
+        "vanilla",
+        { refresh: refreshMode, overrideArticle: overrideArticleName }
+      );
+
+      // 2) Custom cycle (only if schedule is present)
+      let customRes = { updatedByRegion: {} };
+      if (pokemonNewsCustomCfg && pokemonNewsCustomEnabled) {
+        customRes = await processPokemonNewsCycle(
+          conn,
+          encoding,
+          pokemonNewsCustomCfg,
+          cycleState,
+          "pokemon_news_custom",
+          todayDate,
+          true,
+          "pokemon_news_custom",
+          { refresh: refreshMode, overrideArticle: overrideArticleName }
+        );
+      }
+
+      // 3) Ensure custom rows exist / mirror when disabled.
+      await finalizePokemonNewsCustomAndRankings(
+        conn,
+        newsCfg,
+        pokemonNewsCustomCfg,
+        vanillaRes.updatedByRegion,
+        customRes.updatedByRegion,
+        pokemonNewsCustomEnabled
+      );
+
+      const rankingClearRegions = refreshMode
+        ? configuredRegionsForRefresh(
+            newsCfg,
+            pokemonNewsCustomEnabled ? pokemonNewsCustomCfg : null
+          )
+        : updatedRegionsFromMaps(vanillaRes.updatedByRegion, customRes.updatedByRegion);
+      if (rankingClearRegions.length) {
+        await clearRankingsForRegions(
+          conn,
+          rankingClearRegions,
+          overrideArticleName
+            ? `override ${overrideArticleName} for ${todayDate.toISOString().slice(0, 10)}`
+            : refreshMode
+              ? `refresh for ${todayDate.toISOString().slice(0, 10)}`
+              : `news rotated for ${todayDate.toISOString().slice(0, 10)}`
+        );
+      }
+
+      // Persist cycle state (for slot-based regions), file rotations, and timed feature windows.
+      if (rotationCfg) {
+        processFileRotations(rootDir, rotationCfg, cycleState, todayDate);
+      }
+      if (featureAvailabilityCfg) {
+        applyTimedFeatureAvailability(rootDir, featureAvailabilityCfg, cycleState, new Date(), newsCfg);
+      }
+      saveCycleState(newsCfg.articles_dir, cycleState);
+    } finally {
+      conn.release();
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+main().catch((err) => {
+  console.error("auto-schedule failed:", err);
+  process.exit(1);
+});
+
+// ---------- PHP BXT CONFIG: global_table_display ----------
+//
+// Some deployments configure a "global" ranking-table display region inside
+// web/cgb/pokemon/bxt_config.php (e.g. ['e'] to force EN table labels).
+// The scheduler uses this to decode ranking-category names consistently.
+//
+function loadGlobalDisplayRegion(rootDir) {
+  try {
+    const cfgPath = path.resolve(rootDir, "web", "cgb", "pokemon", "bxt_config.php");
+    const txt = fs.readFileSync(cfgPath, "utf8");
+
+    const m = txt.match(/'global_table_display'\s*=>\s*\[([^\]]*)\]/);
+    if (!m) return null;
+
+    const inside = m[1];
+    const codes = [];
+
+    for (const part of inside.split(",")) {
+      const mm = part.match(/'([a-zA-Z])'/);
+      if (mm) codes.push(mm[1].toLowerCase());
+    }
+
+    if (!codes.length) return null;
+    return codes[0];
+  } catch (e) {
+    return null;
+  }
+}

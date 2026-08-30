@@ -1,36 +1,72 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{% block title %}Default Title{% endblock %} - REON</title>
+		<meta name="description" content="{% block meta_description %}REON — a recreation of the Mobile GB System, the online service reached by connecting a Game Boy Color through the Mobile Adapter.{% endblock %}">
+		<meta name="theme-color" content="#1272b0">
+		<link rel="icon" href="{{ asset('/images/REON_Logo.svg') }}" type="image/svg+xml">
+		<meta property="og:site_name" content="REON">
+		<meta property="og:title" content="{% block og_title %}REON — The Mobile GB System{% endblock %}">
+		<meta property="og:description" content="A recreation of the Game Boy Color's Mobile Adapter online service.">
+		<meta property="og:type" content="website">
+		<meta property="og:image" content="{{ asset('/images/REON_Logo.svg') }}">
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
-		<link href="/css/main.css" rel="stylesheet">
+		<link href="{{ asset('/css/mobile-trainer.css') }}" rel="stylesheet">
+		<link href="{{ asset('/css/main.css') }}" rel="stylesheet">
+		<link href="{{ asset('/css/reon-theme.css') }}" rel="stylesheet">
 		{% block head %}
 		{% endblock %}
 	</head>
-	<body>
+	<body{% if body_class is defined and body_class %} class="{{ body_class|e('html_attr') }}"{% endif %}>
 		<header class="navbar navbar-expand-lg bg-body-tertiary cgb-gradient-border container-xxl">
 			<nav class="container-xxl">
 				<a href="/index.php" class="navbar-brand">
-					<span class="fs-4">REON</span>
+					<img src="/images/REON_Logo.svg" alt="REON" class="reon-navbar-logo">
 				</a>
-				
+
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#reonNavbar" aria-controls="reonNavbar" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+
+				<div class="collapse navbar-collapse" id="reonNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-					<li class="nav-item"><a href="/index.php" class="nav-link{% if nav_item == 'index' %}{{ ' active' }}{% endif %}" aria-current="page">Home</a></li>
-					<li class="nav-item"><a href="#" class="nav-link{% if nav_item == 'games' %}{{ ' active' }}{% endif %}">Games</a></li>
-					<li class="nav-item"><a href="/01/CGB-B9AJ/index.html" class="nav-link">Mobile Homepage</a></li>
+					<li class="nav-item"><a href="/index.php" class="nav-link{% if nav_item == 'index' %}{{ ' active' }}{% endif %}" aria-current="page">{{'home'|trans}}</a></li>
+					<li class="nav-item dropdown">
+						<a href="#" class="nav-link dropdown-toggle{% if nav_item == 'games' %}{{ ' active' }}{% endif %}" id="gamesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							{{'games'|trans}}
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="gamesDropdown">
+							<li><a class="dropdown-item" href="/mariokart/">{{'mario-kart.title'|trans}}</a></li>
+							<li><a class="dropdown-item" href="/pokemon/">{{'pokemon-crystal'|trans}}</a></li>
+							<li><a class="dropdown-item" href="/gbwars/">{{'gameboy-wars'|trans}}</a></li>
+						</ul>
+					</li>
+					<li class="nav-item"><a href="#" class="nav-link" onclick="openGbcModal(); return false;">{{'mobile-home'|trans}}</a></li>
 				</ul>
 				
-				<div class="d-flex">
-					<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<ul class="navbar-nav mb-2 mb-lg-0 align-items-lg-center reon-navbar-actions">
+						<li class="nav-item dropdown locale-nav-item">
+							<a href="#" class="nav-link dropdown-toggle" id="localeDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+								{% set lang_tmpl = 'locale.' ~ curr_locale %}{{ lang_tmpl|trans }}
+							</a>
+							<ul id="localeDropdownMenu" class="dropdown-menu locale-dropdown-menu" aria-labelledby="localeDropdown">
+								<li><a class="dropdown-item" href="?lang=en" data-locale-code="en">{{'locale.en'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=ja" data-locale-code="ja">{{'locale.ja'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=de" data-locale-code="de">{{'locale.de'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=es" data-locale-code="es">{{'locale.es'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=it" data-locale-code="it">{{'locale.it'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=fr" data-locale-code="fr">{{'locale.fr'|trans}}</a></li>
+							</ul>
+						</li>
 						{% if session_active %}
-							<li class="nav-item"><a href="/user/summary.php" class="btn btn-primary me-2">Your account</a></li>
-							<li class="nav-item"><a href="/logout.php" class="btn btn-outline-primary">Logout</a></li>
+							<li class="nav-item"><a href="/user/summary.php" class="btn btn-primary me-2">{{'your-account'|trans}}</a></li>
+							<li class="nav-item"><a href="/logout.php" class="btn btn-outline-primary">{{'logout'|trans}}</a></li>
 						{% else %}
-							<li class="nav-item"><a href="/login.php" class="btn btn-outline-primary me-2">Login</a></li>
-							<li class="nav-item"><a href="/signup.php" class="btn btn-primary">Sign-up</a></li>
+							<li class="nav-item"><a href="/login.php" class="btn btn-outline-primary me-2">{{'login'|trans}}</a></li>
+							<li class="nav-item"><a href="/signup.php" class="btn btn-primary">{{'signup'|trans}}</a></li>
 						{% endif %}
 					</ul>
 				</div>
@@ -38,12 +74,179 @@
 		</header>
 		
 		<div class="container-xxl">
-			<marquee>Welcome to the alpha test!</marquee>
+			<div class="reon-ticker">
+				<span class="reon-ticker__label">{{'news'|trans}}</span>
+				<marquee class="reon-ticker__scroll">{{'welcome-alpha'|trans}}</marquee>
+			</div>
 		</div>
 		
 		<main id="content" class="container-xxl mt-3 my-md-4">{% block content %}Default Content{% endblock %}</main>
 		
 		{% block body %}
 		{% endblock %}
+
+		<!-- GBC Mobile Trainer Modal -->
+		<div id="gbc-modal" class="gbc-modal-overlay" onclick="closeGbcModal(event)">
+			<div class="gbc-modal-content" onclick="event.stopPropagation()">
+				<button class="gbc-modal-close" onclick="closeGbcModal()" aria-label="Close">&times;</button>
+				<div class="gbc-frame-container gbc-large">
+					<div class="gbc-frame-screen">
+						<iframe id="gbc-iframe" class="gbc-frame-iframe" title="Mobile Trainer"></iframe>
+					</div>
+					<img class="gbc-frame-svg" src="/images/cgb/CGB_Transparent_Screen.svg" alt="Game Boy Color">
+					<!-- the link cable runs off the connector to a REON adapter that trails off-screen -->
+					<div class="gbc-link-rig" aria-hidden="true">
+						<img class="gbc-link-rig__adapter" src="/images/mobile_adapter/REON_Blue_Adapter_Horizontal.svg" alt="">
+						<span class="gbc-link-rig__cable"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function openGbcModal() {
+				var modal = document.getElementById('gbc-modal');
+				var iframe = document.getElementById('gbc-iframe');
+				// Inject styles when iframe loads
+				iframe.onload = function() {
+					try { iframe.contentWindow.focus(); } catch (e) {}
+				};
+				// Load the iframe content only when opening (versioned so edits aren't cached)
+				iframe.src = '{{ asset('/cgb/trainer.html') }}';
+				modal.classList.add('active');
+				document.body.style.overflow = 'hidden';
+			}
+
+			function injectGbcStyles(iframe) {
+				try {
+					var doc = iframe.contentDocument || iframe.contentWindow.document;
+					// Inject stylesheet link
+					var link = doc.createElement('link');
+					link.rel = 'stylesheet';
+					link.href = '/css/mobile-trainer.css';
+					doc.head.appendChild(link);
+					// Add the gbc-screen class to the body for styling
+					doc.body.classList.add('gbc-screen');
+				} catch (e) {
+					console.warn('Could not inject styles into iframe:', e);
+				}
+			}
+
+			function alignGbcScreen() {
+				// Round screen position to integer pixels to prevent blurry text
+				var screen = document.querySelector('.gbc-frame-screen');
+				if (!screen) return;
+				var rect = screen.getBoundingClientRect();
+				var offsetX = rect.left - Math.round(rect.left);
+				var offsetY = rect.top - Math.round(rect.top);
+				if (offsetX !== 0 || offsetY !== 0) {
+					// Apply sub-pixel correction via transform
+					screen.style.transform = 'translate(' + (-offsetX) + 'px, ' + (-offsetY) + 'px) translateZ(0)';
+				}
+			}
+
+			function closeGbcModal(event) {
+				// If called from overlay click, only close if clicking the overlay itself
+				if (event && event.target !== event.currentTarget) return;
+				var modal = document.getElementById('gbc-modal');
+				var iframe = document.getElementById('gbc-iframe');
+				modal.classList.remove('active');
+				document.body.style.overflow = '';
+				// Clear iframe to stop any media
+				iframe.src = 'about:blank';
+			}
+
+			// Close on Escape key
+			document.addEventListener('keydown', function(e) {
+				if (e.key === 'Escape') closeGbcModal();
+			});
+
+			(function localeDropdownLayerFix() {
+				function init() {
+					var toggle = document.getElementById('localeDropdown');
+					var menu = document.getElementById('localeDropdownMenu');
+					if (!toggle || !menu) return;
+					var menuPlaceholder = null;
+					var originalParent = menu.parentNode;
+
+					function positionMenu() {
+						var rect = toggle.getBoundingClientRect();
+						var spacer = 2;
+						var contentWidth = Math.ceil(menu.scrollWidth || 0);
+						var minWidth = Math.max(Math.ceil(rect.width), contentWidth);
+						var maxLeft = Math.max(4, window.innerWidth - minWidth - 4);
+						var left = Math.max(4, Math.min(Math.round(rect.left), maxLeft));
+
+						menu.style.setProperty('position', 'fixed', 'important');
+						menu.style.setProperty('left', left + 'px', 'important');
+						menu.style.setProperty('top', Math.round(rect.bottom + spacer) + 'px', 'important');
+						menu.style.setProperty('right', 'auto', 'important');
+						menu.style.setProperty('margin-top', '0', 'important');
+						menu.style.setProperty('transform', 'none', 'important');
+						menu.style.setProperty('min-width', minWidth + 'px', 'important');
+						menu.style.setProperty('z-index', '30', 'important');
+						menu.style.setProperty('pointer-events', 'auto', 'important');
+					}
+
+					function mountToBody() {
+						if (menu.parentNode === document.body) return;
+						menuPlaceholder = document.createComment('locale-dropdown-placeholder');
+						if (menu.parentNode) {
+							menu.parentNode.insertBefore(menuPlaceholder, menu);
+						}
+						document.body.appendChild(menu);
+						menu.classList.add('locale-dropdown-floating');
+					}
+
+					function restoreToNavbar() {
+						if (menu.parentNode !== document.body) return;
+						menu.classList.remove('locale-dropdown-floating');
+						if (menuPlaceholder && menuPlaceholder.parentNode) {
+							menuPlaceholder.parentNode.insertBefore(menu, menuPlaceholder);
+							menuPlaceholder.parentNode.removeChild(menuPlaceholder);
+							menuPlaceholder = null;
+						} else if (originalParent) {
+							originalParent.appendChild(menu);
+						}
+					}
+
+					function ensureTopLayer() {
+						mountToBody();
+						positionMenu();
+					}
+
+					toggle.addEventListener('show.bs.dropdown', function() {
+						document.body.classList.add('locale-menu-open');
+						ensureTopLayer();
+					});
+					toggle.addEventListener('shown.bs.dropdown', ensureTopLayer);
+
+					window.addEventListener('resize', function() {
+						if (menu.classList.contains('show')) {
+							positionMenu();
+						}
+					}, { passive: true });
+
+					window.addEventListener('scroll', function() {
+						if (menu.classList.contains('show')) {
+							positionMenu();
+						}
+					}, { passive: true });
+
+					toggle.addEventListener('hidden.bs.dropdown', function() {
+						document.body.classList.remove('locale-menu-open');
+						restoreToNavbar();
+					});
+				}
+
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', init);
+				} else {
+					init();
+				}
+			})();
+
+		</script>
+
 	</body>
 </html>

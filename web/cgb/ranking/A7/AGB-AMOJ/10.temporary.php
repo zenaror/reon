@@ -1,8 +1,9 @@
 <?php
+	// SPDX-License-Identifier: MIT
 	require_once(CORE_PATH."/monopoly.php");
 
 	parse_str(file_get_contents("php://input"), $params);
-	if (!array_key_exists($params, "myscore") || strlen($params["myscore"]) != 8) {
+	if (!array_key_exists("myscore", $params) || strlen($params["myscore"]) != 16) {
 		//http_response_code(400); // the game explicitly says that bad data will be accepted, but not saved
 		return;
 	}
@@ -17,31 +18,35 @@
 	$money = unpack("N", substr($myscore, 4))[1];
 
 	$db = connectMySQL();
-	$stmt = $db->prepare("select dion_email_local from sys_users where id = ?");
-	$stmt->bind_param("s", $_SESSION["userId"]);
+	
+	$game_region = getCurrentGameRegion();
+	if ($game_region === null) {
+		http_response_code(500);
+		return;
+	}
+
+	$config = getConfig();
+	$valid = !empty($config["amoj_regist"]);
+	$stmt = $db->prepare("select id from amo_ranking where valid = ? and acc_id = ? and points = ? and money = ? and game_region = ? order by id desc limit 1");
+	$stmt->bind_param("iiiis", $valid, $_SESSION['userId'], $points, $money, $game_region);
 	$stmt->execute();
 	$result = fancy_get_result($stmt);
 	if (sizeof($result) == 0) {
 		//http_response_code(400);
 		return;
 	}
-	$email = $result[0]["dion_email_local"]."@reon.dion.ne.jp";
 
-	$stmt = $db->prepare("select * from amoj_ranking where today2 != 0 and email = ? and points = ? and money = ?");
-	$stmt->bind_param("sii", $email, $points, $money);
-	$stmt->execute();
-	$result = fancy_get_result($stmt);
-	if (sizeof($result) == 0) {
-		//http_response_code(400);
-		return;
+	if (!$valid) {
+		$stmt = $db->prepare("update amo_ranking set valid = 1 where id = ?");
+		$stmt->bind_param("i", $result[0]["id"]);
+		$stmt->execute();
 	}
 
-	$stmt = $db->prepare("update amoj_ranking set today = ? where id = ?");
-	$stmt->bind_param("ii", $result[0]["today2"], $result[0]["id"]);
-	$stmt->execute();
+	$timestamp = date_create_immutable_from_format("j,u", "1,0", timezone_open("+0900"))
+		->setTimezone(timezone_open(date_default_timezone_get()))->format("Y-m-d H:i:s");
 
-	$stmt = $db->prepare("select count(*) from amoj_ranking where points > ? or (points = ? and (money > ? or (money = ? and id <= ?)))");
-	$stmt->bind_param("iiiii", $result["points"], $result["points"], $result["money"], $result["money"], $result["id"]);
+	$stmt = $db->prepare("select count(*) from amo_ranking where valid = 1 and timestamp >= ? and (points > ? or (points = ? and (money > ? or (money = ? and id <= ?)))) group by acc_id, name, gender, age, state, game_region");
+	$stmt->bind_param("siiiii", $timestamp, $points, $points, $money, $money, $result[0]["id"]);
 	$stmt->execute();
 	$result = fancy_get_result($stmt);
 
