@@ -1,5 +1,14 @@
 const EventEmitter = require("events");
+const crypto = require("crypto");
 const POP3State = Object.freeze({"AUTHORIZATION":1, "TRANSACTION":2, "UPDATE":3});
+
+// Derives the POP3-specific subkey from a device_auth_key (the same key
+// used for HTTP device-auth, see DeviceAuthUtil.php) instead of using it
+// raw for XAPOP, so a signature computed under one protocol can never be
+// replayed as a valid signature under the other.
+function xapopSubkey(deviceAuthKey) {
+	return crypto.createHmac("sha256", deviceAuthKey).update("pop3-xapop").digest();
+}
 
 class POP3Connection extends EventEmitter {
 	constructor(server, sock) {
@@ -11,19 +20,25 @@ class POP3Connection extends EventEmitter {
 		this._inputBuffer = "";
 		this._isProcessingInput = false;
 		this._isBusy = true;
-		
+
 		this._initSession();
-		
+
 		this._socket.on('data', data => this._onData(data));
 		this._socket.on('close', () => this._onClose());
 		this._socket.on('error', error => this._onError(error));
-		
-		this._send(true, "service ready");
+
+		// One nonce per TCP connection (not per account -- the server
+		// doesn't know which account is connecting until XAPOP/USER
+		// arrives), bound into every XAPOP signature so a signature can't
+		// be replayed against a different connection.
+		this._nonce = crypto.randomBytes(16).toString("hex");
+		this._send(true, "service ready " + this._nonce + "@reon.dion.ne.jp");
 		this._isBusy = false;
 	}
-	
+
 	_initSession() {
 		this._user = null;
+		this._userId = null;
 		this._state = POP3State.AUTHORIZATION;
 		this._maildrop = [];
 	}
@@ -113,6 +128,7 @@ class POP3Connection extends EventEmitter {
 							if (results.length > 0) {
 								// Check password
 								if (param === results[0]["log_in_password"]) {
+									this._userId = results[0]["id"];
 									// Get a list of mail for the client
 									this._server.mysql.query("select id, char_length(message) as size from sys_inbox where recipient = ?", [results[0]["id"]], function (error, results, fields) {
 										if (error) {
@@ -147,6 +163,100 @@ class POP3Connection extends EventEmitter {
 		}
     }
 	
+	// XAPOP <ppp_id> <hmac-sha256-hex> -- replaces the entire USER+PASS pair
+	// for a device that already holds a device_auth_key (see
+	// DeviceAuthUtil.php): libmobile never has the game's real mailbox
+	// password available outside the very first session, so this proves
+	// identity with the same durable key device-auth already uses instead.
+	// Signature = HMAC-SHA256(xapopSubkey(device_auth_key), ppp_id + "|" +
+	// this connection's greeting nonce). Failure leaves the connection in
+	// AUTHORIZATION exactly as if nothing had been sent yet, so a caller
+	// whose device_auth_key was revoked/never provisioned can fall back to
+	// classic USER/PASS on the same connection with no special handling.
+	_commandHandler_XAPOP(param) {
+		if (this._state == POP3State.AUTHORIZATION) {
+			let params = param != null ? param.split(" ") : [];
+			if (params.length == 2 && /^g[0-9]{9}$/.test(params[0]) && /^[0-9a-f]{64}$/.test(params[1])) {
+				let pppId = params[0];
+				let sig = Buffer.from(params[1], "hex");
+				this._server.mysql.query(
+					"select u.id, a.device_auth_key from sys_users u inner join sys_device_authorization a on a.user_id = u.id where u.dion_ppp_id = ?",
+					[pppId],
+					function (error, results, fields) {
+						if (error) {
+							this._onError(error);
+							return;
+						}
+						if (results.length === 0) {
+							this._send(false, "invalid user or pass");
+							return;
+						}
+						let userId = results[0]["id"];
+						let subkey = xapopSubkey(results[0]["device_auth_key"]);
+						let expected = crypto.createHmac("sha256", subkey).update(pppId + "|" + this._nonce).digest();
+						if (!crypto.timingSafeEqual(expected, sig)) {
+							this._send(false, "invalid user or pass");
+							return;
+						}
+
+						this._userId = userId;
+						this._server.mysql.query("select id, char_length(message) as size from sys_inbox where recipient = ?", [userId], function (error, results, fields) {
+							if (error) {
+								this._onError(error);
+							} else {
+								for (let i = 0; i < results.length; i++) {
+									this._maildrop[i] = [];
+									this._maildrop[i]["id"] = results[i]["id"];
+									this._maildrop[i]["size"] = results[i]["size"];
+									this._maildrop[i]["deleted"] = false;
+								}
+							}
+						}.bind(this));
+						this._state = POP3State.TRANSACTION;
+						this._send(true, "pass accepted");
+					}.bind(this)
+				);
+			} else {
+				this._send(false, "invalid parameter");
+			}
+		} else {
+			this._send(false, "command not allowed");
+		}
+	}
+
+	// XPROVISION (no params) -- returns this account's device_auth_key,
+	// generating one if it doesn't have one yet, so a device that just
+	// authenticated with the real USER/PASS (the one session where it
+	// still has the real password) can bootstrap XAPOP for every session
+	// after this one. Deliberately mirrors DeviceAuthUtil::keyForDownload's
+	// find-or-create, but without touching counter/authorized/
+	// authorized_until -- those belong to the separate HTTP device-auth
+	// (outbound relay) flow and this must not disturb them.
+	_commandHandler_XPROVISION(param) {
+		if (this._state == POP3State.TRANSACTION) {
+			this._server.mysql.query("select device_auth_key from sys_device_authorization where user_id = ?", [this._userId], function (error, results, fields) {
+				if (error) {
+					this._onError(error);
+					return;
+				}
+				if (results.length > 0) {
+					this._send(true, results[0]["device_auth_key"].toString("hex"));
+					return;
+				}
+				let key = crypto.randomBytes(32);
+				this._server.mysql.query("insert into sys_device_authorization (user_id, device_auth_key, counter) values (?, ?, 0)", [this._userId, key], function (error, results, fields) {
+					if (error) {
+						this._onError(error);
+						return;
+					}
+					this._send(true, key.toString("hex"));
+				}.bind(this));
+			}.bind(this));
+		} else {
+			this._send(false, "command not allowed");
+		}
+	}
+
 	_commandHandler_QUIT(param) {
 		switch (this._state) {
 			case POP3State.AUTHORIZATION:
@@ -292,17 +402,213 @@ class POP3Connection extends EventEmitter {
 	
 	_getMail(id, callback) {
 		this._server.mysql.query("select message, concat(substring(dayname(timestamp), 1, 3), ', ', day(timestamp), ' ', substring(monthname(timestamp), 1, 3), ' ', year(timestamp), ' ', time(timestamp), ' +0000')as timestamp from sys_inbox where id = ?", [id], function (error, results, fields) {
-			if (error) {
-				this._onError(error);
-			} else {
-				// Add date header
-				let mailContent = results[0]["message"];
+			// This callback runs on its own tick of the event loop, well
+			// after _onData's try/catch around _onCommand() has already
+			// returned -- nothing upstream can catch an exception thrown
+			// here, so without this try/catch the connection just hangs
+			// forever instead of getting a response (e.g. results[0] is
+			// undefined if the row was deleted by another session between
+			// PASS populating this._maildrop and this TOP/RETR call).
+			try {
+				if (error) {
+					this._onError(error);
+					return;
+				}
+				if (results.length === 0) {
+					this._onError(new Error("message "+id+" vanished from sys_inbox mid-session"));
+					return;
+				}
+				let mailContent = this._slimMessage(results[0]["message"]);
 				let endOfHeaders = mailContent.indexOf("\r\n\r\n") + 2;
-				mailContent = mailContent.slice(0, endOfHeaders) + "Date: " + results[0]["date"] + "\r\n" + mailContent.slice(endOfHeaders);
-				
+				mailContent = mailContent.slice(0, endOfHeaders) + "Date: " + results[0]["timestamp"] + "\r\n" + mailContent.slice(endOfHeaders);
+
 				callback.call(this, mailContent);
+			} catch (thrown) {
+				this._onError(thrown);
 			}
 		}.bind(this));
+	}
+
+	// Real mail servers (Postfix included) attach Received/DKIM-Signature/
+	// X-Google-*/References noise and, for anything sent from a normal mail
+	// client, an HTML alternative part alongside the plain text one. None of
+	// that exists in mail written game-to-game (smtp.js/deliver.js only ever
+	// produced a handful of headers plus a single text/plain body), and a
+	// 2001-era client reading over the emulated GB Link Cable's serial link
+	// pays real seconds per byte for it. This only ever narrows the header
+	// list and, for multipart messages, replaces the body with the
+	// text/plain part's own (transfer-decoded) content — it never touches
+	// bytes belonging to a single-part body, so the 7-bit-safe ISO-2022-JP
+	// content native bottle mail already uses passes through untouched.
+	_slimMessage(raw) {
+		// sys_inbox.message is a BLOB column, so mysql2 hands this back as a
+		// Buffer, not a string — Buffer#slice() returns another Buffer,
+		// which has no .split(), so this must convert before any of the
+		// string methods below run.
+		raw = raw.toString();
+		let sep = raw.indexOf("\r\n\r\n");
+		if (sep === -1) return raw;
+		let headers = this._parseHeaders(raw.slice(0, sep));
+		let body = raw.slice(sep + 4);
+		let contentType = headers["content-type"] ? headers["content-type"].value : "";
+
+		let multipart = /^multipart\//i.test(contentType) && /boundary="?([^";]+)"?/i.exec(contentType);
+		if (multipart) {
+			let part = this._extractTextPlainPart(body, multipart[1]);
+			if (part) {
+				body = part.body;
+				contentType = part.contentType;
+			}
+		}
+
+		const KEEP = ["mime-version", "from", "to", "subject", "x-game-title", "x-game-code"];
+		let lines = [];
+		for (let key of KEEP) {
+			if (headers[key]) lines.push(headers[key].name + ": " + this._normalizeHeaderValue(headers[key].value));
+		}
+		lines.push("Content-Type: " + (contentType || "text/plain; charset=us-ascii"));
+
+		return lines.join("\r\n") + "\r\n\r\n" + body;
+	}
+
+	// RFC 822 header parsing: unfolds continuation lines (they start with
+	// whitespace), then splits each logical line on its first ":". Keyed by
+	// lowercase name for lookup, but keeps the original name for output.
+	_parseHeaders(rawHeaders) {
+		let unfolded = [];
+		for (let line of rawHeaders.split("\r\n")) {
+			if (/^[ \t]/.test(line) && unfolded.length > 0) {
+				unfolded[unfolded.length - 1] += line;
+			} else {
+				unfolded.push(line);
+			}
+		}
+		let headers = {};
+		for (let line of unfolded) {
+			let idx = line.indexOf(":");
+			if (idx === -1) continue;
+			let name = line.slice(0, idx).trim();
+			headers[name.toLowerCase()] = { name: name, value: line.slice(idx + 1).trim() };
+		}
+		return headers;
+	}
+
+	// Finds the first text/plain part of a multipart body and decodes its
+	// Content-Transfer-Encoding (quoted-printable/base64 only carry 7-bit-
+	// safe ASCII on the wire by spec, so reading them back with charCodeAt
+	// recovers the original bytes exactly — no charset is touched here,
+	// only the transfer envelope). Returns null on anything unexpected, so
+	// _slimMessage's caller falls back to leaving the original body intact
+	// rather than risk mangling it.
+	_extractTextPlainPart(body, boundary) {
+		let marker = "--" + boundary;
+		let parts = body.split(marker).slice(1, -1);
+		for (let part of parts) {
+			part = part.replace(/^\r\n/, "");
+			let sep = part.indexOf("\r\n\r\n");
+			if (sep === -1) continue;
+			let partHeaders = this._parseHeaders(part.slice(0, sep));
+			let partBody = part.slice(sep + 4).replace(/\r\n$/, "");
+			let partType = partHeaders["content-type"] ? partHeaders["content-type"].value : "text/plain";
+			if (!/^text\/plain/i.test(partType)) continue;
+
+			let encoding = partHeaders["content-transfer-encoding"] ? partHeaders["content-transfer-encoding"].value.toLowerCase() : "7bit";
+			if (encoding === "quoted-printable") {
+				partBody = this._decodeQuotedPrintable(partBody).toString("utf8");
+			} else if (encoding === "base64") {
+				partBody = Buffer.from(partBody.replace(/\s+/g, ""), "base64").toString("utf8");
+			}
+
+			// ISO-2022-JP is left completely alone: it's the one charset a
+			// title like Mobile Trainer actually renders (via its own ESC
+			// escape sequences into JIS X0208), and stripping to 0x20-0x7E
+			// below would eat the ESC (0x1B) bytes those sequences depend
+			// on. Anything else (Gmail's default is UTF-8) gets folded down
+			// to plain ASCII — confirmed with the MAGB TestSuite ROM
+			// project that the font has no latin-accent glyphs at all, so
+			// bytes >=0x80 render as a wrong/random glyph, not the intended
+			// character, and there's no safe destination to transcode to.
+			let charsetMatch = /charset="?([^";]+)"?/i.exec(partType);
+			let charset = charsetMatch ? charsetMatch[1].toLowerCase() : "us-ascii";
+			if (charset !== "iso-2022-jp") {
+				partBody = this._toAsciiSafe(partBody);
+				partType = "text/plain; charset=us-ascii";
+			}
+
+			return { body: partBody, contentType: partType };
+		}
+		return null;
+	}
+
+	_decodeQuotedPrintable(text) {
+		let bytes = [];
+		for (let i = 0; i < text.length; i++) {
+			if (text[i] === "=" && text[i + 1] === "\r" && text[i + 2] === "\n") {
+				i += 2;
+			} else if (text[i] === "=" && /^[0-9A-Fa-f]{2}$/.test(text.substr(i + 1, 2))) {
+				bytes.push(parseInt(text.substr(i + 1, 2), 16));
+				i += 2;
+			} else {
+				bytes.push(text.charCodeAt(i));
+			}
+		}
+		return Buffer.from(bytes);
+	}
+
+	// Folds accented Latin characters to their bare ASCII form (NFD
+	// decomposition + strip combining marks, e.g. "á" -> "a"+"´" -> "a") and
+	// replaces anything else outside printable ASCII with "?", since the
+	// font has no glyph for it at all — confirmed against the actual ROM,
+	// not just the spec. Backslash and backtick are pulled out separately:
+	// the game's own 4-page input keyboard (checked against real
+	// screenshots) covers every other printable ASCII symbol, but neither
+	// of these two appears on any page -- no confirmed glyph, and fonts of
+	// this era/origin are known to render 0x5C ("\\") as the yen sign
+	// instead of a backslash, so it's not safe to assume it displays as typed.
+	_toAsciiSafe(text) {
+		return text
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/[\\`]/g, "?")
+			.replace(/[^\x20-\x7E\r\n]/g, "?");
+	}
+
+	// Decodes RFC 2047 encoded-words ("=?charset?B|Q?text?=", as used in
+	// From/To/Subject for anything outside plain ASCII) and applies the same
+	// accent-folding as the body. ISO-2022-JP encoded-words are left
+	// completely alone -- that's the one encoding the game itself already
+	// decodes (see the native message header example this was built from),
+	// so re-touching it would only risk breaking what already works.
+	// Adjacent encoded-words separated only by whitespace are RFC 2047
+	// "folded" together (the whitespace between them is not part of the
+	// content), so that gap is dropped rather than kept literally.
+	_normalizeHeaderValue(value) {
+		let result = "";
+		let lastIndex = 0;
+		let lastWasEncoded = false;
+		let re = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
+		let match;
+		while ((match = re.exec(value)) !== null) {
+			let between = value.slice(lastIndex, match.index);
+			if (!(lastWasEncoded && /^[ \t]+$/.test(between))) {
+				result += this._toAsciiSafe(between);
+			}
+			let charset = match[1];
+			let encoding = match[2].toUpperCase();
+			let text = match[3];
+			if (charset.toLowerCase().startsWith("iso-2022-jp")) {
+				result += match[0];
+			} else {
+				let decodedBytes = encoding === "B"
+					? Buffer.from(text, "base64")
+					: this._decodeQuotedPrintable(text.replace(/_/g, " "));
+				result += this._toAsciiSafe(decodedBytes.toString("utf8"));
+			}
+			lastIndex = re.lastIndex;
+			lastWasEncoded = true;
+		}
+		result += this._toAsciiSafe(value.slice(lastIndex));
+		return result;
 	}
 }
 module.exports.POP3Connection = POP3Connection;
