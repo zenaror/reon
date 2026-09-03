@@ -29,7 +29,7 @@
 					<hr>
 					<a href="change_email.php" class="btn btn-primary">{{'account.change-email'|trans}}</a>
 					<a href="change_password.php" class="btn btn-primary">{{'account.change-password'|trans}}</a>
-                    <a href="adapter_config.php" class="btn btn-primary" download="config.bin">Download Config Data</a>
+                    <a href="adapter_config.php" class="btn btn-primary" download="config.bin">{{'account.download-config-data'|trans}}</a>
 				</div>
 			</div>
 		</div>
@@ -77,10 +77,31 @@
 							<input id="dionPasswordNoJs" type="text" readonly class="form-control" value="{{ log_in_password|e }}">
 						</noscript>
 					</div>
+					{% if relay_number %}
+					<div class="mb-3">
+						<label for="relayNumber" class="form-label">{{'account.relay-number'|trans}}</label>
+						<input id="relayNumber" type="text" readonly class="form-control" value="{{ relay_number|e }}">
+					</div>
+					<div class="mb-3">
+						<label for="relayToken" class="form-label js-only">{{'account.relay-token'|trans}}</label>
+						<div class="input-group js-only">
+							<input id="relayToken" type="text" readonly class="form-control" value="&lt;hidden&gt;" data-token="{{ relay_token|e }}" aria-describedby="relayTokenRevealButton">
+							<button id="relayTokenRevealButton" type="button" class="btn btn-outline-primary">{{'reveal'|trans}}</button>
+						</div>
+						<noscript>
+							<label for="relayTokenNoJs" class="form-label">{{'account.relay-token'|trans}}</label>
+							<input id="relayTokenNoJs" type="text" readonly class="form-control" value="{{ relay_token|e }}">
+						</noscript>
+					</div>
+					{% endif %}
 					<hr>
 					<button type="button" class="btn btn-primary js-only" data-bs-toggle="modal" data-bs-target="#confirmPasswordRerollModal">{{'account.reroll-log-in-password'|trans}}</button>
 					<noscript>
 						<a href="reroll_password.php" class="btn btn-primary">{{'account.reroll-log-in-password'|trans}}</a>
+					</noscript>
+					<button type="button" class="btn btn-primary js-only" data-bs-toggle="modal" data-bs-target="#confirmRevokeDevicesModal">{{'account.revoke-devices'|trans}}</button>
+					<noscript>
+						<a href="revoke_devices.php" class="btn btn-primary">{{'account.revoke-devices'|trans}}</a>
 					</noscript>
 				</div>
 			</div>
@@ -157,6 +178,23 @@
 				</div>
 				<div class="modal-footer">
 					<a href="reroll_password.php" class="btn btn-primary">{{'account.reroll-log-in-password'|trans}}</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="confirmRevokeDevicesModal" class="modal fade" tabindex="-1" aria-labelledby="confirmRevokeDevicesModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 id="confirmRevokeDevicesModalLabel" class="modal-title fs-5">{{'account.revoke-devices'|trans}}</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					{{'account.revoke-devices-confirm-message'|trans}}<br>
+					{{'account.revoke-devices-warning'|trans}}
+				</div>
+				<div class="modal-footer">
+					<a href="revoke_devices.php" class="btn btn-primary">{{'account.revoke-devices'|trans}}</a>
 				</div>
 			</div>
 		</div>

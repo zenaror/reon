@@ -2,6 +2,7 @@
 	require_once("../../classes/TemplateUtil.php");
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/RelayUtil.php");
 	session_start();
 	
 	if (SessionUtil::getInstance()->isSessionActive()) {
@@ -56,7 +57,9 @@
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$inbox_size = DBUtil::fancy_get_result($stmt)[0]["count(*)"];
-		
+
+		$relay = RelayUtil::getInstance()->getForUser($_SESSION["user_id"]);
+
 		echo TemplateUtil::render("/user/summary", [
 			"email" => $result["email"],
 			"dion_ppp_id" => $result["dion_ppp_id"],
@@ -67,6 +70,8 @@
             "pokemon_news_custom_opt_in" => intval($result["custom_pokemon_news_opt_in"]),
             "time_zone" => $result["timezone"],
             "all_time_zones" => timezone_identifiers_list(),
+			"relay_token" => $relay !== null ? bin2hex($relay["token"]) : null,
+			"relay_number" => $relay !== null ? $relay["number"] : null,
 			"inbox_size" => $inbox_size,
             "errors" => $errors
 		]);
