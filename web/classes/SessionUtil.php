@@ -24,7 +24,7 @@
 		}
 		
 		public function setLocale($locale) {
-			$supported = array("en", "ja", "de", "es", "it", "fr");
+			$supported = array("en", "ja", "de", "es", "it", "fr", "pt-br");
 			$normalized = strtolower(trim((string)$locale));
 			if (!in_array($normalized, $supported, true)) {
 				$normalized = "en";
@@ -35,7 +35,7 @@
 		}
 
 		public function getLocale() {
-			$supported = array("en", "ja", "de", "es", "it", "fr");
+			$supported = array("en", "ja", "de", "es", "it", "fr", "pt-br");
 			// TODO: Initial value from user prefs if signed in
 			if(isset($_GET["lang"])) {
 				$this->setLocale($_GET["lang"]);

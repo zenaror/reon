@@ -59,7 +59,7 @@
 
 			$translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
 
-			$supported_locales = ['en', 'es', 'de', 'ja', 'it', 'fr'];
+			$supported_locales = ['en', 'es', 'de', 'ja', 'it', 'fr', 'pt-br'];
 			foreach ($supported_locales as $l) {
 				$path = dirname(__DIR__) . '/locales/' . $l . '.yml';
 				if (!is_file($path)) {

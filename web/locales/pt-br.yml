@@ -1,0 +1,134 @@
+locale:
+  en: English
+  ja: 日本語
+  de: Deutsch
+  es: Español
+  it: Italiano
+  fr: Français
+  pt-br: Português (Brasil)
+
+homepage:
+  eyebrow: O Sistema Mobile GB
+  tagline: "Conecte seu Game Boy Color ao mundo. Troque, batalhe e suba no ranking com jogadores de todo lugar, tudo através do Mobile Adapter."
+  learn-more: Saiba mais
+  what-is-reon: "O que é o REON?"
+  intro-1: "O REON é uma recriação do Mobile GB System: um serviço online completo para o Game Boy Color que conecta seu portátil à rede e ao resto do mundo. Ele reimagina o que poderia ter sido um lançamento mundial do Mobile System GB da Nintendo, um só lugar para trocar, competir e baixar conteúdo, tudo na palma da sua mão."
+  intro-2: "A peça-chave de tudo isso é o Mobile Adapter. Esse pequeno acessório se conecta à porta EXT do seu Game Boy Color ou Game Boy Advance e o liga a um telefone celular, para que seu portátil possa discar e alcançar os serviços do REON de qualquer lugar com sinal."
+  games-services: "Jogos e Serviços"
+  crystal-desc: "Suba no ranking nacional, encontre treinadores no Trade Corner e busque um lugar no quadro de honra da Battle Tower, tudo direto da Versão Crystal."
+  gbwars-desc: "Explore a galeria de mapas e baixe novos campos de batalha para posicionar seu exército e assumir o comando."
+  mariokart-desc: "Poste suas voltas mais rápidas e corra contra dados fantasma de jogadores do mundo todo nos rankings do Super Circuit."
+  enter: Entrar
+  top: Topo
+
+mario-kart:
+  title: Mario Kart
+
+gameboy-wars: Game Boy Wars 3
+pokemon-crystal: Pokémon Cristal
+rankings: Classificação
+trade-corner: Trade Corner
+battle-tower: Torre de Batalha
+bxt-save-converter: Conversor de Save BXT
+pokemon-pages:
+  index-description: Criaturinhas fofas e tal
+  rankings-description: Quão grande você disse que era aquele Magikarp mesmo?
+  trade-corner-description: Olha só quantos Caterpie e Weedle!
+  battle-tower-description: Veja o quadro de honra da Torre de Batalha por nível e sala.
+  bxt-save-converter-description: Converta saves BYT de Crystal para o formato BXT localmente no seu navegador.
+mobile-home: Página Inicial Mobile
+home: Início
+games: Jogos
+news: Notícias
+status: Status
+players-online: Jogadores online
+in-service-since: Em serviço desde
+welcome-alpha: Bem-vindo ao teste alpha!
+your-account: Sua Conta
+login: Entrar
+logout: Sair
+signup: Cadastro
+forgot-password: Esqueci a senha
+email-addr: Endereço de e-mail
+password: Senha
+current-password: Senha atual
+new-password: Nova senha
+confirm-password: Confirmar senha
+confirm-new-password: Confirmar nova senha
+new-email: Novo e-mail
+invalid-email: E-mail inválido
+password-invalid: Senha inválida
+passwords-dont-match: As senhas não coincidem
+wrong-password: Senha incorreta
+link-invalid-expired: Este link é inválido ou expirou.
+invalid-trade-setting: Não é uma configuração de região válida.
+invalid-pokemon-news-setting: Não é uma preferência de notícias Pokémon válida.
+default-time-zone: Padrão (Japão, +0900)
+invalid-time-zone-setting: Não é um fuso horário válido.
+continue: Continuar
+reset: Redefinir
+reset-password: Redefinir senha
+send: Enviar
+reveal: Revelar
+what-is-this: O que é isso?
+
+auth:
+  login-to-reon: Entrar na sua conta REON
+  invalid-email-pass: E-mail ou senha incorretos
+  signup-to-reon: Cadastre-se no REON
+  i-agree-terms: Eu concordo com os termos de uso e a política de privacidade
+  you-must-agree: Você precisa concordar
+  registration-email-sent: Se ainda não estiver registrado, um e-mail contendo um link para continuar seu cadastro foi enviado para o endereço especificado.
+  registration-complete: Seu cadastro foi concluído.
+  reon-email: Endereço de e-mail REON
+  reon-email-invalid: E-mail REON inválido ou já em uso
+  region-explanation-para1: O REON permite trocas internacionais para jogadores de Pokémon Crystal, através do recurso do jogo chamado Trade Corner. Isso inclui trocas entre jogos japoneses e não-japoneses, que normalmente são incompatíveis por usarem conjuntos de caracteres diferentes. Para tornar essas trocas possíveis, o serviço altera apelidos de Pokémon, nomes de Treinador e mensagens escritas no Correio ao parear Pokémon entre jogos japoneses e não-japoneses (por exemplo, trocando "A" por "ア", e vice-versa). Essas alterações são irreversíveis, mas procuram imitar a escrita do idioma original da forma mais fiel possível.
+  region-explanation-para2: Escolha o conjunto de regiões com as quais você aceita trocar. Essa configuração também pode ser alterada depois do cadastro.
+
+password-reset:
+  title: Redefinir sua senha
+  this-email-not-registered: Este e-mail não está registrado
+  email-sent-recently: Um e-mail foi enviado há menos de 5 minutos
+  email-sent: Se estiver registrado, um e-mail contendo um link para redefinir sua senha foi enviado para o endereço especificado.
+  success: Sua senha foi redefinida com sucesso.
+
+account:
+  your-reon-account: Sua conta REON
+  account-details: Detalhes da conta
+  change-email: Trocar e-mail
+  change-password: Trocar senha
+  download-config-data: Baixar Dados de Configuração
+  reroll-success: Sua Senha DION foi regenerada.
+  stats: Estatísticas
+  emails-in-inbox: E-mails na caixa de entrada
+  money-spent: Dinheiro gasto
+  dion-account-details: Detalhes da conta DION
+  dion-id: ID DION
+  log-in-password: Senha DION
+  relay-number: Número de Relay
+  relay-token: Token de Relay
+  reroll-log-in-password: Regenerar Senha DION
+  reroll-confirm-message: Tem certeza que quer fazer isso?
+  reroll-warning: Você vai precisar trocar sua senha em todos os jogos.
+  revoke-devices: Revogar Todos os Dispositivos
+  revoke-devices-confirm-message: Tem certeza que quer fazer isso?
+  revoke-devices-warning: Cada dispositivo usando esta conta vai precisar baixar um novo arquivo de configuração antes de poder mandar e-mail pra internet real de novo.
+  revoke-devices-success: Todos os dispositivos desta conta foram revogados. Baixe um novo arquivo de configuração em cada dispositivo que você quiser continuar usando.
+  change-email-address: Troque seu endereço de e-mail
+  email-confirm-sent: Se ainda não estiver registrado, um e-mail contendo um link para confirmar essa alteração foi enviado para o endereço especificado.
+  email-changed-success: Seu e-mail foi trocado com sucesso.
+  change-your-password: Troque sua senha
+  password-changed-success: Sua senha foi trocada com sucesso.
+  pokemon-crystal-settings: Configurações de Pokémon Crystal
+  trade-corner-region-allowlist: "Trade Corner: Preferências de Troca"
+  trade-region-allowlist-blurb: Selecione o conjunto de regiões com as quais você aceita trocar ao depositar seu Pokémon no Trade Corner. Qualquer troca que você receber será de dentro desse conjunto. "Regiões com idiomas compatíveis" se refere a jogos com conjuntos de caracteres compatíveis, ou seja, todos os idiomas latinos ou o japonês sozinho.
+  trade-option-1: Somente nacional (só a região do seu jogo)
+  trade-option-2: Todas as regiões com idiomas compatíveis
+  trade-option-3: Todas as regiões, incluindo conversão latino-japonesa
+  time-zone: Fuso Horário
+  time-zone-blurb: Escolha o fuso horário em que as datas e horas são mostradas no site. Deixe o padrão pra ver tudo no fuso horário original do jogo (Japão, +0900).
+  update-settings: Atualizar configurações
+  pokemon-news-custom-opt-in: "Notícias Pokémon: Preferências de Notícias"
+  pokemon-news-custom-opt-in-blurb: Quando ativado, os downloads de Notícias Pokémon podem usar conteúdo personalizado criado pela equipe REON quando disponível. Se não existir nenhuma notícia personalizada, a notícia oficial será usada.
+  pokemon-news-custom-opt-in-off: Só notícias Pokémon oficiais
+  pokemon-news-custom-opt-in-on: Notícias Pokémon personalizadas quando disponíveis
