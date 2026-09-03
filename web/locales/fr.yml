@@ -5,6 +5,7 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 homepage:
   eyebrow: Le système Mobile GB
@@ -43,6 +44,7 @@ what-is-this: Qu'est-ce que c'est?
 send: Envoyer
 continue: Continuer
 reset: Réinitialiser
+reset-password: Réinitialiser le mot de passe
 reveal: Afficher
 login: Connexion
 logout: Déconnexion
@@ -76,6 +78,8 @@ auth:
   registration-complete: Votre enregistrement est fini.
   reon-email: Addresse courriel de REON
   reon-email-invalid: Addresse invalide ou prené
+  region-explanation-para1: REON permet l'échange international pour les joueurs de Pokémon Cristal, via la fonctionnalité en jeu appelée le Coin Troc. Cela inclut les échanges entre jeux japonais et non-japonais, normalement incompatibles à cause de jeux de caractères différents. Pour rendre ces échanges possibles, le service modifie les surnoms des Pokémon, les noms des Dresseurs, et les messages écrits sur le Courrier lors de la mise en relation entre jeux japonais et non-japonais (par exemple, en changeant « A » en « ア », et vice-versa). Ces changements sont irréversibles, mais ils visent à imiter aussi fidèlement que possible l'écriture de la langue d'origine.
+  region-explanation-para2: Choisissez le pool de régions avec lesquelles vous êtes d'accord d'échanger. Ce réglage peut aussi être modifié après l'inscription.
 password-reset:
   title: Réinitialiser votre mot de passe
   this-email-not-registered: Cet addresse ne s'est pas enregistré
@@ -148,11 +152,19 @@ index:
   what-is-mobile-adapter: Qu'est-ce c'est l'Adaptateur Mobile?
   mobile-adapter-description: L'Adaptateur Mobile était un chose.
 gameboy-wars: Game Boy Wars 3
+mario-kart:
+  title: Mario Kart
 pokemon-crystal: Pokémon Cristal
 rankings: Classement
 trade-corner: Trade Corner
 battle-tower: Tour de Combat
 bxt-save-converter: Convertisseur de sauvegarde BXT
+pokemon-pages:
+  index-description: De mignonnes petites créatures et compagnie
+  rankings-description: "Tu disais que ce Magicarpe faisait quelle taille, déjà ?"
+  trade-corner-description: "Regarde-moi tous ces Chenipan et Aspicot !"
+  battle-tower-description: Consultez le tableau d'honneur de la Tour de Combat par niveau et par salle.
+  bxt-save-converter-description: Convertissez des sauvegardes BYT de Version Cristal au format BXT, localement dans votre navigateur.
 region:
   text: Région
   global: Mondial

@@ -5,6 +5,7 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 home: Inicio
 games: Juegos
@@ -17,8 +18,61 @@ welcome-alpha: ¡Bienvenido a la prueba alfa!
 login: Iniciar sesión
 logout: Cerrar sesión
 signup: Registrarse
+forgot-password: Contraseña olvidada
+email-addr: Correo electrónico
+password: Contraseña
+current-password: Contraseña actual
+new-password: Nueva contraseña
+confirm-password: Confirmar contraseña
+confirm-new-password: Confirmar nueva contraseña
+new-email: Nuevo correo electrónico
+invalid-email: Correo electrónico inválido
+password-invalid: Contraseña inválida
+passwords-dont-match: Las contraseñas no coinciden
+wrong-password: Contraseña incorrecta
+link-invalid-expired: Este enlace no es válido o ha caducado.
+invalid-trade-setting: No es una configuración de región válida.
+default-time-zone: Por defecto (Japón, +0900)
+invalid-time-zone-setting: No es una zona horaria válida.
+continue: Continuar
+reset: Restablecer
+reset-password: Restablecer contraseña
+send: Enviar
+reveal: Revelar
+what-is-this: "¿Qué es esto?"
+
+auth:
+  login-to-reon: Inicia sesión en tu cuenta REON
+  invalid-email-pass: Correo electrónico o contraseña incorrectos
+  signup-to-reon: Regístrate en REON
+  i-agree-terms: Acepto los términos de uso y la política de privacidad
+  you-must-agree: Debes aceptar
+  registration-email-sent: Si aún no estás registrado, se envió un correo con un enlace para continuar tu registro a la dirección especificada.
+  registration-complete: Tu registro se ha completado.
+  reon-email: Dirección de correo REON
+  reon-email-invalid: Correo REON inválido o ya en uso
+  region-explanation-para1: REON permite el intercambio internacional para jugadores de Pokémon Cristal, a través de la función del juego llamada Trade Corner. Esto incluye intercambios entre juegos japoneses y no japoneses, que normalmente son incompatibles por usar distintos conjuntos de caracteres. Para hacer posibles estos intercambios, el servicio cambia los apodos de los Pokémon, los nombres de Entrenador y los mensajes escritos en el Correo al emparejar Pokémon entre juegos japoneses y no japoneses (por ejemplo, cambiando "A" por "ア", y viceversa). Estos cambios son irreversibles, pero buscan imitar la escritura del idioma original de la forma más fiel posible.
+  region-explanation-para2: Elige el conjunto de regiones con las que aceptas intercambiar. Este ajuste también se puede cambiar después del registro.
+
+password-reset:
+  title: Restablece tu contraseña
+  this-email-not-registered: Este correo no está registrado
+  email-sent-recently: Se envió un correo hace menos de 5 minutos
+  email-sent: Si está registrado, se envió un correo con un enlace para restablecer tu contraseña a la dirección especificada.
+  success: Tu contraseña se restableció correctamente.
+
 your-account: Mi cuenta
 pokemon-crystal: Pokémon Cristal
+rankings: Clasificación
+trade-corner: Trade Corner
+battle-tower: Torre de Combate
+bxt-save-converter: Conversor de guardado BXT
+pokemon-pages:
+  index-description: Criaturitas monas y esas cosas
+  rankings-description: "¿Qué tan grande dijiste que era ese Magikarp?"
+  trade-corner-description: "¡Mira todos esos Caterpie y Weedle!"
+  battle-tower-description: Consulta el cuadro de honor de la Torre de Combate por nivel y sala.
+  bxt-save-converter-description: Convierte partidas guardadas BYT de Cristal al formato BXT localmente en tu navegador.
 gameboy-wars: Game Boy Wars 3
 
 mario-kart:
@@ -828,4 +882,37 @@ account:
   pokemon-news-custom-opt-in-off: Solo noticias oficiales de Pokémon
   pokemon-news-custom-opt-in-on: Noticias personalizadas de Pokémon cuando estén disponibles
 
+  your-reon-account: Tu cuenta REON
+  account-details: Detalles de la cuenta
+  change-email: Cambiar correo electrónico
+  change-password: Cambiar contraseña
+  download-config-data: Descargar datos de configuración
+  reroll-success: Tu contraseña DION fue regenerada.
+  stats: Estadísticas
+  emails-in-inbox: Correos en la bandeja de entrada
+  money-spent: Dinero gastado
+  dion-account-details: Detalles de la cuenta DION
+  dion-id: ID DION
+  log-in-password: Contraseña DION
+  relay-number: Número de Relay
+  relay-token: Token de Relay
+  reroll-log-in-password: Regenerar Contraseña DION
+  reroll-confirm-message: "¿Estás seguro de que quieres hacer esto?"
+  reroll-warning: Tendrás que cambiar tu contraseña en todos los juegos.
+  revoke-devices: Revocar todos los dispositivos
+  revoke-devices-confirm-message: "¿Estás seguro de que quieres hacer esto?"
+  revoke-devices-warning: Cada dispositivo que use esta cuenta necesitará descargar un nuevo archivo de configuración antes de poder enviar correo a internet real de nuevo.
+  revoke-devices-success: Todos los dispositivos de esta cuenta fueron revocados. Descarga un nuevo archivo de configuración en cada dispositivo que quieras seguir usando.
+  change-email-address: Cambia tu dirección de correo
+  email-changed-success: Tu correo electrónico se cambió correctamente.
+  email-confirm-sent: Si aún no estás registrado, se envió un correo con un enlace para confirmar este cambio a la dirección especificada.
+  change-your-password: Cambia tu contraseña
+  password-changed-success: Tu contraseña se cambió correctamente.
+  trade-corner-region-allowlist: "Trade Corner: Preferencias de Intercambio"
+  trade-option-1: Solo nacional (solo la región de tu juego)
+  trade-option-2: Todas las regiones con idiomas compatibles
+  trade-option-3: Todas las regiones, incluyendo conversión latino-japonesa
+  time-zone: Zona horaria
+  time-zone-blurb: Elige la zona horaria en la que se muestran las fechas y horas en el sitio. Deja el valor por defecto para verlo todo en la zona horaria original del juego (Japón, +0900).
+  update-settings: Actualizar configuración
 invalid-pokemon-news-setting: Preferencia de Noticias Pokémon no válida.

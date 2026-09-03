@@ -5,6 +5,7 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 home: ホーム
 games: ゲーム
@@ -17,8 +18,60 @@ welcome-alpha: アルファテストへようこそ！
 login: ログイン
 logout: ログアウト
 signup: 新規登録
+forgot-password: パスワードを忘れた場合
+email-addr: メールアドレス
+password: パスワード
+current-password: 現在のパスワード
+new-password: 新しいパスワード
+confirm-password: パスワードの確認
+confirm-new-password: 新しいパスワードの確認
+new-email: 新しいメールアドレス
+invalid-email: 無効なメールアドレス
+password-invalid: 無効なパスワード
+passwords-dont-match: パスワードが一致しません
+wrong-password: パスワードが間違っています
+link-invalid-expired: このリンクは無効か、期限切れです。
+invalid-trade-setting: 有効な地域選択ではありません。
+default-time-zone: デフォルト(日本、+0900)
+invalid-time-zone-setting: 有効なタイムゾーンではありません。
+continue: 続ける
+reset: リセット
+reset-password: パスワードをリセット
+send: 送信
+reveal: 表示
+what-is-this: これは何ですか?
+
+auth:
+  login-to-reon: REONアカウントにログイン
+  invalid-email-pass: メールアドレスまたはパスワードが正しくありません
+  signup-to-reon: REONに登録
+  i-agree-terms: 利用規約とプライバシーポリシーに同意します
+  you-must-agree: 同意する必要があります
+  registration-email-sent: まだ登録されていない場合、登録を続けるためのリンクを含むメールが指定されたアドレスに送信されました。
+  registration-complete: 登録が完了しました。
+  reon-email: REONメールアドレス
+  reon-email-invalid: REONメールアドレスが無効か、既に使用されています
+  region-explanation-para1: REONは、ゲーム内のトレードコーナー機能を通じて、ポケモンクリスタルのプレイヤー同士の国際交換を可能にします。これには、通常は文字セットが異なるため互換性のない日本版と海外版の間の交換も含まれます。このような交換を可能にするため、本サービスは日本版と海外版のポケモンをマッチングする際に、ポケモンのニックネーム、トレーナー名、メールに書かれたメッセージを変更します(例:「A」を「ア」に変更、およびその逆)。これらの変更は元に戻せませんが、元の言語の表記をできるだけ忠実に再現することを目指しています。
+  region-explanation-para2: 交換してもよい地域のプールを選んでください。この設定は登録後にも変更できます。
+
+password-reset:
+  title: パスワードをリセット
+  this-email-not-registered: このメールアドレスは登録されていません
+  email-sent-recently: 5分以内にメールが送信されています
+  email-sent: 登録されている場合、パスワードをリセットするためのリンクを含むメールが指定されたアドレスに送信されました。
+  success: パスワードが正常にリセットされました。
 your-account: マイページ
 pokemon-crystal: ポケットモンスター クリスタル
+rankings: ランキング
+trade-corner: トレードコーナー
+battle-tower: バトルタワー
+bxt-save-converter: BXTセーブコンバーター
+pokemon-pages:
+  index-description: 可愛い生き物たちとその他いろいろ
+  rankings-description: そのコイキング、どれくらい大きいって言った?
+  trade-corner-description: あのキャタピーとビードルたちを見てよ!
+  battle-tower-description: レベルと部屋別にバトルタワーの殿堂を見る。
+  bxt-save-converter-description: クリスタルのBYTセーブデータをブラウザ上でBXT形式に変換。
 gameboy-wars: ゲームボーイウォーズ3
 
 mario-kart:
@@ -864,6 +917,39 @@ pokemon:
     JP-46: かごしまけん
     JP-47: おきなわけん
 account:
+  your-reon-account: あなたのREONアカウント
+  account-details: アカウント詳細
+  change-email: メールアドレスを変更
+  change-password: パスワードを変更
+  download-config-data: 設定データをダウンロード
+  reroll-success: ログインパスワードが再生成されました。
+  stats: 統計
+  emails-in-inbox: 受信ボックス内のメール
+  money-spent: 使用した金額
+  dion-account-details: DIONアカウント詳細
+  dion-id: DION ID
+  log-in-password: DIONパスワード
+  relay-number: リレー番号
+  relay-token: リレートークン
+  reroll-log-in-password: DIONパスワードを再生成
+  reroll-confirm-message: 本当によろしいですか?
+  reroll-warning: 全てのゲームでパスワードを変更する必要があります。
+  revoke-devices: 全てのデバイスを無効化
+  revoke-devices-confirm-message: 本当によろしいですか?
+  revoke-devices-warning: このアカウントを使用している各デバイスは、再びインターネットにメールを送信できるようになる前に、新しい設定ファイルをダウンロードする必要があります。
+  revoke-devices-success: このアカウントの全てのデバイスが無効化されました。引き続き使用したい各デバイスで新しい設定ファイルをダウンロードしてください。
+  change-email-address: メールアドレスを変更する
+  email-changed-success: メールアドレスが正常に変更されました。
+  email-confirm-sent: まだ登録されていない場合、この変更を確認するためのリンクを含むメールが指定されたアドレスに送信されました。
+  change-your-password: パスワードを変更する
+  password-changed-success: パスワードが正常に変更されました。
+  trade-corner-region-allowlist: "トレードコーナー: 交換設定"
+  trade-option-1: 自国のみ (自分のゲームの地域のみ)
+  trade-option-2: 互換性のある言語の全地域
+  trade-option-3: 日本語⇔ラテン語変換を含む全地域
+  time-zone: タイムゾーン
+  time-zone-blurb: サイト全体で日時を表示するタイムゾーンを選んでください。デフォルトのままにすると、ゲーム本来のタイムゾーン(日本、+0900)で全て表示されます。
+  update-settings: 設定を更新
   pokemon-news-custom-opt-in: 'ポケモンニュース：ニュース設定'
   pokemon-news-custom-opt-in-blurb: '有効にすると、ポケモンニュースのダウンロードで、利用可能な場合はREONチームが作成したカスタムニュースを使用します。カスタムニュースがない場合は、公式ニュースを使用します。'
   pokemon-news-custom-opt-in-off: 公式ポケモンニュースのみ

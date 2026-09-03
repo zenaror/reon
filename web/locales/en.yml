@@ -5,6 +5,7 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 homepage:
   eyebrow: The Mobile GB System
@@ -42,6 +43,7 @@ what-is-this: What is this?
 send: Send
 continue: Continue
 reset: Reset
+reset-password: Reset password
 reveal: Reveal
 login: Login
 logout: Logout
