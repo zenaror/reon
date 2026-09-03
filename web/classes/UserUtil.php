@@ -325,6 +325,9 @@
 			$stmt->bind_param("ssssssi", $email, $password_hash, $dion_ppp_id, $reonEmail, $log_in_password, $tradeRegions, $opt_in);
 			$stmt->execute();
 
+			require_once("RelayUtil.php");
+			RelayUtil::getInstance()->provisionForUser($db->insert_id);
+
 			return 0;
 		}
 		
