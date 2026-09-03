@@ -62,6 +62,8 @@ wrong-password: Wrong password
 link-invalid-expired: This link is invalid or has expired.
 invalid-trade-setting: Not a valid region pool setting.
 invalid-pokemon-news-setting: Not a valid Pokémon news preference.
+default-time-zone: Default (Japan, +0900)
+invalid-time-zone-setting: Not a valid time zone.
 auth:
   login-to-reon: Login to your REON account
   invalid-email-pass: Incorrect email or password
@@ -95,15 +97,25 @@ account:
   account-details: Account details
   change-email: Change email
   change-password: Change password
+  download-config-data: Download Config Data
+  reroll-success: Your Log-In Password was rerolled.
   stats: Stats
   emails-in-inbox: Emails in inbox
   money-spent: Money spent
   dion-account-details: DION account details
   dion-id: DION ID
   log-in-password: Log-In Password
+  relay-number: Relay Number
+  relay-token: Relay Token
   reroll-log-in-password: Reroll Log-In Password
   reroll-confirm-message: Are you sure you want to do this?
   reroll-warning: You will have to change your password in all games.
+  revoke-devices: Revoke All Devices
+  revoke-devices-confirm-message: Are you sure you want to do this?
+  revoke-devices-warning: Every device using this account will need to download
+    a new config file before it can send mail to the real internet again.
+  revoke-devices-success: All devices for this account were revoked. Download a
+    new config file on each device you want to keep using.
   change-email-address: Change your email address
   email-confirm-sent: If not yet registered, an email containing a link to confirm
     this change was sent to the specified email address.
@@ -120,6 +132,10 @@ account:
   trade-option-1: National only (only your game's region)
   trade-option-2: All regions with compatible languages
   trade-option-3: All regions, including Latin-Japanese conversion
+  time-zone: Time Zone
+  time-zone-blurb: Choose the time zone dates and times are shown in across the
+    site. Leave the default to see everything in the game's original time zone
+    (Japan, +0900).
   update-settings: Update settings
   pokemon-news-custom-opt-in: 'Pokémon News: News Preferences'
   pokemon-news-custom-opt-in-blurb: When enabled, Pokémon News downloads may use custom
@@ -142,10 +158,14 @@ gameboy-wars: Game Boy Wars 3
 pokemon-crystal: Pokémon Crystal
 rankings: Rankings
 trade-corner: Trade Corner
+battle-tower: Battle Tower
+bxt-save-converter: BXT Save Converter
 pokemon-pages:
   index-description: Cute little critters and stuff
   rankings-description: How big did you say that magikarp was?
   trade-corner-description: Look at all those caterpie and weedle!
+  battle-tower-description: View the Battle Tower honor roll by level and room.
+  bxt-save-converter-description: Convert Crystal BYT saves to BXT format locally in your browser.
 region:
   text: Region
   global: Global

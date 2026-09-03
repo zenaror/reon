@@ -63,6 +63,8 @@ wrong-password: Mot de passe incorrect
 link-invalid-expired: Soit ce lien est invalide, soit il a expiré.
 invalid-trade-setting: Réglage invalide pour le pool des régions.
 invalid-pokemon-news-setting: Préférence d’actualités Pokémon invalide.
+default-time-zone: Par défaut (Japon, +0900)
+invalid-time-zone-setting: Fuseau horaire invalide.
 auth:
   login-to-reon: Se connecter à votre compte REON
   invalid-email-pass: Addresse ou mot de passe incorrect
@@ -86,15 +88,27 @@ account:
   account-details: Détails de compte
   change-email: Changer addresse courriel
   change-password: Changer mot de passe
+  download-config-data: Télécharger les données de configuration
+  reroll-success: Votre mot de passe DION a été régénéré.
   stats: Statistiques
   emails-in-inbox: Emails dans boîte de réception
   money-spent: Argent dépensé
   dion-account-details: Détails de compte DION
   dion-id: Identifiant DION
   log-in-password: Mot de passe DION
+  relay-number: Numéro de relais
+  relay-token: Jeton de relais
   reroll-log-in-password: Regénérer mot de passe DION
   reroll-confirm-message: En êtes-vous sûr(e)?
   reroll-warning: Vous devrez changer votre mot de passe dans tous les jeux.
+  revoke-devices: Révoquer tous les appareils
+  revoke-devices-confirm-message: En êtes-vous sûr(e)?
+  revoke-devices-warning: Chaque appareil utilisant ce compte devra télécharger
+    un nouveau fichier de configuration avant de pouvoir envoyer des e-mails vers
+    l'internet réel à nouveau.
+  revoke-devices-success: Tous les appareils de ce compte ont été révoqués.
+    Téléchargez un nouveau fichier de configuration sur chaque appareil que vous
+    voulez continuer à utiliser.
   change-email-address: Changer votre addresse courriel
   email-confirm-sent: Un email contenant un lien pour confirmer ce changement était
     envoyé à l'addresse specifié, sauf si enregistré.
@@ -110,6 +124,10 @@ account:
   trade-option-1: National uniquement (seule la région de votre jeu)
   trade-option-2: Tous les régions avec langues compatibles
   trade-option-3: Tous les régions
+  time-zone: Fuseau horaire
+  time-zone-blurb: Choisissez le fuseau horaire utilisé pour afficher les dates et
+    heures sur le site. Laissez la valeur par défaut pour tout voir dans le fuseau
+    horaire d’origine du jeu (Japon, +0900).
   update-settings: Mettre à jour les paramètres
   pokemon-news-custom-opt-in: 'Pokémon Infos : Préférences d’actualités'
   pokemon-news-custom-opt-in-blurb: Lorsqu’elle est activée, les téléchargements de Pokémon Infos peuvent utiliser,
@@ -133,6 +151,8 @@ gameboy-wars: Game Boy Wars 3
 pokemon-crystal: Pokémon Cristal
 rankings: Classement
 trade-corner: Trade Corner
+battle-tower: Tour de Combat
+bxt-save-converter: Convertisseur de sauvegarde BXT
 region:
   text: Région
   global: Mondial
