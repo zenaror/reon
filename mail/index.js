@@ -18,5 +18,9 @@ const mysqlConfig = {
 	database: config["mysql_database"]
 }
 
-let smtp = new SMTPServer(mysqlConfig, config["email_domain"], config["email_domain_dion"]);
+// disable_smtp: set by setup-postfix-bridge.sh once Postfix takes over port
+// 25 (mydestination for reon.dion.ne.jp/gameboy.datacenter.ne.jp/the real
+// bridge domain, delivering into sys_inbox via mail/deliver.js). POP3 keeps
+// serving the same table regardless of who wrote the rows.
+let smtp = config["disable_smtp"] === true ? null : new SMTPServer(mysqlConfig, config["email_domain"], config["email_domain_dion"]);
 let pop3 = new POP3Server(mysqlConfig);
