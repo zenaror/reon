@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
-const nodemailer = require("nodemailer");
 
 const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
@@ -40,45 +39,25 @@ const dbConfig = {
 };
 
 // ------------------------------
-// SMTP transport – mirror PHP UserUtil.php config
+// Trade-result delivery
 // ------------------------------
-
-let mailTransport;
-
-const smtpHost = config["smtp_host"];
-const smtpPort = config["smtp_port"];
-const smtpAuth = config["smtp_auth"];
-const smtpSecure = config["smtp_secure"];
-
-if (!smtpHost || smtpHost === "") {
-  // Sendmail mode (PHP isSendmail())
-  mailTransport = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail", // adjust if different on your system
-  });
-} else {
-  // SMTP mode (PHP isSMTP())
-  const transportOptions = {
-    host: smtpHost,
-    port: smtpPort || 587,
-    secure: smtpSecure === "smtps", // implicit TLS
-    requireTLS: smtpSecure === "starttls", // STARTTLS
-    auth: smtpAuth
-      ? {
-          user: config["smtp_user"],
-          pass: config["smtp_pass"],
-        }
-      : undefined,
-    // allow self-signed like your PHP setup
-    tls: {
-      rejectUnauthorized: false,
-    },
-  };
-
-  mailTransport = nodemailer.createTransport(transportOptions);
-}
-
+//
+// Delivery targets the account named by the trade payload's own "email"
+// field (see trade_corner.php's decode_exchange()). Per the Consultor's
+// research against pokecrystal-mobile-eng, that field is always
+// wEmailAddress -- populated from the sending account's own adapter config
+// (self-identification), not free-form input -- so it's correct to use it,
+// matching how Pokémon Crystal's real Trade Corner protocol always has.
+// It's still resolved through the same dion_email_local lookup deliver.js
+// uses (sendExchangeSuccessEmail below) rather than trusted as a literal
+// delivery target, so a malformed/hacked payload just fails to resolve
+// instead of routing anywhere unexpected. This writes straight into
+// sys_inbox (same table/shape deliver.js writes into) instead of going
+// through an SMTP transport -- Pokémon Crystal's own trade mail mechanic
+// genuinely needs this exact binary payload untouched (trainer name +
+// Pokémon data + attached mail, all real game content, per the owner), and
+// there's no reason to route it through SMTP/MIME processing at all for a
+// delivery that was always internal-only.
 // ------------------------------
 // Encoding + Pokémon name tables (embedded)
 // ------------------------------
@@ -3417,6 +3396,7 @@ function resolveCrystalGameTitleByRegion(regionCode) {
 // ------------------------------
 
 async function sendExchangeSuccessEmail(
+  connection,
   receivingRegion,
   emailAddress,
   trainerId,
@@ -3494,13 +3474,29 @@ async function sendExchangeSuccessEmail(
 
   const raw = header + body;
 
-  await mailTransport.sendMail({
-    envelope: {
-      from: "system@" + config["email_domain"],
-      to: emailAddress,
-    },
-    raw: raw,
-  });
+  // emailAddress comes straight from the game's own trade payload -- per
+  // the Consultor's research against pokecrystal-mobile-eng, that's always
+  // wEmailAddress, populated from the sending account's own adapter config
+  // (self-identification), the same field Pokémon Crystal's real Trade
+  // Corner protocol has always used here -- so it's correct to use it, not
+  // an account_id substitute. Still resolved safely via the same
+  // dion_email_local lookup deliver.js uses, rather than trusted as a
+  // literal delivery target: a malformed/hacked payload just fails to
+  // resolve to any account instead of routing anywhere unexpected.
+  const localPart = String(emailAddress || "").split("@")[0];
+  const [rows] = await connection.execute(
+    "select id from sys_users where dion_email_local = ? limit 1",
+    [localPart]
+  );
+  if (rows.length === 0) {
+    console.error(`sendExchangeSuccessEmail: unknown recipient ${emailAddress}`);
+    return;
+  }
+
+  await connection.execute(
+    "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
+    ["system@" + config["email_domain"], rows[0]["id"], raw]
+  );
 }
 
 
@@ -3702,6 +3698,7 @@ async function doExchange() {
 
           // For player B: use B's own metadata in header, partner's payload.
           await sendExchangeSuccessEmail(
+            connection,
             b["game_region"],
             b["email"],
             b["trainer_id"],
@@ -3717,6 +3714,7 @@ async function doExchange() {
 
           // For player A: use A's own metadata in header, partner's payload.
           await sendExchangeSuccessEmail(
+            connection,
             a["game_region"],
             a["email"],
             a["trainer_id"],

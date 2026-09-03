@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
-const nodemailer = require("nodemailer");
 
 const { Command } = require("commander");
 
@@ -28,48 +27,20 @@ const dbConfig = {
 };
 
 // ------------------------------
-// SMTP transport – mirror PHP UserUtil.php config
-// ------------------------------
-
-let mailTransport;
-
-const smtpHost = config["smtp_host"];
-const smtpPort = config["smtp_port"];
-const smtpAuth = config["smtp_auth"];
-const smtpSecure = config["smtp_secure"];
-
-if (!smtpHost || smtpHost === "") {
-  // Sendmail mode (PHP isSendmail())
-  mailTransport = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail", // adjust if different on your system
-  });
-} else {
-  // SMTP mode (PHP isSMTP())
-  const transportOptions = {
-    host: smtpHost,
-    port: smtpPort || 587,
-    secure: smtpSecure === "smtps", // implicit TLS
-    requireTLS: smtpSecure === "starttls", // STARTTLS
-    auth: smtpAuth
-      ? {
-          user: config["smtp_user"],
-          pass: config["smtp_pass"],
-        }
-      : undefined,
-    // allow self-signed like your PHP setup
-    tls: {
-      rejectUnauthorized: false,
-    },
-  };
-
-  mailTransport = nodemailer.createTransport(transportOptions);
-}
-
-// ------------------------------
 // Email + main exchange logic
 // ------------------------------
+//
+// Both trade partners are always the game's own internal accounts (email is
+// always dion_email_local@email_domain_dion, set server-side in
+// 20.bottlemail.php -- never a real address a player typed in), so this
+// writes straight into sys_inbox (same table/shape deliver.js writes into)
+// instead of routing through an SMTP transport. Two reasons, not just one:
+// it keeps the player's original message bytes completely untouched (no
+// MIME/SMTP-layer reinterpretation of content that was never meant to leave
+// the game in the first place), and it avoids a real class of vulnerability
+// nodemailer's "raw" option has a history of (arbitrary file read / SSRF
+// during message processing) for content nothing internal-only should be
+// exposed to regardless of where it's ultimately addressed.
 
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
@@ -96,20 +67,14 @@ async function doExchange() {
         const a = list[i - 1];
         const b = list[i];
 
-        await mailTransport.sendMail({
-          envelope: {
-            from: a["email"],
-            to: b["email"],
-          },
-          raw: "To: " + b["email"] + "\r\n" + a["message"],
-        });
-        await mailTransport.sendMail({
-          envelope: {
-            from: b["email"],
-            to: a["email"],
-          },
-          raw: "To: " + a["email"] + "\r\n" + b["message"],
-        });
+        await connection.execute(
+          "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
+          [a["email"], b["acc_id"], "To: " + b["email"] + "\r\n" + a["message"]]
+        );
+        await connection.execute(
+          "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
+          [b["email"], a["acc_id"], "To: " + a["email"] + "\r\n" + b["message"]]
+        );
 
         // Clean up processed rows
         await connection.execute("DELETE FROM " + table + " WHERE id = ?", [a["id"]]);
