@@ -228,6 +228,8 @@ mail:
   err-rate-limited: "Você enviou muita mensagem na última hora. Tente mais tarde."
   err-relay-failed: "O servidor de e-mail recusou a mensagem. Tente daqui a pouco."
   err-failed: "Não foi possível enviar a mensagem."
+  show-new: "Mostrar"
+  new-arrived: "Chegou %count% mensagem(ns) nova(s)"
   select-all: "Selecionar todas"
   n-selected: "%count% selecionadas"
   delete-selected: "Apagar selecionadas"

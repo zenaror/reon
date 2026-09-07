@@ -1122,3 +1122,20 @@ body.home-v2 main#content { overflow: hidden; }
   background: #c25a10;
   color: #fff5e2;
 }
+
+/* Banner for mail that arrived while the list was open. */
+.mt-newmail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 2px solid var(--mt-frame);
+  background: var(--mt-plate);
+  color: #7a3606;
+  font-weight: bold;
+}
+
+.mt-newmail .mt-btn {
+  margin-left: auto;
+}

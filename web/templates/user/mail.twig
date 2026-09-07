@@ -113,6 +113,15 @@
 		{% if sent|default(false) %}
 			<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
 		{% endif %}
+
+		{# Filled in by the background check below. A banner rather than a
+		   reload: reloading would discard a half-written message, and would
+		   also run markInboxSeen every minute, clearing the "new" marker for
+		   mail nobody had looked at. #}
+		<p class="mt-newmail" id="mt-newmail" hidden>
+			<span id="mt-newmail-text"></span>
+			<a class="mt-btn" href="{{ folder == 'trash' ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.show-new'|trans}}</a>
+		</p>
 		<section class="mt-panel">
 			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
 
@@ -178,6 +187,47 @@
 		{% if folder == 'trash' %}
 			<p class="mt-note">{{'mail.trash-note'|trans({'%days%': retention_days})}}</p>
 		{% endif %}
+
+		<script>
+		(function () {
+			var banner = document.getElementById("mt-newmail");
+			var text = document.getElementById("mt-newmail-text");
+			if (!banner || !text) return;
+
+			var EVERY = 60000;
+			var template = {{ 'mail.new-arrived'|trans|json_encode|raw }};
+			// What the page was rendered with. Anything beyond this is news.
+			var known = {{ mail_count|default(0) }};
+			var timer = null;
+
+			function check() {
+				fetch("/user/mail_status.php", { credentials: "same-origin" })
+					.then(function (r) { return r.ok ? r.json() : null; })
+					.then(function (data) {
+						if (!data) return;
+						var extra = data.count - known;
+						if (extra > 0) {
+							text.textContent = template.replace("%count%", extra);
+							banner.hidden = false;
+						}
+					})
+					// A failed check is not worth telling anyone about; the
+					// next one is a minute away.
+					.catch(function () {});
+			}
+
+			function start() { if (!timer) timer = setInterval(check, EVERY); }
+			function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+			// Nothing is polled while the tab is in the background: a mailbox
+			// left open in a tab for a day should not spend the day asking.
+			document.addEventListener("visibilitychange", function () {
+				if (document.hidden) { stop(); } else { check(); start(); }
+			});
+
+			if (!document.hidden) start();
+		})();
+		</script>
 
 		<script>
 		(function () {
