@@ -22,7 +22,11 @@
 // window is the one piece of server-side state in this path, so a test that
 // never POSTs never touches it.
 
-define('CORE_PATH', dirname(dirname(dirname(dirname(__DIR__)))) . '/cgb');
+// Guarded: download.php defines this before including us, and redefining a
+// constant is a warning today and an error in PHP 9.
+if (!defined('CORE_PATH')) {
+    define('CORE_PATH', dirname(dirname(dirname(dirname(__DIR__)))) . '/cgb');
+}
 require_once(CORE_PATH . '/auth.php');
 
 // Returns the userId; issues its own challenge and exits when unauthenticated.
