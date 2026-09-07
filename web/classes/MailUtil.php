@@ -14,6 +14,24 @@
 		// Days a message survives in the trash before the purge job removes it.
 		const TRASH_RETENTION_DAYS = 30;
 
+		// What a Mobile Trainer message can hold: 8 lines of 12 characters.
+		// The Trainer wraps long lines itself, so the per-line width is not
+		// enforced here -- only the totals, which are what it cannot exceed.
+		// Line breaks are not counted against the character budget: 96 is the
+		// text capacity (8 x 12), not the size of the stored message.
+		const BODY_MAX_LINES = 8;
+		const BODY_MAX_CHARS = 96;
+
+		// Returns an error code, or null when the body fits.
+		public function checkBodyFits($body) {
+			$normalized = preg_replace('/\r\n|\r/', "\n", (string)$body);
+			$lines = explode("\n", $normalized);
+
+			if (count($lines) > self::BODY_MAX_LINES) return "too-many-lines";
+			if (mb_strlen(str_replace("\n", "", $normalized)) > self::BODY_MAX_CHARS) return "too-many-chars";
+			return null;
+		}
+
 		private static $instance;
 
 		public static function getInstance() {
@@ -152,6 +170,12 @@
 		public function send($fromUserId, $toAddress, $subject, $body) {
 			$db = DBUtil::getInstance()->getDB();
 			$fromUserId = (int)$fromUserId;
+
+			// Checked before anything else, and for every destination: a
+			// message that cannot be displayed on a Game Boy is refused
+			// outright rather than sent and silently truncated later.
+			$tooLong = $this->checkBodyFits($body);
+			if ($tooLong !== null) return [false, $tooLong];
 
 			$stmt = $db->prepare("select username, dion_email_local from sys_users where id = ? limit 1");
 			$stmt->bind_param("i", $fromUserId);

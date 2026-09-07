@@ -1087,3 +1087,16 @@ body.home-v2 main#content { overflow: hidden; }
 }
 
 .mt-error { background: #ffd9c7; border-color: #b03000; color: #7a1a06; }
+
+/* Live size counter under the compose box. */
+.mt-count {
+  margin: -4px 0 0;
+  font-size: 0.9em;
+  color: #5a4630;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-count--over {
+  color: #b03000;
+  font-weight: bold;
+}
