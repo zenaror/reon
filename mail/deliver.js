@@ -17,6 +17,9 @@
 
 const fs = require("fs");
 const mysql = require("mysql2/promise");
+
+// Must match MailUtil::INBOX_MAX -- the Mobile Trainer mailbox size.
+const INBOX_MAX = 12;
 const { Command } = require("commander");
 
 const program = new Command();
@@ -66,6 +69,22 @@ async function main() {
 			process.exitCode = 67;
 			return;
 		}
+		// The Mobile Trainer's mailbox holds INBOX_MAX; delivering past it
+		// would put mail somewhere the game can never show it.
+		//
+		// Exit 75 (EX_TEMPFAIL) rather than a bounce: the box empties as soon
+		// as the player syncs, so Postfix holding the message and retrying
+		// delivers it, where refusing outright would lose it for good.
+		const [full] = await conn.execute(
+			"select count(*) as c from sys_inbox where recipient = ? and deleted_at is null",
+			[rows[0]["id"]]
+		);
+		if (full[0]["c"] >= INBOX_MAX) {
+			process.stderr.write(`deliver.js: mailbox full for ${recipientArg}, deferring\n`);
+			process.exitCode = 75;
+			return;
+		}
+
 		await conn.execute(
 			"insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
 			[opts.from, rows[0]["id"], message]

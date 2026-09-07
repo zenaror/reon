@@ -1118,3 +1118,11 @@ body.home-v2 main#content { overflow: hidden; }
 .mt-newmail .mt-btn {
   margin-left: auto;
 }
+
+/* Occupancy beside the inbox title. */
+.mt-panel__count {
+  float: right;
+  font-weight: normal;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}

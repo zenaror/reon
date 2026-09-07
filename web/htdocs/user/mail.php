@@ -30,8 +30,12 @@
 			$mail->moveToTrashMany($userId, $ids);
 			$back = "/user/mail.php";
 		} elseif ($action === "restore") {
-			$mail->restoreMany($userId, $ids);
-			$back = "/user/mail.php?folder=trash";
+			$result = $mail->restoreMany($userId, $ids);
+			// Carried back in the URL rather than swallowed: a restore that
+			// silently did nothing is worse than one that says why.
+			$back = $result["ok"]
+				? "/user/mail.php?folder=trash"
+				: "/user/mail.php?folder=trash&full=" . $result["free"];
 		} elseif ($action === "delete") {
 			$mail->deleteForeverMany($userId, $ids);
 			$back = "/user/mail.php?folder=trash";
@@ -61,6 +65,8 @@
 					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"inbox_max" => MailUtil::INBOX_MAX,
+			"restore_blocked" => null,
 				]);
 				return;
 			}
@@ -101,6 +107,8 @@
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"inbox_max" => MailUtil::INBOX_MAX,
+			"restore_blocked" => null,
 		]);
 		return;
 	}
@@ -119,6 +127,8 @@
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"inbox_max" => MailUtil::INBOX_MAX,
+			"restore_blocked" => null,
 		]);
 		return;
 	}
@@ -140,4 +150,6 @@
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 		"body_max_lines" => MailUtil::BODY_MAX_LINES,
 		"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+		"inbox_max" => MailUtil::INBOX_MAX,
+		"restore_blocked" => isset($_GET["full"]) ? (int)$_GET["full"] : null,
 	]);
