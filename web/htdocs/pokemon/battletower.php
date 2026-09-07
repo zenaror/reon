@@ -6,7 +6,15 @@
     require_once("../../scripts/bxt_decode_helpers.php");
     session_start();
 
+    // Both filters return null for "all", which the query reads as "no
+    // restriction on this column" and the template as "show this column",
+    // since the value stops being implied by the filter once it varies.
+    const BXT_BT_ALL = "all";
+
     function bxt_battle_tower_parse_level($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return null;
+        }
         $level = intval($raw_value);
         if ($level < 10 || $level > 100 || ($level % 10) !== 0) {
             return 10;
@@ -15,6 +23,9 @@
     }
 
     function bxt_battle_tower_parse_room($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return null;
+        }
         $room = intval($raw_value);
         if ($room < 1 || $room > 20) {
             return 1;
@@ -448,14 +459,53 @@
 
     [$room_is_zero_based, $level_is_zero_based] = bxt_battle_tower_detect_storage_indexing($db);
 
-    $db_level = $level_is_zero_based ? intval(($selected_level / 10) - 1) : $selected_level;
-    $db_room = $room_is_zero_based ? ($selected_room - 1) : $selected_room;
+    // Storage may be zero-based, so what the page shows and what the column
+    // holds are not the same number in either direction.
+    $to_db_level = function ($level) use ($level_is_zero_based) {
+        return $level_is_zero_based ? intval(($level / 10) - 1) : $level;
+    };
+    $to_db_room = function ($room) use ($room_is_zero_based) {
+        return $room_is_zero_based ? ($room - 1) : $room;
+    };
+    $from_db_level = function ($stored) use ($level_is_zero_based) {
+        return $level_is_zero_based ? ((intval($stored) + 1) * 10) : intval($stored);
+    };
+    $from_db_room = function ($stored) use ($room_is_zero_based) {
+        return $room_is_zero_based ? (intval($stored) + 1) : intval($stored);
+    };
+
+    // Built from whichever filters are set, so "all" simply contributes no
+    // clause instead of needing a separate query.
+    $where = [];
+    $params = [];
+    if ($selected_level !== null) {
+        $where[] = "level = ?";
+        $params[] = $to_db_level($selected_level);
+    }
+    if ($selected_room !== null) {
+        $where[] = "room = ?";
+        $params[] = $to_db_room($selected_room);
+    }
+    $where_sql = count($where) > 0 ? ("where " . implode(" and ", $where) . " ") : "";
+
+    $render_args = [
+        "leaders" => [],
+        "selected_level" => $selected_level === null ? BXT_BT_ALL : $selected_level,
+        "selected_room" => $selected_room === null ? BXT_BT_ALL : $selected_room,
+        "level_options" => range(10, 100, 10),
+        "room_options" => range(1, 20),
+        // A filtered column would repeat the same value on every row.
+        "show_level" => $selected_level === null,
+        "show_room" => $selected_room === null,
+    ];
 
     $leaders = [];
 
     $stmt = $db->prepare(
         "select " .
             "id, " .
+            "level, " .
+            "room, " .
             "game_region, " .
             "player_name, " .
             "player_name_decode, " .
@@ -471,32 +521,22 @@
             "message_start_decode, " .
             "timestamp " .
         "from bxt_battle_tower_honor_roll " .
-        "where level = ? and room = ? " .
-        "order by timestamp desc, id desc"
+        $where_sql .
+        "order by level asc, room asc, timestamp desc, id desc"
     );
 
     if (!$stmt) {
         error_log("Battle Tower query prepare failed: " . $db->error);
-        echo TemplateUtil::render("/pokemon/battletower", [
-            "leaders" => [],
-            "selected_level" => $selected_level,
-            "selected_room" => $selected_room,
-            "level_options" => range(10, 100, 10),
-            "room_options" => range(1, 20),
-        ]);
+        echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }
 
-    $stmt->bind_param("ii", $db_level, $db_room);
+    if (count($params) > 0) {
+        $stmt->bind_param(str_repeat("i", count($params)), ...$params);
+    }
     if (!$stmt->execute()) {
         error_log("Battle Tower query execute failed: " . $stmt->error);
-        echo TemplateUtil::render("/pokemon/battletower", [
-            "leaders" => [],
-            "selected_level" => $selected_level,
-            "selected_room" => $selected_room,
-            "level_options" => range(10, 100, 10),
-            "room_options" => range(1, 20),
-        ]);
+        echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }
 
@@ -551,13 +591,10 @@
             "player_name" => $player_name,
             "pokemon_names" => $pokemon_names,
             "message" => $message,
+            "level" => $from_db_level($entry["level"] ?? 0),
+            "room" => $from_db_room($entry["room"] ?? 0),
         ];
     }
 
-    echo TemplateUtil::render("/pokemon/battletower", [
-        "leaders" => $leaders,
-        "selected_level" => $selected_level,
-        "selected_room" => $selected_room,
-        "level_options" => range(10, 100, 10),
-        "room_options" => range(1, 20),
-    ]);
+    $render_args["leaders"] = $leaders;
+    echo TemplateUtil::render("/pokemon/battletower", $render_args);

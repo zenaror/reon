@@ -17,6 +17,7 @@
     <form class="battle-tower-controls" method="get">
         <div class="battle-control-level">
             <select name="level" class="trade-region-filter" aria-label="Select level" onchange="this.form.submit()">
+                <option value="all"{% if selected_level == 'all' %} selected{% endif %}>L:ALL</option>
                 {% for level_value in level_options %}
                     <option value="{{ level_value }}"{% if level_value == selected_level %} selected{% endif %}>L:{{ "%d"|format(level_value) }}</option>
                 {% endfor %}
@@ -25,6 +26,7 @@
 
         <div class="battle-control-room">
             <select name="room" class="trade-region-filter" aria-label="Select room" onchange="this.form.submit()">
+                <option value="all"{% if selected_room == 'all' %} selected{% endif %}>ROOM:ALL</option>
                 {% for room_value in room_options %}
                     <option value="{{ room_value }}"{% if room_value == selected_room %} selected{% endif %}>ROOM:{{ "%03d"|format(room_value) }}</option>
                 {% endfor %}
@@ -47,6 +49,10 @@
                 <table class="battle-honor-table">
                     <thead>
                         <tr>
+                            {# Shown only when the matching filter is open: a filtered
+                               column would repeat one value down every row. #}
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
+                            {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th>ROOM LEADER</th>
                             <th>POK&eacute;MON</th>
                             <th>MESSAGE</th>
@@ -55,6 +61,8 @@
                     <tbody>
                         {% for leader in leaders %}
                             <tr class="bt-row">
+                                {% if show_level %}<td class="bt-col-level">{{ leader.level }}</td>{% endif %}
+                                {% if show_room %}<td class="bt-col-room">{{ "%03d"|format(leader.room) }}</td>{% endif %}
                                 <td class="bt-leader-cell">
                                     <div class="bt-leader-subcols">
                                         <div class="bt-leader-sprite-col">
@@ -81,7 +89,7 @@
 
                         {% if leaders is empty %}
                             <tr class="bt-empty-row">
-                                <td colspan="3" class="crystal-empty-message">No Trainers found.</td>
+                                <td colspan="{{ 3 + (show_level ? 1 : 0) + (show_room ? 1 : 0) }}" class="crystal-empty-message">No Trainers found.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -92,6 +100,8 @@
                 <table class="battle-honor-table">
                     <thead>
                         <tr>
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
+                            {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th>ROOM LEADER</th>
                             <th>POK&eacute;MON</th>
                             <th>MESSAGE</th>
