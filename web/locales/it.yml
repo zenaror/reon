@@ -33,6 +33,9 @@ signup: Registrati
 forgot-password: Password dimenticata
 email-addr: Indirizzo e-mail
 password: Password
+password-show: Mostra password
+password-hide: Nascondi password
+password-caps-on: Blocco maiuscole attivo
 current-password: Password attuale
 new-password: Nuova password
 confirm-password: Conferma password

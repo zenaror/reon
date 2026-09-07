@@ -33,6 +33,9 @@ signup: Registrieren
 forgot-password: Passwort vergessen
 email-addr: E-Mail-Adresse
 password: Passwort
+password-show: Passwort anzeigen
+password-hide: Passwort verbergen
+password-caps-on: Feststelltaste ist aktiviert
 current-password: Aktuelles Passwort
 new-password: Neues Passwort
 confirm-password: Passwort bestätigen

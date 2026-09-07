@@ -33,6 +33,9 @@ signup: Registrarse
 forgot-password: Contraseña olvidada
 email-addr: Correo electrónico
 password: Contraseña
+password-show: Mostrar contraseña
+password-hide: Ocultar contraseña
+password-caps-on: Bloq Mayús está activado
 current-password: Contraseña actual
 new-password: Nueva contraseña
 confirm-password: Confirmar contraseña

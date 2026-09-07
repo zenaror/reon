@@ -65,6 +65,9 @@ your-account: Votre Compte
 forgot-password: Mot de passe oublié
 email-addr: Addresse courriel
 password: Mot de passe
+password-show: Afficher le mot de passe
+password-hide: Masquer le mot de passe
+password-caps-on: La touche Verr Maj est activée
 current-password: Mot de passe actuel
 new-password: Nouveau mot de passe
 confirm-password: Confirmer le mot de passe

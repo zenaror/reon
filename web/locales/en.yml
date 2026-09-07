@@ -64,6 +64,9 @@ your-account: Your Account
 forgot-password: Forgot password
 email-addr: Email address
 password: Password
+password-show: Show password
+password-hide: Hide password
+password-caps-on: Caps Lock is on
 current-password: Current password
 new-password: New password
 confirm-password: Confirm password
