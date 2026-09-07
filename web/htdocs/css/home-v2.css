@@ -1030,3 +1030,60 @@ body.home-v2 main#content { overflow: hidden; }
   align-self: flex-end;
   margin-bottom: 2px;
 }
+
+/* Compose form. */
+.mt-tabs__actions {
+  margin-left: auto;
+  align-self: flex-end;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.mt-compose {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.mt-compose label {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.mt-compose label > span {
+  font-weight: bold;
+  color: #7a3606;
+}
+
+.mt-compose input,
+.mt-compose textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 2px solid var(--mt-frame);
+  background: #fff;
+  font: inherit;
+  border-radius: 0;
+}
+
+.mt-compose textarea {
+  resize: vertical;
+  min-height: 160px;
+  line-height: 1.4;
+}
+
+.mt-compose .mt-note { margin: 0; }
+.mt-compose .mt-statusbar--inline { margin: 4px -12px -12px; border-radius: 0; }
+
+.mt-error,
+.mt-sent {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 2px solid var(--mt-frame);
+  background: var(--mt-plate);
+  color: #7a3606;
+  font-weight: bold;
+}
+
+.mt-error { background: #ffd9c7; border-color: #b03000; color: #7a1a06; }

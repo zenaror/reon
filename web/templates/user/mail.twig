@@ -26,13 +26,56 @@
 		   over SMTP whenever it arrives, so the page has no way to know on its
 		   own that something landed. #}
 		{% if messages is not null %}
-			<a class="mt-btn mt-refresh" href="/user/mail.php{{ folder == 'trash' ? '?folder=trash' : '' }}" title="{{'mail.refresh'|trans}}">
-				<span aria-hidden="true">&#8635;</span> {{'mail.refresh'|trans}}
-			</a>
+			<span class="mt-tabs__actions">
+				<a class="mt-btn" href="/user/mail.php?compose=1">{{'mail.compose'|trans}}</a>
+				<a class="mt-btn" href="/user/mail.php{{ folder == 'trash' ? '?folder=trash' : '' }}" title="{{'mail.refresh'|trans}}">
+					<span aria-hidden="true">&#8635;</span> {{'mail.refresh'|trans}}
+				</a>
+			</span>
 		{% endif %}
 	</nav>
 
-	{% if messages is not null %}
+	{% if compose is not null %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{'mail.compose'|trans}}</h2>
+
+			{% if compose_error %}
+				<p class="mt-error">
+					{% if compose_error == 'external' %}{{'mail.err-external'|trans}}
+					{% elseif compose_error == 'empty' %}{{'mail.err-empty'|trans}}
+					{% else %}{{'mail.err-failed'|trans}}{% endif %}
+				</p>
+			{% endif %}
+
+			<form class="mt-compose" method="post" action="/user/mail.php">
+				<input type="hidden" name="action" value="send">
+				<label>
+					<span>{{'mail.to'|trans}}</span>
+					<input type="text" name="to" value="{{ compose.to }}" autocomplete="off" required>
+				</label>
+				<label>
+					<span>{{'mail.subject'|trans}}</span>
+					<input type="text" name="subject" value="{{ compose.subject }}" autocomplete="off">
+				</label>
+				<label>
+					<span>{{'mail.body'|trans}}</span>
+					<textarea name="body" rows="12" required>{{ compose.body }}</textarea>
+				</label>
+				<p class="mt-note">{{'mail.compose-note'|trans}}</p>
+				<div class="mt-statusbar mt-statusbar--inline">
+					<span class="mt-statusbar__hint">{{'mail.hint-compose'|trans}}</span>
+					<span class="mt-statusbar__acts">
+						<a class="mt-btn" href="/user/mail.php">{{'mail.back'|trans}}</a>
+						<button class="mt-btn" type="submit">{{'mail.send'|trans}}</button>
+					</span>
+				</div>
+			</form>
+		</section>
+
+	{% elseif messages is not null %}
+		{% if sent|default(false) %}
+			<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
+		{% endif %}
 		<section class="mt-panel">
 			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
 

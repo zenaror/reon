@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once("ConfigUtil.php");
 
 	// Web client's view over sys_inbox.
 	//
@@ -68,6 +69,104 @@
 			$stmt->bind_param("ii", $id, $userId);
 			$stmt->execute();
 			return $stmt->affected_rows > 0;
+		}
+
+		// Resolves an address to a REON account id, or null if it belongs to
+		// the real internet. Matches on either form of the local part -- the
+		// full username or the 8-character one the games are limited to --
+		// exactly as mail/deliver.js does for inbound mail, and regardless of
+		// which of our domains it was addressed to.
+		public function resolveLocalRecipient($address) {
+			$local = trim((string)$address);
+			$at = strpos($local, "@");
+			$domain = "";
+			if ($at !== false) {
+				$domain = strtolower(substr($local, $at + 1));
+				$local = substr($local, 0, $at);
+			}
+
+			$cfg = ConfigUtil::getInstance()->getConfig();
+			$ours = [strtolower($cfg["email_domain_dion"] ?? ""), strtolower($cfg["email_domain"] ?? "")];
+			// A bare local part with no domain is treated as one of ours;
+			// anything addressed to someone else's domain never is.
+			if ($domain !== "" && !in_array($domain, $ours, true)) return null;
+			if ($local === "") return null;
+
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select id from sys_users where username = ? or dion_email_local = ? limit 1");
+			$stmt->bind_param("ss", $local, $local);
+			$stmt->execute();
+			$row = $stmt->get_result()->fetch_assoc();
+			return $row ? (int)$row["id"] : null;
+		}
+
+		// Builds the message in the shape pop3Connection.js expects to hand to
+		// a Game Boy: CRLF throughout, a blank CRLF line between headers and
+		// body, and a charset the adapter can actually render.
+		//
+		// Latin text goes out as us-ascii. Anything else is converted to
+		// ISO-2022-JP, the one charset the Mobile Trainer renders -- sending
+		// UTF-8 would reach the webmail intact but show as garbage in-game.
+		private function buildMessage($fromAddress, $fromName, $toAddress, $subject, $body) {
+			$isAscii = function ($text) {
+				return preg_match('/^[\x00-\x7F]*$/', (string)$text) === 1;
+			};
+			$toJis = function ($text) {
+				$jis = @mb_convert_encoding((string)$text, "ISO-2022-JP", "UTF-8");
+				return $jis === false ? (string)$text : $jis;
+			};
+			$encodeHeader = function ($text) use ($isAscii, $toJis) {
+				if ($isAscii($text)) return (string)$text;
+				return "=?ISO-2022-JP?B?" . base64_encode($toJis($text)) . "?=";
+			};
+
+			$bodyIsAscii = $isAscii($body);
+			$charset = $bodyIsAscii ? "us-ascii" : "iso-2022-jp";
+			$wireBody = $bodyIsAscii ? (string)$body : $toJis($body);
+
+			$headers = [
+				"MIME-Version: 1.0",
+				"From: " . $fromAddress . ($fromName !== "" ? " (" . $encodeHeader($fromName) . ")" : ""),
+				"To: " . $toAddress,
+				"Subject: " . $encodeHeader($subject),
+				"Content-Type: text/plain; charset=" . $charset,
+			];
+
+			$message = implode("\r\n", $headers) . "\r\n\r\n" . $wireBody;
+			// Normalize whatever the browser submitted to CRLF, the way
+			// deliver.js does for what Postfix hands it.
+			return preg_replace('/\r\n|\r|\n/', "\r\n", $message);
+		}
+
+		// Sends from $fromUserId. Returns [ok, reason]; "external" means the
+		// recipient is off-site and this path cannot deliver it yet.
+		public function send($fromUserId, $toAddress, $subject, $body) {
+			$db = DBUtil::getInstance()->getDB();
+			$fromUserId = (int)$fromUserId;
+
+			$stmt = $db->prepare("select username, dion_email_local from sys_users where id = ? limit 1");
+			$stmt->bind_param("i", $fromUserId);
+			$stmt->execute();
+			$sender = $stmt->get_result()->fetch_assoc();
+			if (!$sender) return [false, "no-sender"];
+
+			$recipientId = $this->resolveLocalRecipient($toAddress);
+			if ($recipientId === null) return [false, "external"];
+
+			$cfg = ConfigUtil::getInstance()->getConfig();
+			// Sent from the DION address so a reply from inside a game lands
+			// back here: that is the address the adapter knows how to answer.
+			$fromAddress = $sender["dion_email_local"] . "@" . $cfg["email_domain_dion"];
+
+			$message = $this->buildMessage(
+				$fromAddress, (string)$sender["username"], trim((string)$toAddress),
+				trim((string)$subject), (string)$body
+			);
+
+			$stmt = $db->prepare("insert into sys_inbox (sender, recipient, message) values (?, ?, ?)");
+			$stmt->bind_param("sis", $fromAddress, $recipientId, $message);
+			$stmt->execute();
+			return [$stmt->affected_rows > 0, $stmt->affected_rows > 0 ? "sent" : "insert-failed"];
 		}
 
 		// Bulk variants of the three actions. Each runs as one statement rather
