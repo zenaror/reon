@@ -44,7 +44,12 @@
 						</div>
 						<div class="mb-3">
 							<label for="password" class="form-label">{{'password'|trans}}</label>
-							<input id="password" type="password" name="password" required class="form-control{% if result == 4 %}{{ " is-invalid" }}{% endif %}">
+							{# minlength so the browser says what is wrong before a
+							   round-trip; the server stays the authority. #}
+							<input id="password" type="password" name="password" required
+							       minlength="8" maxlength="71"
+							       class="form-control{% if result == 4 %}{{ " is-invalid" }}{% endif %}">
+							<div class="form-text">{{'password-hint'|trans}}</div>
 							<div class="invalid-feedback">
 								{{'password-invalid'|trans}}
 							</div>

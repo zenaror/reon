@@ -72,7 +72,8 @@ confirm-password: Confirmar senha
 confirm-new-password: Confirmar nova senha
 new-email: Novo e-mail
 invalid-email: E-mail inválido
-password-invalid: Senha inválida
+password-invalid: "A senha precisa ter entre 8 e 71 caracteres."
+password-hint: "De 8 a 71 caracteres."
 passwords-dont-match: As senhas não coincidem
 wrong-password: Senha incorreta
 link-invalid-expired: Este link é inválido ou expirou.

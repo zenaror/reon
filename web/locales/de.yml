@@ -42,7 +42,8 @@ confirm-password: Passwort bestätigen
 confirm-new-password: Neues Passwort bestätigen
 new-email: Neue E-Mail
 invalid-email: Ungültige E-Mail
-password-invalid: Ungültiges Passwort
+password-invalid: "Das Passwort muss zwischen 8 und 71 Zeichen lang sein."
+password-hint: "8 bis 71 Zeichen."
 passwords-dont-match: Die Passwörter stimmen nicht überein
 wrong-password: Falsches Passwort
 link-invalid-expired: Dieser Link ist ungültig oder abgelaufen.
