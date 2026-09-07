@@ -1,0 +1,53 @@
+{% extends "main.twig" %}
+
+{% block title %}{{'admin.news-title'|trans}}{% endblock %}
+
+{% block content %}
+	<div class="d-flex align-items-center justify-content-between mb-3">
+		<h1 class="h4 mb-0">{{'admin.news-title'|trans}}</h1>
+		<a class="btn btn-primary" href="/admin/news.php?action=new">{{'admin.news-new'|trans}}</a>
+	</div>
+
+	{% if posts is empty %}
+		<p>{{'news-empty'|trans}}</p>
+	{% else %}
+		<div class="table-responsive">
+			<table class="table align-middle">
+				<thead>
+					<tr>
+						<th scope="col">{{'admin.news-date'|trans}}</th>
+						<th scope="col">{{'admin.news-post-title'|trans}}</th>
+						<th scope="col">{{'admin.news-state'|trans}}</th>
+						<th scope="col"></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for post in posts %}
+						<tr>
+							<td>{% if post.published_at %}{{ post.published_at|date("Y.m.d") }}{% else %}—{% endif %}</td>
+							<td>{{ post.title }}</td>
+							<td>
+								{% if post.published_at %}
+									<span class="badge text-bg-success">{{'admin.news-published'|trans}}</span>
+								{% else %}
+									<span class="badge text-bg-secondary">{{'admin.news-draft'|trans}}</span>
+								{% endif %}
+							</td>
+							<td class="text-end">
+								{% if post.published_at %}
+									<a class="btn btn-sm btn-outline-secondary" href="/news.php?slug={{ post.slug|url_encode }}">{{'admin.news-view'|trans}}</a>
+								{% endif %}
+								<a class="btn btn-sm btn-outline-primary" href="/admin/news.php?action=edit&amp;id={{ post.id }}">{{'admin.news-edit'|trans}}</a>
+								<form method="post" class="d-inline" onsubmit="return confirm('{{'admin.news-delete-confirm'|trans}}');">
+									<input type="hidden" name="action" value="delete">
+									<input type="hidden" name="id" value="{{ post.id }}">
+									<button type="submit" class="btn btn-sm btn-outline-danger">{{'admin.news-delete'|trans}}</button>
+								</form>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% endif %}
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "main.twig" %}
+
+{% block title %}{{'admin.news-title'|trans}}{% endblock %}
+
+{% block content %}
+	<h1 class="h4 mb-3">{% if post and post.id %}{{'admin.news-editing'|trans}}{% else %}{{'admin.news-new'|trans}}{% endif %}</h1>
+
+	{% if error == "title-required" %}
+		<div class="alert alert-danger">{{'admin.news-title-required'|trans}}</div>
+	{% endif %}
+
+	<form method="post" accept-charset="utf-8">
+		<input type="hidden" name="action" value="save">
+		{% if post and post.id %}<input type="hidden" name="id" value="{{ post.id }}">{% endif %}
+
+		<div class="mb-3">
+			<label for="title" class="form-label">{{'admin.news-post-title'|trans}}</label>
+			<input id="title" name="title" type="text" required maxlength="200" class="form-control" value="{{ post ? post.title : '' }}">
+		</div>
+
+		<div class="mb-2 d-flex flex-wrap gap-2">
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-md="bold"><strong>B</strong></button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-md="italic"><em>I</em></button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-md="heading">H</button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-md="link">{{'admin.news-md-link'|trans}}</button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" data-md="list">{{'admin.news-md-list'|trans}}</button>
+			<button type="button" class="btn btn-sm btn-outline-secondary" id="uploadBtn">{{'admin.news-md-image'|trans}}</button>
+			<input type="file" id="imageInput" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+			<button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="previewBtn">{{'admin.news-preview'|trans}}</button>
+		</div>
+
+		<div class="mb-3">
+			<label for="body" class="form-label">{{'admin.news-body'|trans}}</label>
+			<textarea id="body" name="body" rows="18" class="form-control font-monospace">{{ post ? post.body : '' }}</textarea>
+			<div class="form-text">{{'admin.news-markdown-hint'|trans}}</div>
+		</div>
+
+		<div id="previewPane" class="mb-3 border rounded p-3 d-none">
+			<h2 class="h6 text-muted">{{'admin.news-preview'|trans}}</h2>
+			<article id="previewBody" class="reon-post"></article>
+		</div>
+
+		<div class="form-check mb-3">
+			<input class="form-check-input" type="checkbox" id="published" name="published" {% if post and post.published_at %}checked{% endif %}>
+			<label class="form-check-label" for="published">{{'admin.news-publish'|trans}}</label>
+		</div>
+
+		<button type="submit" class="btn btn-primary">{{'admin.news-save'|trans}}</button>
+		<a class="btn btn-outline-secondary" href="/admin/news.php">{{'admin.news-cancel'|trans}}</a>
+	</form>
+{% endblock %}
+
+{% block body %}
+<script>
+(function () {
+	const body = document.getElementById("body");
+
+	function wrap(before, after) {
+		const start = body.selectionStart, end = body.selectionEnd;
+		const selected = body.value.substring(start, end);
+		body.value = body.value.substring(0, start) + before + selected + after + body.value.substring(end);
+		body.focus();
+		body.selectionStart = start + before.length;
+		body.selectionEnd = start + before.length + selected.length;
+	}
+
+	function insertAtCursor(text) {
+		const start = body.selectionStart;
+		body.value = body.value.substring(0, start) + text + body.value.substring(body.selectionEnd);
+		body.focus();
+		body.selectionStart = body.selectionEnd = start + text.length;
+	}
+
+	document.querySelectorAll("[data-md]").forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			switch (btn.dataset.md) {
+				case "bold": wrap("**", "**"); break;
+				case "italic": wrap("_", "_"); break;
+				case "heading": insertAtCursor("\n## "); break;
+				case "link": wrap("[", "](https://)"); break;
+				case "list": insertAtCursor("\n- "); break;
+			}
+		});
+	});
+
+	const imageInput = document.getElementById("imageInput");
+	document.getElementById("uploadBtn").addEventListener("click", function () {
+		imageInput.click();
+	});
+	imageInput.addEventListener("change", function () {
+		if (!imageInput.files.length) return;
+		const data = new FormData();
+		data.append("image", imageInput.files[0]);
+		fetch("/admin/upload_image.php", { method: "POST", body: data })
+			.then(function (r) { return r.json(); })
+			.then(function (json) {
+				if (json.url) {
+					insertAtCursor("\n![](" + json.url + ")\n");
+				} else {
+					alert({{ 'admin.news-upload-failed'|trans|json_encode|raw }} + " (" + (json.error || "?") + ")");
+				}
+			})
+			.catch(function () { alert({{ 'admin.news-upload-failed'|trans|json_encode|raw }}); })
+			.finally(function () { imageInput.value = ""; });
+	});
+
+	const pane = document.getElementById("previewPane");
+	document.getElementById("previewBtn").addEventListener("click", function () {
+		if (!pane.classList.contains("d-none")) {
+			pane.classList.add("d-none");
+			return;
+		}
+		const data = new FormData();
+		data.append("body", body.value);
+		fetch("/admin/preview.php", { method: "POST", body: data })
+			.then(function (r) { return r.text(); })
+			.then(function (html) {
+				document.getElementById("previewBody").innerHTML = html;
+				pane.classList.remove("d-none");
+			});
+	});
+})();
+</script>
+{% endblock %}
