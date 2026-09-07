@@ -353,6 +353,45 @@
 			return $stmt->affected_rows > 0;
 		}
 
+		// Messages that arrived since this account last opened the webmail
+		// inbox, counted by id rather than by date -- see the migration for
+		// why. A marker of 0 means it never has, so everything counts.
+		public function countNewForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select count(*) as c from sys_inbox i
+				 join sys_users u on u.id = i.recipient
+				 where i.recipient = ? and i.deleted_at is null
+				   and i.id > u.mail_seen_id"
+			);
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
+		// Called when the inbox list is shown, and only then: opening a single
+		// message or the trash must not clear the marker for mail the person
+		// has not actually looked at yet.
+		//
+		// greatest() so the marker only ever moves forward. Without it,
+		// opening an inbox whose newest message was since trashed would move
+		// it backwards and resurrect older mail as "new".
+		public function markInboxSeen($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"update sys_users u
+				 set u.mail_seen_id = greatest(
+				     u.mail_seen_id,
+				     coalesce((select max(i.id) from sys_inbox i where i.recipient = u.id), 0)
+				 )
+				 where u.id = ?"
+			);
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+		}
+
 		public function countTrashForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is not null");

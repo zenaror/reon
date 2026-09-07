@@ -72,7 +72,10 @@
 								</a>
 								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
 									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
-									<li><a class="dropdown-item" href="/user/mail.php">{{'mail.title'|trans}}</a></li>
+									<li><a class="dropdown-item" href="/user/mail.php">
+										{{'mail.title'|trans}}
+										{%- if mail_count > 0 %} <span class="mail-badge{{ mail_new > 0 ? ' mail-badge--new' : '' }}">{{ mail_count }}</span>{% endif %}
+									</a></li>
 									<li><hr class="dropdown-divider"></li>
 									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
 								</ul>

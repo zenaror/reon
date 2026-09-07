@@ -36,6 +36,20 @@
 			$vars["session_active"] = SessionUtil::getInstance()->isSessionActive();
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
 			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
+
+			// Mail counts are injected globally so the navigation can show
+			// them on every page, not only inside the webmail. Two queries,
+			// and only for a signed-in visitor.
+			if ($vars["session_active"] && isset($_SESSION["user_id"])) {
+				require_once(__DIR__."/MailUtil.php");
+				$mail = MailUtil::getInstance();
+				$vars["mail_count"] = $mail->countForUser($_SESSION["user_id"]);
+				$vars["mail_new"] = $mail->countNewForUser($_SESSION["user_id"]);
+			} else {
+				$vars["mail_count"] = 0;
+				$vars["mail_new"] = 0;
+			}
+
 			return self::$instance->twig->render($template.".twig", $vars);
 		}
 
