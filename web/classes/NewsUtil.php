@@ -163,13 +163,65 @@
 			return true;
 		}
 
+		// Where upload_image.php puts what the editor uploads.
+		const IMAGE_DIR = "/images/news/";
+
 		public function delete($id) {
 			$db = DBUtil::getInstance()->getDB();
 			$id = (int)$id;
+
+			// Read the body before the row goes: afterwards there is nothing
+			// left to say which files belonged to this post.
+			$post = $this->getById($id);
+
 			$stmt = $db->prepare("delete from sys_news where id = ?");
 			$stmt->bind_param("i", $id);
 			$stmt->execute();
+
+			if ($post !== null) {
+				$this->deleteOrphanedImages($post["body"] ?? "");
+			}
 			return true;
+		}
+
+		// Removes the uploaded images a deleted post referenced, skipping any
+		// still referenced by a surviving post -- the same image can be used
+		// in more than one, and deleting it would break the others.
+		private function deleteOrphanedImages($body) {
+			$names = $this->imageNamesIn($body);
+			if (empty($names)) return;
+
+			$db = DBUtil::getInstance()->getDB();
+			$baseDir = realpath(dirname(__DIR__) . "/htdocs" . self::IMAGE_DIR);
+			if ($baseDir === false) return;
+
+			foreach ($names as $name) {
+				$stmt = $db->prepare("select 1 from sys_news where body like ? limit 1");
+				$needle = "%" . self::IMAGE_DIR . $name . "%";
+				$stmt->bind_param("s", $needle);
+				$stmt->execute();
+				if ($stmt->get_result()->fetch_row() !== null) {
+					continue; // another post still uses it
+				}
+
+				// realpath() again on the full path, and the prefix check, so
+				// a crafted body can never reach outside the image directory.
+				$path = realpath($baseDir . "/" . $name);
+				if ($path !== false && strpos($path, $baseDir . DIRECTORY_SEPARATOR) === 0 && is_file($path)) {
+					@unlink($path);
+				}
+			}
+		}
+
+		// Matches only the names upload_image.php generates (date, dash, 16
+		// hex characters, known extension). Anything else in the body is a
+		// link the editor typed, and is not ours to delete.
+		private function imageNamesIn($body) {
+			$pattern = '#' . preg_quote(self::IMAGE_DIR, '#') . '(\d{8}-[0-9a-f]{16}\.(?:png|jpg|gif|webp))#i';
+			if (!preg_match_all($pattern, (string)$body, $matches)) {
+				return [];
+			}
+			return array_values(array_unique($matches[1]));
 		}
 
 		private function fetchAll(&$stmt) {
