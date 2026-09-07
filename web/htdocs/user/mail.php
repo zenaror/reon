@@ -59,6 +59,8 @@
 					"folder" => "inbox",
 					"trash_count" => $mail->countTrashForUser($userId),
 					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 				]);
 				return;
 			}
@@ -83,6 +85,8 @@
 			"folder" => "inbox",
 			"trash_count" => $mail->countTrashForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 		]);
 		return;
 	}
@@ -99,6 +103,8 @@
 			"folder" => $folder,
 			"trash_count" => $mail->countTrashForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 		]);
 		return;
 	}
@@ -111,4 +117,6 @@
 		"folder" => $folder,
 		"trash_count" => $mail->countTrashForUser($userId),
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+		"body_max_lines" => MailUtil::BODY_MAX_LINES,
+		"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 	]);

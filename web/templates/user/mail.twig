@@ -44,6 +44,8 @@
 					{% if compose_error == 'empty' %}{{'mail.err-empty'|trans}}
 					{% elseif compose_error == 'bad-address' %}{{'mail.err-bad-address'|trans}}
 					{% elseif compose_error == 'rate-limited' %}{{'mail.err-rate-limited'|trans}}
+					{% elseif compose_error == 'too-many-lines' %}{{'mail.err-too-many-lines'|trans({'%lines%': body_max_lines})}}
+					{% elseif compose_error == 'too-many-chars' %}{{'mail.err-too-many-chars'|trans({'%chars%': body_max_chars})}}
 					{% elseif compose_error == 'relay-failed' %}{{'mail.err-relay-failed'|trans}}
 					{% else %}{{'mail.err-failed'|trans}}{% endif %}
 				</p>
@@ -61,9 +63,14 @@
 				</label>
 				<label>
 					<span>{{'mail.body'|trans}}</span>
-					<textarea name="body" rows="12" required>{{ compose.body }}</textarea>
+					<textarea name="body" id="mt-body" rows="9" required
+						data-max-lines="{{ body_max_lines }}" data-max-chars="{{ body_max_chars }}">{{ compose.body }}</textarea>
 				</label>
+				{# The counter mirrors the server's rule exactly, so nobody
+				   writes a whole message only to have it refused on submit. #}
+				<p class="mt-count" id="mt-body-count" aria-live="polite"></p>
 				<p class="mt-note">{{'mail.compose-note'|trans}}</p>
+				<p class="mt-note">{{'mail.size-note'|trans({'%lines%': body_max_lines, '%chars%': body_max_chars})}}</p>
 				<div class="mt-statusbar mt-statusbar--inline">
 					<span class="mt-statusbar__hint">{{'mail.hint-compose'|trans}}</span>
 					<span class="mt-statusbar__acts">
@@ -72,6 +79,34 @@
 					</span>
 				</div>
 			</form>
+
+			<script>
+			(function () {
+				var box = document.getElementById("mt-body");
+				var out = document.getElementById("mt-body-count");
+				if (!box || !out) return;
+
+				var maxLines = parseInt(box.dataset.maxLines, 10);
+				var maxChars = parseInt(box.dataset.maxChars, 10);
+				var template = {{ 'mail.size-count'|trans|json_encode|raw }};
+
+				function update() {
+					// Same rule as MailUtil::checkBodyFits: line breaks are not
+					// counted against the character budget.
+					var text = box.value.replace(/\r\n|\r/g, "\n");
+					var lines = text.split("\n").length;
+					var chars = Array.from(text.replace(/\n/g, "")).length;
+
+					out.textContent = template
+						.replace("%lines%", lines).replace("%maxlines%", maxLines)
+						.replace("%chars%", chars).replace("%maxchars%", maxChars);
+					out.classList.toggle("mt-count--over", lines > maxLines || chars > maxChars);
+				}
+
+				box.addEventListener("input", update);
+				update();
+			})();
+			</script>
 		</section>
 
 	{% elseif messages is not null %}
