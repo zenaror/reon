@@ -1,13 +1,13 @@
 {
   "file_rotation": {
-    "source_root": "files/bxt",
     "jobs": [
       {
         "id": "example_job",
         "source": "app/auto-schedule/files/example/example.bin",
         "dest_dir": "app/auto-schedule/files/example_target/example.bin",
         "filename": "january_en.bin",
-        "date": "01-15"
+        "date": "01-15",
+        "disabled": true
       },
       {
         "id": "example_job_with_date_and_time",
