@@ -75,9 +75,62 @@
 		input.addEventListener("blur", function () { warning.hidden = true; });
 	}
 
+	// A live checklist, on the fields that set a password rather than the ones
+	// that merely confirm an existing one. Marked in the template with
+	// data-password-rules, and fed the same numbers the server enforces.
+	function addCriteria(input) {
+		var rules = window.REON_PASSWORD_RULES;
+		if (!rules || !rules.length) return;
+
+		var list = document.createElement("ul");
+		list.className = "reon-pass__rules";
+		list.setAttribute("aria-label", strings.rulesLabel || "Password requirements");
+
+		var items = rules.map(function (rule) {
+			var li = document.createElement("li");
+			li.className = "reon-pass__rule";
+			var mark = document.createElement("span");
+			mark.className = "reon-pass__mark";
+			mark.setAttribute("aria-hidden", "true");
+			var text = document.createElement("span");
+			text.textContent = rule.label;
+			li.appendChild(mark);
+			li.appendChild(text);
+			list.appendChild(li);
+			return { li: li, rule: rule };
+		});
+
+		// After the field's own wrapper, and after the Caps Lock warning that
+		// enhance() inserted right behind it.
+		var anchor = input.closest(".reon-pass");
+		anchor.parentNode.insertBefore(list, anchor.nextSibling.nextSibling);
+
+		function check() {
+			var value = input.value;
+			// Characters for the minimum, bytes for the maximum: bcrypt's
+			// limit is on bytes, so an accented password is not what it looks.
+			var chars = Array.from(value).length;
+			var bytes = new TextEncoder().encode(value).length;
+
+			items.forEach(function (item) {
+				var ok = item.rule.kind === "min" ? chars >= item.rule.value : bytes <= item.rule.value;
+				// Untouched fields show the rules plainly rather than as a
+				// wall of failures nobody has had a chance to satisfy yet.
+				item.li.classList.toggle("is-met", value !== "" && ok);
+				item.li.classList.toggle("is-unmet", value !== "" && !ok);
+			});
+		}
+
+		input.addEventListener("input", check);
+		check();
+	}
+
 	function init() {
 		var fields = document.querySelectorAll('input[type="password"]');
-		for (var i = 0; i < fields.length; i++) enhance(fields[i]);
+		for (var i = 0; i < fields.length; i++) {
+			enhance(fields[i]);
+			if (fields[i].dataset.passwordRules === "1") addCriteria(fields[i]);
+		}
 	}
 
 	if (document.readyState === "loading") {

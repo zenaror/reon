@@ -616,3 +616,44 @@ body.pokecrystal-index main#content {
   content: "\21EA";
   margin-right: 0.35rem;
 }
+
+/* Password criteria list. Neutral until something is typed: showing a wall of
+   failures before the person has had a chance to satisfy them reads as
+   scolding, not helping. */
+.reon-pass__rules {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.reon-pass__rule {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.reon-pass__mark::before {
+  content: "\2022";
+  font-weight: 700;
+}
+
+.reon-pass__rule.is-met {
+  color: #16713a;
+}
+
+.reon-pass__rule.is-met .reon-pass__mark::before {
+  content: "\2713";
+}
+
+.reon-pass__rule.is-unmet {
+  color: #a5580b;
+}
+
+.reon-pass__rule.is-unmet .reon-pass__mark::before {
+  content: "\00D7";
+}

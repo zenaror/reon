@@ -75,6 +75,9 @@ new-email: New email
 invalid-email: Invalid email
 password-invalid: "The password must be between 8 and 71 characters."
 password-hint: "8 to 71 characters."
+password-rules-label: "Password requirements"
+password-rule-min: "At least %count% characters"
+password-rule-max: "At most %count% characters"
 passwords-dont-match: The passwords don't match
 wrong-password: Wrong password
 link-invalid-expired: This link is invalid or has expired.

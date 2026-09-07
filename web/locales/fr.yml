@@ -76,6 +76,9 @@ new-email: Nouveau addresse courriel
 invalid-email: Addresse invalide
 password-invalid: "Le mot de passe doit contenir entre 8 et 71 caractères."
 password-hint: "De 8 à 71 caractères."
+password-rules-label: "Exigences du mot de passe"
+password-rule-min: "Au moins %count% caractères"
+password-rule-max: "Au plus %count% caractères"
 passwords-dont-match: Les mots de passe sont différents
 wrong-password: Mot de passe incorrect
 link-invalid-expired: Soit ce lien est invalide, soit il a expiré.

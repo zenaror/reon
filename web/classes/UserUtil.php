@@ -45,9 +45,18 @@
 			return false;
 		}
 		
+		// The password rules, in one place. The signup, reset and change forms
+		// read these to draw the criteria list, so what the page promises and
+		// what this function enforces cannot drift apart.
+		//
+		// The upper bound is bcrypt's: it truncates at 72 bytes, so accepting
+		// more would be pretending the extra characters count for something.
+		const PASSWORD_MIN_CHARS = 8;
+		const PASSWORD_MAX_BYTES = 71;
+
 		private function validatePasswordConstraints($password) {
-			if (mb_strlen($password, "UTF-8") < 8) return false;
-			if (strlen($password) >= 72) return false;
+			if (mb_strlen($password, "UTF-8") < self::PASSWORD_MIN_CHARS) return false;
+			if (strlen($password) > self::PASSWORD_MAX_BYTES) return false;
 			return true;
 		}
 		

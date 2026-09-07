@@ -44,6 +44,9 @@ new-email: Nuevo correo electrónico
 invalid-email: Correo electrónico inválido
 password-invalid: "La contraseña debe tener entre 8 y 71 caracteres."
 password-hint: "De 8 a 71 caracteres."
+password-rules-label: "Requisitos de la contraseña"
+password-rule-min: "Al menos %count% caracteres"
+password-rule-max: "Como máximo %count% caracteres"
 passwords-dont-match: Las contraseñas no coinciden
 wrong-password: Contraseña incorrecta
 link-invalid-expired: Este enlace no es válido o ha caducado.

@@ -47,9 +47,8 @@
 							{# minlength so the browser says what is wrong before a
 							   round-trip; the server stays the authority. #}
 							<input id="password" type="password" name="password" required
-							       minlength="8" maxlength="71"
+							       minlength="{{ password_min }}" maxlength="{{ password_max }}" data-password-rules="1"
 							       class="form-control{% if result == 4 %}{{ " is-invalid" }}{% endif %}">
-							<div class="form-text">{{'password-hint'|trans}}</div>
 							<div class="invalid-feedback">
 								{{'password-invalid'|trans}}
 							</div>

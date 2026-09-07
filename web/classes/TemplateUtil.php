@@ -37,6 +37,12 @@
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
 			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
 
+			// Read from UserUtil so the criteria the forms display are the
+			// same numbers the validator enforces.
+			require_once(__DIR__."/UserUtil.php");
+			$vars["password_min"] = UserUtil::PASSWORD_MIN_CHARS;
+			$vars["password_max"] = UserUtil::PASSWORD_MAX_BYTES;
+
 			// Mail counts are injected globally so the navigation can show
 			// them on every page, not only inside the webmail. Two queries,
 			// and only for a signed-in visitor.
