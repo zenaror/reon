@@ -5,8 +5,10 @@
 
 .trainer-rankings-controls {
   width: min(420px, 100%);
-  /* push the filters down so they clear the banner's green top border */
-  margin: 112px auto 0 auto;
+  /* Clearance from the banner is applied once, by the rule below, to whichever
+     block actually comes first -- the issue label and the cycle timer are both
+     conditional, so hardcoding it here double-counted whenever they rendered. */
+  margin: 24px auto 0 auto;
   display: grid;
   row-gap: 8px;
   justify-items: center;
@@ -14,7 +16,7 @@
 
 .trainer-rankings-page .trainer-rankings-issue {
   width: min(980px, 100%);
-  margin: 86px auto 12px auto;
+  margin: 0 auto 12px auto;
   text-align: center;
   font-size: 24px !important;
   line-height: 24px !important;
@@ -496,3 +498,10 @@
   }
 }
 
+
+/* The banner sits over the top of the page, so the first block beneath the
+   title has to clear it. Applied by position rather than to a named block,
+   because which block is first depends on whether the news cycle exists. */
+.trainer-rankings-page > .trade-corner-title + * {
+  margin-top: var(--rankings-banner-clearance, 86px);
+}

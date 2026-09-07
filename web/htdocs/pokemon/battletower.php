@@ -450,8 +450,10 @@
         return "UNKNOWN";
     }
 
-    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? 10);
-    $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? 1);
+    // Defaults to ALL: an unfiltered page shows what actually exists, instead
+    // of a specific level/room that is very likely empty.
+    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? BXT_BT_ALL);
+    $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? BXT_BT_ALL);
 
     $pkm_util = PokemonUtil::getInstance();
     $db_util = DBUtil::getInstance();
