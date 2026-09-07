@@ -35,12 +35,55 @@
 		} elseif ($action === "delete") {
 			$mail->deleteForeverMany($userId, $ids);
 			$back = "/user/mail.php?folder=trash";
+		} elseif ($action === "send") {
+			$to = trim($_POST["to"] ?? "");
+			$subject = trim($_POST["subject"] ?? "");
+			$body = (string)($_POST["body"] ?? "");
+
+			if ($to === "" || $body === "") {
+				$error = "empty";
+			} else {
+				[$ok, $reason] = $mail->send($userId, $to, $subject, $body);
+				$error = $ok ? null : $reason;
+			}
+
+			// The form is re-rendered with what was typed still in it when
+			// something is wrong -- retyping a message because of a typo in
+			// the address would be its own small betrayal.
+			if (isset($error) && $error !== null) {
+				echo TemplateUtil::render("/user/mail", [
+					"message" => null,
+					"messages" => null,
+					"compose" => ["to" => $to, "subject" => $subject, "body" => $body],
+					"compose_error" => $error,
+					"folder" => "inbox",
+					"trash_count" => $mail->countTrashForUser($userId),
+					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+				]);
+				return;
+			}
+			$back = "/user/mail.php?sent=1";
 		} else {
 			$back = "/user/mail.php";
 		}
 
 		// Redirect after POST so a refresh doesn't replay the action.
 		header("Location: " . $back);
+		return;
+	}
+
+	// Compose is its own view rather than a panel on the list, so a long
+	// message has the whole width to be written in.
+	if (isset($_GET["compose"])) {
+		echo TemplateUtil::render("/user/mail", [
+			"message" => null,
+			"messages" => null,
+			"compose" => ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => ""],
+			"compose_error" => null,
+			"folder" => "inbox",
+			"trash_count" => $mail->countTrashForUser($userId),
+			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+		]);
 		return;
 	}
 
@@ -52,6 +95,7 @@
 		echo TemplateUtil::render("/user/mail", [
 			"message" => $message,
 			"messages" => null,
+			"compose" => null,
 			"folder" => $folder,
 			"trash_count" => $mail->countTrashForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
@@ -62,6 +106,8 @@
 	echo TemplateUtil::render("/user/mail", [
 		"message" => null,
 		"messages" => $mail->listForUser($userId, $folder),
+		"compose" => null,
+		"sent" => isset($_GET["sent"]),
 		"folder" => $folder,
 		"trash_count" => $mail->countTrashForUser($userId),
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
