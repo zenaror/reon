@@ -34,6 +34,7 @@
 				<div class="collapse navbar-collapse" id="reonNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 					<li class="nav-item"><a href="/index.php" class="nav-link{% if nav_item == 'index' %}{{ ' active' }}{% endif %}" aria-current="page">{{'home'|trans}}</a></li>
+					<li class="nav-item"><a href="/news.php" class="nav-link{% if nav_item == 'news' %}{{ ' active' }}{% endif %}">{{'news'|trans}}</a></li>
 					<li class="nav-item dropdown">
 						<a href="#" class="nav-link dropdown-toggle{% if nav_item == 'games' %}{{ ' active' }}{% endif %}" id="gamesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							{{'games'|trans}}
@@ -63,8 +64,19 @@
 							</ul>
 						</li>
 						{% if session_active %}
-							<li class="nav-item"><a href="/user/summary.php" class="btn btn-primary me-2">{{'your-account'|trans}}</a></li>
-							<li class="nav-item"><a href="/logout.php" class="btn btn-outline-primary">{{'logout'|trans}}</a></li>
+							{# Grouped into one dropdown: as nav entries were added the two
+							   separate buttons pushed the bar into wrapping onto two lines. #}
+							<li class="nav-item dropdown">
+								<a href="#" class="nav-link dropdown-toggle" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									{{ curr_username|default('your-account'|trans) }}
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
+									<li><a class="dropdown-item" href="/user/mail.php">{{'mail.title'|trans}}</a></li>
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
+								</ul>
+							</li>
 						{% else %}
 							<li class="nav-item"><a href="/login.php" class="btn btn-outline-primary me-2">{{'login'|trans}}</a></li>
 							<li class="nav-item"><a href="/signup.php" class="btn btn-primary">{{'signup'|trans}}</a></li>

@@ -203,6 +203,73 @@ body.home-v2 header.navbar nav > ul.navbar-nav {
 .reon-status__down { color: var(--reon-red); }
 .reon-status__unknown { color: var(--reon-ink-soft); }
 
+.reon-news a { color: var(--reon-blue-deep); text-decoration: none; }
+.reon-news a:hover { text-decoration: underline; }
+
+.reon-news__more {
+  /* Carries the separator the last <li> drops, so the button is divided from
+     the list the same way the entries are divided from each other. Inset by
+     10px so the dots line up with those between items rather than running the
+     full width of the box. */
+  margin: 0 10px;
+  padding: 8px 0 10px;
+  border-top: 2px dotted #d8cfae;
+  text-align: right;
+}
+
+/* pager on /news.php */
+.reon-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.reon-pager__count {
+  font-family: var(--reon-font-display);
+  font-size: 0.82rem;
+  color: var(--reon-ink-soft);
+}
+
+/* rendered Markdown body of a news post */
+.reon-post {
+  max-width: 68ch;
+  line-height: 1.6;
+}
+
+.reon-post img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--reon-line);
+}
+
+.reon-post h2,
+.reon-post h3 {
+  font-family: var(--reon-font-display);
+  margin-top: 1.4em;
+}
+
+.reon-post pre {
+  padding: 10px;
+  overflow-x: auto;
+  background: #fffdf4;
+  border: 1px solid var(--reon-line);
+}
+
+.reon-post blockquote {
+  margin: 1em 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--reon-teal);
+  color: var(--reon-ink-soft);
+}
+
+.reon-post__date {
+  font-family: var(--reon-font-display);
+  font-size: 0.82rem;
+  color: var(--reon-teal);
+}
+
 /* blinking NEW! badge — the era demands it */
 .reon-blink {
   font-style: normal;
@@ -337,7 +404,10 @@ body.home-v2 main#content { padding: 12px 14px 18px; }
 
 .reon-rig__cord {
   fill: none;
-  stroke: #a4abae; /* grey cable, same as the connectors (real Mobile Adapter GB) */
+  /* Sampled from the adapter artwork's own connector grey (#788c92 is the
+     lit face in REON_Blue_Adapter_Horizontal.svg) so cable and adapter read
+     as one object. */
+  stroke: #788c92;
   stroke-width: 6;
   stroke-linecap: round;
 }
@@ -467,7 +537,14 @@ body.home-v2 main#content { padding: 12px 14px 18px; }
   position: absolute;
   left: 12px;
   top: 10px;
-  bottom: 10px;
+  /* An <svg> is a replaced element: with no explicit height it takes one from
+     the viewBox's aspect ratio, which leaves `bottom` over-constrained and
+     silently dropped -- and ties length to width, so widening the weave also
+     lengthened it. Setting height explicitly separates the two axes, which
+     preserveAspectRatio="none" then stretches independently:
+       width  -> how far the cable weaves side to side
+       height -> how far it runs down (100% = the menu, plus any tail) */
+  height: calc(100% + 48px);
   width: 40px;
   z-index: 0;
   pointer-events: none;
@@ -484,13 +561,36 @@ body.home-v2 main#content { padding: 12px 14px 18px; }
    reaching past the edge) tucks under the border instead of spilling onto the waves */
 body.home-v2 main#content { overflow: hidden; }
 
-/* the vine plugs into a REON adapter at its bottom end; it sits low and to the
-   left so its far end slips under the page container's border */
+/* The vine plugs into a REON adapter at its bottom end; it sits low and to the
+   left so its far end slips under the page container's border.
+
+   Anchored to the menu's BOTTOM, not a fixed offset from its top, so the join
+   survives adding or removing menu items. That works because of where the vine
+   actually ends: .reon-menu__vine spans top:10px..bottom:10px of the menu and
+   its path stops at 296 of a 300-unit viewBox, so the cable tip always lands
+   about 0.013 x (menu height) + 9.7px above the menu's bottom edge -- which
+   moves by well under a pixel between a five- and six-item menu, while a
+   top-anchored offset moves by a whole item (~48px) and tears the join apart.
+
+   --reon-adapter-drop is the single dial: how far the adapter's bottom edge
+   hangs below the menu, i.e. increase it to push the adapter down. */
 .reon-menu__adapter {
+  /* Two dials, and only these two:
+       --reon-adapter-width  how big the adapter is drawn
+       --reon-adapter-drop   how far below the menu it hangs
+
+     `left` is derived, not tuned. The cable's tip sits at a position fixed by
+     the vine's own CSS -- .reon-menu__vine is at left:12px, 40px wide, and its
+     path ends in the middle of that box, so the tip is always 32px from the
+     menu's left edge regardless of layout width. Anchoring the adapter's right
+     edge (its plug) to that number keeps the two joined when the artwork is
+     resized, which previously meant re-tuning `left` by hand every time. */
+  --reon-adapter-width: 190px;
+  --reon-adapter-drop: 88px;
   position: absolute;
-  left: -93px;
-  top: 290px;
-  width: 121px;
+  left: calc(32px - var(--reon-adapter-width));
+  bottom: calc(-1 * var(--reon-adapter-drop));
+  width: var(--reon-adapter-width);
   transform: rotate(-13deg);
   transform-origin: 90% 15%;
   z-index: 0;
@@ -559,4 +659,374 @@ body.home-v2 main#content { overflow: hidden; }
   max-width: 100%;
   max-height: 100%;
   image-rendering: pixelated;
+}
+
+/* ---- REON Mail ----
+   Palette lifted from the Mobile Trainer's own mail section, which is orange
+   rather than the blue the rest of the portal uses: a saturated orange field,
+   deep burnt-orange borders and a cream panel. */
+.reon-mail {
+  --mail-orange: #f5a01e;
+  --mail-orange-deep: #c25a10;
+  --mail-cream: #fdfbf0;
+}
+
+.reon-box__bar--mail {
+  background: var(--mail-orange-deep);
+}
+
+.reon-mail-box {
+  border-color: var(--mail-orange-deep);
+  background: var(--mail-cream);
+}
+
+.reon-mail-box .reon-news li {
+  border-bottom-color: #eccf9a;
+}
+
+.reon-mail-box .reon-news__date {
+  color: var(--mail-orange-deep);
+}
+
+.reon-mail-box .reon-news a {
+  color: #8a3f06;
+}
+
+.reon-mail__from {
+  display: block;
+  margin-left: 62px;
+  font-size: 0.74rem;
+  color: var(--reon-ink-soft);
+}
+
+/* Game mail is fixed-line JIS text: preserve the breaks it was written with,
+   but still wrap rather than scroll the page sideways on a phone. */
+.reon-mail__body {
+  margin: 12px 0;
+  padding: 12px;
+  background: #fdfbf0;
+  border: 2px solid #c25a10;
+  box-shadow: 2px 2px 0 rgba(26, 28, 38, 0.22);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--reon-font-display);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+/* ---------------------------------------------------------------------------
+   REON Mail -- styled after the Mobile Trainer's own mail screens: orange
+   chrome, dark-red plates with orange lettering, a mint label column beside
+   white value cells, and a black hint bar along the bottom naming the action.
+   --------------------------------------------------------------------------- */
+
+.reon-mail {
+  --mt-orange: #f5a01e;
+  --mt-deep: #c25a10;
+  --mt-frame: #a83010;
+  --mt-cream: #fdfbf0;
+  --mt-plate: #fbe89a;
+  --mt-mint: #bfe6cc;
+  --mt-rule: #e8b978;
+}
+
+/* Folder tabs: the pale plate is the selected one, as on the main menu. */
+.mt-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.mt-tab {
+  display: inline-block;
+  padding: 6px 18px;
+  border: 2px solid var(--mt-orange);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.mt-tab--on {
+  background: var(--mt-plate);
+  color: #7a3606;
+  border-color: var(--mt-frame);
+}
+
+.mt-tab__count {
+  font-size: 0.85em;
+  opacity: 0.85;
+}
+
+.mt-panel {
+  border: 3px solid var(--mt-frame);
+  border-radius: 0 10px 10px 10px;
+  background: var(--mt-cream);
+  overflow: hidden;
+}
+
+.mt-panel__bar {
+  margin: 0;
+  padding: 7px 12px;
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+  font-size: 1rem;
+  /* Long subjects become the panel title, so it must not push the layout. */
+  overflow-wrap: anywhere;
+}
+
+.mt-empty {
+  margin: 0;
+  padding: 18px 14px;
+  color: #8a6a3a;
+}
+
+.mt-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mt-list__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 0;
+  border-bottom: 2px dotted var(--mt-rule);
+}
+
+.mt-list__row:last-child { border-bottom: 0; }
+
+/* The slot number down the left edge, as in the Trainer's "Emails" screen. */
+.mt-list__num {
+  flex: 0 0 34px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-list__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mt-list__subject {
+  display: block;
+  color: #8a3f06;
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.mt-list__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85em;
+  color: #8a6a3a;
+  overflow-wrap: anywhere;
+}
+
+.mt-list__act {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.mt-list__act form { margin: 0; }
+
+.mt-btn {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 2px solid var(--mt-orange);
+  border-radius: 8px;
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+  font: inherit;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mt-btn:hover,
+.mt-btn:focus-visible {
+  background: var(--mt-plate);
+  color: #7a3606;
+}
+
+.mt-btn--danger {
+  background: #6d1a06;
+  border-color: #e8632a;
+  color: #ffb98a;
+}
+
+/* Mint label cell, white value cell -- the Trainer's message header table. */
+.mt-fields {
+  margin: 0;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.mt-fields > div {
+  display: flex;
+  gap: 0;
+  border: 2px solid var(--mt-frame);
+}
+
+.mt-fields dt {
+  flex: 0 0 128px;
+  margin: 0;
+  padding: 5px 9px;
+  background: var(--mt-mint);
+  color: #14401f;
+  font-weight: bold;
+  border-right: 2px solid var(--mt-frame);
+}
+
+.mt-fields dd {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 5px 9px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.mt-body {
+  margin: 0 12px 12px;
+  padding: 12px;
+  border: 2px solid var(--mt-frame);
+  background: #fff;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+}
+
+/* The Trainer keeps a black strip at the bottom naming the current action. */
+.mt-statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  background: #000;
+  border-radius: 8px;
+}
+
+.mt-statusbar__hint {
+  color: #fff;
+  letter-spacing: 0.06em;
+}
+
+.mt-statusbar__acts {
+  display: flex;
+  gap: 6px;
+}
+
+.mt-statusbar__acts form { margin: 0; }
+
+.mt-note {
+  margin: 8px 2px;
+  font-size: 0.9em;
+  color: #5a4630;
+}
+
+@media (max-width: 640px) {
+  .mt-list__row { flex-wrap: wrap; }
+  .mt-list__act { width: 100%; padding-left: 46px; }
+  .mt-fields > div { flex-direction: column; }
+  .mt-fields dt { flex-basis: auto; border-right: 0; border-bottom: 2px solid var(--mt-frame); }
+}
+
+/* Multi-select in the mail list. */
+.mt-selectall {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 2px solid var(--mt-frame);
+  background: var(--mt-plate);
+  color: #7a3606;
+  font-weight: bold;
+}
+
+.mt-selectall label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.mt-selectall__count { font-weight: normal; }
+
+.mt-list__pick {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding-left: 10px;
+  cursor: pointer;
+}
+
+.mt-selectall input,
+.mt-list__pick input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--mt-deep);
+  cursor: pointer;
+}
+
+/* Inside the panel the bar is the list's footer, so it loses the outer gap
+   and the rounding that only suits the standalone bar under a message. */
+.mt-statusbar--inline {
+  margin-top: 0;
+  border-radius: 0;
+  border-top: 2px solid var(--mt-frame);
+}
+
+.mt-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mt-btn:disabled:hover {
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+}
+
+.mt-btn--danger:disabled:hover {
+  background: #6d1a06;
+  color: #ffb98a;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Pushed to the far end of the tab row, away from the folder tabs it must
+   not be mistaken for. */
+.mt-refresh {
+  margin-left: auto;
+  align-self: flex-end;
+  margin-bottom: 2px;
 }
