@@ -1,6 +1,14 @@
 const EventEmitter = require("events");
 const crypto = require("crypto");
+const encoding = require("encoding-japanese");
 const POP3State = Object.freeze({"AUTHORIZATION":1, "TRANSACTION":2, "UPDATE":3});
+
+// The Mobile Trainer has room for only a short title, so the Subject handed
+// to the game is capped at this many characters -- the ellipsis counts, so a
+// truncated subject is 7 characters plus "...". Nothing is lost: only the
+// copy sent over POP3 is rewritten, and the webmail reads the original row.
+const SUBJECT_MAX_CHARS = 10;
+const SUBJECT_ELLIPSIS = "...";
 
 // Derives the POP3-specific subkey from a device_auth_key (the same key
 // used for HTTP device-auth, see DeviceAuthUtil.php) instead of using it
@@ -129,21 +137,7 @@ class POP3Connection extends EventEmitter {
 								// Check password
 								if (param === results[0]["log_in_password"]) {
 									this._userId = results[0]["id"];
-									// Get a list of mail for the client
-									this._server.mysql.query("select id, char_length(message) as size from sys_inbox where recipient = ?", [results[0]["id"]], function (error, results, fields) {
-										if (error) {
-											this._onError(error);
-										} else {
-											for (let i = 0; i < results.length; i++) {
-												this._maildrop[i] = [];
-												this._maildrop[i]["id"] = results[i]["id"];
-												this._maildrop[i]["size"] = results[i]["size"];
-												this._maildrop[i]["deleted"] = false;
-											}
-										}
-									}.bind(this));
-									this._state = POP3State.TRANSACTION;
-									this._send(true, "pass accepted");
+									this._loadMaildrop(results[0]["id"], "pass accepted");
 								} else {
 									this._send(false, "invalid user or pass");
 								}
@@ -200,20 +194,7 @@ class POP3Connection extends EventEmitter {
 						}
 
 						this._userId = userId;
-						this._server.mysql.query("select id, char_length(message) as size from sys_inbox where recipient = ?", [userId], function (error, results, fields) {
-							if (error) {
-								this._onError(error);
-							} else {
-								for (let i = 0; i < results.length; i++) {
-									this._maildrop[i] = [];
-									this._maildrop[i]["id"] = results[i]["id"];
-									this._maildrop[i]["size"] = results[i]["size"];
-									this._maildrop[i]["deleted"] = false;
-								}
-							}
-						}.bind(this));
-						this._state = POP3State.TRANSACTION;
-						this._send(true, "pass accepted");
+						this._loadMaildrop(userId, "pass accepted");
 					}.bind(this)
 				);
 			} else {
@@ -272,7 +253,11 @@ class POP3Connection extends EventEmitter {
 				if (this._maildrop[i]["deleted"]) deleteList.push(this._maildrop[i]["id"]);
 			}
 			if (deleteList.length > 0) {
-				this._server.mysql.query("delete from sys_inbox where id in (?)", [deleteList], function (error, results, fields) {
+				// Moved to the trash rather than removed. The Mobile Trainer can
+				// delete a message without ever downloading it, so a hard delete
+				// here destroyed mail nothing had read; a purge job clears the
+				// trash after its retention window instead.
+				this._server.mysql.query("update sys_inbox set deleted_at = now(), deleted_by = 'game' where id in (?) and deleted_at is null", [deleteList], function (error, results, fields) {
 					if (error) {
 						this._onError(error);
 					} else {
@@ -324,7 +309,14 @@ class POP3Connection extends EventEmitter {
 		if (this._state == POP3State.TRANSACTION) {
 			if (param != null && param != "" && !isNaN(param)) {
 				if (this._maildrop[param - 1]) {
-					this._getMail(this._maildrop[param - 1]["id"], function(data) {
+					const mailId = this._maildrop[param - 1]["id"];
+					// Recorded on first retrieval only, so the trash can show
+					// whether the game actually took a copy of the message or
+					// discarded it unread -- once deleted the two look alike.
+					this._server.mysql.query("update sys_inbox set retrieved_at = now() where id = ? and retrieved_at is null", [mailId], function (error) {
+						if (error) this._onError(error);
+					}.bind(this));
+					this._getMail(mailId, function(data) {
 						this._send(true, "message follows\r\n" + data + "\r\n.");
 					});
 				} else {
@@ -400,6 +392,42 @@ class POP3Connection extends EventEmitter {
 		}
     }
 	
+	// Builds the maildrop, then enters TRANSACTION and acknowledges -- in that
+	// order, and both inside the callback.
+	//
+	// Previously the state change and the "+OK" were emitted right after the
+	// query was *issued*, so a client that sent STAT immediately got an empty
+	// maildrop on a mailbox that had mail. It never showed up in practice
+	// because the adapter pauses between commands, but the failure is silent
+	// (an empty mailbox, not an error) and the window widens with database
+	// latency, so it is not something to leave resting on client timing.
+	//
+	// Both authentication paths land here, XAPOP included -- which is the one
+	// libmobile actually uses.
+	_loadMaildrop(userId, okMessage) {
+		// deleted_at is the trash marker. Without this filter the client would
+		// re-download every trashed message on each sync and the mailbox would
+		// never appear to empty.
+		this._server.mysql.query(
+			"select id, char_length(message) as size from sys_inbox where recipient = ? and deleted_at is null",
+			[userId],
+			function (error, results, fields) {
+				if (error) {
+					this._onError(error);
+					return;
+				}
+				for (let i = 0; i < results.length; i++) {
+					this._maildrop[i] = [];
+					this._maildrop[i]["id"] = results[i]["id"];
+					this._maildrop[i]["size"] = results[i]["size"];
+					this._maildrop[i]["deleted"] = false;
+				}
+				this._state = POP3State.TRANSACTION;
+				this._send(true, okMessage);
+			}.bind(this)
+		);
+	}
+
 	_getMail(id, callback) {
 		this._server.mysql.query("select message, concat(substring(dayname(timestamp), 1, 3), ', ', day(timestamp), ' ', substring(monthname(timestamp), 1, 3), ' ', year(timestamp), ' ', time(timestamp), ' +0000')as timestamp from sys_inbox where id = ?", [id], function (error, results, fields) {
 			// This callback runs on its own tick of the event loop, well
@@ -464,11 +492,78 @@ class POP3Connection extends EventEmitter {
 		const KEEP = ["mime-version", "from", "to", "subject", "x-game-title", "x-game-code"];
 		let lines = [];
 		for (let key of KEEP) {
-			if (headers[key]) lines.push(headers[key].name + ": " + this._normalizeHeaderValue(headers[key].value));
+			if (!headers[key]) continue;
+			let value = this._normalizeHeaderValue(headers[key].value);
+			if (key === "subject") value = this._truncateSubject(value);
+			lines.push(headers[key].name + ": " + value);
 		}
 		lines.push("Content-Type: " + (contentType || "text/plain; charset=us-ascii"));
 
 		return lines.join("\r\n") + "\r\n\r\n" + body;
+	}
+
+	// Caps the Subject the game receives at SUBJECT_MAX_CHARS, ellipsis
+	// included. Counted in characters rather than bytes: a JIS subject is
+	// multi-byte, and cutting it by byte length would slice a character in
+	// half and leave the ESC-sequence state dangling, which is exactly the
+	// kind of malformed header a 2001-era parser has no defence against.
+	//
+	// A subject that already fits is returned byte-for-byte untouched -- the
+	// re-encode path only ever runs on something that had to change anyway.
+	_truncateSubject(value) {
+		let text = this._decodeSubjectText(value);
+		if (text === null) return value;
+
+		// Array.from splits on codepoints, so characters outside the BMP
+		// count as one rather than as two UTF-16 halves.
+		let chars = Array.from(text);
+		if (chars.length <= SUBJECT_MAX_CHARS) return value;
+
+		let short = chars.slice(0, SUBJECT_MAX_CHARS - SUBJECT_ELLIPSIS.length).join("") + SUBJECT_ELLIPSIS;
+
+		// Pure ASCII goes out plain; anything else has to go back into an
+		// encoded-word, since a raw 8-bit header is not legal and the game
+		// only renders ISO-2022-JP anyway.
+		if (/^[\x20-\x7E]*$/.test(short)) return short;
+
+		let jis = encoding.convert(encoding.stringToCode(short), { to: "JIS", from: "UNICODE" });
+		return "=?ISO-2022-JP?B?" + Buffer.from(jis).toString("base64") + "?=";
+	}
+
+	// Returns the subject as plain text, or null if it can't be read with
+	// confidence -- in which case the caller leaves the header alone rather
+	// than risk emitting something worse than a long title.
+	_decodeSubjectText(value) {
+		if (!/=\?/.test(value)) return value;
+
+		let out = "";
+		let lastEnd = 0;
+		let re = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
+		let m;
+		while ((m = re.exec(value)) !== null) {
+			out += value.slice(lastEnd, m.index);
+			lastEnd = m.index + m[0].length;
+
+			let charset = m[1].toLowerCase();
+			let bytes;
+			if (m[2].toLowerCase() === "b") {
+				bytes = Buffer.from(m[3], "base64");
+			} else {
+				// Q encoding: "_" is a space, "=XX" is a literal byte.
+				bytes = Buffer.from(
+					m[3].replace(/_/g, " ").replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))),
+					"latin1");
+			}
+
+			if (charset === "iso-2022-jp") {
+				out += encoding.codeToString(encoding.convert(Array.from(bytes), { to: "UNICODE", from: "JIS" }));
+			} else if (charset === "utf-8" || charset === "us-ascii") {
+				out += bytes.toString("utf8");
+			} else {
+				return null;
+			}
+		}
+		return out + value.slice(lastEnd);
 	}
 
 	// RFC 822 header parsing: unfolds continuation lines (they start with

@@ -1,0 +1,206 @@
+{% extends "main.twig" %}
+{% set nav_item = "mail" %}
+{# "home" keeps the portal background; the sidebar wrapper is deliberately
+   absent so the mailbox runs the full width, like the per-game pages. #}
+{% set body_class = "home home-v2 reon-mail" %}
+
+{% block title %}{{'mail.title'|trans}}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	<div class="reon-pickup">{{'mail.title'|trans}}<span class="bar"></span></div>
+
+	{# Folder tabs, styled after the Mobile Trainer's menu buttons: the
+	   selected one is the pale plate, the rest are the dark plates. #}
+	<nav class="mt-tabs">
+		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">{{'mail.inbox'|trans}}</a>
+		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">
+			{{'mail.trash'|trans}}{% if trash_count > 0 %} <span class="mt-tab__count">{{ trash_count }}</span>{% endif %}
+		</a>
+
+		{# Only on the list: re-requests the folder being shown. Mail arrives
+		   over SMTP whenever it arrives, so the page has no way to know on its
+		   own that something landed. #}
+		{% if messages is not null %}
+			<a class="mt-btn mt-refresh" href="/user/mail.php{{ folder == 'trash' ? '?folder=trash' : '' }}" title="{{'mail.refresh'|trans}}">
+				<span aria-hidden="true">&#8635;</span> {{'mail.refresh'|trans}}
+			</a>
+		{% endif %}
+	</nav>
+
+	{% if messages is not null %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
+
+			{% if messages is empty %}
+				<p class="mt-empty">{{ folder == 'trash' ? 'mail.trash-empty'|trans : 'mail.empty'|trans }}</p>
+			{% else %}
+				{# One form around the whole list: the checkboxes post as ids[],
+				   and the buttons in the bar below act on the selection. Per-row
+				   forms aren't possible here -- nesting forms is invalid. #}
+				<form method="post" action="/user/mail.php" id="mt-listform">
+					<div class="mt-selectall">
+						<label>
+							<input type="checkbox" id="mt-all">
+							{{'mail.select-all'|trans}}
+						</label>
+						<span class="mt-selectall__count" id="mt-count" aria-live="polite"></span>
+					</div>
+
+					<ol class="mt-list">
+						{% for m in messages %}
+							<li class="mt-list__row">
+								<label class="mt-list__pick">
+									<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
+									<span class="visually-hidden">{{ m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
+								</label>
+								{# The numbered gutter is the Mobile Trainer's mailbox slot number. #}
+								<span class="mt-list__num">{{ loop.index }}</span>
+								<span class="mt-list__main">
+									{# The game gets a 10-character subject; the list has room for
+									   far more, and the whole thing is on the message page. #}
+									{% set subj = m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' %}
+									<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
+									<span class="mt-list__meta">
+										{{ m.from_name ?: m.sender }} &middot; {{ m.timestamp|date("Y.m.d H:i") }}
+										{% if folder == 'trash' %}
+											&middot; {{ m.deleted_by == 'game' ? 'mail.by-game'|trans : 'mail.by-web'|trans }}
+											{# Whether the game took a copy before deleting is the one thing
+											   that distinguishes a normal sync from a discard-unread. #}
+											&middot; {{ m.retrieved ? 'mail.was-downloaded'|trans : 'mail.never-downloaded'|trans }}
+										{% endif %}
+									</span>
+								</span>
+							</li>
+						{% endfor %}
+					</ol>
+
+					<div class="mt-statusbar mt-statusbar--inline">
+						<span class="mt-statusbar__hint">{{ folder == 'trash' ? 'mail.hint-trash'|trans : 'mail.hint-list'|trans }}</span>
+						<span class="mt-statusbar__acts">
+							{% if folder == 'trash' %}
+								<button class="mt-btn mt-needs-pick" type="submit" name="action" value="restore" disabled>{{'mail.restore-selected'|trans}}</button>
+								<button class="mt-btn mt-btn--danger mt-needs-pick" type="submit" name="action" value="delete" disabled
+									data-confirm="{{'mail.confirm-delete'|trans}}">{{'mail.delete-selected-forever'|trans}}</button>
+							{% else %}
+								<button class="mt-btn mt-needs-pick" type="submit" name="action" value="trash" disabled>{{'mail.delete-selected'|trans}}</button>
+							{% endif %}
+						</span>
+					</div>
+				</form>
+			{% endif %}
+		</section>
+
+		{% if folder == 'trash' %}
+			<p class="mt-note">{{'mail.trash-note'|trans({'%days%': retention_days})}}</p>
+		{% endif %}
+
+		<script>
+		(function () {
+			var form = document.getElementById("mt-listform");
+			if (!form) return;
+
+			var all = document.getElementById("mt-all");
+			var count = document.getElementById("mt-count");
+			var picks = [].slice.call(form.querySelectorAll(".mt-pick"));
+			var acts = [].slice.call(form.querySelectorAll(".mt-needs-pick"));
+			var template = {{ 'mail.n-selected'|trans|json_encode|raw }};
+
+			function sync() {
+				var n = picks.filter(function (p) { return p.checked; }).length;
+				// The actions are disabled with nothing picked, so the buttons
+				// can never post an empty selection.
+				acts.forEach(function (b) { b.disabled = n === 0; });
+				count.textContent = n === 0 ? "" : template.replace("%count%", n);
+				if (all) {
+					all.checked = n > 0 && n === picks.length;
+					all.indeterminate = n > 0 && n < picks.length;
+				}
+			}
+
+			if (all) {
+				all.addEventListener("change", function () {
+					picks.forEach(function (p) { p.checked = all.checked; });
+					sync();
+				});
+			}
+			picks.forEach(function (p) { p.addEventListener("change", sync); });
+
+			// Tracked on click rather than read from e.submitter alone: where
+			// submitter is unsupported it is undefined, and the destructive
+			// button would then submit with no confirmation at all.
+			var clicked = null;
+			acts.forEach(function (b) {
+				b.addEventListener("click", function () { clicked = b; });
+			});
+
+			form.addEventListener("submit", function (e) {
+				var btn = e.submitter || clicked;
+				clicked = null;
+				if (btn && btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
+					e.preventDefault();
+				}
+			});
+
+			sync();
+		})();
+		</script>
+
+	{% elseif message is null %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{'mail.message'|trans}}</h2>
+			<p class="mt-empty">{{'mail.not-found'|trans}}</p>
+		</section>
+		<p><a class="reon-chrome-btn" href="/user/mail.php">{{'mail.back'|trans}}</a></p>
+
+	{% else %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{ message.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</h2>
+
+			{# Label/value table lifted from the Mobile Trainer's message screen:
+			   mint label cell on the left, white value cell on the right. #}
+			<dl class="mt-fields">
+				<div><dt>{{'mail.from'|trans}}</dt><dd>{{ message.from_name ? message.from_name ~ ' <' ~ message.sender ~ '>' : message.sender }}</dd></div>
+				<div><dt>{{'mail.date'|trans}}</dt><dd>{{ message.timestamp|date("Y.m.d H:i") }}</dd></div>
+				{% if message.game %}
+					<div><dt>{{'mail.game'|trans}}</dt><dd>{{ message.game }}</dd></div>
+				{% endif %}
+			</dl>
+
+			{# Decoded from ISO-2022-JP by MailUtil; escaped by Twig, then
+			   rendered pre-wrapped because game mail is fixed-line text. #}
+			<pre class="mt-body">{{ message.body }}</pre>
+		</section>
+
+		{# The black hint bar is the Mobile Trainer's bottom status line, and it
+		   names the action the buttons beside it perform. #}
+		<div class="mt-statusbar">
+			<span class="mt-statusbar__hint">{{ message.deleted_at ? 'mail.hint-trash'|trans : 'mail.hint-read'|trans }}</span>
+			<span class="mt-statusbar__acts">
+				<a class="mt-btn" href="{{ message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.back'|trans}}</a>
+				{% if message.deleted_at %}
+					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="restore">
+						<button class="mt-btn" type="submit">{{'mail.restore'|trans}}</button>
+					</form>
+					<form method="post" action="/user/mail.php" onsubmit="return confirm('{{'mail.confirm-delete'|trans|e('js')}}');">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="delete">
+						<button class="mt-btn mt-btn--danger" type="submit">{{'mail.delete-forever'|trans}}</button>
+					</form>
+				{% else %}
+					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="trash">
+						<button class="mt-btn" type="submit">{{'mail.delete'|trans}}</button>
+					</form>
+				{% endif %}
+			</span>
+		</div>
+	{% endif %}
+{% endblock %}
