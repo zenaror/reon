@@ -35,6 +35,12 @@ home: Home
 games: Games
 mobile-home: Mobile Homepage
 news: News
+news-empty: "No news yet."
+news-see-more: "Read more"
+news-newer: "Newer"
+news-older: "Older"
+news-not-found: "That post doesn't exist (or isn't published)."
+news-back-to-list: "Back to news"
 status: Status
 service-web: Web
 service-mail: Mail
@@ -81,8 +87,16 @@ auth:
   registration-email-sent: If not yet registered, an email containing a link to continue
     your registration was sent to the specified email address.
   registration-complete: Your registration is complete.
-  reon-email: REON email address
-  reon-email-invalid: REON email invalid or taken
+  reon-username: "REON username"
+  reon-username-hint: "3 to 20 characters, lowercase letters and numbers only."
+  reon-username-invalid: "Invalid username, or already taken"
+  reon-username-mail-note: "This name also becomes your REON mail address, used by the games:"
+  reon-username-mail-internal: "From the Game Boy"
+  reon-username-mail-external: "From the internet"
+  reon-username-taken: "That name is already taken — please choose another."
+  reon-username-free: "That name is available."
+  reon-username-mail-or: "or"
+  reon-username-mail-truncated: "The games can only hold 8 characters, so a shortened form is used inside the Game Boy — both reach you."
   region-explanation-para1: REON enables international trade for Pokémon Crystal players,
     via the in-game facility called the Trade Corner. This includes trading between
     Japanese and non-Japanese games, which are normally incompatible due to using
@@ -103,6 +117,9 @@ password-reset:
 account:
   your-reon-account: Your REON account
   account-details: Account details
+  reon-identity: "REON identity"
+  external-email: "External e-mail address"
+  external-email-alias: "Also reachable at"
   change-email: Change email
   change-password: Change password
   download-config-data: Download Config Data
@@ -1776,3 +1793,60 @@ pokemon:
     US-WI: Wisconsin
     US-WV: West Virginia
     US-WY: Wyoming
+
+admin:
+  news-title: News admin
+  news-new: New post
+  news-editing: Editing post
+  news-date: Date
+  news-post-title: Title
+  news-state: State
+  news-published: Published
+  news-draft: Draft
+  news-view: View
+  news-edit: Edit
+  news-delete: Delete
+  news-delete-confirm: Delete this post?
+  news-title-required: A title is required.
+  news-body: Body
+  news-markdown-hint: "Markdown: **bold**, _italic_, ## heading, [link](url), ![](image)."
+  news-publish: Published (visible on the site)
+  news-save: Save
+  news-cancel: Cancel
+  news-preview: Preview
+  news-md-link: Link
+  news-md-list: List
+  news-md-image: Image
+  news-upload-failed: Upload failed.
+
+mail:
+  title: "REON Mail"
+  inbox: "Inbox"
+  empty: "No messages."
+  message: "Message"
+  from: "From"
+  date: "Date"
+  game: "Game"
+  no-subject: "no subject"
+  back: "Back to inbox"
+  not-found: "That message doesn't exist."
+  trash: "Trash"
+  trash-empty: "The trash is empty."
+  delete: "Delete"
+  restore: "Restore"
+  delete-forever: "Delete for good"
+  confirm-delete: "Delete this message for good? This cannot be undone."
+  trash-note: "Messages stay in the trash for %days% days, then are deleted for good. Restoring one puts it back in the mailbox, so the game will download it again on the next sync."
+  by-game: "deleted on the Game Boy"
+  by-web: "deleted here"
+  was-downloaded: "the game had downloaded it"
+  never-downloaded: "never downloaded"
+  refresh: "Check for new mail"
+  select-all: "Select all"
+  n-selected: "%count% selected"
+  delete-selected: "Delete selected"
+  restore-selected: "Restore selected"
+  delete-selected-forever: "Delete selected for good"
+  hint-list: "Pick messages to act on"
+  hint-read: "Reading email"
+  hint-trash: "In the trash"

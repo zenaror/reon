@@ -40,6 +40,12 @@ mobile-home: Página Inicial Mobile
 home: Início
 games: Jogos
 news: Notícias
+news-empty: "Nenhuma notícia ainda."
+news-see-more: "Ler mais"
+news-newer: "Mais recentes"
+news-older: "Mais antigas"
+news-not-found: "Essa notícia não existe (ou não está publicada)."
+news-back-to-list: "Voltar às notícias"
 status: Status
 service-web: Web
 service-mail: E-mail
@@ -86,8 +92,16 @@ auth:
   you-must-agree: Você precisa concordar
   registration-email-sent: Se ainda não estiver registrado, um e-mail contendo um link para continuar seu cadastro foi enviado para o endereço especificado.
   registration-complete: Seu cadastro foi concluído.
-  reon-email: Endereço de e-mail REON
-  reon-email-invalid: E-mail REON inválido ou já em uso
+  reon-username: "Usuário REON"
+  reon-username-hint: "De 3 a 20 caracteres, apenas letras minúsculas e números."
+  reon-username-invalid: "Usuário inválido ou já em uso"
+  reon-username-mail-note: "Esse nome também vira seu endereço de e-mail no REON, usado pelos jogos:"
+  reon-username-mail-internal: "Pelo Game Boy"
+  reon-username-mail-external: "Pela internet"
+  reon-username-taken: "Esse nome já está em uso — escolha outro."
+  reon-username-free: "Esse nome está disponível."
+  reon-username-mail-or: "ou"
+  reon-username-mail-truncated: "Os jogos só comportam 8 caracteres, então uma forma abreviada é usada dentro do Game Boy — as duas chegam até você."
   region-explanation-para1: O REON permite trocas internacionais para jogadores de Pokémon Crystal, através do recurso do jogo chamado Trade Corner. Isso inclui trocas entre jogos japoneses e não-japoneses, que normalmente são incompatíveis por usarem conjuntos de caracteres diferentes. Para tornar essas trocas possíveis, o serviço altera apelidos de Pokémon, nomes de Treinador e mensagens escritas no Correio ao parear Pokémon entre jogos japoneses e não-japoneses (por exemplo, trocando "A" por "ア", e vice-versa). Essas alterações são irreversíveis, mas procuram imitar a escrita do idioma original da forma mais fiel possível.
   region-explanation-para2: Escolha o conjunto de regiões com as quais você aceita trocar. Essa configuração também pode ser alterada depois do cadastro.
 
@@ -101,6 +115,9 @@ password-reset:
 account:
   your-reon-account: Sua conta REON
   account-details: Detalhes da conta
+  reon-identity: "Identidade REON"
+  external-email: "Endereço de e-mail externo"
+  external-email-alias: "Também recebe em"
   change-email: Trocar e-mail
   change-password: Trocar senha
   download-config-data: Baixar Dados de Configuração
@@ -138,3 +155,60 @@ account:
   pokemon-news-custom-opt-in-blurb: Quando ativado, os downloads de Notícias Pokémon podem usar conteúdo personalizado criado pela equipe REON quando disponível. Se não existir nenhuma notícia personalizada, a notícia oficial será usada.
   pokemon-news-custom-opt-in-off: Só notícias Pokémon oficiais
   pokemon-news-custom-opt-in-on: Notícias Pokémon personalizadas quando disponíveis
+
+admin:
+  news-title: Administrar notícias
+  news-new: Nova notícia
+  news-editing: Editando notícia
+  news-date: Data
+  news-post-title: Título
+  news-state: Estado
+  news-published: Publicada
+  news-draft: Rascunho
+  news-view: Ver
+  news-edit: Editar
+  news-delete: Excluir
+  news-delete-confirm: Excluir esta notícia?
+  news-title-required: O título é obrigatório.
+  news-body: Conteúdo
+  news-markdown-hint: "Markdown: **negrito**, _itálico_, ## título, [link](url), ![](imagem)."
+  news-publish: Publicada (visível no site)
+  news-save: Salvar
+  news-cancel: Cancelar
+  news-preview: Pré-visualizar
+  news-md-link: Link
+  news-md-list: Lista
+  news-md-image: Imagem
+  news-upload-failed: Falha no envio.
+
+mail:
+  title: "REON Mail"
+  inbox: "Caixa de entrada"
+  empty: "Nenhuma mensagem."
+  message: "Mensagem"
+  from: "De"
+  date: "Data"
+  game: "Jogo"
+  no-subject: "sem assunto"
+  back: "Voltar à caixa de entrada"
+  not-found: "Essa mensagem não existe."
+  trash: "Lixeira"
+  trash-empty: "A lixeira está vazia."
+  delete: "Apagar"
+  restore: "Restaurar"
+  delete-forever: "Apagar de vez"
+  confirm-delete: "Apagar esta mensagem de vez? Não dá para desfazer."
+  trash-note: "As mensagens ficam %days% dias na lixeira e depois são apagadas de vez. Restaurar uma devolve ela à caixa, então o jogo vai baixá-la de novo no próximo sync."
+  by-game: "apagada no Game Boy"
+  by-web: "apagada aqui"
+  was-downloaded: "o jogo tinha baixado"
+  never-downloaded: "nunca foi baixada"
+  refresh: "Ver se chegou email"
+  select-all: "Selecionar todas"
+  n-selected: "%count% selecionadas"
+  delete-selected: "Apagar selecionadas"
+  restore-selected: "Restaurar selecionadas"
+  delete-selected-forever: "Apagar selecionadas de vez"
+  hint-list: "Escolha as mensagens"
+  hint-read: "Lendo email"
+  hint-trash: "Na lixeira"
