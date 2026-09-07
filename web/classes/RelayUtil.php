@@ -27,7 +27,7 @@
 			return self::$instance;
 		}
 
-		private function getRelayDB() {
+		public function getRelayDB() {
 			if (!isset($this->relayDb)) {
 				$this->relayDb = self::connectRelayDB();
 			}

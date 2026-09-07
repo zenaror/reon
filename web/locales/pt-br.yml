@@ -41,8 +41,14 @@ home: Início
 games: Jogos
 news: Notícias
 status: Status
-players-online: Jogadores online
-in-service-since: Em serviço desde
+service-web: Web
+service-mail: E-mail
+service-mobile-relay: Mobile Relay
+service-relay-policy: Mail Externo
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Desconhecido
+service-devices-connected: "%count% conectado(s)"
 welcome-alpha: Bem-vindo ao teste alpha!
 your-account: Sua Conta
 login: Entrar

@@ -12,8 +12,14 @@ games: Giochi
 mobile-home: Pagina mobile
 news: Notizie
 status: Stato
-players-online: Giocatori online
-in-service-since: In servizio dal
+service-web: Web
+service-mail: Posta
+service-mobile-relay: Relay mobile
+service-relay-policy: Posta esterna
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Sconosciuto
+service-devices-connected: "%count% connesso/i"
 welcome-alpha: Benvenuto alla prova alfa!
 login: Accedi
 logout: Esci

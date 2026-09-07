@@ -37,8 +37,14 @@ games: Jeux
 mobile-home: Page d'Accueil Mobile
 news: Actualités
 status: Statut
-players-online: Joueurs en ligne
-in-service-since: En service depuis
+service-web: Web
+service-mail: Messagerie
+service-mobile-relay: Relais mobile
+service-relay-policy: Mail externe
+service-status-up: En ligne
+service-status-down: Hors ligne
+service-status-unknown: Inconnu
+service-devices-connected: "%count% connecté(s)"
 welcome-alpha: Bienvenue au test alpha!
 what-is-this: Qu'est-ce que c'est?
 send: Envoyer
