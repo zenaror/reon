@@ -213,6 +213,7 @@ mail:
   never-downloaded: "nunca foi baixada"
   refresh: "Ver se chegou email"
   compose: "Escrever"
+  reply: "Responder"
   send: "Enviar"
   to: "Para"
   subject: "Assunto"

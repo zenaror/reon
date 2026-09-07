@@ -77,10 +77,24 @@
 	// Compose is its own view rather than a panel on the list, so a long
 	// message has the whole width to be written in.
 	if (isset($_GET["compose"])) {
+		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => ""];
+
+		// Replying is addressed by message id, not by handing the address and
+		// subject over in the URL: getForUser is scoped by recipient, so this
+		// can only ever pre-fill from a message that belongs to the caller.
+		if (isset($_GET["reply"])) {
+			$original = $mail->getForUser($userId, $_GET["reply"]);
+			if ($original !== null) {
+				$subject = trim((string)$original["subject"]);
+				$prefill["to"] = $original["sender"];
+				$prefill["subject"] = preg_match('/^re:\s/i', $subject) ? $subject : ("Re: " . $subject);
+			}
+		}
+
 		echo TemplateUtil::render("/user/mail", [
 			"message" => null,
 			"messages" => null,
-			"compose" => ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => ""],
+			"compose" => $prefill,
 			"compose_error" => null,
 			"folder" => "inbox",
 			"trash_count" => $mail->countTrashForUser($userId),

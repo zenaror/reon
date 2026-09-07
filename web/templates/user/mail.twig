@@ -312,6 +312,7 @@
 			<span class="mt-statusbar__hint">{{ message.deleted_at ? 'mail.hint-trash'|trans : 'mail.hint-read'|trans }}</span>
 			<span class="mt-statusbar__acts">
 				<a class="mt-btn" href="{{ message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.back'|trans}}</a>
+				<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ message.id }}">{{'mail.reply'|trans}}</a>
 				{% if message.deleted_at %}
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="id" value="{{ message.id }}">
