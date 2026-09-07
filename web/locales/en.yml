@@ -73,7 +73,8 @@ confirm-password: Confirm password
 confirm-new-password: Confirm new password
 new-email: New email
 invalid-email: Invalid email
-password-invalid: Password invalid
+password-invalid: "The password must be between 8 and 71 characters."
+password-hint: "8 to 71 characters."
 passwords-dont-match: The passwords don't match
 wrong-password: Wrong password
 link-invalid-expired: This link is invalid or has expired.

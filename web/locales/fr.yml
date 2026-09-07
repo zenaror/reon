@@ -74,7 +74,8 @@ confirm-password: Confirmer le mot de passe
 confirm-new-password: Confirmer le nouveau mot de passe
 new-email: Nouveau addresse courriel
 invalid-email: Addresse invalide
-password-invalid: Mot de passe invalide
+password-invalid: "Le mot de passe doit contenir entre 8 et 71 caractères."
+password-hint: "De 8 à 71 caractères."
 passwords-dont-match: Les mots de passe sont différents
 wrong-password: Mot de passe incorrect
 link-invalid-expired: Soit ce lien est invalide, soit il a expiré.
