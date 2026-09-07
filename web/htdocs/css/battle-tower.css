@@ -203,15 +203,18 @@
   font-weight: 600;
 }
 
-.battle-honor-table th:nth-child(1) {
+/* Addressed by class, not position: the LV and ROOM columns appear and
+   disappear with the filters, and nth-child rules silently slid onto the
+   wrong columns whenever they did. */
+.battle-honor-table th.bt-col-leader {
   width: auto;
 }
 
-.battle-honor-table th:nth-child(2) {
+.battle-honor-table th.bt-col-pokemon {
   width: 24%;
 }
 
-.battle-honor-table th:nth-child(3) {
+.battle-honor-table th.bt-col-message {
   width: 159px;
   min-width: 159px;
   max-width: 159px;
@@ -443,7 +446,7 @@
     min-width: 440px;
   }
 
-  .battle-tower-page[data-battle-zoom="2"] .battle-honor-table th:nth-child(3),
+  .battle-tower-page[data-battle-zoom="2"] .battle-honor-table th.bt-col-message,
   .battle-tower-page[data-battle-zoom="2"] .bt-message-cell {
     width: 159px;
     min-width: 159px;
@@ -468,11 +471,11 @@
     min-width: 0;
   }
 
-  .battle-honor-table th:nth-child(2) {
+  .battle-honor-table th.bt-col-pokemon {
     width: 22%;
   }
 
-  .battle-honor-table th:nth-child(3),
+  .battle-honor-table th.bt-col-message,
   .bt-message-cell {
     width: var(--bt-mobile-msg-cell-width);
     min-width: var(--bt-mobile-msg-cell-width);
@@ -540,7 +543,7 @@
     padding-left: 6px;
   }
 
-  .battle-honor-table th:nth-child(3),
+  .battle-honor-table th.bt-col-message,
   .bt-message-cell {
     width: min(145px, max(110px, calc(100vw - 186px)));
     min-width: min(145px, max(110px, calc(100vw - 186px)));
@@ -559,13 +562,26 @@
   }
 }
 
-/* Level and room columns, shown only when their filter is set to ALL. Sized
-   to their content so the columns that carry the actual data keep the width. */
+/* Level and room columns, shown only when their filter is set to ALL. The
+   table is table-layout:fixed, so these need a real width -- a shrink-to-fit
+   value leaves the column at nearly zero and the text spills over its
+   neighbour instead of widening the column. */
+.battle-honor-table th.bt-col-level,
+.battle-honor-table td.bt-col-level {
+  width: 44px;
+  min-width: 44px;
+}
+
+.battle-honor-table th.bt-col-room,
+.battle-honor-table td.bt-col-room {
+  width: 54px;
+  min-width: 54px;
+}
+
 .battle-honor-table th.bt-col-level,
 .battle-honor-table th.bt-col-room,
 .battle-honor-table td.bt-col-level,
 .battle-honor-table td.bt-col-room {
-  width: 1%;
   white-space: nowrap;
   text-align: center;
   font-variant-numeric: tabular-nums;
