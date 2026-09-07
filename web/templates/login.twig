@@ -13,8 +13,12 @@
 						</div>
 					{% endif %}
 					<div class="mb-3">
-						<label for="email" class="form-label">{{'email-addr'|trans}}</label>
-						<input type="email" id="email" name="email" required class="form-control">
+						<label for="email" class="form-label">{{'email-or-username'|trans}}</label>
+						{# Not type="email": the browser would reject a plain username
+						   before the form was ever submitted. #}
+						<input type="text" id="email" name="email" required
+						       autocapitalize="none" autocorrect="off" spellcheck="false"
+						       autocomplete="username" class="form-control">
 					</div>
 					<div class="mb-3">
 						<label for="password" class="form-label">{{'password'|trans}}</label>

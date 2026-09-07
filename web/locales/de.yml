@@ -32,6 +32,7 @@ logout: Abmelden
 signup: Registrieren
 forgot-password: Passwort vergessen
 email-addr: E-Mail-Adresse
+email-or-username: E-Mail oder Benutzername
 password: Passwort
 password-show: Passwort anzeigen
 password-hide: Passwort verbergen

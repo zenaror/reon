@@ -32,6 +32,7 @@ logout: Esci
 signup: Registrati
 forgot-password: Password dimenticata
 email-addr: Indirizzo e-mail
+email-or-username: E-mail o nome utente
 password: Password
 password-show: Mostra password
 password-hide: Nascondi password

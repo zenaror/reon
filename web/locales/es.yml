@@ -32,6 +32,7 @@ logout: Cerrar sesión
 signup: Registrarse
 forgot-password: Contraseña olvidada
 email-addr: Correo electrónico
+email-or-username: Correo o nombre de usuario
 password: Contraseña
 password-show: Mostrar contraseña
 password-hide: Ocultar contraseña

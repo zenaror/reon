@@ -7,8 +7,15 @@
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
 		if (!(isset($_POST["email"]) && isset($_POST["password"]))) return;
 		$db = DBUtil::getInstance()->getDB();
-		$stmt = $db->prepare("select id, password, email from sys_users where email = ? limit 1");
-		$stmt->bind_param("s", $_POST["email"]);
+		// Either the e-mail address or the REON username. The two can never
+		// collide: a username is [a-z0-9]{3,20} and an address must contain
+		// "@", so no string is a valid form of both. The 8-character
+		// dion_email_local is deliberately not accepted here -- it is unique
+		// on its own, but nothing stops one account's short form from equalling
+		// another account's username, and that would be ambiguous.
+		$identifier = trim($_POST["email"]);
+		$stmt = $db->prepare("select id, password, email from sys_users where email = ? or username = ? limit 1");
+		$stmt->bind_param("ss", $identifier, $identifier);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt);
 		if (array_key_exists(0, $result) && password_verify($_POST["password"], $result[0]["password"])) {

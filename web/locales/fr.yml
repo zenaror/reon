@@ -64,6 +64,7 @@ signup: Inscription
 your-account: Votre Compte
 forgot-password: Mot de passe oublié
 email-addr: Addresse courriel
+email-or-username: Courriel ou nom d'utilisateur
 password: Mot de passe
 password-show: Afficher le mot de passe
 password-hide: Masquer le mot de passe

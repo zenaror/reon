@@ -32,6 +32,7 @@ logout: ログアウト
 signup: 新規登録
 forgot-password: パスワードを忘れた場合
 email-addr: メールアドレス
+email-or-username: メールアドレスまたはユーザー名
 password: パスワード
 password-show: パスワードを表示
 password-hide: パスワードを隠す
