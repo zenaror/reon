@@ -11,6 +11,12 @@ home: Inicio
 games: Juegos
 mobile-home: Página móvil
 news: Noticias
+news-empty: "Aún no hay noticias."
+news-see-more: "Leer más"
+news-newer: "Más recientes"
+news-older: "Más antiguas"
+news-not-found: "Esa entrada no existe (o no está publicada)."
+news-back-to-list: "Volver a noticias"
 status: Estado
 service-web: Web
 service-mail: Correo
@@ -55,8 +61,16 @@ auth:
   you-must-agree: Debes aceptar
   registration-email-sent: Si aún no estás registrado, se envió un correo con un enlace para continuar tu registro a la dirección especificada.
   registration-complete: Tu registro se ha completado.
-  reon-email: Dirección de correo REON
-  reon-email-invalid: Correo REON inválido o ya en uso
+  reon-username: "Usuario REON"
+  reon-username-hint: "De 3 a 20 caracteres, solo letras minúsculas y números."
+  reon-username-invalid: "Usuario inválido o ya en uso"
+  reon-username-mail-note: "Este nombre también será tu dirección de correo REON, usada por los juegos:"
+  reon-username-mail-internal: "Desde la Game Boy"
+  reon-username-mail-external: "Desde internet"
+  reon-username-taken: "Ese nombre ya está en uso: elige otro."
+  reon-username-free: "Ese nombre está disponible."
+  reon-username-mail-or: "o"
+  reon-username-mail-truncated: "Los juegos solo admiten 8 caracteres, así que dentro de la Game Boy se usa una forma abreviada: ambas te llegan."
   region-explanation-para1: REON permite el intercambio internacional para jugadores de Pokémon Cristal, a través de la función del juego llamada Trade Corner. Esto incluye intercambios entre juegos japoneses y no japoneses, que normalmente son incompatibles por usar distintos conjuntos de caracteres. Para hacer posibles estos intercambios, el servicio cambia los apodos de los Pokémon, los nombres de Entrenador y los mensajes escritos en el Correo al emparejar Pokémon entre juegos japoneses y no japoneses (por ejemplo, cambiando "A" por "ア", y viceversa). Estos cambios son irreversibles, pero buscan imitar la escritura del idioma original de la forma más fiel posible.
   region-explanation-para2: Elige el conjunto de regiones con las que aceptas intercambiar. Este ajuste también se puede cambiar después del registro.
 
@@ -890,6 +904,9 @@ account:
 
   your-reon-account: Tu cuenta REON
   account-details: Detalles de la cuenta
+  reon-identity: "Identidad REON"
+  external-email: "Dirección de correo externa"
+  external-email-alias: "También recibe en"
   change-email: Cambiar correo electrónico
   change-password: Cambiar contraseña
   download-config-data: Descargar datos de configuración
@@ -922,3 +939,16 @@ account:
   time-zone-blurb: Elige la zona horaria en la que se muestran las fechas y horas en el sitio. Deja el valor por defecto para verlo todo en la zona horaria original del juego (Japón, +0900).
   update-settings: Actualizar configuración
 invalid-pokemon-news-setting: Preferencia de Noticias Pokémon no válida.
+
+mail:
+  title: "REON Mail"
+  inbox: "Bandeja de entrada"
+  empty: "Sin mensajes."
+  message: "Mensaje"
+  from: "De"
+  date: "Fecha"
+  game: "Juego"
+  no-subject: "sin asunto"
+  back: "Volver a la bandeja"
+  not-found: "Ese mensaje no existe."
+  read-only-note: "Solo lectura por ahora: los mensajes que el juego descarga y borra del servidor también desaparecen de aquí."

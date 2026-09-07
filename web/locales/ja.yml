@@ -11,6 +11,12 @@ home: ホーム
 games: ゲーム
 mobile-home: モバイルホームページ
 news: ニュース
+news-empty: "まだニュースはありません。"
+news-see-more: "続きを読む"
+news-newer: "新しい"
+news-older: "古い"
+news-not-found: "その記事は存在しません（または未公開です）。"
+news-back-to-list: "ニュース一覧へ戻る"
 status: ステータス
 service-web: ウェブ
 service-mail: メール
@@ -55,8 +61,16 @@ auth:
   you-must-agree: 同意する必要があります
   registration-email-sent: まだ登録されていない場合、登録を続けるためのリンクを含むメールが指定されたアドレスに送信されました。
   registration-complete: 登録が完了しました。
-  reon-email: REONメールアドレス
-  reon-email-invalid: REONメールアドレスが無効か、既に使用されています
+  reon-username: "REONユーザー名"
+  reon-username-hint: "3〜20文字、英小文字と数字のみ。"
+  reon-username-invalid: "ユーザー名が無効か、すでに使われています"
+  reon-username-mail-note: "この名前はゲームが使うREONのメールアドレスにもなります："
+  reon-username-mail-internal: "ゲームボーイから"
+  reon-username-mail-external: "インターネットから"
+  reon-username-taken: "その名前は既に使われています。別の名前を選んでください。"
+  reon-username-free: "その名前は使えます。"
+  reon-username-mail-or: "または"
+  reon-username-mail-truncated: "ゲーム側は8文字しか保持できないため、ゲームボーイ内では短縮形が使われます。どちらでも届きます。"
   region-explanation-para1: REONは、ゲーム内のトレードコーナー機能を通じて、ポケモンクリスタルのプレイヤー同士の国際交換を可能にします。これには、通常は文字セットが異なるため互換性のない日本版と海外版の間の交換も含まれます。このような交換を可能にするため、本サービスは日本版と海外版のポケモンをマッチングする際に、ポケモンのニックネーム、トレーナー名、メールに書かれたメッセージを変更します(例:「A」を「ア」に変更、およびその逆)。これらの変更は元に戻せませんが、元の言語の表記をできるだけ忠実に再現することを目指しています。
   region-explanation-para2: 交換してもよい地域のプールを選んでください。この設定は登録後にも変更できます。
 
@@ -925,6 +939,9 @@ pokemon:
 account:
   your-reon-account: あなたのREONアカウント
   account-details: アカウント詳細
+  reon-identity: "REONアカウント名"
+  external-email: "外部メールアドレス"
+  external-email-alias: "こちらでも受信できます"
   change-email: メールアドレスを変更
   change-password: パスワードを変更
   download-config-data: 設定データをダウンロード
@@ -962,3 +979,16 @@ account:
   pokemon-news-custom-opt-in-on: 利用可能な場合はカスタムポケモンニュース
 
 invalid-pokemon-news-setting: 無効なポケモンニュース設定です。
+
+mail:
+  title: "REON Mail"
+  inbox: "受信箱"
+  empty: "メッセージはありません。"
+  message: "メッセージ"
+  from: "差出人"
+  date: "日付"
+  game: "ゲーム"
+  no-subject: "件名なし"
+  back: "受信箱に戻る"
+  not-found: "そのメッセージは存在しません。"
+  read-only-note: "現在は閲覧のみ：ゲームが受信してサーバーから削除したメッセージは、ここからも消えます。"
