@@ -115,8 +115,17 @@
 				$jis = @mb_convert_encoding((string)$text, "ISO-2022-JP", "UTF-8");
 				return $jis === false ? (string)$text : $jis;
 			};
-			$encodeHeader = function ($text) use ($isAscii, $toJis) {
-				if ($isAscii($text)) return (string)$text;
+			// CR and LF are stripped from every header value before it is
+			// used. Without this a newline in the subject or the address
+			// ends the header and whatever follows becomes a real one -- a
+			// "Bcc:" typed into the subject box would be honoured, which on
+			// the outbound path is a spam relay.
+			$headerSafe = function ($text) {
+				return trim(preg_replace('/[\r\n]+/', " ", (string)$text));
+			};
+			$encodeHeader = function ($text) use ($isAscii, $toJis, $headerSafe) {
+				$text = $headerSafe($text);
+				if ($isAscii($text)) return $text;
 				return "=?ISO-2022-JP?B?" . base64_encode($toJis($text)) . "?=";
 			};
 
@@ -126,8 +135,8 @@
 
 			$headers = [
 				"MIME-Version: 1.0",
-				"From: " . $fromAddress . ($fromName !== "" ? " (" . $encodeHeader($fromName) . ")" : ""),
-				"To: " . $toAddress,
+				"From: " . $headerSafe($fromAddress) . ($fromName !== "" ? " (" . $encodeHeader($fromName) . ")" : ""),
+				"To: " . $headerSafe($toAddress),
 				"Subject: " . $encodeHeader($subject),
 				"Content-Type: text/plain; charset=" . $charset,
 			];
@@ -151,7 +160,9 @@
 			if (!$sender) return [false, "no-sender"];
 
 			$recipientId = $this->resolveLocalRecipient($toAddress);
-			if ($recipientId === null) return [false, "external"];
+			if ($recipientId === null) {
+				return $this->sendExternal($fromUserId, $sender, $toAddress, $subject, $body);
+			}
 
 			$cfg = ConfigUtil::getInstance()->getConfig();
 			// Sent from the DION address so a reply from inside a game lands
@@ -167,6 +178,93 @@
 			$stmt->bind_param("sis", $fromAddress, $recipientId, $message);
 			$stmt->execute();
 			return [$stmt->affected_rows > 0, $stmt->affected_rows > 0 ? "sent" : "insert-failed"];
+		}
+
+		// Outbound sends allowed per account per hour.
+		const OUTBOUND_PER_HOUR = 20;
+
+		// Sends to a real internet address.
+		//
+		// This does not go through smtpd, so it never meets the device-auth
+		// policy that gates the game's relay (see mail/relayPolicy.js) -- that
+		// gate stays exactly as strict as it was. Local submission is a
+		// separate path whose authorization is the web session: the caller is
+		// logged in, and the From address is taken from their account rather
+		// than from the form, so nobody can send as anyone else.
+		//
+		// Postfix routes it to default_transport = reonoutbound, which is
+		// mail/outboundRelay.js -- the same relay, domain rewriting included,
+		// that game mail already uses.
+		private function sendExternal($fromUserId, $sender, $toAddress, $subject, $body) {
+			$toAddress = trim((string)$toAddress);
+			if (!filter_var($toAddress, FILTER_VALIDATE_EMAIL)) {
+				return [false, "bad-address"];
+			}
+			if ($this->outboundCountLastHour($fromUserId) >= self::OUTBOUND_PER_HOUR) {
+				return [false, "rate-limited"];
+			}
+
+			$cfg = ConfigUtil::getInstance()->getConfig();
+			// The externally routable form of their address, so a reply comes
+			// back to them rather than to a domain the internet cannot answer.
+			$fromAddress = $sender["username"] . "@" . $cfg["email_domain"];
+
+			$message = $this->buildMessage(
+				$fromAddress, (string)$sender["username"], $toAddress,
+				trim((string)$subject), (string)$body
+			);
+
+			$accepted = $this->submitLocally($fromAddress, $toAddress, $message);
+			$this->logOutbound($fromUserId, $toAddress, $subject, $accepted);
+			return [$accepted, $accepted ? "sent" : "relay-failed"];
+		}
+
+		// Handed to sendmail as an argument list, never as a shell string, so
+		// an address cannot become part of a command.
+		private function submitLocally($envelopeFrom, $recipient, $message) {
+			$cmd = ["/usr/sbin/sendmail", "-i", "-f", $envelopeFrom, "--", $recipient];
+			$spec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]];
+			$proc = @proc_open($cmd, $spec, $pipes);
+			if (!is_resource($proc)) return false;
+
+			fwrite($pipes[0], $message);
+			fclose($pipes[0]);
+			$err = stream_get_contents($pipes[2]);
+			fclose($pipes[1]);
+			fclose($pipes[2]);
+			$status = proc_close($proc);
+
+			if ($status !== 0) {
+				error_log("MailUtil: sendmail exited {$status}: " . trim((string)$err));
+			}
+			return $status === 0;
+		}
+
+		private function outboundCountLastHour($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select count(*) as c from sys_web_outbound_log
+				 where user_id = ? and created_at > date_sub(now(), interval 1 hour)"
+			);
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
+		// Recorded whether or not the relay accepted it: a burst of failures
+		// is exactly the pattern worth being able to see afterwards.
+		private function logOutbound($userId, $recipient, $subject, $accepted) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"insert into sys_web_outbound_log (user_id, recipient, subject, accepted) values (?, ?, ?, ?)"
+			);
+			$userId = (int)$userId;
+			$recipient = substr((string)$recipient, 0, 254);
+			$subject = substr((string)$subject, 0, 255);
+			$acceptedInt = $accepted ? 1 : 0;
+			$stmt->bind_param("issi", $userId, $recipient, $subject, $acceptedInt);
+			$stmt->execute();
 		}
 
 		// Bulk variants of the three actions. Each runs as one statement rather

@@ -41,8 +41,10 @@
 
 			{% if compose_error %}
 				<p class="mt-error">
-					{% if compose_error == 'external' %}{{'mail.err-external'|trans}}
-					{% elseif compose_error == 'empty' %}{{'mail.err-empty'|trans}}
+					{% if compose_error == 'empty' %}{{'mail.err-empty'|trans}}
+					{% elseif compose_error == 'bad-address' %}{{'mail.err-bad-address'|trans}}
+					{% elseif compose_error == 'rate-limited' %}{{'mail.err-rate-limited'|trans}}
+					{% elseif compose_error == 'relay-failed' %}{{'mail.err-relay-failed'|trans}}
 					{% else %}{{'mail.err-failed'|trans}}{% endif %}
 				</p>
 			{% endif %}
