@@ -135,7 +135,10 @@
 			return 0;
 		}
 		
-		public function sendPasswordResetEmail($email) {
+		// $template and $subject are overridable so the signup form can reuse
+		// this whole flow -- lookup, rate limit, token, send -- to tell someone
+		// their address is already registered, without a second copy of it.
+		public function sendPasswordResetEmail($email, $template = "/email/forgot_password_email", $subject = "REON account password reset") {
 			$db = DBUtil::getInstance()->getDB();
 			
 			$stmt = $db->prepare("select id from sys_users where email = ?");
@@ -145,7 +148,9 @@
 			if (!isset($row)) return 1;
 			$user_id = $row["id"];
 			
-			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and time > date_sub(now(), interval 5 minute)");
+			// The column is "timestamp"; this said "time", so the query threw
+			// and password reset failed for everyone, every time.
+			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and timestamp > date_sub(now(), interval 5 minute)");
 			$stmt->bind_param("i", $user_id);
 			$stmt->execute();
 			if ($stmt->get_result()->fetch_assoc()["count(*)"] > 0) return 2;
@@ -158,8 +163,7 @@
 			$hostname = ConfigUtil::getInstance()->getConfig()["hostname"];
 			$email_domain = ConfigUtil::getInstance()->getConfig()["email_domain"];
 			$from = "noreply@".$email_domain;
-			$subject = "REON account password reset";
-			$message = TemplateUtil::render("/email/forgot_password_email", [
+			$message = TemplateUtil::render($template, [
 				"hostname" => $hostname,
 				"id" => $user_id,
 				"key" => urlencode($key)
@@ -256,12 +260,28 @@
 			
 			$db = DBUtil::getInstance()->getDB();
 			
+			// Already registered. Previously this returned silently, so the
+			// page said "we sent you an email" and nothing arrived -- someone
+			// who had forgotten they had an account had no way to find out.
+			//
+			// Sending in both cases keeps the page's answer uninformative to
+			// anyone probing for addresses, since it is the same either way,
+			// while the person who actually owns the address always gets
+			// something. The reset flow's own five-minute limit applies here
+			// too, so this cannot be used to flood an inbox.
 			$stmt = $db->prepare("select id from sys_users where email = ?");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
 			$row = $stmt->get_result()->fetch_assoc();
-			if (isset($row)) return 0;
-			
+			if (isset($row)) {
+				self::$instance->sendPasswordResetEmail(
+					$email,
+					"/email/signup_existing_account",
+					"REON account already exists"
+				);
+				return 0;
+			}
+
 			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and timestamp > date_sub(now(), interval 5 minute)");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
