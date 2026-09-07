@@ -47,7 +47,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -64,6 +64,11 @@
 			"email" => $result["email"],
 			"dion_ppp_id" => $result["dion_ppp_id"],
 			"dion_email" => $result["dion_email_local"]."@".ConfigUtil::getInstance()->getConfig()["email_domain_dion"],
+			"username" => $result["username"],
+			// Both forms reach the same inbox: the full name, and the
+			// 8-character one the games are limited to (see deliver.js).
+			"external_email" => $result["username"]."@".ConfigUtil::getInstance()->getConfig()["email_domain"],
+			"external_email_short" => $result["dion_email_local"]."@".ConfigUtil::getInstance()->getConfig()["email_domain"],
 			"log_in_password" => $result["log_in_password"],
 			"money_spent" => $result["money_spent"],
             "trade_region_allowlist" => $result["trade_region_allowlist"],

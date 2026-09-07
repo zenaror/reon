@@ -35,6 +35,7 @@
 			if (!isset($vars)) $vars = array();
 			$vars["session_active"] = SessionUtil::getInstance()->isSessionActive();
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
+			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
 			return self::$instance->twig->render($template.".twig", $vars);
 		}
 

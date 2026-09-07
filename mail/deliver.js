@@ -53,9 +53,13 @@ async function main() {
 	});
 
 	try {
+		// Accepts either form of the address: the full username the person
+		// picked, or the 8-character one the games are limited to. Both are
+		// unique columns, so a single lookup can match on either without
+		// risking the wrong account.
 		const [rows] = await conn.execute(
-			"select id from sys_users where dion_email_local = ? limit 1",
-			[localPart]
+			"select id from sys_users where username = ? or dion_email_local = ? limit 1",
+			[localPart, localPart]
 		);
 		if (rows.length === 0) {
 			process.stderr.write(`deliver.js: unknown recipient ${recipientArg}\n`);

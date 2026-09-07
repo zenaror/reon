@@ -306,9 +306,12 @@
 			return 0;
 		}
 
-		public function createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions = "e,f,d,s,i,p,u,j", $customPokemonNewsOptIn = 0) {
+		// $username is the name the person picked (up to 20 characters). The
+		// 8-character in-game form is derived from it here rather than being
+		// chosen, so the person never has to think about the adapter's limit.
+		public function createUser($email, $username, $password, $passwordConfirm, $tradeRegions = "e,f,d,s,i,p,u,j", $customPokemonNewsOptIn = 0) {
 			if (!isset($email)) return 1;
-			if (!self::$instance->isDionEmailValidAndFree($reonEmail)) return 2;
+			if (!self::$instance->isUsernameValidAndFree($username)) return 2;
 			if ($password != $passwordConfirm) return 3;
 			if (!self::$instance->validatePasswordConstraints($password)) return 4;
    
@@ -321,8 +324,15 @@
 			$dion_ppp_id = self::$instance->generatePPPId();
 			$log_in_password = self::$instance->generateLogInPassword();
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("insert into sys_users (email, password, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in) values (?,?,?,?,?,0,?,?)");
-			$stmt->bind_param("ssssssi", $email, $password_hash, $dion_ppp_id, $reonEmail, $log_in_password, $tradeRegions, $opt_in);
+
+			// Every game-facing lookup (POP3 login, relay policy, Mario Kart)
+			// keys off dion_email_local, so it has to be unique on its own even
+			// though nobody picks it directly.
+			$dion_email_local = self::$instance->deriveDionLocal($username);
+			if ($dion_email_local === "") return 2;
+
+			$stmt = $db->prepare("insert into sys_users (email, username, password, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in) values (?,?,?,?,?,?,0,?,?)");
+			$stmt->bind_param("sssssssi", $email, $username, $password_hash, $dion_ppp_id, $dion_email_local, $log_in_password, $tradeRegions, $opt_in);
 			$stmt->execute();
 
 			require_once("RelayUtil.php");
@@ -331,6 +341,83 @@
 			return 0;
 		}
 		
+		const USERNAME_MIN = 3;
+		const USERNAME_MAX = 20;
+		const DION_LOCAL_LEN = 8;
+
+		// The name the person actually picks and is known by. Free-form within
+		// [a-z0-9], unlike dion_email_local which is pinned to 8 characters by
+		// the adapter's fixed-width EEPROM field.
+		public function isUsernameValidAndFree($username) {
+			$len = strlen($username);
+			if ($len < self::USERNAME_MIN || $len > self::USERNAME_MAX) return false;
+			if (!preg_match("/^[a-z0-9]+$/", $username)) return false;
+
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select count(*) from sys_users where username = ?");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+			return $stmt->get_result()->fetch_assoc()["count(*)"] == 0;
+		}
+
+		// Derives the 8-character form the games use from a username. First
+		// come, first served: the first person whose name starts with "darkshad"
+		// keeps that as their in-game address, and later arrivals get trailing
+		// digits substituted in ("darksha1", then "darksh10" once single digits
+		// run out) so nobody is ever turned away over a prefix they didn't pick.
+		//
+		// Returns "" only if even the numbered variants are exhausted.
+		public function deriveDionLocal($username) {
+			$base = str_pad(substr($username, 0, self::DION_LOCAL_LEN), self::DION_LOCAL_LEN, "0");
+			if ($this->isDionEmailValidAndFree($base)) return $base;
+
+			for ($digits = 1; $digits < self::DION_LOCAL_LEN; $digits++) {
+				$stem = substr($base, 0, self::DION_LOCAL_LEN - $digits);
+				$limit = (int)str_repeat("9", $digits);
+				for ($n = 1; $n <= $limit; $n++) {
+					$candidate = $stem . str_pad((string)$n, $digits, "0", STR_PAD_LEFT);
+					if ($this->isDionEmailValidAndFree($candidate)) return $candidate;
+				}
+			}
+			return "";
+		}
+
+		// Suggests a username derived from the address the person signed up
+		// with, as a starting point they can overwrite. Only the full name
+		// needs to be free here -- the 8-character in-game form is derived by
+		// deriveDionLocal(), which resolves its own collisions.
+		//
+		// Never returns blank: the pre-filled value is what teaches the format.
+		public function suggestUsername($email) {
+			$local = strstr((string)$email, "@", true);
+			if ($local === false) $local = (string)$email;
+
+			$base = preg_replace("/[^a-z0-9]/", "", strtolower($local));
+			if ($base === "") $base = "reon";
+			$base = substr($base, 0, self::USERNAME_MAX);
+			if (strlen($base) < self::USERNAME_MIN) {
+				$base = str_pad($base, self::USERNAME_MIN, "0");
+			}
+
+			if ($this->isUsernameValidAndFree($base)) return $base;
+
+			for ($n = 1; $n <= 999; $n++) {
+				$suffix = (string)$n;
+				$stem = substr($base, 0, self::USERNAME_MAX - strlen($suffix));
+				$candidate = $stem . $suffix;
+				if ($this->isUsernameValidAndFree($candidate)) return $candidate;
+			}
+
+			return "reon" . random_int(100000, 999999);
+		}
+
+		// Public wrapper so the signup page can check a name as it's typed,
+		// against the same rule the submit path enforces -- the live answer and
+		// the final answer can't disagree.
+		public function isUsernameAvailable($username) {
+			return $this->isUsernameValidAndFree($username);
+		}
+
 		private function isDionEmailValidAndFree($email_local) {
 			if (strlen($email_local) != 8) return false;
 			if (!preg_match("/^[a-z0-9]+$/", $email_local)) return false;
