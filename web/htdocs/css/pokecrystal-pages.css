@@ -236,9 +236,13 @@
   image-rendering: pixelated;
 }
 
+/* The countdown sits outside .crystal-trade, so the 8px rule scoped to the
+   card's descendants never reached it and it rendered at twice the card's
+   text size. Both share the same `zoom` from .crystal-trade-slot, so the
+   sizes compare directly and this has to be 8px to match. */
 .exchange-page .trade-remaining {
-  font-size: 16px;
-  line-height: 16px;
+  font-size: 8px;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -1260,7 +1264,10 @@ body.rankings-theme > main {
   width: 100%;
   margin: 0 0 6px 0;
   min-height: 2.7em;
-  font-size: .82em;
+  /* Was .82em, which both missed the card's 8px pixel grid (blurring the
+     bitmap font) and made the warning larger than the card text it sits on
+     top of. This rule is what was overriding the 8px set further up. */
+  font-size: 8px;
   line-height: 1.25;
   font-weight: 600;
   color: #8a4d00;
@@ -1280,7 +1287,9 @@ body.rankings-theme > main {
   margin-top: 6px;
   min-height: 1.6em;
   text-align: center;
-  font-size: .92em;
+  /* Same story as .trade-warning above: this later rule was overriding the
+     8px set earlier, so the countdown never matched the card text. */
+  font-size: 8px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   letter-spacing: .04em;

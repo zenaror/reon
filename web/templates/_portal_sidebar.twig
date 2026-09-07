@@ -1,0 +1,50 @@
+{# Portal sidebar: service status + the vine-threaded gem menu.
+   Shared by every page that uses the home layout, so the adapter's
+   hand-calibrated join with the cable lives in exactly one place. #}
+		<aside class="home-sidebar">
+			<section class="reon-box reon-box--sidebar">
+				<h2 class="reon-box__bar reon-box__bar--teal">{{'status'|trans}}</h2>
+				<dl class="reon-status">
+					<div>
+						<dt>{{'service-web'|trans}}</dt>
+						<dd class="reon-status__{{ services.web.status }}">{{ ('service-status-' ~ services.web.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-mail'|trans}}</dt>
+						<dd class="reon-status__{{ services.mail.status }}">{{ ('service-status-' ~ services.mail.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-relay-policy'|trans}}</dt>
+						<dd class="reon-status__{{ services.relay_policy.status }}">{{ ('service-status-' ~ services.relay_policy.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-mobile-relay'|trans}}</dt>
+						<dd class="reon-status__{{ services.mobile_relay.status }}">
+							{{ ('service-status-' ~ services.mobile_relay.status)|trans }}
+							{%- if services.mobile_relay.status == 'up' and services.mobile_relay.detail is not null %} ({{ 'service-devices-connected'|trans({'%count%': services.mobile_relay.detail}) }}){% endif %}
+						</dd>
+					</div>
+				</dl>
+			</section>
+
+			<nav class="reon-menu reon-menu--side">
+				<svg class="reon-menu__vine" viewBox="0 0 40 300" preserveAspectRatio="none" aria-hidden="true">
+					<defs>
+						<linearGradient id="reonVineGrad" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#6fb7ec"/>
+							<stop offset="1" stop-color="#1667b4"/>
+						</linearGradient>
+					</defs>
+					<path d="M20 8 C 2 48, 38 88, 20 128 S 2 208, 20 248 S 34 292, 20 296"/>
+				</svg>
+				{# the vine plugs into a REON adapter that slips under the page border #}
+				<img class="reon-menu__adapter" src="/images/mobile_adapter/REON_Blue_Adapter_Horizontal.svg" alt="" aria-hidden="true">
+				<a class="reon-menu-item" href="/index.php" style="--gem:#2e97dd"><span class="reon-gem"></span><span class="label">{{'home'|trans}}</span></a>
+				<a class="reon-menu-item" href="/news.php" style="--gem:#4e4ba8"><span class="reon-gem"></span><span class="label">{{'news'|trans}}</span></a>
+				<a class="reon-menu-item" href="/user/mail.php" style="--gem:#daac06"><span class="reon-gem"></span><span class="label">{{'mail.title'|trans}}</span></a>
+				<a class="reon-menu-item" href="/pokemon/" style="--gem:#b80a41"><span class="reon-gem"></span><span class="label">{{'pokemon-crystal'|trans}}</span></a>
+				<a class="reon-menu-item" href="/gbwars/" style="--gem:#6eb122"><span class="reon-gem"></span><span class="label">{{'gameboy-wars'|trans}}</span></a>
+				<a class="reon-menu-item" href="/mariokart/" style="--gem:#daac06"><span class="reon-gem"></span><span class="label">{{'mario-kart.title'|trans}}</span></a>
+				<a class="reon-menu-item" href="#" onclick="openGbcModal(); return false;" style="--gem:#00938a"><span class="reon-gem"></span><span class="label">{{'mobile-home'|trans}}</span></a>
+			</nav>
+		</aside>
