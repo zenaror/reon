@@ -558,3 +558,15 @@
     line-height: 1.15 !important;
   }
 }
+
+/* Level and room columns, shown only when their filter is set to ALL. Sized
+   to their content so the columns that carry the actual data keep the width. */
+.battle-honor-table th.bt-col-level,
+.battle-honor-table th.bt-col-room,
+.battle-honor-table td.bt-col-level,
+.battle-honor-table td.bt-col-room {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
