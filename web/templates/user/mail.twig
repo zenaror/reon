@@ -46,6 +46,7 @@
 					{% elseif compose_error == 'rate-limited' %}{{'mail.err-rate-limited'|trans}}
 					{% elseif compose_error == 'too-many-lines' %}{{'mail.err-too-many-lines'|trans({'%lines%': body_max_lines})}}
 					{% elseif compose_error == 'too-many-chars' %}{{'mail.err-too-many-chars'|trans({'%chars%': body_max_chars})}}
+					{% elseif compose_error == 'recipient-full' %}{{'mail.err-recipient-full'|trans({'%max%': inbox_max})}}
 					{% elseif compose_error == 'relay-failed' %}{{'mail.err-relay-failed'|trans}}
 					{% else %}{{'mail.err-failed'|trans}}{% endif %}
 				</p>
@@ -114,6 +115,10 @@
 			<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
 		{% endif %}
 
+		{% if restore_blocked is not null %}
+			<p class="mt-error">{{'mail.restore-no-room'|trans({'%free%': restore_blocked, '%max%': inbox_max})}}</p>
+		{% endif %}
+
 		{# Filled in by the background check below. A banner rather than a
 		   reload: reloading would discard a half-written message, and would
 		   also run markInboxSeen every minute, clearing the "new" marker for
@@ -123,7 +128,13 @@
 			<a class="mt-btn" href="{{ folder == 'trash' ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.show-new'|trans}}</a>
 		</p>
 		<section class="mt-panel">
-			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
+			<h2 class="mt-panel__bar">
+				{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}
+				{#- A lixeira nao tem teto, entao mostrar "de 12" ali seria mentira. -#}
+				{% if folder != 'trash' %}
+					<span class="mt-panel__count">{{ messages|length }}/{{ inbox_max }}</span>
+				{% endif %}
+			</h2>
 
 			{% if messages is empty %}
 				<p class="mt-empty">{{ folder == 'trash' ? 'mail.trash-empty'|trans : 'mail.empty'|trans }}</p>

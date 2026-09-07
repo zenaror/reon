@@ -1,3 +1,6 @@
+// Must match MailUtil::INBOX_MAX -- the Mobile Trainer mailbox size.
+const INBOX_MAX = 12;
+
 const EventEmitter = require("events");
 
 class SMTPConnection extends EventEmitter {
@@ -166,6 +169,7 @@ class SMTPConnection extends EventEmitter {
 		if (data === ".\r\n") {
 			this._dataInputMode = false;
 			let mailToInsert = [];
+			let anyFull = false;
 			for (let i = 0; i < this._forwardPath.length; i++) {
 				if (this._isMailAddressedToUs(this._forwardPath[i])) {
 					// Either the full username or its 8-character in-game form is a valid
@@ -173,6 +177,18 @@ class SMTPConnection extends EventEmitter {
 					let recipientLocal = this._sliceDomain(this._forwardPath[i]);
 					let [result] = await this._server.mysql.execute("select id from sys_users where username = ? or dion_email_local = ? limit 1", [recipientLocal, recipientLocal]);
 					if (result.length > 0) {
+						// The Mobile Trainer's mailbox holds INBOX_MAX. Past
+						// that the message would sit somewhere the game can
+						// never show it, so it is refused while the sender is
+						// still on the line and can be told.
+						let [full] = await this._server.mysql.execute(
+							"select count(*) as c from sys_inbox where recipient = ? and deleted_at is null",
+							[result[0]["id"]]
+						);
+						if (full[0]["c"] >= INBOX_MAX) {
+							anyFull = true;
+							continue;
+						}
 						let mail = [];
 						mail[0] = this._reversePath;
 						mail[1] = result[0]["id"];
@@ -181,9 +197,17 @@ class SMTPConnection extends EventEmitter {
 					}
 				}
 			}
-			
+
 			if (mailToInsert.length > 0) {
 				await this._server.mysql.query("insert into sys_inbox (sender, recipient, message) values ?", [mailToInsert]);
+			}
+			// 452 is "insufficient system storage" -- a transient refusal, so
+			// a sender that retries after the player syncs gets through. Sent
+			// only when nothing at all could be stored; a partial delivery
+			// still reports success for what did land.
+			if (mailToInsert.length === 0 && anyFull) {
+				this._send(452, "mailbox full");
+				return;
 			}
 			this._send(250, "OK");
 		}

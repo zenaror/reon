@@ -14,6 +14,19 @@
 		// Days a message survives in the trash before the purge job removes it.
 		const TRASH_RETENTION_DAYS = 30;
 
+		// What the Mobile Trainer's mailbox holds. Delivering past it would
+		// put mail somewhere the game can never show, so the limit is
+		// enforced on the way in rather than discovered on the way out.
+		//
+		// The trash is deliberately not capped: it is web-side storage the
+		// game never sees. What it cannot do is overflow the inbox, so a
+		// restore is refused when there is no room.
+		const INBOX_MAX = 12;
+
+		public function inboxFreeSlots($userId) {
+			return max(0, self::INBOX_MAX - $this->countForUser($userId));
+		}
+
 		// What a Mobile Trainer message can hold: 8 lines of 12 characters.
 		// The Trainer wraps long lines itself, so the per-line width is not
 		// enforced here -- only the totals, which are what it cannot exceed.
@@ -187,6 +200,11 @@
 			if ($recipientId === null) {
 				return $this->sendExternal($fromUserId, $sender, $toAddress, $subject, $body);
 			}
+			// Checked against the recipient, not the sender: the constraint
+			// belongs to the mailbox being written to.
+			if ($this->inboxFreeSlots($recipientId) < 1) {
+				return [false, "recipient-full"];
+			}
 
 			$cfg = ConfigUtil::getInstance()->getConfig();
 			// Sent from the DION address so a reply from inside a game lands
@@ -318,9 +336,19 @@
 				"update sys_inbox set deleted_at = now(), deleted_by = 'web'", "deleted_at is null");
 		}
 
+		// Refuses the whole selection rather than restoring the part that
+		// fits: restoring some-but-not-others would have to pick which, and
+		// any rule for that is a surprise. Returns the number of free slots
+		// so the caller can say how many would fit.
 		public function restoreMany($userId, $ids) {
-			return $this->bulk($userId, $ids,
+			$ids = array_values(array_filter(array_map("intval", (array)$ids)));
+			$free = $this->inboxFreeSlots($userId);
+			if (count($ids) > $free) {
+				return ["ok" => false, "reason" => "inbox-full", "free" => $free];
+			}
+			$n = $this->bulk($userId, $ids,
 				"update sys_inbox set deleted_at = null, deleted_by = null", "deleted_at is not null");
+			return ["ok" => true, "reason" => "restored", "restored" => $n];
 		}
 
 		public function deleteForeverMany($userId, $ids) {
