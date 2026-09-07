@@ -657,3 +657,50 @@ body.pokecrystal-index main#content {
 .reon-pass__rule.is-unmet .reon-pass__mark::before {
   content: "\00D7";
 }
+
+/* Mail count in the navigation. The plain badge is a quantity; the accented
+   one means something arrived since this account last opened the inbox. */
+.mail-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #cfd6c4;
+  color: #3f4a35;
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mail-badge--new {
+  background: #c25a10;
+  color: #fff5e2;
+}
+
+/* Pulsing dot beside REON Mail when something has arrived since the mailbox
+   was last opened. A slow fade rather than a hard blink: a sharp on/off in
+   the corner of the eye is genuinely unpleasant to sit next to, and for some
+   people it is worse than unpleasant. */
+.mail-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c25a10;
+  vertical-align: 1px;
+  animation: mail-dot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mail-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.82); }
+}
+
+/* Anyone who has asked for less motion still gets the dot -- it carries the
+   information -- just without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .mail-dot { animation: none; }
+}

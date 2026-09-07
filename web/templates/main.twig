@@ -69,6 +69,14 @@
 							<li class="nav-item dropdown">
 								<a href="#" class="nav-link dropdown-toggle" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 									{{ curr_username|default('your-account'|trans) }}
+									{#- The count also sits on the Mail item inside, but the menu is
+									    closed by default, so nothing there is visible until you go
+									    looking. This is the one that has to catch the eye. -#}
+									{% if mail_count > 0 %}
+										<span class="mail-badge{{ mail_new > 0 ? ' mail-badge--new' : '' }}"
+										      title="{{ mail_new > 0 ? 'mail.new-arrived'|trans({'%count%': mail_new}) : 'account.emails-in-inbox'|trans }}">{{ mail_count }}</span>
+										<span class="visually-hidden">{{ mail_new > 0 ? 'mail.new-arrived'|trans({'%count%': mail_new}) : 'account.emails-in-inbox'|trans }}</span>
+									{% endif %}
 								</a>
 								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
 									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
