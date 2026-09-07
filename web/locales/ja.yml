@@ -12,8 +12,14 @@ games: ゲーム
 mobile-home: モバイルホームページ
 news: ニュース
 status: ステータス
-players-online: オンラインのプレイヤー
-in-service-since: 稼働開始
+service-web: ウェブ
+service-mail: メール
+service-mobile-relay: モバイルリレー
+service-relay-policy: 外部メール
+service-status-up: オンライン
+service-status-down: オフライン
+service-status-unknown: 不明
+service-devices-connected: "%count%台接続中"
 welcome-alpha: アルファテストへようこそ！
 login: ログイン
 logout: ログアウト

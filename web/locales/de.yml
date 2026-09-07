@@ -12,8 +12,14 @@ games: Spiele
 mobile-home: Mobile Startseite
 news: Aktuelles
 status: Status
-players-online: Spieler online
-in-service-since: In Betrieb seit
+service-web: Web
+service-mail: E-Mail
+service-mobile-relay: Mobile-Relay
+service-relay-policy: Externe E-Mail
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Unbekannt
+service-devices-connected: "%count% verbunden"
 welcome-alpha: Willkommen zum Alphatest!
 login: Anmelden
 logout: Abmelden

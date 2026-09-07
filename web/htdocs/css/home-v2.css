@@ -135,6 +135,10 @@ body.home-v2 header.navbar nav > ul.navbar-nav {
   box-shadow: 2px 2px 0 rgba(26, 28, 38, 0.22);
 }
 
+.reon-box--sidebar {
+  margin-bottom: 20px;
+}
+
 .reon-box__bar {
   display: flex;
   align-items: baseline;
@@ -194,6 +198,10 @@ body.home-v2 header.navbar nav > ul.navbar-nav {
 .reon-status > div:last-child { border-bottom: 0; }
 .reon-status dt { color: var(--reon-ink-soft); font-weight: normal; }
 .reon-status dd { margin: 0; font-family: var(--reon-font-display); }
+
+.reon-status__up { color: var(--reon-green); }
+.reon-status__down { color: var(--reon-red); }
+.reon-status__unknown { color: var(--reon-ink-soft); }
 
 /* blinking NEW! badge — the era demands it */
 .reon-blink {

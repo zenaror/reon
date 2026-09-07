@@ -12,8 +12,14 @@ games: Juegos
 mobile-home: Página móvil
 news: Noticias
 status: Estado
-players-online: Jugadores en línea
-in-service-since: En servicio desde
+service-web: Web
+service-mail: Correo
+service-mobile-relay: Relé móvil
+service-relay-policy: Correo externo
+service-status-up: En línea
+service-status-down: Fuera de línea
+service-status-unknown: Desconocido
+service-devices-connected: "%count% conectado(s)"
 welcome-alpha: ¡Bienvenido a la prueba alfa!
 login: Iniciar sesión
 logout: Cerrar sesión

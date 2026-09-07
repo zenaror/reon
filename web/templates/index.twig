@@ -19,6 +19,31 @@
 	<div class="home-layout">
 		{# ---- left sidebar: primary gem-pill navigation (vine-threaded) ---- #}
 		<aside class="home-sidebar">
+			<section class="reon-box reon-box--sidebar">
+				<h2 class="reon-box__bar reon-box__bar--teal">{{'status'|trans}}</h2>
+				<dl class="reon-status">
+					<div>
+						<dt>{{'service-web'|trans}}</dt>
+						<dd class="reon-status__{{ services.web.status }}">{{ ('service-status-' ~ services.web.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-mail'|trans}}</dt>
+						<dd class="reon-status__{{ services.mail.status }}">{{ ('service-status-' ~ services.mail.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-relay-policy'|trans}}</dt>
+						<dd class="reon-status__{{ services.relay_policy.status }}">{{ ('service-status-' ~ services.relay_policy.status)|trans }}</dd>
+					</div>
+					<div>
+						<dt>{{'service-mobile-relay'|trans}}</dt>
+						<dd class="reon-status__{{ services.mobile_relay.status }}">
+							{{ ('service-status-' ~ services.mobile_relay.status)|trans }}
+							{%- if services.mobile_relay.status == 'up' and services.mobile_relay.detail is not null %} ({{ 'service-devices-connected'|trans({'%count%': services.mobile_relay.detail}) }}){% endif %}
+						</dd>
+					</div>
+				</dl>
+			</section>
+
 			<nav class="reon-menu reon-menu--side">
 				<svg class="reon-menu__vine" viewBox="0 0 40 300" preserveAspectRatio="none" aria-hidden="true">
 					<defs>
@@ -85,7 +110,7 @@
 				<p>{{'homepage.intro-1'|trans}}</p>
 			</div>
 
-			{# ---- dense portal row: dated news + service status ---- #}
+			{# ---- dense portal row: dated news, now full-width ---- #}
 			<div class="reon-inforow">
 				<section class="reon-box">
 					<h2 class="reon-box__bar">{{'news'|trans}}</h2>
@@ -93,13 +118,6 @@
 						<li><span class="reon-news__date">2026.07.19</span>Trade filters improved<em class="reon-blink">NEW!</em></li>
 						<li><span class="reon-news__date">2026.07.12</span>Battle Tower updated<em class="reon-blink">NEW!</em></li>
 					</ul>
-				</section>
-				<section class="reon-box">
-					<h2 class="reon-box__bar reon-box__bar--teal">{{'status'|trans}}</h2>
-					<dl class="reon-status">
-						<div><dt>{{'players-online'|trans}}</dt><dd>-</dd></div>
-						<div><dt>{{'in-service-since'|trans}}</dt><dd>-</dd></div>
-					</dl>
 				</section>
 			</div>
 
