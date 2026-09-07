@@ -54,7 +54,13 @@
 					<h1 class="home-hero__logo"><img src="/images/REON_Logo.svg" alt="REON"></h1>
 					<p class="home-hero__tagline">{{'homepage.tagline'|trans}}</p>
 					<div class="home-hero__cta">
-						<a class="reon-gloss-btn" href="/signup.php">{{'signup'|trans}}</a>
+						{# Inviting someone who is already signed in to sign up reads as
+						   the page not knowing who they are. #}
+						{% if session_active %}
+							<a class="reon-gloss-btn" href="/user/summary.php">{{'your-account'|trans}}</a>
+						{% else %}
+							<a class="reon-gloss-btn" href="/signup.php">{{'signup'|trans}}</a>
+						{% endif %}
 						<a class="reon-chrome-btn" href="#what-is-reon">{{'homepage.learn-more'|trans}}</a>
 					</div>
 				</div>
