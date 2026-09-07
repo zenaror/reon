@@ -63,6 +63,7 @@ signup: Sign-up
 your-account: Your Account
 forgot-password: Forgot password
 email-addr: Email address
+email-or-username: Email or username
 password: Password
 password-show: Show password
 password-hide: Hide password

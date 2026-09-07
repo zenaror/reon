@@ -62,6 +62,7 @@ logout: Sair
 signup: Cadastro
 forgot-password: Esqueci a senha
 email-addr: Endereço de e-mail
+email-or-username: E-mail ou usuário
 password: Senha
 password-show: Mostrar senha
 password-hide: Ocultar senha
