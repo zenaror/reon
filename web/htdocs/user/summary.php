@@ -53,7 +53,7 @@
 		$result = DBUtil::fancy_get_result($stmt)[0];
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select count(*) from sys_inbox where recipient = ?");
+		$stmt = $db->prepare("select count(*) from sys_inbox where recipient = ? and deleted_at is null");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$inbox_size = DBUtil::fancy_get_result($stmt)[0]["count(*)"];
