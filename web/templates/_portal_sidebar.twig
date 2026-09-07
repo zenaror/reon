@@ -41,7 +41,7 @@
 				<img class="reon-menu__adapter" src="/images/mobile_adapter/REON_Blue_Adapter_Horizontal.svg" alt="" aria-hidden="true">
 				<a class="reon-menu-item" href="/index.php" style="--gem:#2e97dd"><span class="reon-gem"></span><span class="label">{{'home'|trans}}</span></a>
 				<a class="reon-menu-item" href="/news.php" style="--gem:#4e4ba8"><span class="reon-gem"></span><span class="label">{{'news'|trans}}</span></a>
-				<a class="reon-menu-item" href="/user/mail.php" style="--gem:#daac06"><span class="reon-gem"></span><span class="label">{{'mail.title'|trans}}</span></a>
+				<a class="reon-menu-item" href="/user/mail.php" style="--gem:#daac06"><span class="reon-gem"></span><span class="label">{{'mail.title'|trans}}{% if mail_count > 0 %} <span class="mail-badge{{ mail_new > 0 ? ' mail-badge--new' : '' }}">{{ mail_count }}</span>{% endif %}</span></a>
 				<a class="reon-menu-item" href="/pokemon/" style="--gem:#b80a41"><span class="reon-gem"></span><span class="label">{{'pokemon-crystal'|trans}}</span></a>
 				<a class="reon-menu-item" href="/gbwars/" style="--gem:#6eb122"><span class="reon-gem"></span><span class="label">{{'gameboy-wars'|trans}}</span></a>
 				<a class="reon-menu-item" href="/mariokart/" style="--gem:#daac06"><span class="reon-gem"></span><span class="label">{{'mario-kart.title'|trans}}</span></a>

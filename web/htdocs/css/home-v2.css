@@ -1100,3 +1100,25 @@ body.home-v2 main#content { overflow: hidden; }
   color: #b03000;
   font-weight: bold;
 }
+
+/* Mail count in the navigation. The plain badge is a quantity; the accented
+   one means something arrived since this account last opened the inbox. */
+.mail-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #cfd6c4;
+  color: #3f4a35;
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mail-badge--new {
+  background: #c25a10;
+  color: #fff5e2;
+}

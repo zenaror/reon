@@ -109,6 +109,13 @@
 		return;
 	}
 
+	// Marked before rendering, so the badge this very page draws already
+	// reflects that the inbox has just been looked at. Only the inbox counts:
+	// the trash is not where new mail arrives.
+	if ($folder === "inbox") {
+		$mail->markInboxSeen($userId);
+	}
+
 	echo TemplateUtil::render("/user/mail", [
 		"message" => null,
 		"messages" => $mail->listForUser($userId, $folder),
