@@ -33,6 +33,9 @@ signup: 新規登録
 forgot-password: パスワードを忘れた場合
 email-addr: メールアドレス
 password: パスワード
+password-show: パスワードを表示
+password-hide: パスワードを隠す
+password-caps-on: Caps Lock がオンになっています
 current-password: 現在のパスワード
 new-password: 新しいパスワード
 confirm-password: パスワードの確認

@@ -63,6 +63,9 @@ signup: Cadastro
 forgot-password: Esqueci a senha
 email-addr: Endereço de e-mail
 password: Senha
+password-show: Mostrar senha
+password-hide: Ocultar senha
+password-caps-on: Caps Lock está ativado
 current-password: Senha atual
 new-password: Nova senha
 confirm-password: Confirmar senha

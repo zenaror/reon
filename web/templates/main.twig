@@ -264,5 +264,16 @@
 
 		</script>
 
+		{# Strings are handed to the script rather than hardcoded in it, so
+		   the toggle and the Caps Lock warning follow the site's language. #}
+		<script>
+			window.REON_PASSWORD_STRINGS = {
+				show: {{ 'password-show'|trans|json_encode|raw }},
+				hide: {{ 'password-hide'|trans|json_encode|raw }},
+				caps: {{ 'password-caps-on'|trans|json_encode|raw }}
+			};
+		</script>
+		<script src="{{ asset('/js/password-field.js') }}"></script>
+
 	</body>
 </html>
