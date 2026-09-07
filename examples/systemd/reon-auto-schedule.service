@@ -1,0 +1,10 @@
+[Unit]
+Description=REON cron job: Pokémon news scheduling
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/app/auto-schedule
+ExecStart=/opt/node/bin/node /opt/reon/app/auto-schedule/index.js -c /opt/reon/config.json

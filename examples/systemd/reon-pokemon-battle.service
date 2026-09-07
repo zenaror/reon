@@ -1,0 +1,10 @@
+[Unit]
+Description=REON cron job: Battle Tower content update
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/app/pokemon-battle
+ExecStart=/opt/node/bin/node /opt/reon/app/pokemon-battle/index.js -c /opt/reon/config.json
