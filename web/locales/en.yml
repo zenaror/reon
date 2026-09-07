@@ -1859,8 +1859,6 @@ mail:
   sent-ok: "Message sent."
   compose-note: "Write to another REON player using their username, or to any e-mail address. The games only show the first 10 characters of a subject."
   hint-compose: "Writing a message"
-  err-recipient-full: "That mailbox is full — a Game Boy holds %max% messages."
-  restore-no-room: "Not enough room: the inbox holds %max% messages and has %free% free. Delete some first, or restore fewer."
   err-empty: "Fill in the address and the message."
   size-note: "A Game Boy message holds %lines% lines and %chars% characters. Longer messages are refused."
   size-count: "%lines%/%maxlines% lines · %chars%/%maxchars% characters"

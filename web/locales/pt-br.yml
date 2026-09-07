@@ -221,8 +221,6 @@ mail:
   sent-ok: "Mensagem enviada."
   compose-note: "Escreva para outro jogador REON usando o usuário dele, ou para qualquer endereço de e-mail. Os jogos só mostram os 10 primeiros caracteres do assunto."
   hint-compose: "Escrevendo uma mensagem"
-  err-recipient-full: "Essa caixa está cheia — um Game Boy comporta %max% mensagens."
-  restore-no-room: "Sem espaço: a caixa comporta %max% mensagens e tem %free% livre(s). Apague algumas antes, ou restaure menos."
   err-empty: "Preencha o endereço e a mensagem."
   size-note: "Uma mensagem de Game Boy comporta %lines% linhas e %chars% caracteres. Mensagens maiores são recusadas."
   size-count: "%lines%/%maxlines% linhas · %chars%/%maxchars% caracteres"
