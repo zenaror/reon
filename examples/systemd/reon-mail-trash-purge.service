@@ -1,0 +1,10 @@
+[Unit]
+Description=REON cron job: Purge mail trash past retention
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/web/scripts
+ExecStart=/usr/bin/php /opt/reon/web/scripts/purge_mail_trash.php
