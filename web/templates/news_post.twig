@@ -1,0 +1,40 @@
+{% extends "main.twig" %}
+{% set nav_item = "news" %}
+{% set body_class = "home home-v2" %}
+
+{% block title %}{% if post %}{{ post.title }}{% else %}{{'news'|trans}}{% endif %}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	<div class="reon-ticker">
+		<span class="reon-ticker__label">{{'news'|trans}}</span>
+		<marquee class="reon-ticker__scroll">{{'welcome-alpha'|trans}}</marquee>
+	</div>
+
+	<div class="home-layout">
+		{% include "_portal_sidebar.twig" %}
+
+		<div class="home-main">
+			{% if post is null %}
+				<div class="reon-pickup">{{'news'|trans}}<span class="bar"></span></div>
+				<div class="home-prose"><p>{{'news-not-found'|trans}}</p></div>
+			{% else %}
+				<div class="reon-pickup">{{ post.title }}<span class="bar"></span></div>
+				<p class="reon-post__date">{{ post.published_at|date("Y.m.d") }}</p>
+				{# Already sanitised by NewsUtil: CommonMark runs with html_input=escape. #}
+				<article class="reon-post">{{ html|raw }}</article>
+			{% endif %}
+			<p><a class="reon-chrome-btn" href="/news.php">{{'news-back-to-list'|trans}}</a></p>
+		</div>
+	</div>
+
+	<footer class="reon-footer">
+		<div class="reon-footer__nav">
+			<a class="reon-chrome-btn" href="#top">{{'homepage.top'|trans}}</a>
+		</div>
+	</footer>
+{% endblock %}
