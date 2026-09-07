@@ -44,6 +44,9 @@ new-email: 新しいメールアドレス
 invalid-email: 無効なメールアドレス
 password-invalid: "パスワードは8〜71文字にしてください。"
 password-hint: "8〜71文字。"
+password-rules-label: "パスワードの条件"
+password-rule-min: "%count%文字以上"
+password-rule-max: "%count%文字以下"
 passwords-dont-match: パスワードが一致しません
 wrong-password: パスワードが間違っています
 link-invalid-expired: このリンクは無効か、期限切れです。

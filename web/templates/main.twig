@@ -270,8 +270,15 @@
 			window.REON_PASSWORD_STRINGS = {
 				show: {{ 'password-show'|trans|json_encode|raw }},
 				hide: {{ 'password-hide'|trans|json_encode|raw }},
-				caps: {{ 'password-caps-on'|trans|json_encode|raw }}
+				caps: {{ 'password-caps-on'|trans|json_encode|raw }},
+				rulesLabel: {{ 'password-rules-label'|trans|json_encode|raw }}
 			};
+			{# The numbers come from UserUtil, so the checklist can't promise
+			   something different from what the validator enforces. #}
+			window.REON_PASSWORD_RULES = [
+				{ kind: "min", value: {{ password_min }}, label: {{ 'password-rule-min'|trans({'%count%': password_min})|json_encode|raw }} },
+				{ kind: "max", value: {{ password_max }}, label: {{ 'password-rule-max'|trans({'%count%': password_max})|json_encode|raw }} }
+			];
 		</script>
 		<script src="{{ asset('/js/password-field.js') }}"></script>
 
