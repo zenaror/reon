@@ -55,6 +55,32 @@
 		<div class="col-lg-6">
 			<div class="card">
 				<div class="card-header">
+					{{'account.reon-identity'|trans}}
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label for="username" class="form-label">{{'auth.reon-username'|trans}}</label>
+						<input id="username" type="text" readonly class="form-control" value="{{ username|e }}">
+					</div>
+					<div class="mb-3">
+						<label for="externalEmail" class="form-label">{{'account.external-email'|trans}}</label>
+						<input id="externalEmail" type="text" readonly class="form-control" value="{{ external_email|e }}">
+						{% if external_email_short != external_email %}
+							<div class="form-text">
+								{{'account.external-email-alias'|trans}}
+								<code>{{ external_email_short|e }}</code>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col-lg-6">
+			<div class="card">
+				<div class="card-header">
 					{{'account.dion-account-details'|trans}}
 				</div>
 				<div class="card-body">

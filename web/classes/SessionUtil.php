@@ -1,4 +1,6 @@
 <?php
+	require_once(__DIR__."/DBUtil.php");
+
 	class SessionUtil {
 
 		private static $instance;

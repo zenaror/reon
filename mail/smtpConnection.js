@@ -168,7 +168,10 @@ class SMTPConnection extends EventEmitter {
 			let mailToInsert = [];
 			for (let i = 0; i < this._forwardPath.length; i++) {
 				if (this._isMailAddressedToUs(this._forwardPath[i])) {
-					let [result] = await this._server.mysql.execute("select id from sys_users where dion_email_local = ? limit 1", [this._sliceDomain(this._forwardPath[i])]);
+					// Either the full username or its 8-character in-game form is a valid
+					// address for the same account (see deliver.js).
+					let recipientLocal = this._sliceDomain(this._forwardPath[i]);
+					let [result] = await this._server.mysql.execute("select id from sys_users where username = ? or dion_email_local = ? limit 1", [recipientLocal, recipientLocal]);
 					if (result.length > 0) {
 						let mail = [];
 						mail[0] = this._reversePath;
