@@ -45,8 +45,11 @@
     </form>
 
         <div class="battle-table-grid" data-bt-table-wrap>
+            {# data-bt-extra: how many of the LV/ROOM columns are present, so the
+               CSS can compact the fixed-width columns to make room for them. #}
+            {% set extra_cols = (show_level ? 1 : 0) + (show_room ? 1 : 0) %}
             <div class="battle-table-panel" data-bt-primary>
-                <table class="battle-honor-table">
+                <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
                             {# Shown only when the matching filter is open: a filtered
@@ -89,7 +92,7 @@
 
                         {% if leaders is empty %}
                             <tr class="bt-empty-row">
-                                <td colspan="{{ 3 + (show_level ? 1 : 0) + (show_room ? 1 : 0) }}" class="crystal-empty-message">No Trainers found.</td>
+                                <td colspan="{{ 3 + extra_cols }}" class="crystal-empty-message">No Trainers found.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -97,7 +100,7 @@
             </div>
 
             <div class="battle-table-panel" data-bt-secondary hidden>
-                <table class="battle-honor-table">
+                <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
                             {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
