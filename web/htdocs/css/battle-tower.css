@@ -637,6 +637,14 @@
   justify-items: start;
 }
 
+/* At 2x the overview panel is 1036px; widen the framed box to hold it (the
+   frame art stretches) instead of cropping or scrolling. Below that width
+   the scroll above is the fallback. */
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"],
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"] .battle-table-shell {
+  width: min(1110px, 100%);
+}
+
 .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
   width: 518px;
   min-width: 518px;
