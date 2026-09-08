@@ -10,7 +10,8 @@
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     "level room"
-    "honor zoom";
+    "honor zoom"
+    "pager pager";
   align-items: center;
   row-gap: 8px;
 }
@@ -371,7 +372,8 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "level room"
-      "honor zoom";
+      "honor zoom"
+      "pager pager";
     justify-items: stretch;
     row-gap: 8px;
   }
@@ -621,78 +623,161 @@
 }
 
 
-/* Message-under-leader layout. Used when both LV and ROOM are shown (the
-   overview) and on phones: there is no room for a 159px message column next
-   to the leader, and the box cannot shrink -- the game wraps its text at 18
-   characters, which is what the 155px art holds. */
-.bt-message-row {
-  display: none;
+/* The overview (LV and ROOM both shown) is a single, wider panel: the two
+   extra columns are added to the 440px the reference layout needs, so the
+   leader, POKéMON and message columns keep their widths, and the message
+   stays on the leader's row. At 2x it scrolls inside the white box. */
+.battle-table-grid[data-bt-extra="2"] {
+  overflow-x: auto;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] th.bt-col-message,
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] td.bt-message-cell {
-  display: none;
+.battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+  width: 518px;
+  min-width: 518px;
+  max-width: 518px;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row {
-  display: table-row;
+.battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-pokemon {
+  width: 105px;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] tr.bt-row td {
-  border-bottom: 0;
-}
-
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row td {
-  border-top: 0;
-  padding: 0 6px 6px;
-}
-
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row .bt-message-box {
-  margin: 0 auto;
-}
-
-/* Enough width again for the full-size sprite. */
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-trainer-sprite {
+.battle-table-grid[data-bt-extra="2"] .bt-trainer-sprite {
   width: 56px;
   height: 56px;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-subcols {
+.battle-table-grid[data-bt-extra="2"] .bt-leader-subcols {
   grid-template-columns: 60px minmax(0, 1fr);
   column-gap: 8px;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-sprite-col {
+.battle-table-grid[data-bt-extra="2"] .bt-leader-sprite-col {
   padding-left: 6px;
 }
 
-.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-name-col {
+.battle-table-grid[data-bt-extra="2"] .bt-leader-name-col {
   min-height: 56px;
   padding-left: 8px;
   padding-right: 6px;
 }
 
+/* Pager: same pill buttons as the zoom control. */
+.battle-pager {
+  grid-area: pager;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 2px;
+}
+
+.battle-pager-size,
+.battle-pager-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.battle-pager-label,
+.battle-pager-status,
+.battle-pager-gap {
+  font-size: 16px !important;
+  line-height: 16px !important;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.battle-pager-status {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.battle-pager .trade-size-buttons {
+  display: inline-flex;
+}
+
+.battle-pager .trade-size-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 0.75ch;
+  font-size: 16px !important;
+  line-height: 16px !important;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battle-pager-nav .trade-size-btn {
+  border-radius: 3px;
+}
+
+.battle-pager-nav .trade-size-btn + .trade-size-btn {
+  border-left: 1px solid #a6a6a6;
+}
+
+.battle-pager .trade-size-btn.is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+
+.battle-pager-bottom {
+  width: min(900px, 100%);
+  margin: 12px auto 0;
+  justify-content: center;
+}
+
+/* Phones: the table keeps its designed width and scrolls sideways inside
+   the white box -- squeezing the leader column any further leaves no room
+   for a name, and the message cannot leave the leader's row. */
 @media (max-width: 575.98px) {
-  .battle-tower-page .battle-honor-table th.bt-col-message,
-  .battle-tower-page .battle-honor-table td.bt-message-cell {
-    display: none;
+  .battle-tower-controls .trade-region-filter {
+    width: 100%;
   }
 
-  .battle-tower-page .battle-honor-table .bt-message-row {
-    display: table-row;
+  .battle-tower-page .battle-zoom-label {
+    display: none !important;
   }
 
-  .battle-tower-page .battle-honor-table tr.bt-row td {
-    border-bottom: 0;
+  .battle-table-panel {
+    width: 440px;
+    min-width: 440px;
+    max-width: 440px;
   }
 
-  .battle-tower-page .battle-honor-table .bt-message-row td {
-    border-top: 0;
-    padding: 0 4px 6px;
+  .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+    width: 518px;
+    min-width: 518px;
+    max-width: 518px;
   }
 
-  .battle-tower-page .battle-honor-table .bt-message-row .bt-message-box {
-    margin: 0 auto;
+  /* Only the table scrolls; the title and controls stay put. */
+  .battle-table-grid {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .battle-tower-page .battle-table-shell {
+    overflow-x: visible;
+  }
+
+  .battle-pager {
+    gap: 8px;
+  }
+
+  .battle-honor-table th.bt-col-message,
+  .bt-message-cell {
+    width: 159px;
+    min-width: 159px;
+    max-width: 159px;
+  }
+
+  .bt-message-box {
     width: 155px;
     min-width: 155px;
     max-width: 155px;
@@ -703,27 +788,8 @@
     line-height: 1 !important;
   }
 
-  .battle-tower-controls .trade-region-filter {
+  .battle-pager-status {
     width: 100%;
-  }
-
-  .battle-tower-page .battle-zoom-label {
-    display: none !important;
-  }
-
-  .battle-honor-table th.bt-col-level,
-  .battle-honor-table td.bt-col-level {
-    width: 30px;
-    min-width: 30px;
-  }
-
-  .battle-honor-table th.bt-col-room,
-  .battle-honor-table td.bt-col-room {
-    width: 38px;
-    min-width: 38px;
-  }
-
-  .battle-honor-table th.bt-col-pokemon {
-    width: 104px;
+    order: 3;
   }
 }
