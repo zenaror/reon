@@ -238,6 +238,10 @@
 .bt-leader-name-col {
   border-left: 1px solid #c6c6c6;
   padding: 5px 6px 5px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 56px;
 }
 
 .bt-trainer-sprite {
@@ -245,13 +249,6 @@
   height: 56px;
   image-rendering: pixelated;
   flex: 0 0 auto;
-}
-
-.bt-leader-name-col {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 56px;
 }
 
 .bt-player-name {
@@ -568,14 +565,14 @@
    neighbour instead of widening the column. */
 .battle-honor-table th.bt-col-level,
 .battle-honor-table td.bt-col-level {
-  width: 44px;
-  min-width: 44px;
+  width: 34px;
+  min-width: 34px;
 }
 
 .battle-honor-table th.bt-col-room,
 .battle-honor-table td.bt-col-room {
-  width: 54px;
-  min-width: 54px;
+  width: 44px;
+  min-width: 44px;
 }
 
 .battle-honor-table th.bt-col-level,
@@ -585,4 +582,74 @@
   white-space: nowrap;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* The panel cannot grow past 440px (two panels sit side by side inside the
+   913px frame, and 2x zoom doubles it), so every column the filters add has
+   to be paid for by the others. The leader column is the only `auto` one and
+   took the whole hit: with LV + ROOM it dropped to ~77px, the 60px sprite
+   track ate it, and the class/name text overflowed into the POKéMON cell.
+   Placed after the media queries on purpose -- their zoom-2 rules pin the
+   message column back to 159px and would otherwise win. */
+.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-trainer-sprite {
+  width: 44px;
+  height: 44px;
+}
+
+.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-subcols {
+  grid-template-columns: 48px minmax(0, 1fr);
+  column-gap: 6px;
+}
+
+.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-sprite-col {
+  padding-left: 4px;
+}
+
+.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-name-col {
+  min-height: 44px;
+  padding-left: 6px;
+  padding-right: 4px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] {
+  --bt-mobile-msg-cell-width: min(135px, max(112px, calc(100vw - 198px)));
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] th.bt-col-message,
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-cell {
+  width: 135px;
+  min-width: 135px;
+  max-width: 135px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-box {
+  width: 131px;
+  min-width: 131px;
+  max-width: 131px;
+  height: 37px;
+  min-height: 37px;
+  background-size: 131px 37px;
+  padding: 10px 5px 0 5px;
+  line-height: 1.15;
+}
+
+@media (max-width: 991.98px) {
+  .battle-tower-page .battle-honor-table[data-bt-extra="2"] th.bt-col-message,
+  .battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-cell {
+    width: var(--bt-mobile-msg-cell-width);
+    min-width: var(--bt-mobile-msg-cell-width);
+    max-width: var(--bt-mobile-msg-cell-width);
+  }
+
+  .battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-box {
+    width: var(--bt-mobile-msg-box-width);
+    min-width: var(--bt-mobile-msg-box-width);
+    max-width: var(--bt-mobile-msg-box-width);
+    height: var(--bt-mobile-msg-height);
+    min-height: var(--bt-mobile-msg-height);
+    background-size: var(--bt-mobile-msg-box-width) var(--bt-mobile-msg-height);
+    padding: clamp(10px, calc(var(--bt-mobile-msg-height) * 0.28), 13px) 5px 0 5px;
+  }
 }
