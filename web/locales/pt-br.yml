@@ -212,6 +212,7 @@ mail:
   was-downloaded: "o jogo tinha baixado"
   never-downloaded: "nunca foi baixada"
   refresh: "Ver se chegou email"
+  refresh-short: "Atualizar"
   compose: "Escrever"
   reply: "Responder"
   send: "Enviar"

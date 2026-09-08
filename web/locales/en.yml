@@ -1850,6 +1850,7 @@ mail:
   was-downloaded: "the game had downloaded it"
   never-downloaded: "never downloaded"
   refresh: "Check for new mail"
+  refresh-short: "Refresh"
   compose: "Compose"
   reply: "Reply"
   send: "Send"
