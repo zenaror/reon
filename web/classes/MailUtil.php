@@ -45,7 +45,7 @@
 			$db = DBUtil::getInstance()->getDB();
 			$where = $folder === "trash" ? "deleted_at is not null" : "deleted_at is null";
 			$stmt = $db->prepare("
-				select id, sender, timestamp, message, deleted_at, deleted_by, retrieved_at
+				select id, sender, timestamp, message, deleted_at, deleted_by, retrieved_at, read_at
 				from sys_inbox
 				where recipient = ? and $where
 				order by timestamp desc, id desc
@@ -70,6 +70,7 @@
 					// Distinguishes mail the game took a copy of from mail it
 					// discarded unread; only meaningful for trashed messages.
 					"retrieved" => $row["retrieved_at"] !== null,
+					"unread" => $row["read_at"] === null,
 				];
 			}
 			return $out;
@@ -353,16 +354,14 @@
 			return $stmt->affected_rows > 0;
 		}
 
-		// Messages that arrived since this account last opened the webmail
-		// inbox, counted by id rather than by date -- see the migration for
-		// why. A marker of 0 means it never has, so everything counts.
+		// Messages sitting unread in the inbox. Counted per message, so the
+		// badge falls by one each time something is opened rather than
+		// clearing all at once when the list is viewed.
 		public function countNewForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
-				"select count(*) as c from sys_inbox i
-				 join sys_users u on u.id = i.recipient
-				 where i.recipient = ? and i.deleted_at is null
-				   and i.id > u.mail_seen_id"
+				"select count(*) as c from sys_inbox
+				 where recipient = ? and deleted_at is null and read_at is null"
 			);
 			$userId = (int)$userId;
 			$stmt->bind_param("i", $userId);
@@ -370,26 +369,18 @@
 			return (int)$stmt->get_result()->fetch_assoc()["c"];
 		}
 
-		// Called when the inbox list is shown, and only then: opening a single
-		// message or the trash must not clear the marker for mail the person
-		// has not actually looked at yet.
-		//
-		// greatest() so the marker only ever moves forward. Without it,
-		// opening an inbox whose newest message was since trashed would move
-		// it backwards and resurrect older mail as "new".
-		public function markInboxSeen($userId) {
+		// Set when a message is opened in the webmail, once. Scoped by
+		// recipient, so an id belonging to someone else marks nothing.
+		public function markRead($userId, $id) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
-				"update sys_users u
-				 set u.mail_seen_id = greatest(
-				     u.mail_seen_id,
-				     coalesce((select max(i.id) from sys_inbox i where i.recipient = u.id), 0)
-				 )
-				 where u.id = ?"
+				"update sys_inbox set read_at = now()
+				 where id = ? and recipient = ? and read_at is null"
 			);
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
+			$id = (int)$id; $userId = (int)$userId;
+			$stmt->bind_param("ii", $id, $userId);
 			$stmt->execute();
+			return $stmt->affected_rows > 0;
 		}
 
 		public function countTrashForUser($userId) {

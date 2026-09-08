@@ -142,7 +142,7 @@
 
 					<ol class="mt-list">
 						{% for m in messages %}
-							<li class="mt-list__row">
+							<li class="mt-list__row{{ folder != 'trash' and m.unread ? ' is-unread' : '' }}">
 								<label class="mt-list__pick">
 									<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
 									<span class="visually-hidden">{{ m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>

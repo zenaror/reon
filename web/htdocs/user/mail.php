@@ -109,6 +109,10 @@
 		$message = $mail->getForUser($userId, $_GET["id"]);
 		if ($message === null) {
 			http_response_code(404);
+		} else {
+			// Marked on open, which is the only moment the webmail can honestly
+			// claim the message was read.
+			$mail->markRead($userId, $message["id"]);
 		}
 		echo TemplateUtil::render("/user/mail", [
 			"message" => $message,
@@ -121,13 +125,6 @@
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 		]);
 		return;
-	}
-
-	// Marked before rendering, so the badge this very page draws already
-	// reflects that the inbox has just been looked at. Only the inbox counts:
-	// the trash is not where new mail arrives.
-	if ($folder === "inbox") {
-		$mail->markInboxSeen($userId);
 	}
 
 	echo TemplateUtil::render("/user/mail", [
