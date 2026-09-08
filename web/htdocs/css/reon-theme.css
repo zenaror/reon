@@ -734,3 +734,131 @@ body.pokecrystal-index main#content {
 @media (prefers-reduced-motion: reduce) {
   .mail-dot { animation: none; }
 }
+
+/* ----------------------------------------------------------- passport modal
+   The "your passport to REON" config.bin introduction, shown once per
+   account. Built on a Bootstrap modal for its behaviour (backdrop, Escape,
+   focus trap); everything visual is restyled to the site's boxed retro
+   look -- hard border, hard offset shadow, square corners -- instead of
+   Bootstrap's own rounded/shadowed card. */
+
+.passport-modal .modal-dialog {
+  max-width: 600px;
+}
+
+.passport-modal .modal-content {
+  background: var(--reon-panel);
+  border: 2px solid var(--reon-line);
+  border-radius: var(--reon-radius);
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.passport-modal .modal-header {
+  background: var(--reon-blue-deep);
+  border-bottom: 2px solid var(--reon-line);
+  border-radius: 0;
+  padding: 14px 18px;
+}
+
+.passport-modal .modal-title {
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-2);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #fff;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+.passport-modal .modal-body {
+  padding: 22px 24px 20px;
+  color: var(--reon-ink);
+  line-height: 1.6;
+}
+
+.passport-modal .modal-body p {
+  margin: 0 0 14px;
+}
+
+/* The download button is the one thing on this screen that has to get
+   clicked, so it gets the most weight: centred, oversized, gloss-styled
+   like the homepage's own sign-up button rather than a plain link. */
+.passport-download {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 18px 12px;
+  background: var(--reon-paper);
+  border: 1px dashed #b3bccc;
+}
+
+.passport-download__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border: 1px solid #114a86;
+  border-radius: 999px;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-2);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 1px 1px rgba(0, 0, 40, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 44%),
+    linear-gradient(180deg, #5cb2f2 0%, #2e86d6 50%, #1667b4 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 2px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.1s ease;
+}
+
+.passport-download__btn:hover { filter: brightness(1.06); color: #fff; }
+.passport-download__btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0, 0, 40, 0.4); }
+
+.passport-download__icon { flex: 0 0 auto; }
+
+.passport-download__hint {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--reon-ink-soft);
+}
+
+.passport-lead {
+  font-weight: 600;
+}
+
+.passport-section {
+  margin: 0 0 16px;
+}
+
+.passport-section h2 {
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+  color: var(--reon-blue-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+.passport-section p {
+  margin: 0;
+}
+
+.passport-footnote {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 2px dotted var(--reon-line);
+  font-size: 0.85rem;
+  color: var(--reon-ink-soft);
+}
+
+.passport-footnote a {
+  color: var(--reon-blue-deep);
+  font-weight: 600;
+}

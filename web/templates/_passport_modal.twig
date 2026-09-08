@@ -1,0 +1,72 @@
+{# The "your passport to REON" modal: shown once per account, until they
+   dismiss it (see TemplateUtil::render / dismiss_passport.php). Built on
+   Bootstrap's modal (already loaded on every page) for the show/hide,
+   backdrop, Escape and focus-trap behaviour, restyled to the site's boxed
+   retro look instead of Bootstrap's own. #}
+<div class="modal fade passport-modal" id="passportModal" tabindex="-1" aria-labelledby="passportModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="modal-title" id="passportModalLabel">{{'passport.title'|trans}}</h1>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="passport-download">
+					<a class="passport-download__btn" href="/user/adapter_config.php" download="config.bin">
+						<svg class="passport-download__icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+							<path d="M6 2h9l5 5v15H6z" fill="#fdfbf0" stroke="#1a1c26" stroke-width="1.5" stroke-linejoin="round"/>
+							<path d="M15 2v5h5" fill="none" stroke="#1a1c26" stroke-width="1.5" stroke-linejoin="round"/>
+							<path d="M12 10v7m0 0-3-3m3 3 3-3" fill="none" stroke="#1667b4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						<span>config.bin</span>
+					</a>
+					<p class="passport-download__hint">{{'passport.download-hint'|trans}}</p>
+				</div>
+
+				<p class="passport-lead">{{'passport.intro'|trans}}</p>
+				<p>{{'passport.body-1'|trans}}</p>
+				<p>{{'passport.body-2'|trans}}</p>
+
+				<div class="passport-section">
+					<h2>{{'passport.mgba-heading'|trans}}</h2>
+					<p>{{'passport.mgba-body'|trans}}</p>
+				</div>
+				<div class="passport-section">
+					<h2>{{'passport.hardware-heading'|trans}}</h2>
+					<p>{{'passport.hardware-body'|trans}}</p>
+				</div>
+				<div class="passport-section">
+					<h2>{{'passport.keep-heading'|trans}}</h2>
+					<p>{{'passport.keep-body'|trans}}</p>
+				</div>
+
+				<p class="passport-footnote">{{ 'passport.redownload-note'|trans({
+					'%link_open%': '<a href="/user/summary.php">',
+					'%link_close%': '</a>'
+				})|raw }}</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+(function () {
+	var el = document.getElementById("passportModal");
+	if (!el || typeof bootstrap === "undefined") return;
+
+	var modal = new bootstrap.Modal(el);
+
+	// Fires however the modal closed -- the X, the backdrop, Escape, or the
+	// download link itself -- so one interaction is enough to not see this
+	// again, whether or not config.bin was actually downloaded.
+	el.addEventListener("hidden.bs.modal", function () {
+		var body = new FormData();
+		body.append(document.querySelector('meta[name="csrf-field"]').content,
+		            document.querySelector('meta[name="csrf-token"]').content);
+		fetch("/user/dismiss_passport.php", { method: "POST", body: body, credentials: "same-origin" })
+			.catch(function () {});
+	});
+
+	modal.show();
+})();
+</script>
