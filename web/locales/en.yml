@@ -83,6 +83,7 @@ passwords-dont-match: The passwords don't match
 wrong-password: Wrong password
 link-invalid-expired: This link is invalid or has expired.
 csrf-invalid: This form has expired or was not sent from this site. Go back and try again.
+email-send-failed: We could not send the e-mail just now. Please try again in a few minutes.
 invalid-trade-setting: Not a valid region pool setting.
 invalid-pokemon-news-setting: Not a valid Pokémon news preference.
 default-time-zone: Default (Japan, +0900)

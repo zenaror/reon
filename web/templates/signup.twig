@@ -7,6 +7,9 @@
 			<div class="card m-auto">
 				<form method="post" accept-charset="utf-8" class="card-body">
 					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					{% if result == 3 %}
+						<div class="alert alert-danger">{{'email-send-failed'|trans}}</div>
+					{% endif %}
 					<fieldset>
 						<legend>{{'auth.signup-to-reon'|trans}}</legend>
 						<div class="mb-3">
