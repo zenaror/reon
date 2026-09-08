@@ -782,6 +782,22 @@ body.home-v2 main#content { overflow: hidden; }
   opacity: 0.85;
 }
 
+/* The unread count is the one number that asks for something, so it is filled
+   rather than dimmed -- it has to read at a glance from another tab. */
+.mt-tab__count--new {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mt-orange);
+  color: var(--mt-frame);
+  opacity: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-tab--on .mt-tab__count--new {
+  background: var(--mt-frame);
+  color: var(--mt-plate);
+}
+
 .mt-panel {
   border: 3px solid var(--mt-frame);
   border-radius: 0 10px 10px 10px;
@@ -794,9 +810,18 @@ body.home-v2 main#content { overflow: hidden; }
   padding: 7px 12px;
   background: var(--mt-deep);
   color: var(--mt-orange);
-  font-size: 1rem;
+  /* On the grid via the theme's h2 rule; named here so the size is visible
+     where the bar is styled rather than looking like an inherited accident. */
+  font-size: var(--mt-2);
   /* Long subjects become the panel title, so it must not push the layout. */
   overflow-wrap: anywhere;
+}
+
+/* How many messages the folder below holds. Quieter than the folder's name:
+   it answers a question, it is not the heading. */
+.mt-panel__count {
+  color: var(--mt-plate);
+  font-variant-numeric: tabular-nums;
 }
 
 .mt-empty {
@@ -999,6 +1024,10 @@ body.home-v2 main#content { overflow: hidden; }
   padding-left: 10px;
   cursor: pointer;
 }
+
+/* Without the checkbox nothing supplies the row's left inset, so the slot
+   number would sit flush against the panel frame. */
+.mt-list--nopick .mt-list__row { padding-left: 10px; }
 
 .mt-selectall input,
 .mt-list__pick input {

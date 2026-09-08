@@ -16,14 +16,15 @@
 
 	{# Folder tabs, styled after the Mobile Trainer's menu buttons: the
 	   selected one is the pale plate, the rest are the dark plates. #}
+	{# A tab badge means "this wants you", not "this holds things": only unread
+	   mail qualifies. Plain totals live on the panel bar of the folder you are
+	   actually looking at, where they describe what is on screen. #}
 	<nav class="mt-tabs">
-		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">{{'mail.inbox'|trans}}</a>
-		<a class="mt-tab{{ folder == 'sent' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=sent">
-			{{'mail.sent'|trans}}{% if sent_count > 0 %} <span class="mt-tab__count">{{ sent_count }}</span>{% endif %}
+		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">
+			{{'mail.inbox'|trans}}{% if mail_new > 0 %} <span class="mt-tab__count mt-tab__count--new" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>{% endif %}
 		</a>
-		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">
-			{{'mail.trash'|trans}}{% if trash_count > 0 %} <span class="mt-tab__count">{{ trash_count }}</span>{% endif %}
-		</a>
+		<a class="mt-tab{{ folder == 'sent' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=sent">{{'mail.sent'|trans}}</a>
+		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">{{'mail.trash'|trans}}</a>
 
 		{# Only on the list: re-requests the folder being shown. Mail arrives
 		   over SMTP whenever it arrives, so the page has no way to know on its
@@ -125,17 +126,30 @@
 			<span id="mt-newmail-text"></span>
 			<a class="mt-btn" href="{{ folder == 'trash' ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.show-new'|trans}}</a>
 		</p>
+		{# Sent used to fall through to "Inbox" here, so the panel disagreed with
+		   the tab you had just clicked. #}
+		{% set folder_total = folder == 'sent' ? sent_count : (folder == 'trash' ? trash_count : mail_count) %}
 		<section class="mt-panel">
-			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
+			<h2 class="mt-panel__bar">
+				{%- if folder == 'trash' %}{{'mail.trash'|trans}}
+				{%- elseif folder == 'sent' %}{{'mail.sent'|trans}}
+				{%- else %}{{'mail.inbox'|trans}}{% endif %}
+				{%- if folder_total > 0 %} <span class="mt-panel__count">{{ folder_total }}</span>{% endif %}
+			</h2>
 
 			{% if messages is empty %}
 				<p class="mt-empty">{% if folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
 			{% else %}
 				{# One form around the whole list: the checkboxes post as ids[],
 				   and the buttons in the bar below act on the selection. Per-row
-				   forms aren't possible here -- nesting forms is invalid. #}
+				   forms aren't possible here -- nesting forms is invalid.
+
+				   Sent gets no form at all. There is nothing to do to a sent
+				   copy -- no trash, no restore -- so a checkbox there offered a
+				   selection that no button could act on. #}
+				{% set pickable = folder != 'sent' %}
+				{% if pickable %}
 				<form method="post" action="/user/mail.php" id="mt-listform">
-					{% if folder != 'sent' %}
 					<div class="mt-selectall">
 						<label>
 							<input type="checkbox" id="mt-all">
@@ -143,15 +157,17 @@
 						</label>
 						<span class="mt-selectall__count" id="mt-count" aria-live="polite"></span>
 					</div>
-					{% endif %}
+				{% endif %}
 
-					<ol class="mt-list">
+					<ol class="mt-list{{ pickable ? '' : ' mt-list--nopick' }}">
 						{% for m in messages %}
 							<li class="mt-list__row{{ folder != 'trash' and m.unread ? ' is-unread' : '' }}">
-								<label class="mt-list__pick">
-									<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
-									<span class="visually-hidden">{{ m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
-								</label>
+								{% if pickable %}
+									<label class="mt-list__pick">
+										<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
+										<span class="visually-hidden">{{ m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
+									</label>
+								{% endif %}
 								{# The numbered gutter is the Mobile Trainer's mailbox slot number. #}
 								<span class="mt-list__num">{{ loop.index }}</span>
 								<span class="mt-list__main">
@@ -174,7 +190,7 @@
 						{% endfor %}
 					</ol>
 
-					{% if folder != 'sent' %}
+					{% if pickable %}
 					<div class="mt-statusbar mt-statusbar--inline">
 						<span class="mt-statusbar__hint">{{ folder == 'trash' ? 'mail.hint-trash'|trans : 'mail.hint-list'|trans }}</span>
 						<span class="mt-statusbar__acts">
@@ -187,8 +203,8 @@
 							{% endif %}
 						</span>
 					</div>
-					{% endif %}
 				</form>
+					{% endif %}
 			{% endif %}
 		</section>
 
@@ -253,7 +269,7 @@
 				// The actions are disabled with nothing picked, so the buttons
 				// can never post an empty selection.
 				acts.forEach(function (b) { b.disabled = n === 0; });
-				count.textContent = n === 0 ? "" : template.replace("%count%", n);
+				if (count) count.textContent = n === 0 ? "" : template.replace("%count%", n);
 				if (all) {
 					all.checked = n > 0 && n === picks.length;
 					all.indeterminate = n > 0 && n < picks.length;
