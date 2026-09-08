@@ -36,7 +36,24 @@
 				// If we've already authenticated this utility challenge session recently, accept it.
 				// The official client can reuse the same Authorization response across multiple requests
 				// (e.g. a follow-up POST), and it may not perform an additional 401-challenge retry.
-				if ($type == 2 && isset($_SESSION['utility_authed_user_id'], $_SESSION['utility_authed_until']) && time() <= intval($_SESSION['utility_authed_until'])) {
+				//
+				// The hit is bound to the whole Authorization value, not just the
+				// session id. That id is derived from the first 44 characters
+				// above, and those decode to the first 32 bytes of the challenge
+				// -- which the server itself published in the clear in the 401.
+				// Keyed on the id alone, a cache hit only proved that someone had
+				// seen the challenge; everything after character 44, the half
+				// actually derived from the account password, was never looked at
+				// for the whole 15-minute window. Found by the TestSuite session
+				// on 2026-09-08, whose truncated header authenticated as user 34.
+				//
+				// A miss is not a rejection: it falls through to full validation
+				// below, which for type 2 still has the challenge in the session.
+				$authFingerprint = hash("sha256", $authString);
+				if ($type == 2
+					&& isset($_SESSION['utility_authed_user_id'], $_SESSION['utility_authed_until'], $_SESSION['utility_authed_fp'])
+					&& time() <= intval($_SESSION['utility_authed_until'])
+					&& hash_equals((string)$_SESSION['utility_authed_fp'], $authFingerprint)) {
 					return intval($_SESSION['utility_authed_user_id']);
 				}
 
@@ -77,6 +94,8 @@
 						// without re-challenging (notably for follow-up POSTs).
 						$_SESSION['utility_authed_user_id'] = intval($result["userId"]);
 						$_SESSION['utility_authed_until'] = time() + 900; // 15 minutes
+						// What the next request has to match to skip revalidation.
+						$_SESSION['utility_authed_fp'] = $authFingerprint;
 						return intval($result["userId"]);
 					} else {
 						// 
