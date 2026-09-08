@@ -97,8 +97,11 @@
 			$stmt->bind_param("iss", $_SESSION["user_id"], $newEmail, $key);
 			$stmt->execute();
 			
-			self::$instance->sendConfirmationEmail($_SESSION["user_id"], $key, $newEmail);
-			
+			// Propagated rather than discarded: without this the failure code
+			// sendConfirmationEmail now returns would die here and the page
+			// would still say the confirmation was on its way.
+			if (self::$instance->sendConfirmationEmail($_SESSION["user_id"], $key, $newEmail) !== 0) return 3;
+
 			return 0;
 		}
 		
@@ -136,7 +139,7 @@
 				"key" => urlencode($key)
 			]);
 			
-			self::$instance->sendUtf8Email($email, $from, $subject, $message);
+			if (!self::$instance->sendUtf8Email($email, $from, $subject, $message)) return 3;
 			
 			return 0;
 		}
@@ -175,11 +178,25 @@
 				"key" => urlencode($key)
 			]);
 			
-			self::$instance->sendUtf8Email($email, $from, $subject, $message);
+			if (!self::$instance->sendUtf8Email($email, $from, $subject, $message)) return 3;
 			
 			return 0;
 		}
 		
+		// Returns true when PHPMailer accepted the message for delivery.
+		//
+		// The return used to be discarded, which made every failure here
+		// silent: the caller returned "sent" and the person was told to check
+		// an inbox nothing was ever going to arrive in. Whatever the cause --
+		// the relay refusing, credentials wrong, the host unreachable -- there
+		// was no trace of it anywhere.
+		//
+		// PHPMailer is left in its default non-throwing mode, so a failure
+		// comes back as false with the reason in ErrorInfo rather than as an
+		// exception. That reason is worth keeping: it is the difference
+		// between "the relay rejected this address" and "we could not connect
+		// at all", and without it the log entry would only say something went
+		// wrong.
 		private function sendUtf8Email($to, $from, $subject, $message) {
 			$mail = new PHPMailer();
 			$mail->CharSet = PHPMailer::CHARSET_UTF8;
@@ -207,7 +224,15 @@
 			$mail->addAddress($to);
 			$mail->Subject = $subject;
 			$mail->msgHTML($message);
-			$mail->send();
+
+			if ($mail->send()) return true;
+
+			// The recipient is logged because these are all account e-mails
+			// and knowing which account went unserved is the point; the body
+			// is not, since it carries reset and signup links.
+			error_log(sprintf("reon: e-mail para %s falhou (%s): %s",
+				$to, $subject, $mail->ErrorInfo));
+			return false;
 		}
 		
 		public function resetPassword($id, $key, $password, $passwordConfirm) {
@@ -330,7 +355,7 @@
 				"key" => urlencode($key)
 			]);
 			
-			self::$instance->sendUtf8Email($email, $from, $subject, $message);
+			if (!self::$instance->sendUtf8Email($email, $from, $subject, $message)) return 3;
 			
 			return 0;
 		}
@@ -390,6 +415,9 @@
 				"dion_id" => $row["dion_ppp_id"],
 			]);
 
+			// Failure here is logged inside sendUtf8Email and deliberately not
+			// propagated: the account exists and the signup succeeded, and
+			// undoing that over a greeting would be the wrong trade.
 			self::$instance->sendUtf8Email($email, "noreply@".$cfg["email_domain"], "Welcome to REON", $message);
 		}
 

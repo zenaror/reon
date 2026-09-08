@@ -52,6 +52,7 @@ passwords-dont-match: Las contraseñas no coinciden
 wrong-password: Contraseña incorrecta
 link-invalid-expired: Este enlace no es válido o ha caducado.
 csrf-invalid: Este formulario ha caducado o no procede de este sitio. Vuelve atrás e inténtalo de nuevo.
+email-send-failed: No hemos podido enviar el correo ahora mismo. Inténtalo de nuevo en unos minutos.
 invalid-trade-setting: No es una configuración de región válida.
 default-time-zone: Por defecto (Japón, +0900)
 invalid-time-zone-setting: No es una zona horaria válida.
