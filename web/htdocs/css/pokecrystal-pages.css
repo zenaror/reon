@@ -336,7 +336,7 @@
 
 body.trade-corner-theme,
 body.honor-roll-theme {
-  --trade-corner-nav-side-fallback: max(0px, calc((100vw - var(--trade-corner-container-width)) / 2));
+  --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
 body.honor-roll-theme {
@@ -396,7 +396,7 @@ body.rankings-theme {
     right var(--rankings-top-edge-top),
     left top;
   background-attachment: fixed;
-  --trade-corner-nav-side-fallback: max(0px, calc((100vw - var(--trade-corner-container-width)) / 2));
+  --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
 body.trade-corner-theme::before,
