@@ -49,7 +49,7 @@ news-back-to-list: "Voltar às notícias"
 status: Status
 service-web: Web
 service-mail: E-mail
-service-mobile-relay: Mobile Relay
+service-mobile-relay: Relay
 service-relay-policy: Mail Externo
 service-status-up: Online
 service-status-down: Offline

@@ -20,7 +20,7 @@ news-back-to-list: "ニュース一覧へ戻る"
 status: ステータス
 service-web: ウェブ
 service-mail: メール
-service-mobile-relay: モバイルリレー
+service-mobile-relay: リレー
 service-relay-policy: 外部メール
 service-status-up: オンライン
 service-status-down: オフライン
