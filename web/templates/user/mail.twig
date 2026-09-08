@@ -220,38 +220,20 @@
 			var text = document.getElementById("mt-newmail-text");
 			if (!banner || !text) return;
 
-			var EVERY = 60000;
 			var template = {{ 'mail.new-arrived'|trans|json_encode|raw }};
 			// What the page was rendered with. Anything beyond this is news.
 			var known = {{ mail_count|default(0) }};
-			var timer = null;
 
-			function check() {
-				fetch("/user/mail_status.php", { credentials: "same-origin" })
-					.then(function (r) { return r.ok ? r.json() : null; })
-					.then(function (data) {
-						if (!data) return;
-						var extra = data.count - known;
-						if (extra > 0) {
-							text.textContent = template.replace("%count%", extra);
-							banner.hidden = false;
-						}
-					})
-					// A failed check is not worth telling anyone about; the
-					// next one is a minute away.
-					.catch(function () {});
-			}
-
-			function start() { if (!timer) timer = setInterval(check, EVERY); }
-			function stop() { if (timer) { clearInterval(timer); timer = null; } }
-
-			// Nothing is polled while the tab is in the background: a mailbox
-			// left open in a tab for a day should not spend the day asking.
-			document.addEventListener("visibilitychange", function () {
-				if (document.hidden) { stop(); } else { check(); start(); }
+			// The poll itself lives in mail-indicator.js, which every page
+			// runs for a signed-in visitor and which updates the badges. This
+			// only listens, so the mailbox never asks the server twice.
+			document.addEventListener("reon:mailstatus", function (e) {
+				var extra = e.detail.count - known;
+				if (extra > 0) {
+					text.textContent = template.replace("%count%", extra);
+					banner.hidden = false;
+				}
 			});
-
-			if (!document.hidden) start();
 		})();
 		</script>
 

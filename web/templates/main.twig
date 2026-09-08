@@ -82,7 +82,11 @@
 									{#- Accented shows the unread count; plain shows the whole
 									    mailbox, and only once nothing is unread. The colour and the
 									    number have to mean the same thing, or the badge lies. -#}
-									{% if mail_new > 0 %}
+									{#- The wrapper is always present, even with nothing to show:
+									    mail-indicator.js rewrites its contents every minute, and
+									    needs somewhere to put a badge that did not exist at load. -#}
+									<span data-mail-badge>
+									{%- if mail_new > 0 %}
 										<span class="mail-badge mail-badge--new"
 										      title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>
 										<span class="visually-hidden">{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}</span>
@@ -90,14 +94,16 @@
 										<span class="mail-badge"
 										      title="{{ 'account.emails-in-inbox'|trans }}">{{ mail_count }}</span>
 										<span class="visually-hidden">{{ 'account.emails-in-inbox'|trans }}</span>
-									{% endif %}
+									{% endif -%}
+									</span>
 								</a>
 								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
 									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
 									<li><a class="dropdown-item" href="/user/mail.php">
-										{{'mail.title'|trans}}
+										{{'mail.title'|trans}}<span data-mail-badge>
 										{%- if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>
-										{%- elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif %}
+										{%- elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif -%}
+										</span>
 									</a></li>
 									<li><hr class="dropdown-divider"></li>
 									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
@@ -304,6 +310,19 @@
 			];
 		</script>
 		<script src="{{ asset('/js/password-field.js') }}"></script>
+
+		{% if session_active %}
+		{# Same idea for the mail badges: the strings the script needs to
+		   rebuild a badge, in the site's language. Signed-in only -- there is
+		   no mailbox to watch otherwise, and the endpoint answers 401. #}
+		<script>
+			window.REON_MAIL_STRINGS = {
+				newArrived: {{ 'mail.new-arrived'|trans|json_encode|raw }},
+				inInbox: {{ 'account.emails-in-inbox'|trans|json_encode|raw }}
+			};
+		</script>
+		<script src="{{ asset('/js/mail-indicator.js') }}"></script>
+		{% endif %}
 
 	</body>
 </html>
