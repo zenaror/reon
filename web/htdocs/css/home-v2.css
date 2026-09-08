@@ -1047,13 +1047,15 @@ body.home-v2 main#content { overflow: hidden; }
   margin-bottom: 2px;
 }
 
-/* On a narrow screen the actions take their own row under the folder tabs,
-   left-aligned, rather than being squeezed against the right edge. */
+/* On a narrow screen the actions take a row of their own, and it goes above
+   the folder tabs: the tabs have an open bottom edge and belong to the panel
+   under them, so putting buttons in between would cut that join. */
 @media (max-width: 560px) {
   .mt-tabs__actions {
+    order: -1;
     margin-left: 0;
     width: 100%;
-    margin-bottom: 0;
+    margin-bottom: 6px;
   }
 
   .mt-tab {
