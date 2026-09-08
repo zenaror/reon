@@ -962,7 +962,7 @@ account:
   dion-account-details: DIONアカウント詳細
   dion-id: DION ID
   log-in-password: DIONパスワード
-  relay-number: リレー番号
+  relay-number: REON番号
   relay-token: リレートークン
   reroll-log-in-password: DIONパスワードを再生成
   reroll-confirm-message: 本当によろしいですか?

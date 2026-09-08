@@ -918,7 +918,7 @@ account:
   dion-account-details: DION-Kontodetails
   dion-id: DION-ID
   log-in-password: DION-Passwort
-  relay-number: Relay-Nummer
+  relay-number: REON-Nummer
   relay-token: Relay-Token
   reroll-log-in-password: DION-Passwort neu generieren
   reroll-confirm-message: Bist du sicher, dass du das tun willst?

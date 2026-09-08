@@ -927,7 +927,7 @@ account:
   dion-account-details: Detalles de la cuenta DION
   dion-id: ID DION
   log-in-password: Contraseña DION
-  relay-number: Número de Relay
+  relay-number: Número REON
   relay-token: Token de Relay
   reroll-log-in-password: Regenerar Contraseña DION
   reroll-confirm-message: "¿Estás seguro de que quieres hacer esto?"
