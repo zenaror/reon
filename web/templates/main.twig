@@ -130,6 +130,10 @@
 		{% block body %}
 		{% endblock %}
 
+		{% if show_passport_modal %}
+			{% include "_passport_modal.twig" %}
+		{% endif %}
+
 		<!-- GBC Mobile Trainer Modal -->
 		<div id="gbc-modal" class="gbc-modal-overlay" onclick="closeGbcModal(event)">
 			<div class="gbc-modal-content" onclick="event.stopPropagation()">

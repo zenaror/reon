@@ -63,6 +63,22 @@
 				$vars["mail_new"] = 0;
 			}
 
+			// The config.bin "passport" modal: shown once, on whichever page
+			// a visitor happens to land on first, until dismissed. Checked
+			// globally for the same reason mail counts are -- a signed-in
+			// visitor can land on any page after logging in, not just one.
+			$vars["show_passport_modal"] = false;
+			if ($vars["session_active"] && isset($_SESSION["user_id"])) {
+				require_once(__DIR__."/DBUtil.php");
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select passport_seen_at is null as unseen from sys_users where id = ?");
+				$userId = (int)$_SESSION["user_id"];
+				$stmt->bind_param("i", $userId);
+				$stmt->execute();
+				$row = $stmt->get_result()->fetch_assoc();
+				$vars["show_passport_modal"] = $row && (int)$row["unseen"] === 1;
+			}
+
 			return self::$instance->twig->render($template.".twig", $vars);
 		}
 

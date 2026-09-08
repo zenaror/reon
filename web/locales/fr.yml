@@ -1025,3 +1025,17 @@ mail:
   back: "Retour à la boîte"
   not-found: "Ce message n'existe pas."
   read-only-note: "Lecture seule pour l'instant : les messages que le jeu télécharge et supprime du serveur disparaissent aussi d'ici."
+
+passport:
+  title: "Votre passeport pour REON."
+  download-hint: "Cliquez ici pour télécharger"
+  intro: "Ce fichier est votre passeport pour accéder aux services de REON."
+  body-1: "Que vous vous connectiez par émulation avec mGBA ou avec du matériel d'origine, ce petit fichier de configuration contient les informations dont votre jeu a besoin pour trouver REON et s'y connecter."
+  body-2: "Voyez-le comme le lien entre votre jeu et le réseau REON. Une fois config.bin installé au bon endroit, les jeux et logiciels compatibles peuvent l'utiliser pour se connecter aux serveurs de REON et accéder à leurs fonctionnalités en ligne."
+  mgba-heading: "Vous jouez avec mGBA ?"
+  mgba-body: "C'est facile de commencer ! Téléchargez config.bin, puis consultez le Guide d'installation mGBA. Nous vous guiderons étape par étape."
+  hardware-heading: "Vous jouez sur du matériel d'origine ?"
+  hardware-body: "Vous pouvez aussi vous connecter à REON depuis la vraie console ! Consultez le Guide d'installation pour matériel d'origine pour savoir de quoi vous avez besoin et comment vous connecter."
+  keep-heading: "Ne perdez pas votre passeport !"
+  keep-body: "Gardez une copie de config.bin en lieu sûr. Vous pourriez en avoir besoin à nouveau si vous configurez REON sur un autre appareil ou réinstallez votre émulateur."
+  redownload-note: "Si vous le perdez, une nouvelle copie peut être téléchargée depuis votre page %link_open%Mon compte%link_close%."
