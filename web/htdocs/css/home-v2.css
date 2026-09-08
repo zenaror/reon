@@ -1118,3 +1118,19 @@ body.home-v2 main#content { overflow: hidden; }
 .mt-newmail .mt-btn {
   margin-left: auto;
 }
+
+/* Unread rows in the inbox. Weight and a marker rather than colour alone --
+   colour by itself is the one cue some readers don't get. */
+.mt-list__row.is-unread .mt-list__subject {
+  font-weight: bold;
+}
+
+.mt-list__row.is-unread .mt-list__num {
+  background: #c25a10;
+  color: #fff5e2;
+}
+
+.mt-list__row.is-unread .mt-list__subject::before {
+  content: "\2022\00A0";
+  color: #c25a10;
+}
