@@ -140,7 +140,7 @@ account:
   dion-account-details: DION account details
   dion-id: DION ID
   log-in-password: Log-In Password
-  relay-number: Relay Number
+  relay-number: REON Number
   relay-token: Relay Token
   reroll-log-in-password: Reroll Log-In Password
   reroll-confirm-message: Are you sure you want to do this?
