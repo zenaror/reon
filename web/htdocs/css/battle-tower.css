@@ -10,8 +10,7 @@
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     "level room"
-    "honor zoom"
-    "pager pager";
+    "honor zoom";
   align-items: center;
   row-gap: 8px;
 }
@@ -372,8 +371,7 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "level room"
-      "honor zoom"
-      "pager pager";
+      "honor zoom";
     justify-items: stretch;
     row-gap: 8px;
   }
@@ -663,13 +661,13 @@
 
 /* Pager: same pill buttons as the zoom control. */
 .battle-pager {
-  grid-area: pager;
+  width: min(900px, 100%);
+  margin: 14px auto 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px 16px;
-  margin-top: 2px;
 }
 
 .battle-pager-size,
@@ -722,12 +720,6 @@
 .battle-pager .trade-size-btn.is-disabled {
   opacity: .4;
   pointer-events: none;
-}
-
-.battle-pager-bottom {
-  width: min(900px, 100%);
-  margin: 12px auto 0;
-  justify-content: center;
 }
 
 /* Phones: the table keeps its designed width and scrolls sideways inside

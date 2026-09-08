@@ -58,21 +58,6 @@
 
         <div class="battle-honor-roll-label">HONOR ROLL</div>
 
-        {% set per_page_value = per_page == 0 ? 'all' : per_page %}
-        {% set page_base = 'battletower.php?level=' ~ selected_level ~ '&room=' ~ selected_room ~ '&per_page=' ~ per_page_value %}
-        <div class="battle-pager">
-            <div class="battle-pager-size">
-                <span class="battle-pager-label">PER PAGE:</span>
-                <div class="trade-size-buttons battle-pager-sizes" role="group" aria-label="Leaders per page">
-                    {% for n in per_page_options %}
-                        <a class="trade-size-btn battle-pager-btn{% if per_page == n %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page={{ n }}&page=1"{% if per_page == n %} aria-current="true"{% endif %}>{{ n }}</a>
-                    {% endfor %}
-                    <a class="trade-size-btn battle-pager-btn{% if per_page == 0 %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page=all&page=1"{% if per_page == 0 %} aria-current="true"{% endif %}>ALL</a>
-                </div>
-            </div>
-            <div class="battle-pager-status">{% if total > 0 %}{{ first_index }}-{{ last_index }} OF {{ total }}{% else %}0 LEADERS{% endif %}</div>
-            {% if total_pages > 1 %}{{ ui.pager(page, total_pages, page_base) }}{% endif %}
-        </div>
     </form>
 
         <div class="battle-table-grid" data-bt-table-wrap data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
@@ -146,9 +131,21 @@
                 </table>
             </div>
         </div>
-        {% if total_pages > 1 %}
-            <div class="battle-pager battle-pager-bottom">{{ ui.pager(page, total_pages, page_base) }}</div>
-        {% endif %}
+        {% set per_page_value = per_page == 0 ? 'all' : per_page %}
+        {% set page_base = 'battletower.php?level=' ~ selected_level ~ '&room=' ~ selected_room ~ '&per_page=' ~ per_page_value %}
+        <div class="battle-pager">
+            <div class="battle-pager-size">
+                <span class="battle-pager-label">PER PAGE:</span>
+                <div class="trade-size-buttons battle-pager-sizes" role="group" aria-label="Leaders per page">
+                    {% for n in per_page_options %}
+                        <a class="trade-size-btn battle-pager-btn{% if per_page == n %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page={{ n }}&page=1"{% if per_page == n %} aria-current="true"{% endif %}>{{ n }}</a>
+                    {% endfor %}
+                    <a class="trade-size-btn battle-pager-btn{% if per_page == 0 %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page=all&page=1"{% if per_page == 0 %} aria-current="true"{% endif %}>ALL</a>
+                </div>
+            </div>
+            <div class="battle-pager-status">{% if total > 0 %}{{ first_index }}-{{ last_index }} OF {{ total }}{% else %}0 LEADERS{% endif %}</div>
+            {% if total_pages > 1 %}{{ ui.pager(page, total_pages, page_base) }}{% endif %}
+        </div>
     </div>
     </div>
 </div>
