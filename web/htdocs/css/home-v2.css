@@ -735,6 +735,12 @@ body.home-v2 main#content { overflow: hidden; }
 /* Folder tabs: the pale plate is the selected one, as on the main menu. */
 .mt-tabs {
   display: flex;
+  /* Wraps, because this row gained items over time -- inbox, sent, trash,
+     compose, refresh -- and on a phone they do not fit on one line. */
+  flex-wrap: wrap;
+  /* Not the default "stretch": a button whose label wraps would otherwise
+     make every tab as tall as itself. */
+  align-items: flex-end;
   gap: 8px;
   margin: 10px 0 0;
 }
@@ -1036,8 +1042,23 @@ body.home-v2 main#content { overflow: hidden; }
   margin-left: auto;
   align-self: flex-end;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 2px;
+}
+
+/* On a narrow screen the actions take their own row under the folder tabs,
+   left-aligned, rather than being squeezed against the right edge. */
+@media (max-width: 560px) {
+  .mt-tabs__actions {
+    margin-left: 0;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .mt-tab {
+    padding: 6px 12px;
+  }
 }
 
 .mt-compose {

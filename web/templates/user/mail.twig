@@ -32,7 +32,7 @@
 			<span class="mt-tabs__actions">
 				<a class="mt-btn" href="/user/mail.php?compose=1">{{'mail.compose'|trans}}</a>
 				<a class="mt-btn" href="/user/mail.php{{ folder == 'trash' ? '?folder=trash' : '' }}" title="{{'mail.refresh'|trans}}">
-					<span aria-hidden="true">&#8635;</span> {{'mail.refresh'|trans}}
+					<span aria-hidden="true">&#8635;</span> {{'mail.refresh-short'|trans}}<span class="visually-hidden"> {{'mail.refresh'|trans}}</span>
 				</a>
 			</span>
 		{% endif %}
