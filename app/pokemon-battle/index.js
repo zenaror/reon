@@ -88,13 +88,14 @@ async function updateContentForRegion(region, connection) {
                 " message_start, message_start_decode, " +
                 " message_win, message_win_decode, " +
                 " message_lose, message_lose_decode, " +
-                " level, level_decode " +
+                " level, level_decode, " +
+                " num_trainers_defeated, num_turns_required, damage_taken, num_fainted_pokemon " +
                 "FROM bxt_battle_tower_records " +
                 "WHERE game_region = ? AND level = ? AND room = ? " +
                 "ORDER BY num_trainers_defeated DESC, " +
-                "         num_turns_required DESC, " +
-                "         damage_taken DESC, " +
-                "         num_fainted_pokemon DESC " +
+                "         num_turns_required ASC, " +
+                "         damage_taken ASC, " +
+                "         num_fainted_pokemon ASC " +
                 "LIMIT 6",
                 [region, level, room]
             );
@@ -118,7 +119,8 @@ async function updateContentForRegion(region, connection) {
                     " message_start, message_start_decode, " +
                     " message_win, message_win_decode, " +
                     " message_lose, message_lose_decode, " +
-                    " level, level_decode " +
+                    " level, level_decode, " +
+                    " num_trainers_defeated, num_turns_required, damage_taken, num_fainted_pokemon " +
                     "FROM bxt_battle_tower_records " +
                     "WHERE game_region = ? AND level = ? AND room = ? " +
                     "  AND id NOT IN (" + placeholders + ") " +
@@ -142,12 +144,16 @@ async function updateContentForRegion(region, connection) {
                 // Insert leader with decoded name and level.
                 await connection.execute(
                     "INSERT INTO bxt_battle_tower_honor_roll " +
-                    "(game_region, player_name, player_name_decode, `class`, `class_decode`, " +
+                    "(game_region, trainer_id, secret_id, account_id, player_name, player_name_decode, `class`, `class_decode`, " +
                     "pokemon1, pokemon1_decode, pokemon2, pokemon2_decode, pokemon3, pokemon3_decode, " +
-                    "message_start, message_start_decode, room, level, level_decode) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "message_start, message_start_decode, room, level, level_decode, " +
+                    "num_trainers_defeated, num_turns_required, damage_taken, num_fainted_pokemon) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         region,
+                        leader.trainer_id ?? null,
+                        leader.secret_id ?? null,
+                        leader.account_id ?? null,
                         leader.player_name,
                         leader.player_name_decode || null,
                         leader.class || null,
@@ -163,6 +169,10 @@ async function updateContentForRegion(region, connection) {
                         room,
                         level,
                         leader.level_decode || null,
+                        leader.num_trainers_defeated ?? null,
+                        leader.num_turns_required ?? null,
+                        leader.damage_taken ?? null,
+                        leader.num_fainted_pokemon ?? null,
                     ]
                 );
 
