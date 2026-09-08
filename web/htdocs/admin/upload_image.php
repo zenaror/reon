@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	session_start();
 
 	header("Content-Type: application/json");
@@ -14,6 +15,7 @@
 		echo json_encode(["error" => "no-file"]);
 		return;
 	}
+	CsrfUtil::check();
 
 	$file = $_FILES["image"];
 	if ($file["error"] !== UPLOAD_ERR_OK) {

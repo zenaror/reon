@@ -39,6 +39,7 @@
 								{% endif %}
 								<a class="btn btn-sm btn-outline-primary" href="/admin/news.php?action=edit&amp;id={{ post.id }}">{{'admin.news-edit'|trans}}</a>
 								<form method="post" class="d-inline" onsubmit="return confirm('{{'admin.news-delete-confirm'|trans}}');">
+									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 									<input type="hidden" name="action" value="delete">
 									<input type="hidden" name="id" value="{{ post.id }}">
 									<button type="submit" class="btn btn-sm btn-outline-danger">{{'admin.news-delete'|trans}}</button>

@@ -137,6 +137,7 @@
 				<div class="card-header">{{ "account.pokemon-crystal-settings"|trans }}</div>
 				<div class="card-body">
                     <form method="post">
+                    	<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
                         <div class="mb-3">
                             <label for="tradeRegions">{{ "account.trade-corner-region-allowlist"|trans }}</label>
                             <small><p>{{ "account.trade-region-allowlist-blurb"|trans }}</p></small>

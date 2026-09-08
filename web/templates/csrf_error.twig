@@ -1,0 +1,13 @@
+{% extends "main.twig" %}
+
+{# Shown when a POST arrives without the session's CSRF token -- a form left
+   open past its session, a stale tab, or a page on another site trying its
+   luck. Nothing was done; the visitor only needs to go back and resend. #}
+{% block title %}{{'csrf-invalid'|trans}}{% endblock %}
+{% block content %}
+	<div class="d-flex">
+		<div class="alert alert-danger m-auto">
+			{{'csrf-invalid'|trans}}
+		</div>
+	</div>
+{% endblock %}

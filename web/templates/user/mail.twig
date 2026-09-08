@@ -56,6 +56,7 @@
 			{% endif %}
 
 			<form class="mt-compose" method="post" action="/user/mail.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 				<input type="hidden" name="action" value="send">
 				<label>
 					<span>{{'mail.to'|trans}}</span>
@@ -150,6 +151,7 @@
 				{% set pickable = folder != 'sent' %}
 				{% if pickable %}
 				<form method="post" action="/user/mail.php" id="mt-listform">
+					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 					<div class="mt-selectall">
 						<label>
 							<input type="checkbox" id="mt-all">
@@ -339,17 +341,20 @@
 				<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ message.id }}">{{'mail.reply'|trans}}</a>
 				{% if message.deleted_at %}
 					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 						<input type="hidden" name="id" value="{{ message.id }}">
 						<input type="hidden" name="action" value="restore">
 						<button class="mt-btn" type="submit">{{'mail.restore'|trans}}</button>
 					</form>
 					<form method="post" action="/user/mail.php" onsubmit="return confirm('{{'mail.confirm-delete'|trans|e('js')}}');">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 						<input type="hidden" name="id" value="{{ message.id }}">
 						<input type="hidden" name="action" value="delete">
 						<button class="mt-btn mt-btn--danger" type="submit">{{'mail.delete-forever'|trans}}</button>
 					</form>
 				{% else %}
 					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 						<input type="hidden" name="id" value="{{ message.id }}">
 						<input type="hidden" name="action" value="trash">
 						<button class="mt-btn" type="submit">{{'mail.delete'|trans}}</button>

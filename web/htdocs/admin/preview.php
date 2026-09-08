@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/NewsUtil.php");
 	session_start();
 
@@ -12,6 +13,7 @@
 		http_response_code(400);
 		return;
 	}
+	CsrfUtil::check();
 
 	// Rendered through the very same converter the public page uses, so the
 	// preview can't disagree with what readers will actually get.

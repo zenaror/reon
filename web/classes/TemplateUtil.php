@@ -37,6 +37,13 @@
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
 			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
 
+			// Every form the site renders carries this, and every POST
+			// handler demands it back. Injected here so no template can
+			// forget it by not being handed the value.
+			require_once(__DIR__."/CsrfUtil.php");
+			$vars["csrf_token"] = CsrfUtil::token();
+			$vars["csrf_field"] = CsrfUtil::FIELD;
+
 			// Read from UserUtil so the criteria the forms display are the
 			// same numbers the validator enforces.
 			require_once(__DIR__."/UserUtil.php");

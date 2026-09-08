@@ -51,6 +51,7 @@ password-rule-max: "%count%文字以下"
 passwords-dont-match: パスワードが一致しません
 wrong-password: パスワードが間違っています
 link-invalid-expired: このリンクは無効か、期限切れです。
+csrf-invalid: このフォームは期限切れか、このサイトから送信されたものではありません。戻ってやり直してください。
 invalid-trade-setting: 有効な地域選択ではありません。
 default-time-zone: デフォルト(日本、+0900)
 invalid-time-zone-setting: 有効なタイムゾーンではありません。
