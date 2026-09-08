@@ -39,6 +39,40 @@ function magbtestLog($stage) {
         ? '(ausente)'
         : sprintf('%d chars, termina em %s', strlen($auth), var_export(substr($auth, -12), true));
 
+    // Does the 44-character prefix still name a challenge this server issued?
+    //
+    // Length and closing quote separate "tail deliberately wrong" from "value
+    // truncated by accident", but they cannot separate "only the tail is
+    // wrong" from "the corruption reached into the prefix too" -- and the
+    // AUTH PREFIX test needs that distinction. A damaged prefix misses the
+    // type-2 cache, full validation runs, and the answer is the same
+    // 401 + Gb-Status: 201 as a correct prefix with a bad tail. The test would
+    // report PASS without ever exercising the case the fix is about.
+    //
+    // auth.php derives the PHP session id from exactly these 44 characters, so
+    // the existence of that session file answers the question. Reported as a
+    // yes/no: the leading characters carry the credential and stay out of the
+    // log, which is the whole reason the tail is cut at 12.
+    //
+    // Deliberately does NOT touch session_start(): auth.php calls session_id()
+    // right after this, and that fails outright if a session is already
+    // active. Checking the file directly is read-only and cannot interfere --
+    // the directory grants execute without read, which is enough for
+    // file_exists() on a known name and not enough to enumerate anything.
+    $prefixNote = '(n/a)';
+    if (strncmp($auth, 'GB00 name="', 11) === 0) {
+        $raw = base64_decode(substr($auth, 11, 44), true);
+        if ($raw === false || strlen($raw) !== 32) {
+            $prefixNote = 'NAO (os 44 primeiros nao decodificam para 32 bytes)';
+        } else {
+            $path = ini_get('session.save_path');
+            if (($semi = strrpos($path, ';')) !== false) $path = substr($path, $semi + 1);
+            $prefixNote = is_file(rtrim($path, '/') . '/sess_' . bin2hex($raw))
+                ? 'sim (corresponde a um desafio emitido)'
+                : 'NAO (nenhum desafio com esse id)';
+        }
+    }
+
     // Gap since this client's previous request, for checking the pacing
     // between the steps of one handshake.
     $gap = '(primeira)';
@@ -64,6 +98,7 @@ function magbtestLog($stage) {
             $authNote,
             $_SERVER['HTTP_GB_AUTH_ID'] ?? '(ausente)',
             $_SERVER['HTTP_X_TEST_CHECKSUM'] ?? '(ausente)'),
+        sprintf('  prefixo de 44 confere: %s', $prefixNote),
     ];
     if ($len > 0) {
         $lines[] = sprintf('  checksum do corpo: %04X | inicio: %s | fim: %s',
