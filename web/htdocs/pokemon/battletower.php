@@ -6,15 +6,14 @@
     require_once("../../scripts/bxt_decode_helpers.php");
     session_start();
 
-    // Both filters return null for "all", which the query reads as "no
+    // The room filter returns null for "all", which the query reads as "no
     // restriction on this column" and the template as "show this column",
-    // since the value stops being implied by the filter once it varies.
+    // since the value stops being implied by the filter once it varies. The
+    // level is always chosen: a top 10 is only meaningful within one level.
     const BXT_BT_ALL = "all";
+    const BXT_BT_TOP_N = 10;
 
     function bxt_battle_tower_parse_level($raw_value) {
-        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
-            return null;
-        }
         $level = intval($raw_value);
         if ($level < 10 || $level > 100 || ($level % 10) !== 0) {
             return 10;
@@ -345,70 +344,42 @@
         return $tokens;
     }
 
-    function bxt_battle_tower_token_has_word($token) {
-        return preg_match('/[\p{L}\p{N}]/u', (string)$token) === 1;
-    }
-
-    function bxt_battle_tower_tokens_to_text($tokens) {
-        $out = "";
-        foreach ($tokens as $token) {
-            $token = trim((string)$token);
-            if ($token === "") {
-                continue;
-            }
-
-            if ($out === "") {
-                $out = $token;
-                continue;
-            }
-
-            if (bxt_battle_tower_token_has_word($token)) {
-                $out .= " " . $token;
-            } else {
-                $out .= $token;
-            }
-        }
-        return $out;
-    }
-
-    function bxt_battle_tower_message_wrap_word_limit($game_region) {
-        return (strtolower((string)$game_region) === "j") ? 3 : 2;
-    }
+    // Mirrors PrintEZChatBattleMessage (pokecrystal mobile/fixed_words.asm):
+    // each Easy Chat word is placed whole on the current 18-character line,
+    // preceded by a space when it is not the first on that line, and moves to
+    // the next line when it does not fit. The blank line between the first
+    // two rows is the Game Boy text box's own spacing.
+    const BXT_BT_CHARS_PER_LINE = 18;
 
     function bxt_battle_tower_format_message_tokens($tokens, $game_region) {
         if (!is_array($tokens) || count($tokens) === 0) {
             return "";
         }
 
-        $word_limit = bxt_battle_tower_message_wrap_word_limit($game_region);
+        $separator = (strtolower((string)$game_region) === "j") ? "" : " ";
         $lines = [];
-        $current_line_tokens = [];
-        $current_line_words = 0;
-
+        $current = "";
         foreach ($tokens as $token) {
-            $current_line_tokens[] = $token;
-            if (bxt_battle_tower_token_has_word($token)) {
-                $current_line_words++;
+            $token = trim((string)$token);
+            if ($token === "") {
+                continue;
             }
-
-            if ($current_line_words >= $word_limit) {
-                $line_text = bxt_battle_tower_tokens_to_text($current_line_tokens);
-                if ($line_text !== "") {
-                    $lines[] = $line_text;
-                }
-                $current_line_tokens = [];
-                $current_line_words = 0;
+            $needed = mb_strlen($token) + ($current === "" ? 0 : mb_strlen($separator));
+            if ($current !== "" && mb_strlen($current) + $needed > BXT_BT_CHARS_PER_LINE) {
+                $lines[] = $current;
+                $current = $token;
+            } else {
+                $current .= ($current === "" ? "" : $separator) . $token;
             }
         }
-
-        if (count($current_line_tokens) > 0) {
-            $line_text = bxt_battle_tower_tokens_to_text($current_line_tokens);
-            if ($line_text !== "") {
-                $lines[] = $line_text;
-            }
+        if ($current !== "") {
+            $lines[] = $current;
         }
 
-        return implode("\n\n", $lines);
+        if (count($lines) <= 2) {
+            return implode("\n\n", $lines);
+        }
+        return implode("\n", $lines);
     }
 
     function bxt_battle_tower_decode_trainer_class_name($game_region, $class_id, $fallback = "") {
@@ -450,9 +421,9 @@
         return "UNKNOWN";
     }
 
-    // Defaults to ALL: an unfiltered page shows what actually exists, instead
-    // of a specific level/room that is very likely empty.
-    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? BXT_BT_ALL);
+    // Room defaults to ALL so the page opens on the level's top 10 across
+    // every room; a specific room narrows it to that room's top 10.
+    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? 10);
     $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? BXT_BT_ALL);
 
     $pkm_util = PokemonUtil::getInstance();
@@ -476,14 +447,8 @@
         return $room_is_zero_based ? (intval($stored) + 1) : intval($stored);
     };
 
-    // Built from whichever filters are set, so "all" simply contributes no
-    // clause instead of needing a separate query.
-    $where = [];
-    $params = [];
-    if ($selected_level !== null) {
-        $where[] = "level = ?";
-        $params[] = $to_db_level($selected_level);
-    }
+    $where = ["level = ?"];
+    $params = [$to_db_level($selected_level)];
     if ($selected_room !== null) {
         $where[] = "room = ?";
         $params[] = $to_db_room($selected_room);
@@ -492,12 +457,11 @@
 
     $render_args = [
         "leaders" => [],
-        "selected_level" => $selected_level === null ? BXT_BT_ALL : $selected_level,
+        "selected_level" => $selected_level,
         "selected_room" => $selected_room === null ? BXT_BT_ALL : $selected_room,
         "level_options" => range(10, 100, 10),
         "room_options" => range(1, 20),
         // A filtered column would repeat the same value on every row.
-        "show_level" => $selected_level === null,
         "show_room" => $selected_room === null,
     ];
 
@@ -521,10 +485,20 @@
             "pokemon3_decode, " .
             "message_start, " .
             "message_start_decode, " .
+            "trainer_id, " .
+            "secret_id, " .
+            "account_id, " .
+            "num_trainers_defeated, " .
+            "num_turns_required, " .
+            "damage_taken, " .
+            "num_fainted_pokemon, " .
             "timestamp " .
         "from bxt_battle_tower_honor_roll " .
         $where_sql .
-        "order by level asc, room asc, timestamp desc, id desc"
+        // Best run first; rows promoted before performance was recorded
+        // (nulls) sort last. Ties fall back to the most recent leader.
+        "order by (num_trainers_defeated is null) asc, num_trainers_defeated desc, " .
+        "num_turns_required asc, damage_taken asc, num_fainted_pokemon asc, timestamp desc, id desc"
     );
 
     if (!$stmt) {
@@ -543,7 +517,21 @@
     }
 
     $data = DBUtil::fancy_get_result($stmt);
+    // The daily promotion appends the room's leader every run, so one trainer
+    // can hold many rows; only their best run counts, once.
+    $seen_trainers = [];
     foreach ($data as $entry) {
+        if (count($leaders) >= BXT_BT_TOP_N) {
+            break;
+        }
+        $identity = isset($entry["trainer_id"], $entry["secret_id"], $entry["account_id"])
+            ? "id:" . $entry["trainer_id"] . ":" . $entry["secret_id"] . ":" . $entry["account_id"]
+            : "blob:" . bin2hex((string)($entry["player_name"] ?? "")) . ":" . ($entry["trainer_class_id"] ?? "") . ":" . md5((string)($entry["pokemon1"] ?? ""));
+        if (isset($seen_trainers[$identity])) {
+            continue;
+        }
+        $seen_trainers[$identity] = true;
+
         $region = strtolower((string)($entry["game_region"] ?? "e"));
         $player_name = trim((string)($entry["player_name_decode"] ?? ""));
         if ($player_name === "" && isset($entry["player_name"])) {
@@ -595,6 +583,7 @@
             "message" => $message,
             "level" => $from_db_level($entry["level"] ?? 0),
             "room" => $from_db_room($entry["room"] ?? 0),
+            "wins" => isset($entry["num_trainers_defeated"]) ? intval($entry["num_trainers_defeated"]) : null,
         ];
     }
 

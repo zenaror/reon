@@ -17,7 +17,6 @@
     <form class="battle-tower-controls" method="get">
         <div class="battle-control-level">
             <select name="level" class="trade-region-filter" aria-label="Select level" onchange="this.form.submit()">
-                <option value="all"{% if selected_level == 'all' %} selected{% endif %}>L:ALL</option>
                 {% for level_value in level_options %}
                     <option value="{{ level_value }}"{% if level_value == selected_level %} selected{% endif %}>L:{{ "%d"|format(level_value) }}</option>
                 {% endfor %}
@@ -45,16 +44,15 @@
     </form>
 
         <div class="battle-table-grid" data-bt-table-wrap>
-            {# data-bt-extra: how many of the LV/ROOM columns are present, so the
-               CSS can compact the fixed-width columns to make room for them. #}
-            {% set extra_cols = (show_level ? 1 : 0) + (show_room ? 1 : 0) %}
+            {# data-bt-extra: whether the ROOM column is present, so the CSS can
+               compact the fixed-width columns to make room for it. #}
+            {% set extra_cols = show_room ? 1 : 0 %}
             <div class="battle-table-panel" data-bt-primary>
                 <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
-                            {# Shown only when the matching filter is open: a filtered
+                            {# Shown only when the room filter is open: a filtered
                                column would repeat one value down every row. #}
-                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
                             {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th class="bt-col-leader">ROOM LEADER</th>
                             <th class="bt-col-pokemon">POK&eacute;MON</th>
@@ -64,7 +62,6 @@
                     <tbody>
                         {% for leader in leaders %}
                             <tr class="bt-row">
-                                {% if show_level %}<td class="bt-col-level">{{ leader.level }}</td>{% endif %}
                                 {% if show_room %}<td class="bt-col-room">{{ "%03d"|format(leader.room) }}</td>{% endif %}
                                 <td class="bt-leader-cell">
                                     <div class="bt-leader-subcols">
@@ -103,7 +100,6 @@
                 <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
-                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
                             {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th class="bt-col-leader">ROOM LEADER</th>
                             <th class="bt-col-pokemon">POK&eacute;MON</th>
