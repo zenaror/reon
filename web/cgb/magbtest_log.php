@@ -29,10 +29,31 @@ function magbtestLog($stage) {
         $checksum = ($checksum + ord($body[$i])) & 0xFFFF;
     }
 
+    // A well-formed GB00 value is a fixed length ending in a quote. Truncation
+    // in the middle of the base64 is invisible to the handler -- the server
+    // reads only what it needs and ignores the rest -- so the length and the
+    // tail are the only places it shows. The leading characters are the half
+    // that carries the credential, and are deliberately not recorded.
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    $authNote = $auth === ''
+        ? '(ausente)'
+        : sprintf('%d chars, termina em %s', strlen($auth), var_export(substr($auth, -12), true));
+
+    // Gap since this client's previous request, for checking the pacing
+    // between the steps of one handshake.
+    $gap = '(primeira)';
+    $stamp = sys_get_temp_dir() . '/magbtest-last-' . md5($_SERVER['REMOTE_ADDR'] ?? '?');
+    $now = microtime(true);
+    if (is_readable($stamp)) {
+        $prev = (float)@file_get_contents($stamp);
+        if ($prev > 0) $gap = sprintf('+%.3fs', $now - $prev);
+    }
+    @file_put_contents($stamp, (string)$now);
+
     // Content-Length is what the client claimed; $len is what actually
     // arrived. A mismatch is the signature of a truncated transfer.
     $lines = [
-        sprintf('[%s] %s', date('Y-m-d H:i:s'), $stage),
+        sprintf('[%s] %s (%s)', date('Y-m-d H:i:s'), $stage, $gap),
         sprintf('  %s %s from %s',
             $_SERVER['REQUEST_METHOD'] ?? '?',
             $_SERVER['REQUEST_URI'] ?? '?',
@@ -40,7 +61,7 @@ function magbtestLog($stage) {
         sprintf('  Content-Length declarado: %s | bytes recebidos: %d',
             $_SERVER['CONTENT_LENGTH'] ?? '(ausente)', $len),
         sprintf('  Authorization: %s | Gb-Auth-ID: %s | X-Test-Checksum: %s',
-            isset($_SERVER['HTTP_AUTHORIZATION']) && $_SERVER['HTTP_AUTHORIZATION'] !== '' ? 'presente' : '(ausente)',
+            $authNote,
             $_SERVER['HTTP_GB_AUTH_ID'] ?? '(ausente)',
             $_SERVER['HTTP_X_TEST_CHECKSUM'] ?? '(ausente)'),
     ];
