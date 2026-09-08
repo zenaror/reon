@@ -20,7 +20,7 @@ news-back-to-list: "Torna alle notizie"
 status: Stato
 service-web: Web
 service-mail: Posta
-service-mobile-relay: Relay mobile
+service-mobile-relay: Relay
 service-relay-policy: Posta esterna
 service-status-up: Online
 service-status-down: Offline

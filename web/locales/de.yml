@@ -20,7 +20,7 @@ news-back-to-list: "Zurück zu Aktuelles"
 status: Status
 service-web: Web
 service-mail: E-Mail
-service-mobile-relay: Mobile-Relay
+service-mobile-relay: Relay
 service-relay-policy: Externe E-Mail
 service-status-up: Online
 service-status-down: Offline

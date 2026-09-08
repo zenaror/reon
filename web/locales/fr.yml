@@ -45,7 +45,7 @@ news-back-to-list: "Retour aux actualités"
 status: Statut
 service-web: Web
 service-mail: Messagerie
-service-mobile-relay: Relais mobile
+service-mobile-relay: Relais
 service-relay-policy: Mail externe
 service-status-up: En ligne
 service-status-down: Hors ligne

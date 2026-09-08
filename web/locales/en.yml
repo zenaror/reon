@@ -44,7 +44,7 @@ news-back-to-list: "Back to news"
 status: Status
 service-web: Web
 service-mail: Mail
-service-mobile-relay: Mobile Relay
+service-mobile-relay: Relay
 service-relay-policy: External Mail
 service-status-up: Online
 service-status-down: Offline

@@ -20,7 +20,7 @@ news-back-to-list: "Volver a noticias"
 status: Estado
 service-web: Web
 service-mail: Correo
-service-mobile-relay: Relé móvil
+service-mobile-relay: Relé
 service-relay-policy: Correo externo
 service-status-up: En línea
 service-status-down: Fuera de línea
