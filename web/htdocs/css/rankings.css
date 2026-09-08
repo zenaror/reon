@@ -505,3 +505,20 @@
 .trainer-rankings-page > .trade-corner-title + * {
   margin-top: var(--rankings-banner-clearance, 86px);
 }
+
+/* Where the title sits inside the banner's tan plate.
+   The plate runs from row 25 to row 119 of the 150px top-edge image, so its
+   centre is at 72. The title's 32px line box used to start at 24 -- main's
+   margin-top and the shared 8px h1 margin collapse into 24 -- which put its
+   centre at 48, on the plate's top edge. Margins collapse, so this has to be
+   the whole distance from the header and not the difference: 56 gives a box
+   at 56..88, centre 72. The first block beneath keeps its 86px clearance and
+   now lands at 174, 24px clear of the frame's inner edge at 150; it used to
+   land at 142 and ate the border. The h1 in the selector is for specificity:
+   the shared rule in pokecrystal-pages.css loads later and would otherwise
+   win. Desktop only, because below 992px the banner art is switched off. */
+@media (min-width: 992px) {
+  .trainer-rankings-page h1.trade-corner-title {
+    margin-top: 56px;
+  }
+}

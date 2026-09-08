@@ -15,9 +15,16 @@
 
 {% block content %}
 	<h1>{{'account.your-reon-account'|trans}}</h1>
+	{# Two columns that each stack their own cards, instead of three rows
+	   pairing a left card with a right one. The rows looked right only
+	   while the pairs happened to match in height: the identity card had
+	   no partner, so the settings card waited for the next row and left a
+	   hole under Stats, and nothing separated one row from the next, so
+	   the identity and DION cards touched. Stacking gives every card the
+	   same gap and lets the right column follow its own content. #}
 	<div class="row">
 		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
 					{{'account.account-details'|trans}}
 				</div>
@@ -32,28 +39,7 @@
                     <a href="adapter_config.php" class="btn btn-primary" download="config.bin">{{'account.download-config-data'|trans}}</a>
 				</div>
 			</div>
-		</div>
-		<div class="col-lg-6">
-			<div class="card">
-				<div class="card-header">
-					{{'account.stats'|trans}}
-				</div>
-				<div class="card-body">
-					<div class="mb-3">
-						<label for="inboxSize" class="form-label">{{'account.emails-in-inbox'|trans}}</label>
-						<input id="inboxSize" type="text" readonly class="form-control-plaintext" value="{{ inbox_size }}">
-					</div>
-					<div class="mb-3">
-						<label for="moneySpent" class="form-label">{{'account.money-spent'|trans}}</label>
-						<input id="moneySpent" type="text" readonly class="form-control-plaintext" value="{{ money_spent }}">
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
 					{{'account.reon-identity'|trans}}
 				</div>
@@ -74,12 +60,7 @@
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
 					{{'account.dion-account-details'|trans}}
 				</div>
@@ -132,8 +113,23 @@
 				</div>
 			</div>
 		</div>
-        <div class="col-lg-6">
-			<div class="card">
+		<div class="col-lg-6">
+			<div class="card mb-4">
+				<div class="card-header">
+					{{'account.stats'|trans}}
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label for="inboxSize" class="form-label">{{'account.emails-in-inbox'|trans}}</label>
+						<input id="inboxSize" type="text" readonly class="form-control-plaintext" value="{{ inbox_size }}">
+					</div>
+					<div class="mb-3">
+						<label for="moneySpent" class="form-label">{{'account.money-spent'|trans}}</label>
+						<input id="moneySpent" type="text" readonly class="form-control-plaintext" value="{{ money_spent }}">
+					</div>
+				</div>
+			</div>
+			<div class="card mb-4">
 				<div class="card-header">{{ "account.pokemon-crystal-settings"|trans }}</div>
 				<div class="card-body">
                     <form method="post">
