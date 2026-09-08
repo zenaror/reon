@@ -18,6 +18,9 @@
 	   selected one is the pale plate, the rest are the dark plates. #}
 	<nav class="mt-tabs">
 		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">{{'mail.inbox'|trans}}</a>
+		<a class="mt-tab{{ folder == 'sent' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=sent">
+			{{'mail.sent'|trans}}{% if sent_count > 0 %} <span class="mt-tab__count">{{ sent_count }}</span>{% endif %}
+		</a>
 		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">
 			{{'mail.trash'|trans}}{% if trash_count > 0 %} <span class="mt-tab__count">{{ trash_count }}</span>{% endif %}
 		</a>
@@ -126,12 +129,13 @@
 			<h2 class="mt-panel__bar">{{ folder == 'trash' ? 'mail.trash'|trans : 'mail.inbox'|trans }}</h2>
 
 			{% if messages is empty %}
-				<p class="mt-empty">{{ folder == 'trash' ? 'mail.trash-empty'|trans : 'mail.empty'|trans }}</p>
+				<p class="mt-empty">{% if folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
 			{% else %}
 				{# One form around the whole list: the checkboxes post as ids[],
 				   and the buttons in the bar below act on the selection. Per-row
 				   forms aren't possible here -- nesting forms is invalid. #}
 				<form method="post" action="/user/mail.php" id="mt-listform">
+					{% if folder != 'sent' %}
 					<div class="mt-selectall">
 						<label>
 							<input type="checkbox" id="mt-all">
@@ -139,6 +143,7 @@
 						</label>
 						<span class="mt-selectall__count" id="mt-count" aria-live="polite"></span>
 					</div>
+					{% endif %}
 
 					<ol class="mt-list">
 						{% for m in messages %}
@@ -153,9 +158,10 @@
 									{# The game gets a 10-character subject; the list has room for
 									   far more, and the whole thing is on the message page. #}
 									{% set subj = m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' %}
-									<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
+									<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}{% if folder == 'sent' %}&amp;folder=sent{% endif %}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
 									<span class="mt-list__meta">
-										{{ m.from_name ?: m.sender }} &middot; {{ m.timestamp|date("Y.m.d H:i") }}
+										{% if folder == 'sent' %}{{'mail.to'|trans}}: {% endif %}{{ m.from_name ?: m.sender }} &middot; {{ m.timestamp|date("Y.m.d H:i") }}
+									{%- if folder == 'sent' %} &middot; {{ m.origin == 'game' ? 'mail.via-game'|trans : 'mail.via-web'|trans }}{% endif %}
 										{% if folder == 'trash' %}
 											&middot; {{ m.deleted_by == 'game' ? 'mail.by-game'|trans : 'mail.by-web'|trans }}
 											{# Whether the game took a copy before deleting is the one thing
@@ -168,6 +174,7 @@
 						{% endfor %}
 					</ol>
 
+					{% if folder != 'sent' %}
 					<div class="mt-statusbar mt-statusbar--inline">
 						<span class="mt-statusbar__hint">{{ folder == 'trash' ? 'mail.hint-trash'|trans : 'mail.hint-list'|trans }}</span>
 						<span class="mt-statusbar__acts">
@@ -180,6 +187,7 @@
 							{% endif %}
 						</span>
 					</div>
+					{% endif %}
 				</form>
 			{% endif %}
 		</section>

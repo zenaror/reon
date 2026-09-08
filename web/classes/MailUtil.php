@@ -202,7 +202,9 @@
 			$stmt = $db->prepare("insert into sys_inbox (sender, recipient, message) values (?, ?, ?)");
 			$stmt->bind_param("sis", $fromAddress, $recipientId, $message);
 			$stmt->execute();
-			return [$stmt->affected_rows > 0, $stmt->affected_rows > 0 ? "sent" : "insert-failed"];
+			$ok = $stmt->affected_rows > 0;
+			if ($ok) $this->recordSent($fromUserId, $toAddress, $message);
+			return [$ok, $ok ? "sent" : "insert-failed"];
 		}
 
 		// Outbound sends allowed per account per hour.
@@ -246,7 +248,14 @@
 
 		// Handed to sendmail as an argument list, never as a shell string, so
 		// an address cannot become part of a command.
+		// Marks where the message came from, since everything leaving the
+		// server passes through outboundRelay.js and it has no other way to
+		// tell a webmail send from the game's. The relay strips this before
+		// handing the message on, so it never reaches the recipient.
+		const ORIGIN_HEADER = "X-REON-Origin";
+
 		private function submitLocally($envelopeFrom, $recipient, $message) {
+			$message = self::ORIGIN_HEADER . ": web\r\n" . $message;
 			$cmd = ["/usr/sbin/sendmail", "-i", "-f", $envelopeFrom, "--", $recipient];
 			$spec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]];
 			$proc = @proc_open($cmd, $spec, $pipes);
@@ -381,6 +390,87 @@
 			$stmt->bind_param("ii", $id, $userId);
 			$stmt->execute();
 			return $stmt->affected_rows > 0;
+		}
+
+		// Sent copies, from the webmail and from the game. Parsed the same way
+		// as received mail so the list can show subject and sender name.
+		public function listSentForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select id, recipient, origin, timestamp, message from sys_sent
+				 where user_id = ? order by timestamp desc, id desc"
+			);
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			$result = $stmt->get_result();
+
+			$out = [];
+			while ($row = $result->fetch_assoc()) {
+				$parsed = $this->parse($row["message"]);
+				$out[] = [
+					"id" => $row["id"],
+					"sender" => $row["recipient"],   // the list shows who it went to
+					"recipient" => $row["recipient"],
+					"origin" => $row["origin"],
+					"timestamp" => $row["timestamp"],
+					"subject" => $parsed["subject"],
+					"from_name" => $row["recipient"],
+					"game" => $parsed["game"],
+					"unread" => false,
+				];
+			}
+			return $out;
+		}
+
+		public function getSentForUser($userId, $id) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select id, recipient, origin, timestamp, message from sys_sent
+				 where id = ? and user_id = ? limit 1"
+			);
+			$id = (int)$id; $userId = (int)$userId;
+			$stmt->bind_param("ii", $id, $userId);
+			$stmt->execute();
+			$row = $stmt->get_result()->fetch_assoc();
+			if (!$row) return null;
+
+			$parsed = $this->parse($row["message"]);
+			return [
+				"id" => $row["id"],
+				"sender" => $row["recipient"],
+				"origin" => $row["origin"],
+				"timestamp" => $row["timestamp"],
+				"subject" => $parsed["subject"],
+				"from_name" => $row["recipient"],
+				"game" => $parsed["game"],
+				"body" => $parsed["body"],
+				"deleted_at" => null,
+			];
+		}
+
+		public function countSentForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select count(*) as c from sys_sent where user_id = ?");
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
+		// Recorded only for what this class delivers itself. Mail that leaves
+		// through Postfix -- the game's, and the webmail's external sends --
+		// is recorded by deliver.js and outboundRelay.js instead, so nothing
+		// is written twice.
+		private function recordSent($userId, $toAddress, $message) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"insert into sys_sent (user_id, recipient, origin, message) values (?, ?, 'web', ?)"
+			);
+			$userId = (int)$userId;
+			$toAddress = substr((string)$toAddress, 0, 254);
+			$stmt->bind_param("iss", $userId, $toAddress, $message);
+			$stmt->execute();
 		}
 
 		public function countTrashForUser($userId) {

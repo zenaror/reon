@@ -12,7 +12,7 @@
 	$userId = $_SESSION["user_id"];
 	$mail = MailUtil::getInstance();
 
-	$folder = (isset($_GET["folder"]) && $_GET["folder"] === "trash") ? "trash" : "inbox";
+	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent"], true) ? $_GET["folder"] : "inbox";
 
 	// Actions are POST-only so a crawler, a prefetch, or a stray <img> can
 	// never destroy mail by being followed.
@@ -58,6 +58,7 @@
 					"compose_error" => $error,
 					"folder" => "inbox",
 					"trash_count" => $mail->countTrashForUser($userId),
+		"sent_count" => $mail->countSentForUser($userId),
 					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
@@ -98,6 +99,7 @@
 			"compose_error" => null,
 			"folder" => "inbox",
 			"trash_count" => $mail->countTrashForUser($userId),
+		"sent_count" => $mail->countSentForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
@@ -106,12 +108,14 @@
 	}
 
 	if (isset($_GET["id"])) {
-		$message = $mail->getForUser($userId, $_GET["id"]);
+		$message = $folder === "sent"
+			? $mail->getSentForUser($userId, $_GET["id"])
+			: $mail->getForUser($userId, $_GET["id"]);
 		if ($message === null) {
 			http_response_code(404);
-		} else {
+		} elseif ($folder !== "sent") {
 			// Marked on open, which is the only moment the webmail can honestly
-			// claim the message was read.
+			// claim the message was read. Sent mail has no unread state.
 			$mail->markRead($userId, $message["id"]);
 		}
 		echo TemplateUtil::render("/user/mail", [
@@ -120,6 +124,7 @@
 			"compose" => null,
 			"folder" => $folder,
 			"trash_count" => $mail->countTrashForUser($userId),
+		"sent_count" => $mail->countSentForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
@@ -129,11 +134,12 @@
 
 	echo TemplateUtil::render("/user/mail", [
 		"message" => null,
-		"messages" => $mail->listForUser($userId, $folder),
+		"messages" => $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder),
 		"compose" => null,
 		"sent" => isset($_GET["sent"]),
 		"folder" => $folder,
 		"trash_count" => $mail->countTrashForUser($userId),
+		"sent_count" => $mail->countSentForUser($userId),
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 		"body_max_lines" => MailUtil::BODY_MAX_LINES,
 		"body_max_chars" => MailUtil::BODY_MAX_CHARS,
