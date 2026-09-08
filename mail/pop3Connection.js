@@ -408,8 +408,15 @@ class POP3Connection extends EventEmitter {
 		// deleted_at is the trash marker. Without this filter the client would
 		// re-download every trashed message on each sync and the mailbox would
 		// never appear to empty.
+		//
+		// "order by id" is not decoration: this row order becomes the POP3
+		// message numbering, and RETR/DELE address messages by that number.
+		// Unordered, the numbering was whatever index the optimiser happened to
+		// pick -- and three are candidates here, one of them (recipient,
+		// read_at), which would have let reading mail in the webmail reshuffle
+		// the numbers the game sees. Oldest first, by arrival, always.
 		this._server.mysql.query(
-			"select id, char_length(message) as size from sys_inbox where recipient = ? and deleted_at is null",
+			"select id, char_length(message) as size from sys_inbox where recipient = ? and deleted_at is null order by id",
 			[userId],
 			function (error, results, fields) {
 				if (error) {
