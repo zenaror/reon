@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		Your REON account is ready. Welcome aboard.<br>
+		<br>
+		<strong>Your username is {{ username }}</strong>, and your mailbox answers on two
+		addresses &mdash; both reach the same inbox:<br>
+		<br>
+		From the internet: <code>{{ external_email }}</code><br>
+		{% if external_email_short != external_email %}
+		&nbsp;&nbsp;or <code>{{ external_email_short }}</code><br>
+		{% endif %}
+		From the Game Boy: <code>{{ dion_email }}</code><br>
+		<br>
+		The games can only hold 8 characters, which is why the in-game address is the
+		shortened form.<br>
+		<br>
+		Your DION ID is <code>{{ dion_id }}</code>. You will need it, along with your
+		Log-In Password, when setting up the Mobile Adapter &mdash; both are on your
+		account page at
+		<a href="https://{{ hostname }}/user/summary.php">https://{{ hostname }}/user/summary.php</a>,
+		together with the configuration file the adapter downloads.<br>
+		<br>
+		You can also read and write mail from the web, without the Game Boy, at
+		<a href="https://{{ hostname }}/user/mail.php">https://{{ hostname }}/user/mail.php</a>.<br>
+		<br>
+		REON is in alpha testing, so expect the occasional rough edge.
+	</body>
+</html>

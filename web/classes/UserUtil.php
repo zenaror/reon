@@ -45,6 +45,12 @@
 			return false;
 		}
 		
+		// Minutes between two e-mails to the same address, for both the reset
+		// and the signup flows. It exists to stop someone hammering the form
+		// and burying the recipient, not to stop them registering: past the
+		// window a fresh link is always sent.
+		const EMAIL_THROTTLE_MINUTES = 15;
+
 		// The password rules, in one place. The signup, reset and change forms
 		// read these to draw the criteria list, so what the page promises and
 		// what this function enforces cannot drift apart.
@@ -150,7 +156,7 @@
 			
 			// The column is "timestamp"; this said "time", so the query threw
 			// and password reset failed for everyone, every time.
-			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and timestamp > date_sub(now(), interval 5 minute)");
+			$stmt = $db->prepare("select count(*) from sys_password_reset where user_id = ? and timestamp > date_sub(now(), interval " . self::EMAIL_THROTTLE_MINUTES . " minute)");
 			$stmt->bind_param("i", $user_id);
 			$stmt->execute();
 			if ($stmt->get_result()->fetch_assoc()["count(*)"] > 0) return 2;
@@ -282,22 +288,43 @@
 				return 0;
 			}
 
-			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and timestamp > date_sub(now(), interval 5 minute)");
+			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and timestamp > date_sub(now(), interval " . self::EMAIL_THROTTLE_MINUTES . " minute)");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
 			if ($stmt->get_result()->fetch_assoc()["count(*)"] > 0) return 0;
 			
 			$key = base64_encode(random_bytes(36));
-			$stmt = $db->prepare("insert into sys_signup (email, secret) values (?, ?)");
-			$stmt->bind_param("ss", $email, $key);
+
+			// A registration already started for this address gets its row
+			// refreshed rather than a second one alongside it. One live link
+			// per address: issuing a new one retires the old, so a mailbox
+			// with several of these never leaves the reader guessing which
+			// still works.
+			$stmt = $db->prepare("select id from sys_signup where email = ? order by id desc limit 1");
+			$stmt->bind_param("s", $email);
 			$stmt->execute();
-			$signup_id = $db->insert_id;
-			
+			$pending = $stmt->get_result()->fetch_assoc();
+
+			if ($pending) {
+				$signup_id = (int)$pending["id"];
+				$stmt = $db->prepare("update sys_signup set secret = ?, timestamp = now() where id = ?");
+				$stmt->bind_param("si", $key, $signup_id);
+				$stmt->execute();
+				$template = "/email/signup_pending";
+				$subject = "REON registration still pending";
+			} else {
+				$stmt = $db->prepare("insert into sys_signup (email, secret) values (?, ?)");
+				$stmt->bind_param("ss", $email, $key);
+				$stmt->execute();
+				$signup_id = $db->insert_id;
+				$template = "/email/signup";
+				$subject = "REON Sign-up Request";
+			}
+
 			$hostname = ConfigUtil::getInstance()->getConfig()["hostname"];
 			$email_domain = ConfigUtil::getInstance()->getConfig()["email_domain"];
 			$from = "noreply@".$email_domain;
-			$subject = "REON Sign-up Request";
-			$message = TemplateUtil::render("/email/signup", [
+			$message = TemplateUtil::render($template, [
 				"hostname" => $hostname,
 				"id" => $signup_id,
 				"key" => urlencode($key)
@@ -331,8 +358,39 @@
 			$stmt = $db->prepare("delete from sys_signup where email = ?");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
-			
+
+			// Sent last, and its failure does not fail the signup: the account
+			// exists either way, and refusing a finished registration because
+			// a courtesy e-mail bounced would be absurd.
+			self::$instance->sendWelcomeEmail($email, $reonEmail);
+
 			return 0;
+		}
+
+		// Confirms the registration landed and, more usefully, tells the person
+		// the two addresses their account answers on -- the pair is the one
+		// thing they need later and the one thing the signup form shows only
+		// while they are filling it in.
+		private function sendWelcomeEmail($email, $username) {
+			$cfg = ConfigUtil::getInstance()->getConfig();
+
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select dion_email_local, dion_ppp_id, log_in_password from sys_users where username = ? limit 1");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+			$row = $stmt->get_result()->fetch_assoc();
+			if (!$row) return;
+
+			$message = TemplateUtil::render("/email/welcome", [
+				"hostname" => $cfg["hostname"],
+				"username" => $username,
+				"dion_email" => $row["dion_email_local"]."@".$cfg["email_domain_dion"],
+				"external_email" => $username."@".$cfg["email_domain"],
+				"external_email_short" => $row["dion_email_local"]."@".$cfg["email_domain"],
+				"dion_id" => $row["dion_ppp_id"],
+			]);
+
+			self::$instance->sendUtf8Email($email, "noreply@".$cfg["email_domain"], "Welcome to REON", $message);
 		}
 
 		// $username is the name the person picked (up to 20 characters). The
