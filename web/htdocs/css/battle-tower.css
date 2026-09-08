@@ -317,8 +317,10 @@
   background: url("/images/crystal/MessageBox.png") no-repeat left top;
   background-size: 155px 44px;
   image-rendering: pixelated;
-  padding: 13px 6px 0 6px;
-  white-space: pre-line;
+  /* 5px sides: an 18-character game line is 144px and must not re-wrap
+     here -- the PHP already broke the text exactly where the ROM does. */
+  padding: 13px 5px 0 5px;
+  white-space: pre;
   line-height: 1;
   overflow: hidden;
 }
@@ -356,7 +358,7 @@
 
 @media (max-width: 991.98px) {
   .battle-tower-page {
-    --bt-mobile-panel-base-width: min(440px, calc(100vw - 12px));
+    --bt-mobile-panel-base-width: min(440px, 100%);
     width: 100%;
     max-width: 100%;
     padding-left: 0;
@@ -399,8 +401,8 @@
   }
 
   .battle-tower-controls .trade-region-filter {
-    min-width: min(220px, calc(50vw - 14px));
-    width: min(220px, calc(50vw - 14px));
+    min-width: 0;
+    width: min(220px, calc(50% - 6px));
   }
 
   .battle-table-shell {
@@ -419,8 +421,7 @@
   }
 
   .battle-table-grid {
-    min-width: 100%;
-    width: max-content;
+    width: 100%;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr;
@@ -464,7 +465,7 @@
     height: 44px;
     min-height: 44px;
     background-size: 155px 44px;
-    padding: 13px 6px 0 6px;
+    padding: 13px 5px 0 5px;
   }
 
   .battle-honor-table {
@@ -619,3 +620,110 @@
   padding-right: 4px;
 }
 
+
+/* Message-under-leader layout. Used when both LV and ROOM are shown (the
+   overview) and on phones: there is no room for a 159px message column next
+   to the leader, and the box cannot shrink -- the game wraps its text at 18
+   characters, which is what the 155px art holds. */
+.bt-message-row {
+  display: none;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] th.bt-col-message,
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] td.bt-message-cell {
+  display: none;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row {
+  display: table-row;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] tr.bt-row td {
+  border-bottom: 0;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row td {
+  border-top: 0;
+  padding: 0 6px 6px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-message-row .bt-message-box {
+  margin: 0 auto;
+}
+
+/* Enough width again for the full-size sprite. */
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-trainer-sprite {
+  width: 56px;
+  height: 56px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-subcols {
+  grid-template-columns: 60px minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-sprite-col {
+  padding-left: 6px;
+}
+
+.battle-tower-page .battle-honor-table[data-bt-extra="2"] .bt-leader-name-col {
+  min-height: 56px;
+  padding-left: 8px;
+  padding-right: 6px;
+}
+
+@media (max-width: 575.98px) {
+  .battle-tower-page .battle-honor-table th.bt-col-message,
+  .battle-tower-page .battle-honor-table td.bt-message-cell {
+    display: none;
+  }
+
+  .battle-tower-page .battle-honor-table .bt-message-row {
+    display: table-row;
+  }
+
+  .battle-tower-page .battle-honor-table tr.bt-row td {
+    border-bottom: 0;
+  }
+
+  .battle-tower-page .battle-honor-table .bt-message-row td {
+    border-top: 0;
+    padding: 0 4px 6px;
+  }
+
+  .battle-tower-page .battle-honor-table .bt-message-row .bt-message-box {
+    margin: 0 auto;
+    width: 155px;
+    min-width: 155px;
+    max-width: 155px;
+    height: 44px;
+    min-height: 44px;
+    background-size: 155px 44px;
+    padding: 13px 5px 0 5px;
+    line-height: 1 !important;
+  }
+
+  .battle-tower-controls .trade-region-filter {
+    width: 100%;
+  }
+
+  .battle-tower-page .battle-zoom-label {
+    display: none !important;
+  }
+
+  .battle-honor-table th.bt-col-level,
+  .battle-honor-table td.bt-col-level {
+    width: 30px;
+    min-width: 30px;
+  }
+
+  .battle-honor-table th.bt-col-room,
+  .battle-honor-table td.bt-col-room {
+    width: 38px;
+    min-width: 38px;
+  }
+
+  .battle-honor-table th.bt-col-pokemon {
+    width: 104px;
+  }
+}
