@@ -10,7 +10,8 @@
  *   initReonSideBackgrounds("trade-corner", { bodyClass: "rankings-theme",
  *       onApply: function (left, right) { ... extra vars ... } });
  *
- * Sets `--<prefix>-nav-side-left` / `--<prefix>-nav-side-right` on <html>.
+ * Sets `--<prefix>-nav-side-left` / `--<prefix>-nav-side-right` and
+ * `--<prefix>-viewport-width` (the layout viewport, scrollbar excluded) on <html>.
  * options.bodyClass  — class added to <body> on boot (optional).
  * options.onApply    — callback(sideLeft, sideRight) for page-specific vars.
  */
@@ -30,9 +31,15 @@
         return;
       }
       var rect = anchor.getBoundingClientRect();
+      // clientWidth, not innerWidth: innerWidth includes a classic vertical
+      // scrollbar, while position:fixed panels end where the scrollbar
+      // begins -- the right panel came out ~15px too wide and its inner
+      // edge (the dotted border) slid under the white content box.
+      var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
       var sideLeft = Math.max(0, Math.round(rect.left));
-      var sideRight = Math.max(0, Math.round(window.innerWidth - rect.right));
+      var sideRight = Math.max(0, Math.round(viewportWidth - rect.right));
       var style = document.documentElement.style;
+      style.setProperty("--" + prefix + "-viewport-width", viewportWidth + "px");
       style.setProperty("--" + prefix + "-nav-side-left", sideLeft + "px");
       style.setProperty("--" + prefix + "-nav-side-right", sideRight + "px");
       if (typeof options.onApply === "function") {
