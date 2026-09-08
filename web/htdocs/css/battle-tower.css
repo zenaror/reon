@@ -627,12 +627,21 @@
    stays on the leader's row. At 2x it scrolls inside the white box. */
 .battle-table-grid[data-bt-extra="2"] {
   overflow-x: auto;
+  /* Centre with auto margins, not justify-*: when the 2x panel (1036px) is
+     wider than the box, centring would push both ends out of reach, and no
+     scroll position shows the LV column. Auto margins fall back to the start. */
+  justify-content: flex-start;
+}
+
+.battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] {
+  justify-items: start;
 }
 
 .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
   width: 518px;
   min-width: 518px;
   max-width: 518px;
+  margin: 0 auto;
 }
 
 .battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-pokemon {
