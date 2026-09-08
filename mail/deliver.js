@@ -36,6 +36,24 @@ async function readStdin() {
 	return Buffer.concat(chunks).toString();
 }
 
+
+// Files a copy under the sending account, if the envelope sender belongs to
+// one. A sender we do not know is mail from the outside world: there is no
+// Sent folder to put it in, and it is not an error.
+async function recordSent(conn, fromAddress, toAddress, message) {
+	const local = String(fromAddress || "").split("@")[0];
+	if (!local) return;
+	const [who] = await conn.execute(
+		"select id from sys_users where username = ? or dion_email_local = ? limit 1",
+		[local, local]
+	);
+	if (who.length === 0) return;
+	await conn.execute(
+		"insert into sys_sent (user_id, recipient, origin, message) values (?, ?, 'game', ?)",
+		[who[0]["id"], String(toAddress).slice(0, 254), message]
+	);
+}
+
 async function main() {
 	const config = JSON.parse(fs.readFileSync(opts.config));
 	// Postfix's pipe(8) hands off messages with bare LF line endings
@@ -70,6 +88,12 @@ async function main() {
 			"insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
 			[opts.from, rows[0]["id"], message]
 		);
+
+		// A copy in the sender's Sent folder, when the sender is one of ours.
+		// This path carries game-to-game mail; the webmail records its own
+		// internal sends, and outboundRelay.js records what leaves the server,
+		// so no message is filed twice.
+		await recordSent(conn, opts.from, recipientArg, message);
 	} finally {
 		await conn.end();
 	}

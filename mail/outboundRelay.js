@@ -27,6 +27,7 @@
 const fs = require("fs");
 const encoding = require("encoding-japanese");
 const nodemailer = require("nodemailer");
+const mysql = require("mysql2/promise");
 const { Command } = require("commander");
 
 const GAMEBOY_DOMAIN = "gameboy.datacenter.ne.jp";
@@ -188,6 +189,13 @@ async function main() {
 		if (name.toLowerCase() === "return-path") headers.splice(idx, 1);
 	});
 
+	// Set by the webmail so the Sent copy can say which client it came from.
+	// Read here and removed, so it never travels to the recipient.
+	const origin = (getHeader(headers, "X-REON-Origin") || "game").toLowerCase() === "web" ? "web" : "game";
+	for (let i = headers.length - 1; i >= 0; i--) {
+		if (headers[i][0].toLowerCase() === "x-reon-origin") headers.splice(i, 1);
+	}
+
 	const envelopeFrom = rewriteDomain(opts.from, dionDomain, mailDomain);
 	const bodyForTransfer = encodeBodyForTransfer(headers, decodedBody);
 
@@ -203,6 +211,47 @@ async function main() {
 		process.stderr.write(`outboundRelay.js: send failed: ${error.stack || error}\n`);
 		process.exitCode = 75;
 		return;
+	}
+
+	// Filed only after the relay accepted it. A copy of something that never
+	// left would be worse than no copy: it would read as proof of a send that
+	// did not happen.
+	//
+	// Everything leaving the server passes through here -- the game's mail and
+	// the webmail's external sends alike -- so this is the single place either
+	// gets recorded, and neither is filed twice.
+	await recordSent(config, opts.from, recipientArg, rawMessage, origin);
+}
+
+// Files a copy under the sending account. The envelope sender is always one of
+// ours on this path, but the lookup still guards: a name we cannot resolve
+// gets no row rather than a wrong one.
+async function recordSent(config, fromAddress, toAddress, rawMessage, origin) {
+	const local = String(fromAddress || "").split("@")[0];
+	if (!local) return;
+
+	const conn = await mysql.createConnection({
+		host: config["mysql_host"],
+		user: config["mysql_user"],
+		password: config["mysql_password"],
+		database: config["mysql_database"]
+	});
+	try {
+		const [who] = await conn.execute(
+			"select id from sys_users where username = ? or dion_email_local = ? limit 1",
+			[local, local]
+		);
+		if (who.length === 0) return;
+		await conn.execute(
+			"insert into sys_sent (user_id, recipient, origin, message) values (?, ?, ?, ?)",
+			[who[0]["id"], String(toAddress).slice(0, 254), origin, rawMessage]
+		);
+	} catch (error) {
+		// The message did go out; failing to file a copy must not report the
+		// send as failed, or Postfix would retry and deliver it twice.
+		process.stderr.write(`outboundRelay.js: could not record sent copy: ${error.message}\n`);
+	} finally {
+		await conn.end();
 	}
 }
 
