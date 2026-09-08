@@ -83,6 +83,7 @@ password-rule-max: "Au plus %count% caractères"
 passwords-dont-match: Les mots de passe sont différents
 wrong-password: Mot de passe incorrect
 link-invalid-expired: Soit ce lien est invalide, soit il a expiré.
+csrf-invalid: Ce formulaire a expiré ou ne provient pas de ce site. Revenez en arrière et réessayez.
 invalid-trade-setting: Réglage invalide pour le pool des régions.
 invalid-pokemon-news-setting: Préférence d’actualités Pokémon invalide.
 default-time-zone: Par défaut (Japon, +0900)

@@ -3,11 +3,17 @@
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/RelayUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	session_start();
-	
+
 	if (SessionUtil::getInstance()->isSessionActive()) {
 		$db_util = DBUtil::getInstance();
-  
+
+		// This page never gated on the method: it just looks for fields in
+		// $_POST, which is empty on a GET. The token check has to sit before
+		// the first of those lookups, and only when there is a POST to check.
+		if ($_SERVER["REQUEST_METHOD"] === "POST") CsrfUtil::check();
+
         $errors = array(); //~To contain multiple problems at once
         //~Update user settings if needed, before preparing to render the page
         if (array_key_exists("tradeRegions",$_POST)) {

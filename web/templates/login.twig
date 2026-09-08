@@ -5,6 +5,7 @@
 	<div class="d-flex">
 		<div class="card m-auto">
 			<form method="post" class="card-body">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 				<fieldset>
 					<legend>{{'auth.login-to-reon'|trans}}</legend>
 					{% if login_fail %}

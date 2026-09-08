@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/TemplateUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/NewsUtil.php");
 	session_start();
@@ -12,6 +13,7 @@
 	$news = NewsUtil::getInstance();
 
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
+		CsrfUtil::check();
 		$action = isset($_POST["action"]) ? $_POST["action"] : "";
 
 		if ($action === "delete" && isset($_POST["id"])) {

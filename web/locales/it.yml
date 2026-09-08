@@ -51,6 +51,7 @@ password-rule-max: "Al massimo %count% caratteri"
 passwords-dont-match: Le password non corrispondono
 wrong-password: Password errata
 link-invalid-expired: Questo link non è valido o è scaduto.
+csrf-invalid: Questo modulo è scaduto o non proviene da questo sito. Torna indietro e riprova.
 invalid-trade-setting: Non è un'impostazione di regione valida.
 default-time-zone: Predefinito (Giappone, +0900)
 invalid-time-zone-setting: Non è un fuso orario valido.

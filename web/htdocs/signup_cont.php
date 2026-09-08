@@ -1,5 +1,6 @@
 <?php
 	require_once("../classes/SessionUtil.php");
+	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/UserUtil.php");
 	require_once("../classes/ConfigUtil.php");
 	session_start();
@@ -7,6 +8,7 @@
 	$config = ConfigUtil::getInstance()->getConfig();
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		CsrfUtil::check();
 		if (isset($_POST["id"]) && isset($_POST["key"]) && isset($_POST["reonEmail"]) && isset($_POST["password"]) && isset($_POST["passwordConfirm"]) && isset($_POST["tradeRegions"])) {
 			// Fetch email before completing signup (completeSignupAction deletes sys_signup).
 			$email = UserUtil::getInstance()->verifySignupRequest($_POST["id"], $_POST["key"]);

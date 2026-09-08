@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/TemplateUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/MailUtil.php");
 	session_start();
@@ -17,6 +18,7 @@
 	// Actions are POST-only so a crawler, a prefetch, or a stray <img> can
 	// never destroy mail by being followed.
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
+		CsrfUtil::check();
 		$action = $_POST["action"] ?? "";
 
 		// One code path for both cases: a single-message button posts one id,

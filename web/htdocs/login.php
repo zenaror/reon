@@ -1,10 +1,12 @@
 <?php
 	require_once("../classes/TemplateUtil.php");
+	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/DBUtil.php");
 	require_once("../classes/SessionUtil.php");
 	session_start();
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		CsrfUtil::check();
 		if (!(isset($_POST["email"]) && isset($_POST["password"]))) return;
 		$db = DBUtil::getInstance()->getDB();
 		// Either the e-mail address or the REON username. The two can never
