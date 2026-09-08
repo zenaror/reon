@@ -20,7 +20,10 @@
 		{% block head %}
 		{% endblock %}
 	</head>
-	<body{% if body_class is defined and body_class %} class="{{ body_class|e('html_attr') }}"{% endif %}>
+	{# data-section names the portal area this page belongs to. The CSS turns it
+	   into --section-gem, so the header dot picks up the same colour as the
+	   section's gem in the side menu instead of always being blue. #}
+	<body{% if body_class is defined and body_class %} class="{{ body_class|e('html_attr') }}"{% endif %}{% if nav_item is defined and nav_item %} data-section="{{ nav_item|e('html_attr') }}"{% endif %}>
 		<header class="navbar navbar-expand-lg bg-body-tertiary cgb-gradient-border container-xxl">
 			<nav class="container-xxl">
 				<a href="/index.php" class="navbar-brand">
@@ -72,17 +75,25 @@
 									{#- The count also sits on the Mail item inside, but the menu is
 									    closed by default, so nothing there is visible until you go
 									    looking. This is the one that has to catch the eye. -#}
-									{% if mail_count > 0 %}
-										<span class="mail-badge{{ mail_new > 0 ? ' mail-badge--new' : '' }}"
-										      title="{{ mail_new > 0 ? 'mail.new-arrived'|trans({'%count%': mail_new}) : 'account.emails-in-inbox'|trans }}">{{ mail_count }}</span>
-										<span class="visually-hidden">{{ mail_new > 0 ? 'mail.new-arrived'|trans({'%count%': mail_new}) : 'account.emails-in-inbox'|trans }}</span>
+									{#- Accented shows the unread count; plain shows the whole
+									    mailbox, and only once nothing is unread. The colour and the
+									    number have to mean the same thing, or the badge lies. -#}
+									{% if mail_new > 0 %}
+										<span class="mail-badge mail-badge--new"
+										      title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>
+										<span class="visually-hidden">{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}</span>
+									{% elseif mail_count > 0 %}
+										<span class="mail-badge"
+										      title="{{ 'account.emails-in-inbox'|trans }}">{{ mail_count }}</span>
+										<span class="visually-hidden">{{ 'account.emails-in-inbox'|trans }}</span>
 									{% endif %}
 								</a>
 								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
 									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
 									<li><a class="dropdown-item" href="/user/mail.php">
 										{{'mail.title'|trans}}
-										{%- if mail_count > 0 %} <span class="mail-badge{{ mail_new > 0 ? ' mail-badge--new' : '' }}">{{ mail_count }}</span>{% endif %}
+										{%- if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>
+										{%- elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif %}
 									</a></li>
 									<li><hr class="dropdown-divider"></li>
 									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
