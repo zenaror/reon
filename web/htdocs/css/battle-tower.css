@@ -255,6 +255,13 @@
   margin-top: 2px;
 }
 
+/* COOLTRAINER♀ and friends are longer than the name column when the LV/ROOM
+   columns are open; wrapping mid-word beats spilling into the next cell. */
+.bt-trainer-class,
+.bt-player-name {
+  overflow-wrap: anywhere;
+}
+
 .bt-pokemon-list {
   margin: 0;
   padding-left: 0;
