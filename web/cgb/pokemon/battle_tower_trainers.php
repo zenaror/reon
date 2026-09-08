@@ -1496,7 +1496,7 @@
 		$placeholderTrainer6[3]["pokemon2"] = hex2bin("820339553F2E0000053BD8D6D8AFC8C350D6D8C350DBEF0F0F051464000000460000010F010F00EB00A900B2009400CC8698809180838E92505050");
 		$placeholderTrainer6[3]["pokemon3"] = hex2bin("C36D5939BCE70000053BD8C350C350AFC8C350C350DEDD0A0F0A0F64000000460000010A010A00B400B4006E009800989094808692889184505050");
 		$placeholderTrainer6[3]["message_start"] = hex2bin("0104070E43043004");
-		$placeholderTrainer6[3]["message_win"] = hex2bin("C500 0B0D20040205");
+		$placeholderTrainer6[3]["message_win"] = hex2bin("C5000B0D20040205");
 		$placeholderTrainer6[3]["message_lose"] = hex2bin("1105C3000B0D3F04");
 		
 		// Trainer 5
