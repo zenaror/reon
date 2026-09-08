@@ -222,7 +222,10 @@
             }
         }
 
-        if (splitIndex <= 0 || splitIndex >= rowMarkup.length) {
+        // When the rest would not fit the second panel either (the overview
+        // has a couple of hundred rows), deal the rows evenly instead of
+        // leaving one panel short and the other a mile long.
+        if (splitIndex <= 0 || splitIndex >= rowMarkup.length || rowMarkup.length - splitIndex > splitIndex) {
             splitIndex = Math.ceil(rowMarkup.length / 2);
             clearBodies();
             appendRange(primaryBody, 0, splitIndex);
