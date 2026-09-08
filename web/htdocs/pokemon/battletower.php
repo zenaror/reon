@@ -9,11 +9,20 @@
     // Both filters return null for "all", which the query reads as "no
     // restriction on this column" and the template as "show this column",
     // since the value stops being implied by the filter once it varies.
-    // With a level chosen the page is a top 10 (of the level, or of one
-    // room); with L:ALL it is the overview of every level and room, since a
-    // ranking across levels would compare runs that are not comparable.
+    // With a level chosen the rows are ranked by performance (within the
+    // level, or one room); with L:ALL it is the overview of every level and
+    // room, since runs at different levels are not comparable.
     const BXT_BT_ALL = "all";
-    const BXT_BT_TOP_N = 10;
+    const BXT_BT_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+    const BXT_BT_PER_PAGE_DEFAULT = 20;
+
+    function bxt_battle_tower_parse_per_page($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return 0;
+        }
+        $n = intval($raw_value);
+        return in_array($n, BXT_BT_PER_PAGE_OPTIONS, true) ? $n : BXT_BT_PER_PAGE_DEFAULT;
+    }
 
     function bxt_battle_tower_parse_level($raw_value) {
         if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
@@ -431,6 +440,8 @@
     $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? BXT_BT_ALL);
     $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? BXT_BT_ALL);
     $is_ranking = $selected_level !== null;
+    $per_page = bxt_battle_tower_parse_per_page($_GET["per_page"] ?? BXT_BT_PER_PAGE_DEFAULT);
+    $page = max(1, intval($_GET["page"] ?? 1));
 
     $pkm_util = PokemonUtil::getInstance();
     $db_util = DBUtil::getInstance();
@@ -474,6 +485,13 @@
         // A filtered column would repeat the same value on every row.
         "show_level" => $selected_level === null,
         "show_room" => $selected_room === null,
+        "per_page" => $per_page,
+        "per_page_options" => BXT_BT_PER_PAGE_OPTIONS,
+        "page" => 1,
+        "total_pages" => 1,
+        "total" => 0,
+        "first_index" => 0,
+        "last_index" => 0,
     ];
 
     $leaders = [];
@@ -536,9 +554,6 @@
     // overview, since there they are different entries).
     $seen_trainers = [];
     foreach ($data as $entry) {
-        if ($is_ranking && count($leaders) >= BXT_BT_TOP_N) {
-            break;
-        }
         $identity = isset($entry["trainer_id"], $entry["secret_id"], $entry["account_id"])
             ? "id:" . $entry["trainer_id"] . ":" . $entry["secret_id"] . ":" . $entry["account_id"]
             : "blob:" . bin2hex((string)($entry["player_name"] ?? "")) . ":" . ($entry["trainer_class_id"] ?? "") . ":" . md5((string)($entry["pokemon1"] ?? ""));
@@ -605,5 +620,16 @@
         ];
     }
 
+    $total = count($leaders);
+    $total_pages = $per_page > 0 ? max(1, (int)ceil($total / $per_page)) : 1;
+    $page = min($page, $total_pages);
+    if ($per_page > 0) {
+        $leaders = array_slice($leaders, ($page - 1) * $per_page, $per_page);
+    }
     $render_args["leaders"] = $leaders;
+    $render_args["page"] = $page;
+    $render_args["total_pages"] = $total_pages;
+    $render_args["total"] = $total;
+    $render_args["first_index"] = $total === 0 ? 0 : ($per_page > 0 ? ($page - 1) * $per_page + 1 : 1);
+    $render_args["last_index"] = $per_page > 0 ? min($total, $page * $per_page) : $total;
     echo TemplateUtil::render("/pokemon/battletower", $render_args);

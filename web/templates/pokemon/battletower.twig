@@ -1,6 +1,21 @@
 {% extends "main.twig" %}
 {% set nav_item = "games" %}
 
+{% macro pager(page, total_pages, base) %}
+    <nav class="battle-pager-nav" aria-label="Pages">
+        <a class="trade-size-btn battle-pager-btn{% if page <= 1 %} is-disabled{% endif %}" href="{{ base }}&page={{ page - 1 }}"{% if page <= 1 %} aria-disabled="true" tabindex="-1"{% endif %}>&lt; PREV</a>
+        {% set first = max(1, page - 2) %}
+        {% set last = min(total_pages, page + 2) %}
+        {% if first > 1 %}<a class="trade-size-btn battle-pager-btn" href="{{ base }}&page=1">1</a>{% if first > 2 %}<span class="battle-pager-gap">..</span>{% endif %}{% endif %}
+        {% for p in first..last %}
+            <a class="trade-size-btn battle-pager-btn{% if p == page %} is-active{% endif %}" href="{{ base }}&page={{ p }}"{% if p == page %} aria-current="page"{% endif %}>{{ p }}</a>
+        {% endfor %}
+        {% if last < total_pages %}{% if last < total_pages - 1 %}<span class="battle-pager-gap">..</span>{% endif %}<a class="trade-size-btn battle-pager-btn" href="{{ base }}&page={{ total_pages }}">{{ total_pages }}</a>{% endif %}
+        <a class="trade-size-btn battle-pager-btn{% if page >= total_pages %} is-disabled{% endif %}" href="{{ base }}&page={{ page + 1 }}"{% if page >= total_pages %} aria-disabled="true" tabindex="-1"{% endif %}>NEXT &gt;</a>
+    </nav>
+{% endmacro %}
+{% import _self as ui %}
+
 {% block title %}Pok&eacute;mon - Battle Tower{% endblock %}
 
 {% block head %}
@@ -42,12 +57,28 @@
         </div>
 
         <div class="battle-honor-roll-label">HONOR ROLL</div>
+
+        {% set per_page_value = per_page == 0 ? 'all' : per_page %}
+        {% set page_base = 'battletower.php?level=' ~ selected_level ~ '&room=' ~ selected_room ~ '&per_page=' ~ per_page_value %}
+        <div class="battle-pager">
+            <div class="battle-pager-size">
+                <span class="battle-pager-label">PER PAGE:</span>
+                <div class="trade-size-buttons battle-pager-sizes" role="group" aria-label="Leaders per page">
+                    {% for n in per_page_options %}
+                        <a class="trade-size-btn battle-pager-btn{% if per_page == n %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page={{ n }}&page=1"{% if per_page == n %} aria-current="true"{% endif %}>{{ n }}</a>
+                    {% endfor %}
+                    <a class="trade-size-btn battle-pager-btn{% if per_page == 0 %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page=all&page=1"{% if per_page == 0 %} aria-current="true"{% endif %}>ALL</a>
+                </div>
+            </div>
+            <div class="battle-pager-status">{% if total > 0 %}{{ first_index }}-{{ last_index }} OF {{ total }}{% else %}0 LEADERS{% endif %}</div>
+            {% if total_pages > 1 %}{{ ui.pager(page, total_pages, page_base) }}{% endif %}
+        </div>
     </form>
 
-        <div class="battle-table-grid" data-bt-table-wrap>
+        <div class="battle-table-grid" data-bt-table-wrap data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
             {# data-bt-extra: how many of the LV/ROOM columns are present. With one
                the CSS compacts the leader cell; with both (the overview) the
-               message moves under the leader, like on phones. #}
+               panel widens and stays a single column. #}
             {% set extra_cols = (show_level ? 1 : 0) + (show_room ? 1 : 0) %}
             <div class="battle-table-panel" data-bt-primary>
                 <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
@@ -89,12 +120,6 @@
                                     <div class="bt-message-box">{{ leader.message }}</div>
                                 </td>
                             </tr>
-                            {# Phones: the message moves under the leader, on its own row. #}
-                            <tr class="bt-message-row">
-                                <td colspan="{{ 2 + extra_cols }}">
-                                    <div class="bt-message-box">{{ leader.message }}</div>
-                                </td>
-                            </tr>
                         {% endfor %}
 
                         {% if leaders is empty %}
@@ -121,6 +146,9 @@
                 </table>
             </div>
         </div>
+        {% if total_pages > 1 %}
+            <div class="battle-pager battle-pager-bottom">{{ ui.pager(page, total_pages, page_base) }}</div>
+        {% endif %}
     </div>
     </div>
 </div>
@@ -155,12 +183,7 @@
         return;
     }
 
-    // A leader is two <tr>s (the row and its phone-layout message row);
-    // they travel together when rows are dealt between the panels.
-    const rowMarkup = sourceRows.map((row) => {
-        const next = row.nextElementSibling;
-        return row.outerHTML + (next && next.classList.contains("bt-message-row") ? next.outerHTML : "");
-    });
+    const rowMarkup = sourceRows.map((row) => row.outerHTML);
 
     const makeRow = (markup) => {
         const template = document.createElement("template");
@@ -194,8 +217,9 @@
 
         const zoomMode = pageNode ? String(pageNode.getAttribute("data-battle-zoom") || "1") : "1";
         // Below the two-column layout the panels stack, so splitting only
-        // repeats the header halfway down.
-        if (zoomMode !== "1" || window.innerWidth < 992) {
+        // repeats the header halfway down; the wide overview panel (LV and
+        // ROOM both shown) is a single column by design.
+        if (zoomMode !== "1" || window.innerWidth < 992 || tableWrap.getAttribute("data-bt-extra") === "2") {
             return;
         }
 
