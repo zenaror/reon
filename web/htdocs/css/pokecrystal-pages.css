@@ -653,8 +653,8 @@ body.rankings-theme > main {
   }
 
   .exchange-page .crystal-trade-slot .trade-warning {
-    min-height: 3.4em !important;
-    line-height: 1.2 !important;
+    min-height: 30px !important;
+    line-height: 10px !important;
     padding: 0 2px !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
@@ -710,9 +710,12 @@ body.rankings-theme > main {
     clip-path: inset(-2px 0 -2px 0) !important;
   }
 
-  .exchange-page .crystal-trade .trade-warning,
+  .exchange-page .crystal-trade .trade-warning {
+    line-height: 10px !important;
+  }
+
   .exchange-page .trade-remaining {
-    line-height: 1.15 !important;
+    line-height: 8px !important;
   }
 
   .exchange-page .crystal-trade .offer-species-line {
@@ -1263,13 +1266,15 @@ body.rankings-theme > main {
 .crystal-trade-slot .trade-warning {
   width: 100%;
   margin: 0 0 6px 0;
-  min-height: 2.7em;
-  /* Was .82em, which both missed the card's 8px pixel grid (blurring the
-     bitmap font) and made the warning larger than the card text it sits on
-     top of. This rule is what was overriding the 8px set further up. */
+  /* Whole pixels only. This is a bitmap font: any fractional height here
+     (2.7em = 21.6px) lands the centred text -- and, through the slot's
+     height, every card on the next row -- half a pixel off the grid, which
+     renders as blur. 30px fits three 10px lines and keeps a two-line warning
+     the same height, so slots in a row stay equal and integer. */
+  min-height: 30px;
   font-size: 8px;
-  line-height: 1.25;
-  font-weight: 600;
+  line-height: 10px;
+  font-weight: 400;
   color: #8a4d00;
   box-sizing: border-box;
   text-align: center;
@@ -1285,14 +1290,16 @@ body.rankings-theme > main {
 .crystal-trade-slot .trade-remaining {
   width: 100%;
   margin-top: 6px;
-  min-height: 1.6em;
+  /* 16px, not 1.6em (12.8px): see .trade-warning. And no fractional
+     letter-spacing -- .04em is .32px per glyph, which puts every digit
+     between pixels. */
+  min-height: 16px;
   text-align: center;
-  /* Same story as .trade-warning above: this later rule was overriding the
-     8px set earlier, so the countdown never matched the card text. */
   font-size: 8px;
+  line-height: 8px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  letter-spacing: .04em;
+  letter-spacing: 0;
   display: flex;
   align-items: center;
   justify-content: center;

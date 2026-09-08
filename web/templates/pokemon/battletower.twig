@@ -17,6 +17,7 @@
     <form class="battle-tower-controls" method="get">
         <div class="battle-control-level">
             <select name="level" class="trade-region-filter" aria-label="Select level" onchange="this.form.submit()">
+                <option value="all"{% if selected_level == 'all' %} selected{% endif %}>L:ALL</option>
                 {% for level_value in level_options %}
                     <option value="{{ level_value }}"{% if level_value == selected_level %} selected{% endif %}>L:{{ "%d"|format(level_value) }}</option>
                 {% endfor %}
@@ -44,15 +45,17 @@
     </form>
 
         <div class="battle-table-grid" data-bt-table-wrap>
-            {# data-bt-extra: whether the ROOM column is present, so the CSS can
-               compact the fixed-width columns to make room for it. #}
-            {% set extra_cols = show_room ? 1 : 0 %}
+            {# data-bt-extra: how many of the LV/ROOM columns are present. With one
+               the CSS compacts the leader cell; with both (the overview) the
+               message moves under the leader, like on phones. #}
+            {% set extra_cols = (show_level ? 1 : 0) + (show_room ? 1 : 0) %}
             <div class="battle-table-panel" data-bt-primary>
                 <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
-                            {# Shown only when the room filter is open: a filtered
+                            {# Shown only when the matching filter is open: a filtered
                                column would repeat one value down every row. #}
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
                             {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th class="bt-col-leader">ROOM LEADER</th>
                             <th class="bt-col-pokemon">POK&eacute;MON</th>
@@ -62,6 +65,7 @@
                     <tbody>
                         {% for leader in leaders %}
                             <tr class="bt-row">
+                                {% if show_level %}<td class="bt-col-level">{{ leader.level }}</td>{% endif %}
                                 {% if show_room %}<td class="bt-col-room">{{ "%03d"|format(leader.room) }}</td>{% endif %}
                                 <td class="bt-leader-cell">
                                     <div class="bt-leader-subcols">
@@ -85,6 +89,12 @@
                                     <div class="bt-message-box">{{ leader.message }}</div>
                                 </td>
                             </tr>
+                            {# Phones: the message moves under the leader, on its own row. #}
+                            <tr class="bt-message-row">
+                                <td colspan="{{ 2 + extra_cols }}">
+                                    <div class="bt-message-box">{{ leader.message }}</div>
+                                </td>
+                            </tr>
                         {% endfor %}
 
                         {% if leaders is empty %}
@@ -100,6 +110,7 @@
                 <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
                             {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
                             <th class="bt-col-leader">ROOM LEADER</th>
                             <th class="bt-col-pokemon">POK&eacute;MON</th>
@@ -144,12 +155,17 @@
         return;
     }
 
-    const rowMarkup = sourceRows.map((row) => row.outerHTML);
+    // A leader is two <tr>s (the row and its phone-layout message row);
+    // they travel together when rows are dealt between the panels.
+    const rowMarkup = sourceRows.map((row) => {
+        const next = row.nextElementSibling;
+        return row.outerHTML + (next && next.classList.contains("bt-message-row") ? next.outerHTML : "");
+    });
 
     const makeRow = (markup) => {
         const template = document.createElement("template");
-        template.innerHTML = markup.trim();
-        return template.content.firstElementChild;
+        template.innerHTML = "<table><tbody>" + markup.trim() + "</tbody></table>";
+        return template.content.querySelector("tbody");
     };
 
     const clearBodies = () => {
@@ -157,12 +173,16 @@
         secondaryBody.innerHTML = "";
     };
 
+    const appendRows = (tbody, markup) => {
+        const rows = makeRow(markup);
+        while (rows && rows.firstElementChild) {
+            tbody.appendChild(rows.firstElementChild);
+        }
+    };
+
     const appendRange = (tbody, start, end) => {
         for (let i = start; i < end; i += 1) {
-            const rowNode = makeRow(rowMarkup[i]);
-            if (rowNode) {
-                tbody.appendChild(rowNode);
-            }
+            appendRows(tbody, rowMarkup[i]);
         }
     };
 
@@ -173,7 +193,9 @@
         tableWrap.classList.remove("is-split");
 
         const zoomMode = pageNode ? String(pageNode.getAttribute("data-battle-zoom") || "1") : "1";
-        if (zoomMode !== "1") {
+        // Below the two-column layout the panels stack, so splitting only
+        // repeats the header halfway down.
+        if (zoomMode !== "1" || window.innerWidth < 992) {
             return;
         }
 
@@ -189,13 +211,12 @@
         clearBodies();
         let splitIndex = rowMarkup.length;
         for (let i = 0; i < rowMarkup.length; i += 1) {
-            const rowNode = makeRow(rowMarkup[i]);
-            if (!rowNode) {
-                continue;
-            }
-            primaryBody.appendChild(rowNode);
+            const before = primaryBody.children.length;
+            appendRows(primaryBody, rowMarkup[i]);
             if (primaryPanel.offsetHeight > availableHeight) {
-                primaryBody.removeChild(primaryBody.lastElementChild);
+                while (primaryBody.children.length > before) {
+                    primaryBody.removeChild(primaryBody.lastElementChild);
+                }
                 splitIndex = i;
                 break;
             }
