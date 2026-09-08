@@ -22,9 +22,9 @@
 // the result run through the same legality checker real uploads go through.
 // Only mons the checker accepts are used.
 //
-// Everything is attributed to one bot account so it can be removed again with
-// --purge (honor-roll rows carry no account id, so a fingerprint manifest is
-// kept for those).
+// Everything is attributed to bot accounts (see BOT_ACCOUNTS) so it can be
+// removed again with --purge (honor-roll rows carry no account id, so a
+// fingerprint manifest is kept for those).
 //
 // Usage (from the repo root, on the server):
 //   POKEMON_LEGALITY_BIN=... php maint/seed_pokemon_fake_data.php --create-account --dry-run
@@ -47,8 +47,8 @@ require_once dirname(__DIR__) . '/web/scripts/bxt_value_validation.php';
 require_once __DIR__ . '/gen2_base_stats.php';
 
 $opts = getopt('', [
-    'dry-run', 'purge', 'create-account', 'help',
-    'account-user:', 'bt-per-room:', 'bt-rooms:', 'tc:', 'pool:', 'seed:',
+    'dry-run', 'purge', 'create-account', 'rebalance', 'help',
+    'bt-per-room:', 'bt-rooms:', 'tc:', 'pool:', 'seed:',
     'cache:', 'manifest:', 'skip:',
 ]);
 
@@ -56,9 +56,9 @@ if (isset($opts['help'])) {
     echo <<<TXT
 Options:
   --dry-run            generate and validate everything, write nothing
-  --purge              delete everything attributed to the bot account (and honor-roll rows from the manifest)
-  --create-account     create the bot account if it does not exist
-  --account-user=NAME  bot account username (default: reonbot)
+  --purge              delete everything attributed to the bot accounts (and honor-roll rows from the manifest)
+  --create-account     create the bot accounts that do not exist yet
+  --rebalance          only redistribute existing bot deposits over the bot accounts (no inserts)
   --bt-rooms=N|all     rooms per level to fill (default: all = 20)
   --bt-per-room=N      records per level/room (default: 7)
   --tc=N               Trade Corner deposits (default: 30)
@@ -73,7 +73,6 @@ TXT;
 }
 
 $dryRun = isset($opts['dry-run']);
-$accountUser = $opts['account-user'] ?? 'reonbot';
 $btPerRoom = (int)($opts['bt-per-room'] ?? 7);
 $btRooms = ($opts['bt-rooms'] ?? 'all') === 'all' ? 20 : (int)$opts['bt-rooms'];
 $tcCount = (int)($opts['tc'] ?? 30);
@@ -99,6 +98,15 @@ if (getenv('POKEMON_LEGALITY_BIN') === false) {
 }
 
 const REGION = 'e';
+
+// Bot accounts. Trade Corner cards show a warning derived from the owning
+// account's trade_region_allowlist, so deposits are spread over three accounts
+// to exercise all three states: everything allowed, no Japanese, own game only.
+const BOT_ACCOUNTS = [
+    ['username' => 'reonbot',     'local' => 'reonbot',  'allowlist' => 'efdsipuj',  'share' => 60],
+    ['username' => 'reonbot-eu',  'local' => 'reonbot2', 'allowlist' => 'efdsipu,j', 'share' => 27],
+    ['username' => 'reonbot-own', 'local' => 'reonbot3', 'allowlist' => 'e,fdsipuj', 'share' => 13],
+];
 const MAIL_ITEMS = [0x9E, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD];
 
 // data/trainers/gendered_trainers.asm, in table order; class ids per
@@ -230,6 +238,133 @@ function save_cache(): void {
 }
 
 // ---------------------------------------------------------------------------
+// DB + bot accounts (resolved before the slow pool work so account problems
+// fail fast, and so --rebalance/--purge never touch the legality checker).
+// ---------------------------------------------------------------------------
+$db = connectMySQL();
+$db->set_charset('utf8mb4');
+$config = getConfig();
+$dionDomain = $config['email_domain_dion'] ?? 'reon.dion.ne.jp';
+
+$accounts = []; // BOT_ACCOUNTS entries + 'id' + 'email'
+foreach (BOT_ACCOUNTS as $spec) {
+    $stmt = $db->prepare('select id from sys_users where username = ?');
+    $stmt->bind_param('s', $spec['username']);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row && isset($opts['create-account'])) {
+        if ($dryRun) {
+            echo "[dry-run] would create sys_users row username={$spec['username']} allowlist={$spec['allowlist']}\n";
+            $row = ['id' => 0];
+        } else {
+            $stmt = $db->prepare('insert into sys_users (email, username, password, dion_email_local, trade_region_allowlist, timezone, is_admin, passport_seen_at) values (NULL, ?, NULL, ?, ?, ?, 0, now())');
+            $tz = '+0000';
+            $stmt->bind_param('ssss', $spec['username'], $spec['local'], $spec['allowlist'], $tz);
+            $stmt->execute();
+            $row = ['id' => $db->insert_id];
+            $stmt->close();
+            echo "Created bot account id={$row['id']} username={$spec['username']} allowlist={$spec['allowlist']}\n";
+        }
+    }
+    if (!$row) {
+        fwrite(STDERR, "bot account '{$spec['username']}' not found; pass --create-account\n");
+        exit(1);
+    }
+    $spec['id'] = (int)$row['id'];
+    $spec['email'] = $spec['local'] . '@' . $dionDomain;
+    $accounts[] = $spec;
+}
+$accountIds = array_map(fn($a) => $a['id'], $accounts);
+$accountIdList = implode(',', array_map('intval', $accountIds));
+$primaryAccountId = $accounts[0]['id'];
+
+function pick_account(array $accounts): array {
+    $total = array_sum(array_map(fn($a) => $a['share'], $accounts));
+    $roll = mt_rand(1, $total);
+    foreach ($accounts as $a) {
+        $roll -= $a['share'];
+        if ($roll <= 0) {
+            return $a;
+        }
+    }
+    return $accounts[0];
+}
+
+// ---------------------------------------------------------------------------
+// --rebalance: spread the existing bot deposits over the accounts by share.
+// ---------------------------------------------------------------------------
+if (isset($opts['rebalance'])) {
+    $ids = [];
+    $res = $db->query("select id from bxt_exchange where account_id in ($accountIdList) order by id");
+    while ($row = $res->fetch_assoc()) {
+        $ids[] = (int)$row['id'];
+    }
+    $total = array_sum(array_map(fn($a) => $a['share'], $accounts));
+    $assigned = [];
+    $cursor = 0;
+    foreach ($accounts as $i => $a) {
+        $n = $i === count($accounts) - 1
+            ? count($ids) - $cursor
+            : (int)round(count($ids) * $a['share'] / $total);
+        $assigned[$a['id']] = array_slice($ids, $cursor, $n);
+        $cursor += $n;
+    }
+    $stmt = $db->prepare('update bxt_exchange set account_id = ?, email = ? where id = ?');
+    foreach ($accounts as $a) {
+        foreach ($assigned[$a['id']] as $id) {
+            if (!$dryRun) {
+                $stmt->bind_param('isi', $a['id'], $a['email'], $id);
+                $stmt->execute();
+            }
+        }
+        printf("%s %d deposits -> %s (id %d, allowlist %s)\n", $dryRun ? '[dry-run] would move' : 'moved',
+            count($assigned[$a['id']]), $a['username'], $a['id'], $a['allowlist']);
+    }
+    $stmt->close();
+    exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// --purge
+// ---------------------------------------------------------------------------
+if (isset($opts['purge'])) {
+    $manifest = is_file($manifestPath) ? (json_decode((string)file_get_contents($manifestPath), true) ?: []) : [];
+    $counts = [];
+    foreach (['bxt_battle_tower_records', 'bxt_battle_tower_trainers', 'bxt_exchange'] as $table) {
+        $counts[$table] = (int)$db->query("select count(*) c from `$table` where account_id in ($accountIdList)")->fetch_assoc()['c'];
+        if (!$dryRun) {
+            $db->query("delete from `$table` where account_id in ($accountIdList)");
+        }
+    }
+    $hr = 0;
+    foreach ($manifest['bt_fingerprints'] ?? [] as $fp) {
+        $stmt = $db->prepare('select count(*) c from bxt_battle_tower_honor_roll where player_name = ? and class = ? and pokemon1 = ?');
+        $name = hex2bin($fp['name']);
+        $p1 = hex2bin($fp['p1']);
+        $stmt->bind_param('sis', $name, $fp['class'], $p1);
+        $stmt->execute();
+        $hr += (int)$stmt->get_result()->fetch_assoc()['c'];
+        $stmt->close();
+        if (!$dryRun) {
+            $stmt = $db->prepare('delete from bxt_battle_tower_honor_roll where player_name = ? and class = ? and pokemon1 = ?');
+            $stmt->bind_param('sis', $name, $fp['class'], $p1);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+    $verb = $dryRun ? 'would delete' : 'deleted';
+    foreach ($counts as $t => $c) {
+        echo "$verb $c rows from $t\n";
+    }
+    echo "$verb $hr rows from bxt_battle_tower_honor_roll (by manifest fingerprint)\n";
+    if (!$dryRun && is_file($manifestPath)) {
+        unlink($manifestPath);
+    }
+    exit(0);
+}
+
+// ---------------------------------------------------------------------------
 // Placeholder corpus (EN) -> per-level base mons and message pools.
 // ---------------------------------------------------------------------------
 $baseMons = [];      // level => list of 59-byte blobs
@@ -301,89 +436,6 @@ $names = [
     'SENSEI', 'MOCHI', 'DANGO', 'RAMEN', 'SUSHI', 'UDON', 'MISO', 'WAFFLE', 'TACO', 'BANANA',
     'KOJI', 'RINRIN', 'MAXI', 'YUKIO', 'LEON', 'SORATA', 'AYANE', 'NEON', 'GAMEBOY', 'MOBILE',
 ];
-
-// ---------------------------------------------------------------------------
-// DB + bot account.
-// ---------------------------------------------------------------------------
-$db = connectMySQL();
-$db->set_charset('utf8mb4');
-$config = getConfig();
-$dionDomain = $config['email_domain_dion'] ?? 'reon.dion.ne.jp';
-
-$stmt = $db->prepare('select id, dion_email_local from sys_users where username = ?');
-$stmt->bind_param('s', $accountUser);
-$stmt->execute();
-$account = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-if (!$account && isset($opts['create-account'])) {
-    $local = substr($accountUser, 0, 8);
-    if ($dryRun) {
-        echo "[dry-run] would create sys_users row username=$accountUser dion_email_local=$local\n";
-        $account = ['id' => 0, 'dion_email_local' => $local];
-    } else {
-        $stmt = $db->prepare('insert into sys_users (email, username, password, dion_email_local, trade_region_allowlist, timezone, is_admin, passport_seen_at) values (NULL, ?, NULL, ?, ?, ?, 0, now())');
-        $allow = 'efdsipuj';
-        $tz = '+0000';
-        $stmt->bind_param('ssss', $accountUser, $local, $allow, $tz);
-        $stmt->execute();
-        $account = ['id' => $db->insert_id, 'dion_email_local' => $local];
-        $stmt->close();
-        echo "Created bot account id={$account['id']} username=$accountUser\n";
-    }
-}
-if (!$account) {
-    fwrite(STDERR, "bot account '$accountUser' not found; pass --create-account\n");
-    exit(1);
-}
-$accountId = (int)$account['id'];
-$botEmail = $account['dion_email_local'] . '@' . $dionDomain;
-
-// ---------------------------------------------------------------------------
-// --purge
-// ---------------------------------------------------------------------------
-if (isset($opts['purge'])) {
-    $manifest = is_file($manifestPath) ? (json_decode((string)file_get_contents($manifestPath), true) ?: []) : [];
-    $counts = [];
-    foreach (['bxt_battle_tower_records', 'bxt_battle_tower_trainers', 'bxt_exchange'] as $table) {
-        $stmt = $db->prepare("select count(*) c from `$table` where account_id = ?");
-        $stmt->bind_param('i', $accountId);
-        $stmt->execute();
-        $counts[$table] = (int)$stmt->get_result()->fetch_assoc()['c'];
-        $stmt->close();
-        if (!$dryRun) {
-            $stmt = $db->prepare("delete from `$table` where account_id = ?");
-            $stmt->bind_param('i', $accountId);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-    $hr = 0;
-    foreach ($manifest['bt_fingerprints'] ?? [] as $fp) {
-        $stmt = $db->prepare('select count(*) c from bxt_battle_tower_honor_roll where player_name = ? and class = ? and pokemon1 = ?');
-        $name = hex2bin($fp['name']);
-        $p1 = hex2bin($fp['p1']);
-        $stmt->bind_param('sis', $name, $fp['class'], $p1);
-        $stmt->execute();
-        $hr += (int)$stmt->get_result()->fetch_assoc()['c'];
-        $stmt->close();
-        if (!$dryRun) {
-            $stmt = $db->prepare('delete from bxt_battle_tower_honor_roll where player_name = ? and class = ? and pokemon1 = ?');
-            $stmt->bind_param('sis', $name, $fp['class'], $p1);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-    $verb = $dryRun ? 'would delete' : 'deleted';
-    foreach ($counts as $t => $c) {
-        echo "$verb $c rows from $t\n";
-    }
-    echo "$verb $hr rows from bxt_battle_tower_honor_roll (by manifest fingerprint)\n";
-    if (!$dryRun && is_file($manifestPath)) {
-        unlink($manifestPath);
-    }
-    exit(0);
-}
 
 // ---------------------------------------------------------------------------
 // Battle Tower records.
@@ -503,7 +555,7 @@ $genderless = [81, 82, 100, 101, 120, 121, 132, 137, 144, 145, 146, 150, 151, 20
 
 // Existing real deposits: a seeded deposit must never complete one of them.
 $existing = [];
-$res = $db->query('select offer_species, offer_gender, request_species, request_gender from bxt_exchange where account_id <> ' . $accountId);
+$res = $db->query('select offer_species, offer_gender, request_species, request_gender from bxt_exchange where account_id not in (' . $accountIdList . ')');
 while ($row = $res->fetch_assoc()) {
     $existing[] = array_map('intval', $row);
 }
@@ -552,7 +604,7 @@ while (count($tcDeposits) < $tcCount && $attempts++ < $tcCount * 6) {
         'request_species' => $reqSpecies, 'request_gender' => $reqGender,
         'tid' => $tid, 'sid' => $sid, 'name' => padded_name($name, 7), 'name_text' => $name,
         'pokemon' => $blob65, 'mail' => str_repeat("\x00", 47), 'details' => $r['details'],
-        'age' => mt_rand(0, 30 * 3600),
+        'age' => mt_rand(0, 30 * 3600), 'account' => pick_account($accounts),
     ];
     $conflict = false;
     foreach ($existing as $e) {
@@ -602,7 +654,7 @@ if ($dryRun) {
 // ---------------------------------------------------------------------------
 // Insert.
 // ---------------------------------------------------------------------------
-$manifest = ['account_id' => $accountId, 'created_at' => date('c'), 'bt_ids' => [], 'bt_fingerprints' => [], 'tc_ids' => []];
+$manifest = ['account_ids' => $accountIds, 'created_at' => date('c'), 'bt_ids' => [], 'bt_fingerprints' => [], 'tc_ids' => []];
 $db->begin_transaction();
 
 $btSql = 'insert into bxt_battle_tower_records (game_region, room, level, level_decode, trainer_id, secret_id, player_name, player_name_decode, `class`, class_decode, '
@@ -629,7 +681,7 @@ foreach ($btRecords as $rec) {
         $rec['name'], $nameDecode, $rec['class'], $classDecode,
         $p[0], $p['d0'], $p[1], $p['d1'], $p[2], $p['d2'],
         $rec['msgs']['message_start'], $msd, $rec['msgs']['message_win'], $mwd, $rec['msgs']['message_lose'], $mld,
-        $rec['ntd'], $rec['turns'], $rec['dmg'], $rec['fainted'], $accountId, $rec['age']);
+        $rec['ntd'], $rec['turns'], $rec['dmg'], $rec['fainted'], $primaryAccountId, $rec['age']);
     if (!$stmt->execute()) {
         $db->rollback();
         fwrite(STDERR, "insert failed: " . $stmt->error . "\n");
@@ -657,7 +709,7 @@ foreach ($tcDeposits as $d) {
     $stmt->bind_param('siiisisisisssssssisi',
         $region, $d['tid'], $d['sid'], $d['offer_gender'], $ogd, $d['offer_species'], $osd,
         $d['request_gender'], $rgd, $d['request_species'], $rsd, $d['name'], $nameDecode,
-        $d['pokemon'], $pkDecode, $d['mail'], $mailDecode, $accountId, $botEmail, $d['age']);
+        $d['pokemon'], $pkDecode, $d['mail'], $mailDecode, $d['account']['id'], $d['account']['email'], $d['age']);
     if (!$stmt->execute()) {
         $db->rollback();
         fwrite(STDERR, "insert failed: " . $stmt->error . "\n");
@@ -669,5 +721,5 @@ $stmt->close();
 $db->commit();
 
 file_put_contents($manifestPath, json_encode($manifest));
-printf("Inserted %d Battle Tower records and %d Trade Corner deposits (account_id=%d). Manifest: %s\n",
-    count($manifest['bt_ids']), count($manifest['tc_ids']), $accountId, $manifestPath);
+printf("Inserted %d Battle Tower records and %d Trade Corner deposits (primary account_id=%d). Manifest: %s\n",
+    count($manifest['bt_ids']), count($manifest['tc_ids']), $primaryAccountId, $manifestPath);
