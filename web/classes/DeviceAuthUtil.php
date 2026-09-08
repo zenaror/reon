@@ -101,8 +101,27 @@
 			if (!hash_equals($expectedSig, $sig)) return 403;
 
 			$lastCounter = (int) $row["counter"];
-			if ($counter === $lastCounter) return 200; // idempotent replay of the last accepted call
 			if ($counter < $lastCounter) return 403; // stale/replayed counter
+
+			// Equal counter used to return 200 and change nothing, on the
+			// reading that it could only be a retransmission of the call
+			// already applied. That is true of authorize and false of
+			// deauthorize, and the difference is not cosmetic: a device whose
+			// counter came back behind the server's -- which happens when it
+			// restarts mid-batch -- sends its deauthorize on the number the
+			// server already holds. The revocation was then swallowed, the
+			// device stayed authorized, and the client was told 200.
+			//
+			// Observed in production on 2026-09-08: authorize c=201 was
+			// refused as stale, mail still went out on the earlier 30-minute
+			// window, and the deauthorize c=202 that should have closed it
+			// landed on the stored 202 and did nothing.
+			//
+			// Revocation is fail-safe -- the worst a repeated one can do is
+			// revoke something already revoked -- so it is honoured at equal
+			// counter. Authorize is the direction that grants, and it still
+			// requires a strictly greater counter.
+			if ($counter === $lastCounter && $action !== "deauthorize") return 200;
 
 			if ($action === "authorize") {
 				$stmt = $db->prepare("update sys_device_authorization set counter = ?, authorized = 1, authorized_until = date_add(now(), interval 30 minute) where id = ?");
