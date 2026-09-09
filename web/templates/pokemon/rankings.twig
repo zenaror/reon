@@ -482,10 +482,11 @@ initReonSideBackgrounds("trade-corner", {
         return;
     }
 
-    // Phones start at 1x (nothing stored) but may choose 2x; the table then
-    // scrolls sideways inside the box.
+    // Phones always open at 1x; 2x is a choice for this visit only (the
+    // table then scrolls sideways inside the box). Larger screens remember.
     const phone = window.matchMedia("(max-width: 575.98px)");
     const clamp = (value) => String(value) === "2" ? "2" : "1";
+    const remembered = () => phone.matches ? "1" : (localStorage.getItem(STORAGE_KEY) || "1");
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {
@@ -506,9 +507,9 @@ initReonSideBackgrounds("trade-corner", {
         return zoom;
     };
 
-    applyZoom(localStorage.getItem(STORAGE_KEY) || "1");
+    applyZoom(remembered());
     // Rotating past the breakpoint restores whatever the user chose.
-    phone.addEventListener("change", () => applyZoom(localStorage.getItem(STORAGE_KEY) || "1"));
+    phone.addEventListener("change", () => applyZoom(remembered()));
 
     buttons.forEach((button) => {
         button.addEventListener("click", () => {

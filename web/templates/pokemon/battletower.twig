@@ -287,11 +287,14 @@
         return;
     }
 
-    // 1x or 2x, the choice remembered. With nothing chosen, desktops start
-    // at 2x and phones/tablets at 1x (there 2x scrolls sideways in the box).
+    // 1x or 2x. Desktops start at 2x and remember the choice; tablets start
+    // at 1x and remember; phones always open at 1x, 2x there is for this
+    // visit only (it scrolls sideways in the box).
     // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room.
     const desktop = window.matchMedia("(min-width: 1200px)");
+    const phone = window.matchMedia("(max-width: 575.98px)");
     const stored = () => {
+        if (phone.matches) return null;
         try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
     };
     const clamp = (raw) => {
