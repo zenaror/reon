@@ -68,8 +68,8 @@
 }
 
 .battle-table-shell {
-  --bt-frame-left: 30px;
-  --bt-frame-right: 37px;
+  --bt-frame-left: 34px;
+  --bt-frame-right: 42px;
   --bt-frame-top: 45px;
   --bt-frame-bottom: 48px;
   width: min(980px, 100%);
