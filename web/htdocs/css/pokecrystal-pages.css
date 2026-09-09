@@ -816,6 +816,22 @@ body.rankings-theme > main {
     zoom: var(--trade-card-scale, 1) !important;
   }
 
+  /* 2x on a phone: the card keeps its designed width in its own units
+     (under zoom:2 a percentage would halve it and squeeze the layout) and
+     the list scrolls sideways. The sprites stay 56px art doubled, never a
+     fraction. */
+  .exchange-page[data-trade-scale="2"] .crystal-trade-slot {
+    width: calc(250px - 8px) !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .exchange-page[data-trade-scale="2"] .trade-corner-list {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
   .exchange-page .crystal-trade-slot .trade-warning {
     min-height: 30px !important;
     line-height: 10px !important;
@@ -1943,11 +1959,6 @@ body.rankings-theme > main {
   }
 }
 
-/* Phones are always 1x: the zoom controls go, the scripts clamp to 1. */
-@media (max-width: 575.98px) {
-  .rankings-zoom-wrap,
-  .battle-control-zoom,
-  .exchange-page .trade-size-wrap {
-    display: none !important;
-  }
-}
+/* Phones start at 1x but may pick 2x: the three pages then scroll their
+   zoomed table or cards sideways inside the white box. The zoom controls
+   stay visible everywhere. */

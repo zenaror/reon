@@ -6,13 +6,11 @@
   var MOBILE_SCALE_MEDIA_QUERY = "(max-width: 768px)";
   var supportsElementZoomCache = null;
 
-  // Phones are always 1x: a 2x card grid does not fit and the control is hidden.
+  // Phones start at 1x (nothing stored) but may choose 2x; the cards then
+  // scroll sideways inside the box.
   var phoneQuery = window.matchMedia ? window.matchMedia("(max-width: 575.98px)") : null;
 
   function clampScale(raw) {
-    if (phoneQuery && phoneQuery.matches) {
-      return "1";
-    }
     return String(raw) === "2" ? "2" : "1";
   }
 
