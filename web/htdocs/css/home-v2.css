@@ -509,7 +509,7 @@ body.home-v2 main#content { padding: 12px 14px 18px; }
    arriving at REON Mail from a yellow gem no longer lands on a blue dot. */
 :root { --section-gem: var(--reon-blue); }
 [data-section="news"] { --section-gem: var(--reon-purple); }
-[data-section="mail"] { --section-gem: var(--reon-yellow); }
+[data-section="mail"] { --section-gem: var(--reon-orange); }
 
 .reon-pickup::before {
   content: "";
