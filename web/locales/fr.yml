@@ -1060,7 +1060,7 @@ devices:
   block-confirm: "Bloquer cet appareil ? Il ne pourra plus envoyer de courrier vers le vrai internet tant que vous ne l'aurez pas débloqué ici."
   block-help: "Le blocage conserve l'enregistrement de l'appareil, ainsi rien de ce qu'il a envoyé auparavant ne peut être rejoué ; vous pouvez le débloquer à tout moment."
   limit: "Jusqu'à %n% appareils par compte."
-  legacy: "Sans identification (implémentation ancienne)"
+  legacy: "Sans identification"
   ago-now: "à l'instant"
   ago-minutes: "il y a %n% min"
   ago-hours: "il y a %n% h"
