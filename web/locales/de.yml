@@ -11,6 +11,10 @@ home: Start
 games: Spiele
 mobile-home: Mobile Startseite
 news: Aktuelles
+guide: "Erste Schritte"
+downloads: "Downloads"
+page-not-found: "Diese Seite gibt es noch nicht."
+page-contents: "Inhalt"
 news-empty: "Noch keine Meldungen."
 news-see-more: "Weiterlesen"
 news-newer: "Neuere"

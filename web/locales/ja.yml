@@ -11,6 +11,10 @@ home: ホーム
 games: ゲーム
 mobile-home: モバイルホームページ
 news: ニュース
+guide: "はじめに"
+downloads: "ダウンロード"
+page-not-found: "このページはまだありません。"
+page-contents: "目次"
 news-empty: "まだニュースはありません。"
 news-see-more: "続きを読む"
 news-newer: "新しい"
