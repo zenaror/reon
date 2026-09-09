@@ -401,6 +401,16 @@ body.rankings-theme {
   background-attachment: scroll;
   position: relative;
   min-height: 100vh;
+  /* main.css gives <body> a 12px margin. The rails below are positioned
+     from the body's box, so with a margin they would start 12px in from the
+     page edges and 12px below the point where the gradient above turns
+     white (that gradient is painted on the canvas, from the page's own
+     origin) — a white frame around the page. Same spacing as padding
+     instead, so the box reaches the edges. The header's own 12px top margin
+     used to collapse into the body's; it is dropped below so the header
+     keeps sitting at 12px and the body's box really starts at 0. */
+  margin: 0;
+  padding: 12px;
   --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
@@ -479,6 +489,11 @@ body.honor-roll-theme > header,
 body.rankings-theme > header {
   position: relative;
   z-index: 20;
+}
+
+/* The body's top padding supplies this gap now (see body.rankings-theme). */
+body.rankings-theme > header {
+  margin-top: 0;
 }
 
 /* These pages carry their own banner art; the shared news ticker

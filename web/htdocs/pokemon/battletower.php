@@ -626,6 +626,13 @@
     if ($per_page > 0) {
         $leaders = array_slice($leaders, ($page - 1) * $per_page, $per_page);
     }
+    // Rank across the whole list, not the page, so the medals on page 1 are
+    // the real top three and page 2 gets none.
+    $rank_offset = $per_page > 0 ? (($page - 1) * $per_page) : 0;
+    foreach ($leaders as $i => $_) {
+        $leaders[$i]["rank"] = $rank_offset + $i + 1;
+    }
+
     $render_args["leaders"] = $leaders;
     $render_args["page"] = $page;
     $render_args["total_pages"] = $total_pages;

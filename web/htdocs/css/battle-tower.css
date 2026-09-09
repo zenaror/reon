@@ -28,12 +28,15 @@
 .battle-honor-roll-label {
   grid-area: honor;
   justify-self: start;
+  margin-top: 4px;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0;
 }
 
+/* Hidden: the zoom is decided by the screen (desktop 2x, mobile 1x). */
 .battle-control-zoom {
+  display: none !important;
   grid-area: zoom;
   justify-self: end;
   width: 244px;
@@ -92,18 +95,33 @@
   z-index: 3;
 }
 
+/* Three slices of the original 980px art -- 20px left corner, 20px right
+   corner, a 2px strip of its uniform middle repeated between them -- instead
+   of stretching the whole thing to the box. Stretching widened the corners
+   while the side borders kept their width, so they stopped meeting; this way
+   the corners are native at any box width. */
 .battle-table-shell::before {
   top: 0;
   height: var(--bt-frame-top);
-  background: url("/images/crystal/HonorRollBorderTop.png") no-repeat left top;
-  background-size: 100% var(--bt-frame-top);
+  background-image:
+    url("/images/crystal/HonorRollBorderTopLeft.png"),
+    url("/images/crystal/HonorRollBorderTopRight.png"),
+    url("/images/crystal/HonorRollBorderTopMid.png");
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-position: left top, right top, left top;
+  background-size: 20px var(--bt-frame-top), 20px var(--bt-frame-top), 2px var(--bt-frame-top);
 }
 
 .battle-table-shell::after {
   bottom: 0;
   height: var(--bt-frame-bottom);
-  background: url("/images/crystal/HonorRollBorderBottom.png") no-repeat left bottom;
-  background-size: 100% var(--bt-frame-bottom);
+  background-image:
+    url("/images/crystal/HonorRollBorderBottomLeft.png"),
+    url("/images/crystal/HonorRollBorderBottomRight.png"),
+    url("/images/crystal/HonorRollBorderBottomMid.png");
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-position: left bottom, right bottom, left bottom;
+  background-size: 15px var(--bt-frame-bottom), 15px var(--bt-frame-bottom), 2px var(--bt-frame-bottom);
 }
 
 /* The framed box now wraps the title + controls + table. The left/right
@@ -651,15 +669,8 @@
    the scroll above is the fallback. */
 .battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"],
 .battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"] .battle-table-shell {
-  width: min(1110px, 100%);
-}
-
-/* With both filters on ALL the frame is wider than its 980px art and the
-   top/bottom borders stretch; the sides take a little more width so the
-   corners still meet (owner-tuned values). */
-.battle-tower-page[data-bt-extra="2"] .battle-table-shell {
-  --bt-frame-left: 34px;
-  --bt-frame-right: 42px;
+  /* 1036px table + 24px of air on each side + the 34/42px side borders. */
+  width: min(1160px, 100%);
 }
 
 .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
@@ -830,4 +841,27 @@
     line-height: 1 !important;
   }
 
+}
+
+/* Gold, silver and bronze for the top three -- only with both filters set,
+   where the rows really are one room's ranking (with either filter on ALL
+   the list spans rooms or levels and a podium would be meaningless). The
+   tint sits on the cells, not the row, because a table row's background
+   loses to the cells' own. */
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-1 > td {
+  background: #f6ecc9;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-2 > td {
+  background: #e3e4ea;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-3 > td {
+  background: #edd9c1;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-1 .bt-leader-name-col,
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-2 .bt-leader-name-col,
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-3 .bt-leader-name-col {
+  border-left-color: #b9b9b9;
 }
