@@ -308,6 +308,19 @@ o que mudou. Setembro/2026.
   44px com LV ou ROOM abertas e no celular; agora o painel cresce pela
   coluna extra (440→484px, coluna única) em vez de borrar a arte. Medido
   ao vivo em 1600px e 390px
+* **Publicação no GitHub** (github.com/zenaror/*, espelho do Gitea): README
+  e instruções em inglês em todos os projetos (os quatro adaptadores já
+  estavam; README de instalação, scripts de hardening e README do systemd
+  traduzidos); toda URL de repositório dentro dos projetos aponta para o
+  GitHub — submódulos da libmobile no bgb (a56c3ec) e no Pico (9b9db48), e
+  instruções de clone do mGBA (dedee9fde); os quatro scripts de instalação
+  e este changelog/memo passaram a viver no repositório do reon
+  (`setup-script/`, `docs/`), com os scripts achando `reon/` e
+  `mobile-relay/` em qualquer dos dois layouts. Achados no caminho: o
+  espelho do Pico não tinha o branch `feature/full_server`, e a
+  sincronização rebaixou a `feature/3ds-magb` do mGBA no GitHub para uma
+  cópia antiga do Gitea (recuperada com force-push autorizado pelo dono);
+  o branch padrão dos seis repositórios no GitHub ainda é o do upstream
 * Celulares de 360px: Rankings cabe sem rolar (trilhos encolhem para a
   faixa de 8px da borda, ADDRESS cede 8px que nunca usou, 344px exatos) e a
   Battle Tower passa a três linhas por líder onde duas quebravam
