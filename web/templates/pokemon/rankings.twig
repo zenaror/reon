@@ -85,8 +85,9 @@
         </div>
     </div>
 
-    {# One category at a time when the tables would otherwise stack (2x on
-       the desktop); the strip stays hidden while the three sit side by side. #}
+    {# One category at a time when the tables would otherwise stack (2x, or
+       a narrow viewport); the strip stays hidden while the three sit side by
+       side. #}
     <div class="trainer-rankings-tabs" role="tablist" aria-label="Ranking categories">
         {% for cat in categories %}
             <button
@@ -515,8 +516,9 @@ initReonSideBackgrounds("trade-corner", {
 </script>
 <script>
 (() => {
-    // Category tabs: only while the tables stack on the desktop (2x). Runs
-    // after the filter and zoom scripts above, so their listeners fire first.
+    // Category tabs: whenever the tables stack -- 2x, or a viewport up to
+    // 1080px where the grid is a single column (tablets, phones). Runs after
+    // the filter and zoom scripts above, so their listeners fire first.
     const STORAGE_KEY = "reon_rankings_tab";
     const page = document.querySelector(".trainer-rankings-page");
     const tabs = Array.from(document.querySelectorAll(".trainer-rankings-tab[data-ranking-tab]"));
@@ -526,8 +528,8 @@ initReonSideBackgrounds("trade-corner", {
         return;
     }
 
-    const desktop = window.matchMedia("(min-width: 992px)");
-    const tabsActive = () => desktop.matches && page.getAttribute("data-rankings-zoom") === "2";
+    const stacked = window.matchMedia("(max-width: 1080px)");
+    const tabsActive = () => stacked.matches || page.getAttribute("data-rankings-zoom") === "2";
     const visibleRows = (panel) => Array.from(panel.querySelectorAll("[data-ranking-row]"))
         .filter((row) => row.style.display !== "none").length;
 
@@ -592,7 +594,7 @@ initReonSideBackgrounds("trade-corner", {
     }
 
     page.addEventListener("rankingsZoomChange", render);
-    desktop.addEventListener("change", render);
+    stacked.addEventListener("change", render);
     render();
 })();
 </script>
