@@ -1025,6 +1025,7 @@ pokemon:
 mail:
   title: "REON Mail"
   inbox: "Boîte de réception"
+  inbox-summary: "%total% dans la boîte · %unread% non lus"
   empty: "Aucun message."
   message: "Message"
   from: "De"

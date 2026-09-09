@@ -137,6 +137,11 @@
 				{%- else %}{{'mail.inbox'|trans}}{% endif %}
 				{%- if folder_total > 0 %} <span class="mt-panel__count">{{ folder_total }}</span>{% endif %}
 			</h2>
+			{% if folder == 'inbox' %}
+				{# Total and unread, in words; kept current by the same poll that
+				   feeds the badges. #}
+				<p class="mt-summary" id="mt-summary" data-template="{{ 'mail.inbox-summary'|trans({'%total%': '%total%', '%unread%': '%unread%'}) }}">{{ 'mail.inbox-summary'|trans({'%total%': mail_count|default(0), '%unread%': mail_new|default(0)}) }}</p>
+			{% endif %}
 
 			{% if messages is empty %}
 				<p class="mt-empty">{% if folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
@@ -227,11 +232,17 @@
 			// The poll itself lives in mail-indicator.js, which every page
 			// runs for a signed-in visitor and which updates the badges. This
 			// only listens, so the mailbox never asks the server twice.
+			var summary = document.getElementById("mt-summary");
 			document.addEventListener("reon:mailstatus", function (e) {
 				var extra = e.detail.count - known;
 				if (extra > 0) {
 					text.textContent = template.replace("%count%", extra);
 					banner.hidden = false;
+				}
+				if (summary && summary.dataset.template) {
+					summary.textContent = summary.dataset.template
+						.replace("%total%", e.detail.count)
+						.replace("%unread%", e.detail["new"]);
 				}
 			});
 		})();

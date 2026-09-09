@@ -1841,6 +1841,7 @@ admin:
 mail:
   title: "REON Mail"
   inbox: "Inbox"
+  inbox-summary: "%total% in the inbox · %unread% unread"
   empty: "No messages."
   message: "Message"
   from: "From"

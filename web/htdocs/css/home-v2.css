@@ -867,6 +867,17 @@ body.home-v2 main#content { overflow: hidden; }
   font-variant-numeric: tabular-nums;
 }
 
+/* "12 in the inbox · 3 unread", under the bar. */
+.mt-summary {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--reon-line);
+  color: var(--reon-ink-soft);
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+  font-variant-numeric: tabular-nums;
+}
+
 .mt-empty {
   margin: 0;
   padding: 18px 14px;

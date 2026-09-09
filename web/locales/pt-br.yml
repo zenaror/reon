@@ -203,6 +203,7 @@ admin:
 mail:
   title: "REON Mail"
   inbox: "Caixa de entrada"
+  inbox-summary: "%total% na caixa de entrada · %unread% não lidos"
   empty: "Nenhuma mensagem."
   message: "Mensagem"
   from: "De"

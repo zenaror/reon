@@ -961,6 +961,7 @@ invalid-pokemon-news-setting: Ungültige Pokémon-Nachrichten-Einstellung.
 mail:
   title: "REON Mail"
   inbox: "Posteingang"
+  inbox-summary: "%total% im Posteingang · %unread% ungelesen"
   empty: "Keine Nachrichten."
   message: "Nachricht"
   from: "Von"
