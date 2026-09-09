@@ -36,15 +36,52 @@ problems with them to the emulators' original authors.</div>
 
 ## Real hardware
 
+**PicoAdapterGB** is firmware for a Raspberry Pi Pico that stands in for the
+Mobile Adapter. Find your board below, then pick the wiring you built.
+
+- **Pico W / Pico 2 W:** the board has Wi-Fi built in.
+- **Pico / Pico 2 + ESP module:** a board without Wi-Fi, with an ESP module
+  attached for the network.
+- **Wiring:** either the REON pinout, or the pinout of the stacksmashing board.
+
 <div class="reon-downloads">
   <div class="reon-download">
-    <h3>PicoAdapterGB</h3>
-    <p>Firmware for a Raspberry Pi Pico W, Pico 2 W, or Pico with an ESP module.</p>
+    <h3>Pico W</h3>
+    <p>Wi-Fi on board.</p>
+    <select class="reon-download__pick" aria-label="Wiring">
+      <option value="#" data-note="picow-reon.uf2">REON pinout</option>
+      <option value="#" data-note="picow-sm.uf2">stacksmashing pinout</option>
+    </select>
+    <p class="reon-download__note"></p>
+    <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
+  </div>
+  <div class="reon-download">
+    <h3>Pico 2 W</h3>
+    <p>Wi-Fi on board. REON pinout.</p>
+    <p class="reon-download__note">pico2w-reon.uf2</p>
+    <a class="reon-chrome-btn" href="#">Download</a>
+  </div>
+  <div class="reon-download">
+    <h3>Pico + ESP module</h3>
+    <p>Network through an ESP module.</p>
+    <select class="reon-download__pick" aria-label="Wiring">
+      <option value="#" data-note="pico-esp-reon.uf2">REON pinout</option>
+      <option value="#" data-note="pico-esp-sm.uf2">stacksmashing pinout</option>
+    </select>
+    <p class="reon-download__note"></p>
+    <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
+  </div>
+  <div class="reon-download">
+    <h3>Pico 2 + ESP module</h3>
+    <p>Network through an ESP module. REON pinout.</p>
+    <p class="reon-download__note">pico2-esp-reon.uf2</p>
     <a class="reon-chrome-btn" href="#">Download</a>
   </div>
 </div>
 
-[To be written: which of the firmware files is for which board.]
+<div class="reon-note">To install: hold BOOTSEL while plugging the Pico in,
+then copy the <code>.uf2</code> onto the drive that appears. [To be written:
+first-time Wi-Fi setup and where to put <code>config.bin</code>.]</div>
 
 ## Games and patches
 
