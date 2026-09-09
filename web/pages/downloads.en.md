@@ -1,7 +1,8 @@
 # Downloads
 
 <!-- Editing this page: see web/pages/README.md. Replace each href="#"
-     with the real link when the file is published. -->
+     (and each option's value="#") with the real link when the file is
+     published. -->
 
 Everything you need to get online, in one place. Not sure what to pick?
 Start with the [guide](/guide.php).
@@ -16,19 +17,15 @@ keep it; the same file works on every device you own.
 
 <div class="reon-downloads">
   <div class="reon-download">
-    <h3>mGBA for Windows</h3>
-    <p>Our build of mGBA with Mobile Adapter GB support. Nothing to install.</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
-  </div>
-  <div class="reon-download">
-    <h3>mGBA for Linux</h3>
-    <p>Same build, for Linux. Start it with <code>mgba-qt.sh</code>.</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
-  </div>
-  <div class="reon-download">
-    <h3>mGBA for 3DS</h3>
-    <p>For a 3DS with custom firmware. <code>.3dsx</code> and <code>.cia</code> included.</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
+    <h3>mGBA</h3>
+    <p>Our build of mGBA with Mobile Adapter GB support. Pick your platform:</p>
+    <select class="reon-download__pick" aria-label="Platform">
+      <option value="#" data-note="Nothing to install: unzip and run mGBA.exe.">Windows</option>
+      <option value="#" data-note="Unzip and start it with mgba-qt.sh.">Linux</option>
+      <option value="#" data-note="For a 3DS with custom firmware. .3dsx and .cia included.">Nintendo 3DS</option>
+    </select>
+    <p class="reon-download__note"></p>
+    <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
   </div>
 </div>
 <!-- BGB + libmobile-bgb is deliberately not listed yet: on the PC only mGBA

@@ -43,6 +43,17 @@ restart: the next request reads the new text.
     <p>One line about it.</p>
     <a class="reon-chrome-btn" href="…">Download</a>
   </div>
+
+  <!-- one download with several builds: a picker drives the button -->
+  <div class="reon-download">
+    <h3>Name</h3>
+    <select class="reon-download__pick">
+      <option value="…/windows.zip" data-note="Shown under the picker.">Windows</option>
+      <option value="…/linux.tar.gz">Linux</option>
+    </select>
+    <p class="reon-download__note"></p>
+    <a class="reon-chrome-btn" href="…/windows.zip" data-download-for="pick">Download</a>
+  </div>
 </div>
 ```
 

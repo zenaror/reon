@@ -109,6 +109,26 @@
 
 .reon-page .reon-download .reon-chrome-btn { display: inline-block; margin-top: 4px; }
 
+/* One download, several builds: the picker sits above the button. */
+.reon-page .reon-download__pick {
+  display: block;
+  width: 100%;
+  margin: 4px 0 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--reon-line);
+  background: #fffdf4;
+  color: var(--reon-ink);
+  font: inherit;
+}
+
+.reon-page .reon-download__note {
+  min-height: 1.4em;
+  color: var(--reon-ink-soft);
+  font-size: 0.92em;
+}
+
+.reon-page .reon-download__note:empty { display: none; }
+
 /* Section gems for the two pages, alongside the ones home-v2.css sets. */
 [data-section="guide"] { --section-gem: var(--reon-teal); }
 [data-section="downloads"] { --section-gem: var(--reon-green); }

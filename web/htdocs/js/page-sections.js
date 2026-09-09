@@ -55,9 +55,31 @@
 		update();
 	}
 
+	// Download cards with several builds: a <select class="reon-download__pick">
+	// whose option values are the links, an optional <p class="reon-download__note">
+	// filled from the chosen option's data-note, and the card's
+	// [data-download-for] button following the choice.
+	function initPickers() {
+		document.querySelectorAll(".reon-download__pick").forEach(function (pick) {
+			var card = pick.closest(".reon-download") || pick.parentNode;
+			var button = card.querySelector("[data-download-for]");
+			var note = card.querySelector(".reon-download__note");
+			function apply() {
+				var opt = pick.options[pick.selectedIndex];
+				if (!opt) return;
+				if (button) button.href = opt.value;
+				if (note) note.textContent = opt.dataset.note || "";
+			}
+			pick.addEventListener("change", apply);
+			apply();
+		});
+	}
+
+	function start() { init(); initPickers(); }
+
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", init);
+		document.addEventListener("DOMContentLoaded", start);
 	} else {
-		init();
+		start();
 	}
 })();
