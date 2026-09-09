@@ -68,8 +68,8 @@
 
 				{{ menu.item(here.home, '/index.php', 'var(--reon-blue)', 'home'|trans) }}
 				{{ menu.item(here.news, '/news.php', 'var(--reon-purple)', 'news'|trans) }}
-				{{ menu.item(here.guide, '/guide.php', 'var(--reon-teal)', 'guide'|trans) }}
-				{{ menu.item(here.downloads, '/downloads.php', 'var(--reon-green)', 'downloads'|trans) }}
+				{{ menu.item(here.guide, '/guide.php', 'var(--reon-pink)', 'guide'|trans) }}
+				{{ menu.item(here.downloads, '/downloads.php', 'var(--reon-silver)', 'downloads'|trans) }}
 				{% set mail_extra %}<span data-mail-badge data-mail-dot="1">{% if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif %}{% if mail_new > 0 %} <span class="mail-dot" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}" aria-hidden="true"></span>{% endif %}</span>{% endset %}
 				{{ menu.item(here.mail, '/user/mail.php', 'var(--reon-orange)', 'mail.title'|trans, mail_extra) }}
 				{{ menu.item(here.pokemon, '/pokemon/', 'var(--reon-red)', 'pokemon-crystal'|trans) }}
