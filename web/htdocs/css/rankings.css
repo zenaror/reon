@@ -329,7 +329,8 @@
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
-    overflow-x: auto;
+    /* The grid scrolls, not the page block: title and filters stay put. */
+    overflow-x: visible;
   }
 
   .trainer-rankings-controls {
@@ -351,9 +352,23 @@
     padding-bottom: 2px;
   }
 
+  /* 2x on phones/tablets: keep the panel at its designed width (halving it
+     squeezed the fixed columns to nothing) and let the zoomed table scroll
+     sideways inside the grid, like the Battle Tower does. */
   .trainer-rankings-page[data-rankings-zoom="2"] .trainer-ranking-panel {
-    width: calc(var(--rankings-mobile-panel-base-width) / 2);
-    max-width: calc(var(--rankings-mobile-panel-base-width) / 2);
+    /* Under zoom:2 a percentage resolves to half the parent, so double it
+       back: the panel keeps its 1x width in its own units and overflows the
+       grid by exactly 2x, which is what makes the grid scroll. */
+    width: calc(var(--rankings-mobile-panel-base-width) * 2);
+    max-width: none;
+  }
+
+  .trainer-rankings-grid {
+    overflow-x: auto;
+  }
+
+  .trainer-rankings-page[data-rankings-zoom="2"] .trainer-rankings-grid {
+    justify-items: start;
   }
 
   .trainer-rankings-grid {

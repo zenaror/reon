@@ -514,6 +514,9 @@ body.rankings-theme > main {
       left var(--rankings-top-edge-top),
       right var(--rankings-top-edge-top),
       left top;
+    /* Scrolls with the page here: a fixed banner behind a zoomed table
+       reads as broken on a phone, and there are no fixed rails to match. */
+    background-attachment: scroll;
   }
 
   .trainer-rankings-page h1.trade-corner-title {
