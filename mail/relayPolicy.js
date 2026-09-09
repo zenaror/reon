@@ -5,7 +5,7 @@ const { Command } = require("commander");
 
 // Postfix policy delegation service (see SMTPD_POLICY_README) that gates
 // outbound relay to real internet addresses on the device-auth "authorized"
-// flag (see DeviceAuthUtil.php / sys_device_authorization), so the game can
+// flag (see DeviceAuthUtil.php / sys_device_counter), so the game can
 // send to a real address only while its device is authorized -- and every
 // other case (game-to-game mail, an unauthorized/unknown sender) falls
 // through unchanged to Postfix's own reject_unauth_destination, exactly as
@@ -81,10 +81,11 @@ class RelayPolicyServer {
 			}
 
 			// Recipient isn't one of ours: this is the actual outbound-
-			// relay case. Only grant it if the sender is both a known
-			// account and currently authorized.
+			// relay case. Only grant it if the sender is a known account
+			// with a device currently authorized (the window is per device,
+			// see sys_device_counter; any of the account's devices will do).
 			this.mysql.query(
-				"select a.id from sys_users u inner join sys_device_authorization a on a.user_id = u.id where u.dion_email_local = ? and a.authorized = 1 and a.authorized_until > now() limit 1",
+				"select c.id from sys_users u inner join sys_device_counter c on c.user_id = u.id where u.dion_email_local = ? and c.authorized = 1 and c.authorized_until > now() limit 1",
 				[senderLocal],
 				(error, results) => {
 					if (error) {

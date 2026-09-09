@@ -154,10 +154,12 @@
 		// Device authorization key (outbound relay). Independent section,
 		// own magic/checksum, same 5-byte-header pattern as "LM" above --
 		// deliberately not mixed into the struct above it so this can be
-		// regenerated/relaid-out without touching that checksum. Every
-		// config.bin download resets the server-side counter to 0 (but
-		// keeps the same key -- see DeviceAuthUtil::keyForDownload), so the
-		// counter embedded here is always 0.
+		// regenerated/relaid-out without touching that checksum. The counter
+		// embedded here is always 0: counters are per device on the server
+		// (sys_device_counter), a device starts its own from what the bin
+		// says and keeps it with its persisted state, and a redownload
+		// changes nothing for devices already running (see
+		// DeviceAuthUtil::keyForDownload).
 		$device_auth_key = DeviceAuthUtil::getInstance()->keyForDownload($_SESSION["user_id"]);
 		$da_data = $device_auth_key.pack('P', 0);
 		$out = skip_to($out, 0x160);

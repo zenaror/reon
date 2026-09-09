@@ -225,7 +225,7 @@ class POP3Connection extends EventEmitter {
 					return;
 				}
 				let key = crypto.randomBytes(32);
-				this._server.mysql.query("insert into sys_device_authorization (user_id, device_auth_key, counter) values (?, ?, 0)", [this._userId, key], function (error, results, fields) {
+				this._server.mysql.query("insert into sys_device_authorization (user_id, device_auth_key) values (?, ?)", [this._userId, key], function (error, results, fields) {
 					if (error) {
 						this._onError(error);
 						return;
