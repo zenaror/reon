@@ -390,7 +390,7 @@
 						<div class="mt-thread__head">
 							<span class="mt-thread__who">
 								{%- if m.kind == 'out' -%}
-									{{'mail.thread-you'|trans}} &rarr; {{ m.recipient }}
+									{{'mail.thread-you'|trans}}
 								{%- else -%}
 									{{ m.from_name ? m.from_name ~ ' <' ~ m.sender ~ '>' : m.sender }}
 								{%- endif -%}
