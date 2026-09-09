@@ -419,19 +419,12 @@
     margin-left: auto;
   }
 
+  /* The honor-roll frame stays: its borders are 30-48px of pixel art and
+     cost nothing on a phone. The table scrolls inside the grid. */
   .battle-table-shell {
     width: 100%;
     max-width: 100%;
-    padding: 0;
-    overflow-x: auto;
-    overflow-y: visible;
-  }
-
-  .battle-table-shell::before,
-  .battle-table-shell::after,
-  .battle-table-grid::before,
-  .battle-table-grid::after {
-    display: none;
+    overflow: visible;
   }
 
   .battle-table-grid {
