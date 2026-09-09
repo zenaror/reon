@@ -1003,6 +1003,8 @@ mail:
   title: "REON Mail"
   inbox: "受信箱"
   inbox-summary: "受信箱 %total% 通 · 未読 %unread% 通"
+  sent-summary: "送信済み %total% 通"
+  trash-summary: "ゴミ箱 %total% 通"
   empty: "メッセージはありません。"
   message: "メッセージ"
   from: "差出人"

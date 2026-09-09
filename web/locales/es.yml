@@ -963,6 +963,8 @@ mail:
   title: "REON Mail"
   inbox: "Bandeja de entrada"
   inbox-summary: "%total% en la bandeja · %unread% sin leer"
+  sent-summary: "%total% enviados"
+  trash-summary: "%total% en la papelera"
   empty: "Sin mensajes."
   message: "Mensaje"
   from: "De"

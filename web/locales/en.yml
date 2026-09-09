@@ -1842,6 +1842,8 @@ mail:
   title: "REON Mail"
   inbox: "Inbox"
   inbox-summary: "%total% in the inbox · %unread% unread"
+  sent-summary: "%total% sent"
+  trash-summary: "%total% in the trash"
   empty: "No messages."
   message: "Message"
   from: "From"

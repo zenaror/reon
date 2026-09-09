@@ -204,6 +204,8 @@ mail:
   title: "REON Mail"
   inbox: "Caixa de entrada"
   inbox-summary: "%total% na caixa de entrada · %unread% não lidos"
+  sent-summary: "%total% enviados"
+  trash-summary: "%total% na lixeira"
   empty: "Nenhuma mensagem."
   message: "Mensagem"
   from: "De"
