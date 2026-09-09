@@ -395,7 +395,12 @@ body.rankings-theme {
     left var(--rankings-top-edge-top),
     right var(--rankings-top-edge-top),
     left top;
-  background-attachment: fixed;
+  /* Scrolls with the document: the banner is part of the page, not a
+     backdrop the content slides over. The rails below are absolute for the
+     same reason, hung from the banner's bottom to the end of the page. */
+  background-attachment: scroll;
+  position: relative;
+  min-height: 100vh;
   --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
@@ -435,6 +440,7 @@ body.rankings-theme::after {
 
 body.rankings-theme::before,
 body.rankings-theme::after {
+  position: absolute;
   top: var(--rankings-side-start);
 }
 
