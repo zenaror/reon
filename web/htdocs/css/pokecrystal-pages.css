@@ -512,70 +512,104 @@ body.rankings-theme > main {
     width: 24px;
   }
 
-  body.rankings-theme::before,
-  body.rankings-theme::after {
-    width: 30px;
+  /* Rankings: no JS-placed, viewport-fixed art here. The banner is a block
+     in the flow right under the header (it scrolls with the page), the rails
+     hang off the content box from the banner's bottom to the end of the
+     page, and the white column is the content box's own background. The
+     desktop keeps its fixed composition because there the rails and banner
+     are one fixed picture. */
+  body.rankings-theme {
+    background-image: none;
   }
 
-  /* The body already keeps 12px clear of the viewport edge; the margins
-     make up the rest of the rail width. */
-  body.trade-corner-theme > main {
-    margin-left: 12px;
-    margin-right: 12px;
-    width: auto;
-    max-width: none;
+  body.rankings-theme::before,
+  body.rankings-theme::after {
+    display: none;
   }
 
   body.rankings-theme > main {
-    margin-left: 18px;
-    margin-right: 18px;
+    position: relative;
+    /* !important: Bootstrap's .mt-3 on <main> is !important too, and the
+       banner must touch the header like it does on the desktop. */
+    margin-top: 0 !important;
+    margin-left: 30px;
+    margin-right: 30px;
     padding-left: 0;
     padding-right: 0;
     width: auto;
     max-width: none;
+    background: linear-gradient(#1e4a93 0, #1e4a93 150px, #fff 150px);
   }
 
-  body.rankings-theme {
+  body.rankings-theme > main::before,
+  body.rankings-theme > main::after {
+    content: "";
+    position: absolute;
+    top: 150px;
+    bottom: 0;
+    width: 30px;
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-repeat: repeat-y;
+  }
+
+  body.rankings-theme > main::before {
+    left: -30px;
+    background-image: url("/images/crystal/RankingsPageLeftEdge.png");
+    background-position: right top;
+  }
+
+  body.rankings-theme > main::after {
+    right: -30px;
+    background-image: url("/images/crystal/RankingsPageRightEdge.png");
+    background-position: left top;
+  }
+
+  /* The banner, from three slices of the original art: label + left end,
+     an 8px repeating strip, right end. Spans the full viewport width. */
+  .trainer-rankings-page::before {
+    content: "";
+    display: block;
+    height: 150px;
+    margin: 0 -30px;
     background-image:
       url("/images/crystal/RankingsBannerRight.png"),
       url("/images/crystal/RankingsBannerLeft.png"),
-      url("/images/crystal/RankingsBannerMid.png"),
-      linear-gradient(#1e4a93 0, #1e4a93 var(--rankings-side-start), #fff var(--rankings-side-start));
-    background-repeat: no-repeat, no-repeat, repeat-x, no-repeat;
-    background-size: auto, auto, auto, 100% 100%;
-    background-position:
-      right var(--rankings-top-edge-top),
-      left var(--rankings-top-edge-top),
-      left var(--rankings-top-edge-top),
-      left top;
-    /* Scrolls with the page here: a fixed banner behind a zoomed table
-       reads as broken on a phone. */
-    background-attachment: scroll;
+      url("/images/crystal/RankingsBannerMid.png");
+    background-repeat: no-repeat, no-repeat, repeat-x;
+    background-position: right top, left top, left top;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 
-  /* The plate in the sliced banner runs from row 15 to row 120 (centre 68):
-     a 24px title box at 56..80, a 16px one at 60..76. */
+  /* The plate runs from row 15 to row 120 of the banner (centre 68): a
+     24px title box at 56..80 is -94px back from the banner's bottom. The
+     block after the title clears the banner with room to spare. */
+  .trainer-rankings-page {
+    --rankings-banner-clearance: 104px;
+  }
+
   .trainer-rankings-page h1.trade-corner-title {
-    margin-top: 56px;
+    position: relative;
+    margin-top: -94px;
   }
 }
 
 @media (max-width: 575.98px) {
+  /* 16px title box at 60..76. */
   .trainer-rankings-page h1.trade-corner-title {
-    margin-top: 60px;
+    margin-top: -90px;
   }
 }
 
 /* Under 380px the banner's right end would sit on the label's last
    letters; slide the left slice under the edge instead. */
 @media (max-width: 379.98px) {
-  body.rankings-theme {
-    background-position:
-      right var(--rankings-top-edge-top),
-      -30px var(--rankings-top-edge-top),
-      left var(--rankings-top-edge-top),
-      left top;
+  .trainer-rankings-page::before {
+    background-position: right top, -30px top, left top;
   }
+}
 }
 
 .exchange-page .trade-no-results,
