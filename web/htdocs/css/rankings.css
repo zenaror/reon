@@ -722,6 +722,23 @@
     min-width: 352px;
   }
 
+  /* 360px phones: the rails narrow to their 8px border strip (see
+     pokecrystal-pages.css) for a 344px column, and the ADDRESS column
+     gives up 8px it never used ("US-VA" is 40px). 32+60+48+160+44 = 344. */
+  @media (max-width: 379.98px) {
+    .trainer-ranking-table {
+      min-width: 344px;
+    }
+
+    .trainer-ranking-table col.ranking-colgroup-address,
+    .trainer-ranking-table thead tr:last-child th:nth-child(3),
+    .ranking-col-address {
+      width: 48px !important;
+      min-width: 48px !important;
+      max-width: 48px !important;
+    }
+  }
+
   .trainer-ranking-table col.ranking-colgroup-address,
   .trainer-ranking-table thead tr:last-child th:nth-child(3),
   .ranking-col-address {

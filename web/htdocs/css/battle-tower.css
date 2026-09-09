@@ -989,6 +989,55 @@
   }
 }
 
+/* Three lines per leader instead of two, wherever two would break a class
+   name mid-word (COOLTRAINERF is 96px): with LV and ROOM both open on any
+   phone, and with either open on a 360px phone. The leader alone fills the
+   first line after LV/ROOM; the POKéMON list and the message box share the
+   second (102 + 159 = 261px). */
+@media (max-width: 575.98px) {
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 calc(100% - 64px);
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-pokemon {
+    display: none;
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-pokemon-cell {
+    flex: 1 1 102px;
+    width: auto;
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-message-cell {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 3px 4px !important;
+  }
+}
+
+@media (max-width: 379.98px) {
+  .battle-tower-page .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 calc(100% - 64px);
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-pokemon {
+    display: none;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-pokemon-cell {
+    flex: 1 1 102px;
+    width: auto;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-message-cell {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 3px 4px !important;
+  }
+}
+
 /* Gold, silver and bronze for the top three -- only with both filters set,
    where the rows really are one room's ranking (with either filter on ALL
    the list spans rooms or levels and a podium would be meaningless). The
