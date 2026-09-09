@@ -517,16 +517,18 @@ body.rankings-theme > main {
     width: 30px;
   }
 
+  /* The body already keeps 12px clear of the viewport edge; the margins
+     make up the rest of the rail width. */
   body.trade-corner-theme > main {
-    margin-left: 24px;
-    margin-right: 24px;
+    margin-left: 12px;
+    margin-right: 12px;
     width: auto;
     max-width: none;
   }
 
   body.rankings-theme > main {
-    margin-left: 30px;
-    margin-right: 30px;
+    margin-left: 18px;
+    margin-right: 18px;
     padding-left: 0;
     padding-right: 0;
     width: auto;
@@ -561,6 +563,18 @@ body.rankings-theme > main {
 @media (max-width: 575.98px) {
   .trainer-rankings-page h1.trade-corner-title {
     margin-top: 60px;
+  }
+}
+
+/* Under 380px the banner's right end would sit on the label's last
+   letters; slide the left slice under the edge instead. */
+@media (max-width: 379.98px) {
+  body.rankings-theme {
+    background-position:
+      right var(--rankings-top-edge-top),
+      -30px var(--rankings-top-edge-top),
+      left var(--rankings-top-edge-top),
+      left top;
   }
 }
 
