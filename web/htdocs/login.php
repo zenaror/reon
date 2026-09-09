@@ -4,7 +4,18 @@
 	require_once("../classes/DBUtil.php");
 	require_once("../classes/SessionUtil.php");
 	session_start();
-	
+
+	// Where to go after logging in: a page that sent the visitor here to
+	// do something signed-in (download config.bin from the guide, say).
+	// Only a local path is honoured -- never a full URL, never "//host".
+	function login_next($raw) {
+		$raw = (string)$raw;
+		if ($raw === "" || $raw[0] !== "/" || (isset($raw[1]) && $raw[1] === "/")) return "";
+		if (preg_match('/[\r\n]/', $raw)) return "";
+		return $raw;
+	}
+	$next = login_next($_REQUEST["next"] ?? "");
+
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
 		CsrfUtil::check();
 		if (!(isset($_POST["email"]) && isset($_POST["password"]))) return;
@@ -23,12 +34,13 @@
 		if (array_key_exists(0, $result) && password_verify($_POST["password"], $result[0]["password"])) {
 			SessionUtil::getInstance()->initSession($result[0]["id"]);
 			//$_SESSION["user_email"] = $result[0]["email"];
-			header("Location: index.php");
+			header("Location: ".($next !== "" ? $next : "index.php"));
 		} else {
 			echo TemplateUtil::render("login", [
-				"login_fail" => true
+				"login_fail" => true,
+				"next" => $next,
 			]);
 		}
 	} else {
-		echo TemplateUtil::render("login");
+		echo TemplateUtil::render("login", ["next" => $next]);
 	}

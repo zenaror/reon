@@ -12,10 +12,10 @@ jump to [Troubleshooting](#troubleshooting) at the bottom.
 Two things:
 
 1. **A way to run the game with a Mobile Adapter.** Either:
-   - an emulator that knows about the Mobile Adapter GB (for example our
-     build of **mGBA**, for PC and 3DS), **or**
+   - an emulator that knows about the Mobile Adapter GB (for example
+     [our build of **mGBA**](/downloads.php#emulators), for PC and 3DS), **or**
    - a real Game Boy Color / Game Boy Advance and a substitute Mobile
-     Adapter (for example a **PicoAdapterGB**).
+     Adapter (for example a [**PicoAdapterGB**](/downloads.php#real-hardware)).
 2. **The game you want to play.** Some games need a small patch to bring
    their online features back. See [Get started with games](#get-started-with-games).
 
@@ -39,9 +39,12 @@ Right after signing up you will see a large message with a big blue
 **config.bin** button. Press it. This small file is what your emulator (or
 adapter) needs to find REON.
 
+<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="config.bin">Download your config.bin</a></p>
+<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fguide.php%23setup">Log in to download your config.bin</a></p>
+
 <div class="reon-note">※ Closed that window without pressing the button?
-No problem. You can download `config.bin` again at any time from
-<a href="/user/summary.php">Your Account</a>.</div>
+No problem. The button above, and <a href="/user/summary.php">Your
+Account</a>, hand you the same file at any time.</div>
 
 Keep a copy somewhere safe. You only need to download it **once**: the
 same file works on every device you own, and you will need it again if
@@ -51,18 +54,21 @@ you reinstall your emulator or set up another device.
 
 **mGBA (PC)**
 
-1. Open a game that supports the Mobile Adapter GB.
+1. [Download mGBA](/downloads.php#emulators) for your system and open a
+   game that supports the Mobile Adapter GB.
 2. In the menu, open **Mobile Game Boy Adapter…**.
 3. Go to the **Settings** tab and press **Load config file**.
 4. Pick the `config.bin` you downloaded. That's it!
 
 **3DS (mGBA)**
 
-[To be written.]
+[To be written.] The build is on the [Downloads](/downloads.php#emulators)
+page.
 
 **Real hardware (PicoAdapterGB)**
 
-[To be written.]
+[To be written.] The firmware for each board is on the
+[Downloads](/downloads.php#real-hardware) page.
 
 ### You're almost set!
 

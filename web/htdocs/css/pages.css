@@ -129,6 +129,11 @@
 
 .reon-page .reon-download__note:empty { display: none; }
 
+/* A block for signed-in visitors and one for everyone else, chosen by the
+   data-signed-in the template stamps on the article. */
+[data-signed-in="0"] .when-signed-in,
+[data-signed-in="1"] .when-signed-out { display: none; }
+
 /* Section gems for the two pages, alongside the ones home-v2.css sets. */
 [data-section="guide"] { --section-gem: var(--reon-pink); }
 [data-section="downloads"] { --section-gem: var(--reon-silver); }
