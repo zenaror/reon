@@ -308,6 +308,9 @@ o que mudou. Setembro/2026.
   44px com LV ou ROOM abertas e no celular; agora o painel cresce pela
   coluna extra (440→484px, coluna única) em vez de borrar a arte. Medido
   ao vivo em 1600px e 390px
+* REON Mail: linha "N na caixa de entrada · M não lidos" sob a barra da
+  caixa, nos sete idiomas, atualizada pela mesma consulta de um minuto dos
+  selos
 * Indicadores de e-mail: só correio novo ganha selo (o laranja com a
   contagem, e o ponto pulsante no menu lateral); o total cinza da caixa
   inteira saiu de todos os lugares, a pedido do dono
