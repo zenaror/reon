@@ -227,9 +227,7 @@
 						{% for t in threads %}
 							<li class="mt-list__row{{ t.unread > 0 ? ' is-unread' : '' }}">
 								<label class="mt-list__pick">
-									{% if t.inbox_ids is not empty %}
-										<input type="checkbox" class="mt-pick" name="ids[]" value="{{ t.inbox_ids|join(',') }}">
-									{% endif %}
+									<input type="checkbox" class="mt-pick" name="ids[]" value="{{ t.inbox_ids|join(',') }}">
 									<span class="visually-hidden">{{ t.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
 								</label>
 								<span class="mt-list__num">{{ loop.index }}</span>
