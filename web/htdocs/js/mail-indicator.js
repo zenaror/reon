@@ -17,19 +17,20 @@
 	var EVERY = 60000;
 	var timer = null;
 
-	// Same rule the templates apply: the accented badge carries the unread
-	// count, the plain one the whole mailbox, and only when nothing is unread.
-	// The dot belongs only where a spot asks for it (the side menu).
+	// Same rule the templates apply: only unread mail earns a badge, in the
+	// accent colour, with the unread count. (The grey whole-mailbox total is
+	// gone; the owner asked for the new-mail signal alone.) The dot belongs
+	// only where a spot asks for it (the side menu).
 	function render(count, unread) {
-		var n = unread > 0 ? unread : count;
-		var label = unread > 0 ? strings.newArrived.replace("%count%", unread) : strings.inInbox;
+		var n = unread;
+		var label = strings.newArrived.replace("%count%", unread);
 
 		spots.forEach(function (spot) {
 			spot.textContent = "";
 			if (n <= 0) return;
 
 			var badge = document.createElement("span");
-			badge.className = unread > 0 ? "mail-badge mail-badge--new" : "mail-badge";
+			badge.className = "mail-badge mail-badge--new";
 			badge.title = label;
 			badge.textContent = String(n);
 
