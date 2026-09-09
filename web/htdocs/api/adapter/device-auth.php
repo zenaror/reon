@@ -13,7 +13,7 @@
 	// forms there).
 	$util = DeviceAuthUtil::getInstance();
 	if (($_GET["action"] ?? "") === "query") {
-		[$status, $body] = $util->handleQuery($_GET["ppp_id"] ?? "", $_GET["sig"] ?? "", $_GET["device"] ?? "", $_GET["counter"] ?? "");
+		[$status, $body] = $util->handleQuery($_GET["ppp_id"] ?? "", $_GET["sig"] ?? "", $_GET["device"] ?? "", $_GET["counter"] ?? "", $_SERVER["REMOTE_ADDR"] ?? null);
 		http_response_code($status);
 		if ($status === 200) {
 			header("Content-Type: text/plain");

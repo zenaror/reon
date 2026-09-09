@@ -302,10 +302,20 @@
 		// cores) the answer is the old form and a blocked device still gets
 		// 403, which those cores ignore as before.
 		//
+		// "Last seen" on the device list is stamped by a query too, but only
+		// when its counter is above the highest one this device has spent
+		// on a query before (last_query_counter): the session-start query is
+		// what makes a device "connected" in the owner's eyes, yet a recorded
+		// query URL can be replayed by anyone on the path, and a replay must
+		// not be able to show a device as just seen from a foreign IP. A
+		// device catching up after losing its state sends low values and
+		// simply does not stamp until it overtakes; its next authorize stamps
+		// anyway. Queries without the echo (older cores) never stamp.
+		//
 		// Returns [status, body]: 200 with the signed body above, 400
 		// (malformed), 403 (unknown ppp_id / bad signature / blocked without
 		// echo).
-		public function handleQuery($pppId, $sig, $deviceId = "", $localRaw = "") {
+		public function handleQuery($pppId, $sig, $deviceId = "", $localRaw = "", $ip = null) {
 			if (!preg_match('/^g[0-9]{9}$/', $pppId)) return [400, ""];
 			if (!preg_match('/^[0-9a-f]{64}$/', $sig)) return [400, ""];
 			if ($deviceId !== "" && !preg_match('/^[0-9a-f]{16}$/', $deviceId)) return [400, ""];
@@ -329,11 +339,17 @@
 			$expectedSig = hash_hmac("sha256", $message, $account["device_auth_key"]);
 			if (!hash_equals($expectedSig, $sig)) return [403, ""];
 
-			$stmt = $db->prepare("select counter, blocked from sys_device_counter where user_id = ? and device_id = ?");
+			$stmt = $db->prepare("select id, counter, blocked, last_query_counter from sys_device_counter where user_id = ? and device_id = ?");
 			$userId = (int) $account["user_id"];
 			$stmt->bind_param("is", $userId, $deviceId);
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
+			if (count($result) > 0 && $localRaw !== "" && $deviceId !== "" && (int) $localRaw > (int) $result[0]["last_query_counter"]) {
+				$stmt = $db->prepare("update sys_device_counter set last_query_counter = ?, last_ip = ?, last_seen_at = now() where id = ?");
+				$local = (int) $localRaw;
+				$stmt->bind_param("isi", $local, $ip, $result[0]["id"]);
+				$stmt->execute();
+			}
 			if (count($result) > 0 && (int) $result[0]["blocked"] === 1) {
 				if ($localRaw === "") return [403, ""];
 				$responseMessage = $prefix."|query-response|blocked|".$localRaw;
@@ -353,8 +369,17 @@
 				$stmt->bind_param("i", $userId);
 				$stmt->execute();
 				if ((int) DBUtil::fancy_get_result($stmt)[0]["n"] < self::MAX_DEVICES_PER_ACCOUNT) {
-					$stmt = $db->prepare("insert ignore into sys_device_counter (user_id, device_id, counter, authorized, authorized_until) values (?, ?, 0, 0, null)");
-					$stmt->bind_param("is", $userId, $deviceId);
+					// A first query with the echo also stamps "last seen": the
+					// device is connecting right now, and there is nothing older
+					// for a replay to overwrite.
+					$local = $localRaw === "" ? 0 : (int) $localRaw;
+					if ($localRaw === "") {
+						$stmt = $db->prepare("insert ignore into sys_device_counter (user_id, device_id, counter, authorized, authorized_until) values (?, ?, 0, 0, null)");
+						$stmt->bind_param("is", $userId, $deviceId);
+					} else {
+						$stmt = $db->prepare("insert ignore into sys_device_counter (user_id, device_id, counter, authorized, authorized_until, last_query_counter, last_ip, last_seen_at) values (?, ?, 0, 0, null, ?, ?, now())");
+						$stmt->bind_param("isis", $userId, $deviceId, $local, $ip);
+					}
 					$stmt->execute();
 				}
 			}
