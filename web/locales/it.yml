@@ -996,7 +996,7 @@ devices:
   block-confirm: "Bloccare questo dispositivo? Non potrà più inviare posta a internet reale finché non lo sblocchi qui."
   block-help: "Il blocco conserva il record del dispositivo, così nulla di ciò che ha inviato prima può essere riutilizzato; puoi sbloccarlo in qualsiasi momento."
   limit: "Fino a %n% dispositivi per account."
-  legacy: "Senza identificazione (implementazione vecchia)"
+  legacy: "Senza identificazione"
   ago-now: "proprio ora"
   ago-minutes: "%n% min fa"
   ago-hours: "%n% h fa"

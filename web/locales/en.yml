@@ -1920,7 +1920,7 @@ devices:
   block-confirm: "Block this device? It will stop being able to send mail to the real internet until you unblock it here."
   block-help: "Blocking keeps the device's record so nothing it sent earlier can be replayed; you can unblock it at any time."
   limit: "Up to %n% devices per account."
-  legacy: "No identification (older implementation)"
+  legacy: "No identification"
   ago-now: "just now"
   ago-minutes: "%n% min ago"
   ago-hours: "%n% h ago"

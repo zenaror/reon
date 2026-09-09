@@ -996,7 +996,7 @@ devices:
   block-confirm: "Dieses Gerät sperren? Es kann keine Mail mehr ins echte Internet schicken, bis du es hier entsperrst."
   block-help: "Sperren behält den Eintrag des Geräts, damit nichts, was es früher geschickt hat, wiederholt werden kann; du kannst es jederzeit entsperren."
   limit: "Bis zu %n% Geräte pro Konto."
-  legacy: "Ohne Kennung (ältere Implementierung)"
+  legacy: "Ohne Kennung"
   ago-now: "gerade eben"
   ago-minutes: "vor %n% Min."
   ago-hours: "vor %n% Std."

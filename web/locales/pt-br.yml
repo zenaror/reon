@@ -282,7 +282,7 @@ devices:
   block-confirm: "Bloquear este dispositivo? Ele deixa de conseguir mandar e-mail pra internet real até você desbloquear aqui."
   block-help: "Bloquear mantém o registro do dispositivo, então nada que ele mandou antes pode ser reaproveitado; você pode desbloquear quando quiser."
   limit: "Até %n% dispositivos por conta."
-  legacy: "Sem identificação (implementação antiga)"
+  legacy: "Sem identificação"
   ago-now: "agora há pouco"
   ago-minutes: "há %n% min"
   ago-hours: "há %n% h"
