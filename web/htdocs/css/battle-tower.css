@@ -795,39 +795,128 @@
     display: none !important;
   }
 
-  .battle-table-panel {
-    width: 440px;
-    min-width: 440px;
-    max-width: 440px;
+  /* Controls one under the other: side by side, ROOM:ALL at 16px did not fit
+     half of a 345px box. */
+  .battle-tower-controls {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "level"
+      "room"
+      "honor";
   }
 
+  .battle-control-room .trade-region-filter {
+    margin-left: 0;
+  }
+
+  /* Two lines per leader, one group. A 412px phone leaves 345px inside the
+     frame borders and the five columns need 440-518px, so the row wraps:
+     LV, ROOM, the leader (sprite + class/name) and the POKéMON list on the
+     first line, the message box on the second, spanning the row. A table
+     row cannot wrap, so rows become flex boxes and the cell borders are
+     redrawn as flex gaps -- a light line inside the group, the darker row
+     border around it -- so the message reads as this leader's and not as a
+     row of its own. Nothing scrolls, in any filter state, down to 360px. */
+  .battle-table-panel,
+  .battle-table-grid[data-bt-extra="1"] .battle-table-panel,
   .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
-    width: 518px;
-    min-width: 518px;
-    max-width: 518px;
-  }
-
-  /* Only the table scrolls; the title and controls stay put. */
-  .battle-table-grid {
     width: 100%;
     min-width: 0;
-    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .battle-tower-page .battle-honor-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border-top: 1px solid #b4b4b4;
+  }
+
+  .battle-honor-table thead,
+  .battle-honor-table tbody {
+    display: block;
+  }
+
+  .battle-honor-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 1px;
+    background: #e2e2e2;
+    border: 1px solid #b4b4b4;
+    border-top: 0;
+  }
+
+  .battle-honor-table th,
+  .battle-honor-table td {
+    box-sizing: border-box;
+    border: 0;
+    background: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .battle-honor-table th {
+    background: #dfdfdf;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-level,
+  .battle-tower-page .battle-honor-table td.bt-col-level {
+    flex: 0 0 28px;
+    width: 28px;
+    min-width: 28px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-room,
+  .battle-tower-page .battle-honor-table td.bt-col-room {
+    flex: 0 0 30px;
+    width: 30px;
+    min-width: 30px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    justify-content: stretch;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-leader-cell > .bt-leader-subcols {
+    width: 100%;
+  }
+
+  /* A 10-character name (AERODACTYL) is 80px, plus the 15px bullet and
+     the cell padding. */
+  .battle-tower-page .battle-honor-table th.bt-col-pokemon,
+  .battle-tower-page .battle-honor-table td.bt-pokemon-cell {
+    flex: 0 0 102px;
+    width: 102px;
+    min-width: 102px;
+    padding: 3px;
     justify-content: flex-start;
   }
 
-  .battle-tower-page .battle-table-shell {
-    overflow-x: visible;
+  /* The MESSAGE header has no column of its own any more. */
+  .battle-tower-page .battle-honor-table th.bt-col-message {
+    display: none;
   }
 
-  .battle-pager {
-    gap: 8px;
+  .battle-tower-page .battle-honor-table td.bt-message-cell {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 3px 0 !important;
   }
 
-  .battle-honor-table th.bt-col-message,
-  .bt-message-cell {
-    width: 159px;
-    min-width: 159px;
-    max-width: 159px;
+  .battle-honor-table .bt-empty-row td {
+    flex: 0 0 100%;
   }
 
   .bt-message-box {
@@ -841,6 +930,21 @@
     line-height: 1 !important;
   }
 
+  /* The grid no longer needs to scroll; the title and controls stay put. */
+  .battle-table-grid {
+    width: 100%;
+    min-width: 0;
+    overflow-x: visible;
+    justify-content: flex-start;
+  }
+
+  .battle-tower-page .battle-table-shell {
+    overflow-x: visible;
+  }
+
+  .battle-pager {
+    gap: 8px;
+  }
 }
 
 /* Gold, silver and bronze for the top three -- only with both filters set,

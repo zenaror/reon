@@ -549,12 +549,13 @@ body.rankings-theme > main {
   }
 
   body.rankings-theme > main {
+    --rankings-rail-width: 30px;
     position: relative;
     /* !important: Bootstrap's .mt-3 on <main> is !important too, and the
        banner must touch the header like it does on the desktop. */
     margin-top: 0 !important;
-    margin-left: 30px;
-    margin-right: 30px;
+    margin-left: var(--rankings-rail-width);
+    margin-right: var(--rankings-rail-width);
     padding-left: 0;
     padding-right: 0;
     width: auto;
@@ -568,7 +569,7 @@ body.rankings-theme > main {
     position: absolute;
     top: 150px;
     bottom: 0;
-    width: 30px;
+    width: var(--rankings-rail-width);
     pointer-events: none;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -576,13 +577,13 @@ body.rankings-theme > main {
   }
 
   body.rankings-theme > main::before {
-    left: -30px;
+    left: calc(-1 * var(--rankings-rail-width));
     background-image: url("/images/crystal/RankingsPageLeftEdge.png");
     background-position: right top;
   }
 
   body.rankings-theme > main::after {
-    right: -30px;
+    right: calc(-1 * var(--rankings-rail-width));
     background-image: url("/images/crystal/RankingsPageRightEdge.png");
     background-position: left top;
   }
@@ -593,7 +594,10 @@ body.rankings-theme > main {
     content: "";
     display: block;
     height: 150px;
-    margin: 0 -30px;
+    /* Out over the rails, plus the slack in the slices: the left slice
+       carries 4px and the right one 2px outside the plate's frame lines
+       (owner-measured on the phone), so those lines meet the rails' own. */
+    margin: 0 calc(-1 * var(--rankings-rail-width) - 2px) 0 calc(-1 * var(--rankings-rail-width) - 4px);
     background-image:
       url("/images/crystal/RankingsBannerRight.png"),
       url("/images/crystal/RankingsBannerLeft.png"),
@@ -631,6 +635,39 @@ body.rankings-theme > main {
     background-position: right top, -30px top, left top;
   }
 }
+
+/* Phones and tablets: the 12px the site keeps around <body> is dead width
+   here -- the Rankings rails and the honor-roll frame are meant to touch the
+   screen edges, as they do on the desktop, and the Rankings table budget
+   (352px) assumes the full 412px of a phone minus the two 30px rails. The
+   header keeps its 12px inset on its own. */
+@media (max-width: 991.98px) {
+  body.rankings-theme {
+    padding-left: 0;
+    padding-right: 0;
+    /* The banner runs 4px/2px past the screen edges (see its margins); that
+       must not become a sideways scroll. */
+    overflow-x: hidden;
+  }
+
+  body.honor-roll-theme {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  body.rankings-theme > header,
+  body.honor-roll-theme > header {
+    /* The container is width:100%; the inset has to come out of it or the
+       page grows 12px past the viewport. */
+    width: calc(100% - 24px);
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  body.honor-roll-theme > main#content {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 
 .exchange-page .trade-no-results,
