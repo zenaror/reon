@@ -921,7 +921,8 @@ body.home-v2 main#content { overflow: hidden; }
 .mt-list__subject {
   display: block;
   color: #8a3f06;
-  font-weight: bold;
+  /* Read mail sits quietly; only unread rows go bold (see .is-unread). */
+  font-weight: normal;
   overflow-wrap: anywhere;
 }
 
@@ -1241,8 +1242,20 @@ body.home-v2 main#content { overflow: hidden; }
 
 /* Unread rows in the inbox. Weight and a marker rather than colour alone --
    colour by itself is the one cue some readers don't get. */
+/* Unread, the way a mail client does it: a solid tinted row, subject and
+   sender in bold, darker ink. Read rows keep the plain cream. */
+.mt-list__row.is-unread {
+  background: #ffe6b8;
+}
+
 .mt-list__row.is-unread .mt-list__subject {
   font-weight: bold;
+  color: #5e2a00;
+}
+
+.mt-list__row.is-unread .mt-list__meta {
+  font-weight: bold;
+  color: #6f4212;
 }
 
 .mt-list__row.is-unread .mt-list__num {
