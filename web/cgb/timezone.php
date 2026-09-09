@@ -3,7 +3,10 @@
 	require_once(CORE_PATH."/database.php");
 
 	function get_user_timezone($user_id = null) {
-		$tz = "+0900";
+		// The game's own time zone; sys_users.timezone holds an IANA
+		// identifier ("+0900" was the old spelling of this default and still
+		// parses if one is ever met).
+		$tz = "Asia/Tokyo";
 		if (session_status() == PHP_SESSION_ACTIVE) {
 			$user_id = $_SESSION['userId'];
 		}
