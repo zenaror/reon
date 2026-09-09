@@ -177,7 +177,13 @@
 	$messages = null;
 	$threads = null;
 	if ($folder === "inbox") {
-		$threads = $mail->filterThreads($mail->threadsForUser($userId), $q, $only);
+		// Only conversations with something received belong in the inbox;
+		// one made of your own messages alone lives in Sent, as it always
+		// did (and has nothing a checkbox here could act on).
+		$threads = array_values(array_filter($mail->threadsForUser($userId), function ($t) {
+			return !empty($t["inbox_ids"]);
+		}));
+		$threads = $mail->filterThreads($threads, $q, $only);
 	} else {
 		$rows = $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder);
 		$messages = $mail->filterMessages($rows, $q, $only);
