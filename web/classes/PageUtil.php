@@ -45,9 +45,20 @@
 			]);
 		}
 
+		// For a page that draws its own frame (the game hubs): the rendered
+		// HTML of pages/<slug>.<locale>.md, or null without a file. The slug
+		// may carry one folder, e.g. "games/pokemon".
+		public static function html($slug) {
+			$locale = SessionUtil::getInstance()->getLocale();
+			$file = self::fileFor($slug, $locale);
+			if ($file === null) return null;
+			[, $markdown] = self::split(file_get_contents($file));
+			return self::render($markdown);
+		}
+
 		// The file for this locale, else the English one, else nothing.
 		public static function fileFor($slug, $locale) {
-			if (!preg_match('/^[a-z0-9-]+$/', $slug)) return null;
+			if (!preg_match('#^[a-z0-9-]+(/[a-z0-9-]+)?$#', $slug)) return null;
 			foreach (array_unique([$locale, self::DEFAULT_LOCALE]) as $l) {
 				$path = self::PAGES_DIR."/".$slug.".".$l.".md";
 				if (is_file($path)) return $path;

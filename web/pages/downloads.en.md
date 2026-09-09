@@ -30,12 +30,9 @@ keep it; the same file works on every device you own.
     <p>For a 3DS with custom firmware. <code>.3dsx</code> and <code>.cia</code> included.</p>
     <a class="reon-chrome-btn" href="#">Download</a>
   </div>
-  <div class="reon-download">
-    <h3>BGB + libmobile-bgb</h3>
-    <p>The Mobile Adapter for the BGB emulator, Windows and Linux.</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
-  </div>
 </div>
+<!-- BGB + libmobile-bgb is deliberately not listed yet: on the PC only mGBA
+     is offered for now, its setup is the simpler one. -->
 
 <div class="reon-note">These are unofficial builds. Please do not report
 problems with them to the emulators' original authors.</div>

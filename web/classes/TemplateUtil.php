@@ -36,6 +36,9 @@
 			$vars["session_active"] = SessionUtil::getInstance()->isSessionActive();
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
 			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
+			// Path of the page being rendered, so the side menu can tell
+			// which of its entries is the current page.
+			$vars["current_path"] = parse_url($_SERVER["REQUEST_URI"] ?? "/", PHP_URL_PATH) ?: "/";
 
 			// Every form the site renders carries this, and every POST
 			// handler demands it back. Injected here so no template can

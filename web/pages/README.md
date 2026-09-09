@@ -6,6 +6,15 @@ Each file here is one page of the site, written in Markdown:
 |---|---|
 | `guide.en.md` | `/guide.php` |
 | `downloads.en.md` | `/downloads.php` |
+| `games/pokemon.en.md` | text sections of `/pokemon/` |
+| `games/gbwars.en.md` | text sections of `/gbwars/` |
+| `games/mariokart.en.md` | text sections of `/mariokart/` |
+
+The guide holds only what is the same for every game (adapter setup,
+errors, FAQ). Anything about one game goes in that game's file: each
+`## Section` there becomes a section of the game's page and a button in
+its menu, placed before the live part (services, map gallery, rankings).
+These files have no `# Title` line; the game page already has one.
 
 Editing a page is editing the file. Nothing to rebuild, nothing to
 restart: the next request reads the new text.
