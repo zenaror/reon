@@ -607,9 +607,30 @@
     overflow-x: auto;
   }
 
-  /* 32 + 60 + 60 + 160 + 52 = 364px: the white column of a 412px phone. */
+  /* 32 + 60 + 56 + 160 + 44 = 352px: the white column of a 412px phone
+     once the 30px rails on each side are taken out. */
   .trainer-ranking-table {
-    min-width: 364px;
+    min-width: 352px;
+  }
+
+  .trainer-ranking-table col.ranking-colgroup-address,
+  .trainer-ranking-table thead tr:last-child th:nth-child(3),
+  .ranking-col-address {
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .trainer-ranking-table col.ranking-colgroup-score,
+  .trainer-ranking-table thead tr:last-child th:nth-child(5),
+  .ranking-col-score {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    padding-left: 2px;
+    padding-right: 2px;
   }
 
   .trainer-ranking-table col.ranking-colgroup-rank,

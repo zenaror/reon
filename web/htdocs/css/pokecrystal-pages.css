@@ -493,40 +493,74 @@ body.rankings-theme > main {
   z-index: 1;
 }
 
+/* Phones and tablets keep the same dressing as the desktop, at pixel size:
+   the side rails shrink to their inner border (the art is positioned so that
+   only that strip shows), the content box steps in by the same amount, and
+   the Rankings banner is rebuilt from three slices of the original art
+   (label + left end, a repeating middle strip, right end) instead of a
+   2000px image that only ever showed its middle. Nothing is scaled. */
 @media (max-width: 991.98px) {
-  body.trade-corner-theme::before,
-  body.trade-corner-theme::after,
+  /* The Honor Roll rails are a copy of the wall tiles, so the wall itself
+     stands in for them. */
   body.honor-roll-theme::before,
-  body.honor-roll-theme::after,
-  body.rankings-theme::before,
-  body.rankings-theme::after {
+  body.honor-roll-theme::after {
     display: none;
   }
 
-  /* Keep the banner art on phones and tablets: the top-edge plate is
-     centred and nudged left (its "Pokémon News" label ends ~640px into a
-     ~2000px image; -160px keeps it out of view up to 991px), the white column
-     below it stays, only the side rails go. The title keeps its seat in the
-     plate: rows 25..119 of the 150px art, centre 72. */
+  body.trade-corner-theme::before,
+  body.trade-corner-theme::after {
+    width: 24px;
+  }
+
+  body.rankings-theme::before,
+  body.rankings-theme::after {
+    width: 30px;
+  }
+
+  body.trade-corner-theme > main {
+    margin-left: 24px;
+    margin-right: 24px;
+    width: auto;
+    max-width: none;
+  }
+
+  body.rankings-theme > main {
+    margin-left: 30px;
+    margin-right: 30px;
+    padding-left: 0;
+    padding-right: 0;
+    width: auto;
+    max-width: none;
+  }
+
   body.rankings-theme {
+    background-image:
+      url("/images/crystal/RankingsBannerRight.png"),
+      url("/images/crystal/RankingsBannerLeft.png"),
+      url("/images/crystal/RankingsBannerMid.png"),
+      linear-gradient(#1e4a93 0, #1e4a93 var(--rankings-side-start), #fff var(--rankings-side-start));
+    background-repeat: no-repeat, no-repeat, repeat-x, no-repeat;
+    background-size: auto, auto, auto, 100% 100%;
     background-position:
-      calc(50% - 160px) var(--rankings-top-edge-top),
-      left var(--rankings-top-edge-top),
       right var(--rankings-top-edge-top),
+      left var(--rankings-top-edge-top),
+      left var(--rankings-top-edge-top),
       left top;
     /* Scrolls with the page here: a fixed banner behind a zoomed table
-       reads as broken on a phone, and there are no fixed rails to match. */
+       reads as broken on a phone. */
     background-attachment: scroll;
   }
 
+  /* The plate in the sliced banner runs from row 15 to row 120 (centre 68):
+     a 24px title box at 56..80, a 16px one at 60..76. */
   .trainer-rankings-page h1.trade-corner-title {
-    margin-top: 60px;
+    margin-top: 56px;
   }
 }
 
 @media (max-width: 575.98px) {
   .trainer-rankings-page h1.trade-corner-title {
-    margin-top: 64px;
+    margin-top: 60px;
   }
 }
 
