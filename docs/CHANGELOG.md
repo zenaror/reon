@@ -308,6 +308,9 @@ o que mudou. Setembro/2026.
   44px com LV ou ROOM abertas e no celular; agora o painel cresce pela
   coluna extra (440→484px, coluna única) em vez de borrar a arte. Medido
   ao vivo em 1600px e 390px
+* Indicadores de e-mail: só correio novo ganha selo (o laranja com a
+  contagem, e o ponto pulsante no menu lateral); o total cinza da caixa
+  inteira saiu de todos os lugares, a pedido do dono
 * **Publicação no GitHub** (github.com/zenaror/*, espelho do Gitea): README
   e instruções em inglês em todos os projetos (os quatro adaptadores já
   estavam; README de instalação, scripts de hardening e README do systemd
