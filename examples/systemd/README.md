@@ -1,41 +1,41 @@
-# Unidades systemd
+# systemd units
 
-O que roda em produção. Copiar para `/etc/systemd/system/` (ou apontar um
-symlink para cá), depois `systemctl daemon-reload` e habilitar o que for
-usar.
+What runs in production. Copy them to `/etc/systemd/system/` (or symlink
+that directory here), then `systemctl daemon-reload` and enable what you
+use.
 
-Os caminhos assumem a convenção da implantação:
+The paths follow the deployment convention:
 
-| caminho | o que é |
+| path | what it is |
 | --- | --- |
-| `/opt/reon` | esta árvore |
-| `/opt/mobile-relay` | o relay do adaptador, repositório separado |
+| `/opt/reon` | this tree |
+| `/opt/mobile-relay` | the adapter relay, a separate repository |
 | `/opt/node` | Node.js |
-| `/opt/reon/config.json` | configuração, fora do controle de versão |
+| `/opt/reon/config.json` | configuration, outside version control |
 
-Tudo roda como o usuário `reon`, que precisa poder ler a árvore e escrever
-onde cada serviço grava.
+Everything runs as the `reon` user, which must be able to read the tree
+and write wherever each service writes.
 
-## Serviços contínuos
+## Long-running services
 
-| unidade | o que faz |
+| unit | what it does |
 | --- | --- |
-| `reon-mail.service` | SMTP e POP3 do jogo. Usa `CAP_NET_BIND_SERVICE` para as portas baixas |
-| `reon-mobile-relay.service` | relay do Mobile Adapter (Python, venv própria) |
+| `reon-mail.service` | the game's SMTP and POP3. Uses `CAP_NET_BIND_SERVICE` for the low ports |
+| `reon-mobile-relay.service` | the Mobile Adapter relay (Python, own venv) |
 
-## Tarefas agendadas
+## Scheduled jobs
 
-Cada uma tem `.service` (o trabalho) e `.timer` (quando). Habilite o
-**timer**, não o service.
+Each one has a `.service` (the job) and a `.timer` (when). Enable the
+**timer**, not the service.
 
-| timer | intervalo | o que faz |
+| timer | interval | what it does |
 | --- | --- | --- |
-| `reon-auto-schedule.timer` | 15 min | rotação de notícias do Pokémon e disponibilidade de features |
-| `reon-mail-bottle.timer` | 15 min | mensagem na garrafa |
-| `reon-pokemon-exchange.timer` | 15 min | pareamento do Trade Corner |
-| `reon-pokemon-battle.timer` | diário | apuração da Battle Tower |
-| `reon-service-status.timer` | 5 min | sonda os serviços para o painel de status do site |
-| `reon-mail-trash-purge.timer` | diário, 04:30 | apaga de vez o que passou da retenção na lixeira de e-mail |
+| `reon-auto-schedule.timer` | 15 min | Pokémon news rotation and feature availability |
+| `reon-mail-bottle.timer` | 15 min | message in a bottle |
+| `reon-pokemon-exchange.timer` | 15 min | Trade Corner matching |
+| `reon-pokemon-battle.timer` | daily | Battle Tower tally |
+| `reon-service-status.timer` | 5 min | probes the services for the site's status panel |
+| `reon-mail-trash-purge.timer` | daily, 04:30 | permanently deletes what passed the mail trash retention |
 
-O purge da lixeira é o único que remove dado em definitivo. A janela de
-retenção vive em `MailUtil::TRASH_RETENTION_DAYS`, não aqui.
+The trash purge is the only one that removes data for good. The retention
+window lives in `MailUtil::TRASH_RETENTION_DAYS`, not here.
