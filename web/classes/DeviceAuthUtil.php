@@ -194,8 +194,20 @@
 		// attacker nothing but a number that is not secret. A device without
 		// a row yet gets 0.
 		//
-		// Returns [status, body]: 200 with the counter in decimal as the
-		// whole body, 400 (malformed), 403 (unknown ppp_id / bad signature).
+		// The answer is signed too. This runs over plain HTTP on a network
+		// the player controls (the game's own DNS is configurable), so an
+		// intermediary could answer instead of us -- and a forged huge value
+		// blindly adopted as "resume from here" would push the device's
+		// counter to the top of its range and brick it on the next wrap. The
+		// body is "<counter> <sig>" with sig = HMAC-SHA256 over
+		// ppp_id|device|query-response|counter (ppp_id|query-response|counter
+		// in the legacy form): only the key holder can produce it, and the
+		// distinct label keeps it from ever passing as a request signature.
+		// A replayed genuine answer can only be lower than the truth, which
+		// a client that never moves its counter backwards ignores.
+		//
+		// Returns [status, body]: 200 with the signed body above, 400
+		// (malformed), 403 (unknown ppp_id / bad signature).
 		public function handleQuery($pppId, $sig, $deviceId = "") {
 			if (!preg_match('/^g[0-9]{9}$/', $pppId)) return [400, ""];
 			if (!preg_match('/^[0-9a-f]{64}$/', $sig)) return [400, ""];
@@ -223,7 +235,11 @@
 			$stmt->bind_param("is", $userId, $deviceId);
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
-			return [200, count($result) === 0 ? "0" : (string) (int) $result[0]["counter"]];
+			$counter = count($result) === 0 ? "0" : (string) (int) $result[0]["counter"];
+			$responseMessage = $deviceId === ""
+				? $pppId."|query-response|".$counter
+				: $pppId."|".$deviceId."|query-response|".$counter;
+			return [200, $counter." ".hash_hmac("sha256", $responseMessage, $account["device_auth_key"])];
 		}
 
 		// Whether any of the account's devices holds an open authorization
