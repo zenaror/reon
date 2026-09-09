@@ -15,6 +15,12 @@
 
 	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent"], true) ? $_GET["folder"] : "inbox";
 
+	// The filter bar: free text plus one switch. Carried in the URL so a
+	// filtered list can be refreshed, bookmarked, or returned to.
+	$q = trim((string)($_GET["q"] ?? ""));
+	$only = in_array($_GET["only"] ?? "", MailUtil::FILTERS, true) ? $_GET["only"] : "";
+	$filter = ["q" => $q, "only" => $only, "active" => $q !== "" || $only !== ""];
+
 	// Actions are POST-only so a crawler, a prefetch, or a stray <img> can
 	// never destroy mail by being followed.
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -25,6 +31,9 @@
 		// the list's checkboxes post many, and each becomes a list of ids.
 		$ids = isset($_POST["ids"]) ? (array)$_POST["ids"] : [];
 		if (isset($_POST["id"])) $ids[] = $_POST["id"];
+		// A conversation's checkbox carries every received message of the
+		// conversation as "id,id,id", so one tick acts on the whole thing.
+		$ids = array_merge(...array_map(function ($v) { return explode(",", (string)$v); }, $ids ?: [""]));
 
 		// Every one of these is scoped by recipient inside MailUtil, so ids
 		// belonging to someone else simply affect nothing.
@@ -111,6 +120,32 @@
 		return;
 	}
 
+	if (isset($_GET["thread"])) {
+		$thread = $mail->threadForUser($userId, $_GET["thread"]);
+		if ($thread === null) {
+			http_response_code(404);
+		} elseif (!empty($thread["inbox_ids"])) {
+			// Opened means read, as for a single message. The unread flags in
+			// $thread are from before this, so the view can still mark what
+			// was new.
+			$mail->markReadMany($userId, $thread["inbox_ids"]);
+		}
+		echo TemplateUtil::render("/user/mail", [
+			"message" => null,
+			"messages" => null,
+			"thread" => $thread,
+			"compose" => null,
+			"folder" => "inbox",
+			"trash_count" => $mail->countTrashForUser($userId),
+			"sent_count" => $mail->countSentForUser($userId),
+			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
+			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"internal_domains" => $mail->internalDomains(),
+		]);
+		return;
+	}
+
 	if (isset($_GET["id"])) {
 		$message = $folder === "sent"
 			? $mail->getSentForUser($userId, $_GET["id"])
@@ -137,9 +172,22 @@
 		return;
 	}
 
+	// The inbox is read as conversations (received and sent together);
+	// Sent and Trash stay flat lists of messages.
+	$messages = null;
+	$threads = null;
+	if ($folder === "inbox") {
+		$threads = $mail->filterThreads($mail->threadsForUser($userId), $q, $only);
+	} else {
+		$rows = $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder);
+		$messages = $mail->filterMessages($rows, $q, $only);
+	}
+
 	echo TemplateUtil::render("/user/mail", [
 		"message" => null,
-		"messages" => $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder),
+		"messages" => $messages,
+		"threads" => $threads,
+		"filter" => $filter,
 		"compose" => null,
 		"sent" => isset($_GET["sent"]),
 		"folder" => $folder,

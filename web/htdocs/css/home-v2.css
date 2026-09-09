@@ -867,6 +867,99 @@ body.home-v2 main#content { overflow: hidden; }
   font-variant-numeric: tabular-nums;
 }
 
+/* The filter bar: text, one switch, Filter/Clear. Wraps on phones. */
+.mt-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--reon-line);
+  background: #fffdf4;
+}
+
+.mt-filter__q {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 2px solid var(--mt-frame);
+  background: #fff;
+  font: inherit;
+}
+
+.mt-filter__only {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 2px solid var(--mt-frame);
+  background: #fff;
+  font: inherit;
+}
+
+/* How many messages a conversation holds, beside its subject. */
+.mt-list__count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--mt-deep);
+  color: var(--mt-orange);
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A conversation: one block per message, oldest first; yours are the
+   pale plate, theirs white; what was unread on opening keeps a mark. */
+.mt-thread {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.mt-thread__msg {
+  border: 2px solid var(--mt-frame);
+  background: #fff;
+}
+
+.mt-thread__msg--out {
+  background: var(--mt-plate);
+  margin-left: 24px;
+}
+
+.mt-thread__msg.is-new { border-color: #c25a10; }
+
+.mt-thread__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 5px 9px;
+  background: var(--mt-mint);
+  color: #14401f;
+  border-bottom: 2px solid var(--mt-frame);
+  font-size: 0.9em;
+}
+
+.mt-thread__msg--out .mt-thread__head { background: #f1dfb0; color: #5e2a00; }
+
+.mt-thread__who { font-weight: bold; overflow-wrap: anywhere; }
+
+.mt-thread__when { color: inherit; opacity: 0.8; font-variant-numeric: tabular-nums; }
+
+.mt-thread__open { margin-left: auto; color: inherit; opacity: 0.7; text-decoration: none; }
+.mt-thread__open:hover { opacity: 1; text-decoration: underline; }
+
+.mt-thread .mt-body { margin: 0; border: 0; }
+
+@media (max-width: 560px) {
+  .mt-thread__msg--out { margin-left: 10px; }
+}
+
 /* "12 in the inbox · 3 unread", under the bar. */
 .mt-summary {
   margin: 0;
