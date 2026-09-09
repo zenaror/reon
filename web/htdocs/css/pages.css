@@ -130,5 +130,5 @@
 .reon-page .reon-download__note:empty { display: none; }
 
 /* Section gems for the two pages, alongside the ones home-v2.css sets. */
-[data-section="guide"] { --section-gem: var(--reon-teal); }
-[data-section="downloads"] { --section-gem: var(--reon-green); }
+[data-section="guide"] { --section-gem: var(--reon-pink); }
+[data-section="downloads"] { --section-gem: var(--reon-silver); }

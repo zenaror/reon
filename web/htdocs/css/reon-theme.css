@@ -26,6 +26,10 @@
   /* Not a CGB hue: REON Mail's own orange (the webmail's bar colour), so
      its gem in the side menu is not the same as Mario Kart's yellow. */
   --reon-orange: #c25a10;
+  /* Two more for the side menu, so no two entries share a gem: berry
+     pink for the guide, the GBC "silver" shell for downloads. */
+  --reon-pink: #d9488f;
+  --reon-silver: #7f8a9c;
 
   /* Ink & paper */
   --reon-ink: #1a1c26;      /* near-black text + hard pixel borders */
