@@ -34,9 +34,9 @@
   letter-spacing: 0;
 }
 
-/* Hidden: the zoom is decided by the screen (desktop 2x, mobile 1x). */
+/* 1x / 2x, chosen by the player: 2x by default on a desktop, 1x by default
+   on phones and tablets, where 2x scrolls sideways inside the box. */
 .battle-control-zoom {
-  display: none !important;
   grid-area: zoom;
   justify-self: end;
   width: 244px;
@@ -566,13 +566,15 @@
     line-height: 1.15 !important;
   }
 
+  /* The sprite art is 56x56 and stays 1:1; the row is two lines here
+     (message below), so the leader column has the room. */
   .bt-trainer-sprite {
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
 
   .bt-leader-subcols {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 60px minmax(0, 1fr);
     column-gap: 6px;
   }
 
@@ -627,30 +629,37 @@
   padding-right: 4px;
 }
 
-/* The panel cannot grow past 440px (two panels sit side by side inside the
-   913px frame, and 2x zoom doubles it), so the ROOM column has to be paid
-   for by the others. The leader column is the only `auto` one and took the
-   whole hit: the 60px sprite track ate it and the class/name text overflowed
-   into the POKéMON cell. Placed after the media queries on purpose so the
-   zoom-2 rules there don't win over these. */
-.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-trainer-sprite {
-  width: 44px;
-  height: 44px;
+/* With one of LV/ROOM shown, the panel grows by that column (440 -> 484px,
+   one column, no split) so the leader, POKéMON and message columns keep
+   their widths. The sprite is 56x56 pixel art and is never scaled by a
+   fraction: an earlier version shrank it to 44px to make room, which
+   blurred it. Placed after the media queries on purpose so the zoom-2
+   rules there don't win over these. */
+.battle-table-grid[data-bt-extra="1"] {
+  overflow-x: auto;
+  justify-content: flex-start;
 }
 
-.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-subcols {
-  grid-template-columns: 48px minmax(0, 1fr);
-  column-gap: 6px;
+.battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"] {
+  justify-items: start;
 }
 
-.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-sprite-col {
-  padding-left: 4px;
+.battle-table-grid[data-bt-extra="1"] .battle-table-panel {
+  width: 484px;
+  min-width: 484px;
+  max-width: 484px;
+  margin: 0 auto;
 }
 
-.battle-tower-page .battle-honor-table:not([data-bt-extra="0"]) .bt-leader-name-col {
-  min-height: 44px;
-  padding-left: 6px;
-  padding-right: 4px;
+.battle-table-grid[data-bt-extra="1"] .battle-honor-table th.bt-col-pokemon {
+  width: 105px;
+}
+
+/* At 2x that panel is 968px; widen the framed box as for the overview. */
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="1"],
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="1"] .battle-table-shell {
+  /* 968px table + 24px of air on each side + the 34/42px side borders. */
+  width: min(1092px, 100%);
 }
 
 
@@ -802,13 +811,19 @@
   }
 
   /* Controls one under the other: side by side, ROOM:ALL at 16px did not fit
-     half of a 345px box. */
+     half of a 345px box. The zoom buttons share the HONOR ROLL row. */
   .battle-tower-controls {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
     grid-template-areas:
-      "level"
-      "room"
-      "honor";
+      "level level"
+      "room room"
+      "honor zoom";
+  }
+
+  .battle-control-zoom {
+    width: auto;
+    max-width: none;
+    margin: 0;
   }
 
   .battle-control-room .trade-region-filter {
@@ -829,6 +844,27 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
+  }
+
+  /* 2x on a phone: the panel keeps the box's width in its own units (under
+     zoom:2 a percentage halves, so double it back), renders at twice the
+     box and scrolls sideways inside the grid. Same two-line rows. */
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"],
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-panel,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"] .battle-table-panel,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+    width: calc(100% * 2);
+    min-width: 0;
+    max-width: none;
+    margin: 0;
   }
 
   .battle-tower-page .battle-honor-table {

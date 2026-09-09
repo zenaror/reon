@@ -482,9 +482,10 @@ initReonSideBackgrounds("trade-corner", {
         return;
     }
 
-    // Phones are always 1x: a 2x table does not fit and the control is hidden.
+    // Phones start at 1x (nothing stored) but may choose 2x; the table then
+    // scrolls sideways inside the box.
     const phone = window.matchMedia("(max-width: 575.98px)");
-    const clamp = (value) => (!phone.matches && String(value) === "2") ? "2" : "1";
+    const clamp = (value) => String(value) === "2" ? "2" : "1";
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {

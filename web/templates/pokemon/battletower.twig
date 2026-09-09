@@ -218,7 +218,9 @@
         // Below the two-column layout the panels stack, so splitting only
         // repeats the header halfway down; the wide overview panel (LV and
         // ROOM both shown) is a single column by design.
-        if (zoomMode !== "1" || window.innerWidth < 992 || tableWrap.getAttribute("data-bt-extra") === "2") {
+        // Any LV/ROOM column makes the panel wider than half the frame, so
+        // those are single-column too.
+        if (zoomMode !== "1" || window.innerWidth < 992 || tableWrap.getAttribute("data-bt-extra") !== "0") {
             return;
         }
 
@@ -285,11 +287,17 @@
         return;
     }
 
-    // No choice here: desktops are always 2x, phones and tablets always 1x
-    // (a 2x table does not fit them). The control stays hidden.
+    // 1x or 2x, the choice remembered. With nothing chosen, desktops start
+    // at 2x and phones/tablets at 1x (there 2x scrolls sideways in the box).
     // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room.
     const desktop = window.matchMedia("(min-width: 1200px)");
-    const clamp = () => desktop.matches ? "2" : "1";
+    const stored = () => {
+        try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+    };
+    const clamp = (raw) => {
+        const zoom = raw || stored() || (desktop.matches ? "2" : "1");
+        return zoom === "1" ? "1" : "2";
+    };
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {
@@ -314,8 +322,8 @@
 
     buttons.forEach((button) => {
         button.addEventListener("click", () => {
-            const zoom = applyZoom(button.getAttribute("data-battle-zoom") || "1");
-            localStorage.setItem(STORAGE_KEY, zoom);
+            const zoom = applyZoom(button.getAttribute("data-battle-zoom") || "2");
+            try { localStorage.setItem(STORAGE_KEY, zoom); } catch (e) {}
         });
     });
 })();
