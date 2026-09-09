@@ -1026,6 +1026,8 @@ mail:
   title: "REON Mail"
   inbox: "Boîte de réception"
   inbox-summary: "%total% dans la boîte · %unread% non lus"
+  sent-summary: "%total% envoyés"
+  trash-summary: "%total% dans la corbeille"
   empty: "Aucun message."
   message: "Message"
   from: "De"

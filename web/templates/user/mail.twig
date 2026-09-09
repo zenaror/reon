@@ -166,12 +166,16 @@
 				{%- if folder == 'trash' %}{{'mail.trash'|trans}}
 				{%- elseif folder == 'sent' %}{{'mail.sent'|trans}}
 				{%- else %}{{'mail.inbox'|trans}}{% endif %}
-				{%- if folder_total > 0 %} <span class="mt-panel__count">{{ folder_total }}</span>{% endif %}
 			</h2>
+			{# Total (and, for the inbox, unread) in words under the bar; the
+			   inbox line is kept current by the same poll that feeds the
+			   badges. The number that used to sit on the bar itself is gone. #}
 			{% if folder == 'inbox' %}
-				{# Total and unread, in words; kept current by the same poll that
-				   feeds the badges. #}
 				<p class="mt-summary" id="mt-summary" data-template="{{ 'mail.inbox-summary'|trans({'%total%': '%total%', '%unread%': '%unread%'}) }}">{{ 'mail.inbox-summary'|trans({'%total%': mail_count|default(0), '%unread%': mail_new|default(0)}) }}</p>
+			{% elseif folder == 'sent' %}
+				<p class="mt-summary">{{ 'mail.sent-summary'|trans({'%total%': folder_total}) }}</p>
+			{% else %}
+				<p class="mt-summary">{{ 'mail.trash-summary'|trans({'%total%': folder_total}) }}</p>
 			{% endif %}
 
 			{% if messages is empty %}

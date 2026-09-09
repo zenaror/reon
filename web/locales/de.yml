@@ -962,6 +962,8 @@ mail:
   title: "REON Mail"
   inbox: "Posteingang"
   inbox-summary: "%total% im Posteingang · %unread% ungelesen"
+  sent-summary: "%total% gesendet"
+  trash-summary: "%total% im Papierkorb"
   empty: "Keine Nachrichten."
   message: "Nachricht"
   from: "Von"
