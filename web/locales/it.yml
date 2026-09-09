@@ -961,6 +961,7 @@ invalid-pokemon-news-setting: Preferenza Notizie Pokémon non valida.
 mail:
   title: "REON Mail"
   inbox: "Posta in arrivo"
+  inbox-summary: "%total% in arrivo · %unread% da leggere"
   empty: "Nessun messaggio."
   message: "Messaggio"
   from: "Da"
