@@ -6,8 +6,11 @@ o que mudou. Setembro/2026.
 ## reon (servidor / reon-mail / web)
 
 * **REON Mail** — webmail com leitura, envio (interno e para a internet real)
-  e lixeira de 30 dias; não lidos em destaque na lista, resumo "N na caixa ·
-  M não lidos", selos de correio novo nos menus. Envio externo sai por
+  e lixeira de 30 dias; caixa de entrada em **conversas** (recebidos e
+  enviados agrupados por assunto e interlocutor — só no webmail, os jogos
+  não sabem de threads), **filtro** por texto e por não lidos / jogadores /
+  internet, não lidos em destaque na lista, resumo "N na caixa · M não
+  lidos", selos de correio novo nos menus. Envio externo sai por
   submissão local, que não passa pela política de device-auth: o portão do
   jogo continua tão restrito quanto era, e o webmail é autorizado pela
   sessão web, com limite por hora e registro de auditoria
