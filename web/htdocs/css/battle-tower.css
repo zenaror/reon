@@ -400,9 +400,23 @@
     line-height: 16px !important;
   }
 
-  .battle-tower-controls .trade-region-filter {
+  /* The grid cells must stretch: a percentage width on a select inside a
+     shrink-to-fit cell is circular and collapses to a few pixels. */
+  .battle-control-level,
+  .battle-control-room {
+    justify-self: stretch;
     min-width: 0;
-    width: min(220px, calc(50% - 6px));
+  }
+
+  .battle-tower-controls .trade-region-filter {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    max-width: 244px;
+  }
+
+  .battle-control-room .trade-region-filter {
+    margin-left: auto;
   }
 
   .battle-table-shell {
@@ -426,7 +440,9 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 14px;
-    justify-content: flex-start;
+    /* Centred while it fits, start-aligned once it overflows (phones), so
+       the scroll can still reach the first column. */
+    justify-items: safe center;
   }
 
   .battle-table-panel {
@@ -756,6 +772,11 @@
 @media (max-width: 575.98px) {
   .battle-tower-controls .trade-region-filter {
     width: 100%;
+    max-width: none;
+  }
+
+  .battle-honor-roll-label {
+    white-space: nowrap;
   }
 
   .battle-tower-page .battle-zoom-label {

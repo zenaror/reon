@@ -321,7 +321,9 @@
 
 @media (max-width: 991.98px) {
   .trainer-rankings-page {
-    --rankings-mobile-panel-base-width: min(620px, calc(100vw - 12px));
+    /* 100%, not 100vw: the white column is narrower than the viewport, so a
+       viewport-based panel overflowed it and pushed the SCORE column off. */
+    --rankings-mobile-panel-base-width: min(620px, 100%);
     width: 100% !important;
     max-width: 100% !important;
     padding-left: 0;
@@ -355,8 +357,8 @@
   }
 
   .trainer-rankings-grid {
-    width: max-content;
-    min-width: 100%;
+    width: 100%;
+    min-width: 0;
     justify-content: center;
     row-gap: 14px;
   }
@@ -520,5 +522,98 @@
 @media (min-width: 992px) {
   .trainer-rankings-page h1.trade-corner-title {
     margin-top: 56px;
+  }
+}
+
+/* Column budget that actually fits the header text: RANK 36 + NAME 64 +
+   ADDRESS 60 + MESSAGE 160 + SCORE 52 = 372px, the width of one panel in
+   the three-column desktop grid. ADDRESS used to be the leftover and came
+   out at ~44px, which clipped its own header to "ADDRE". */
+.trainer-ranking-table col.ranking-colgroup-rank,
+.trainer-ranking-table thead tr:last-child th:nth-child(1),
+.ranking-col-rank {
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.trainer-ranking-table col.ranking-colgroup-name,
+.trainer-ranking-table thead tr:last-child th:nth-child(2),
+.ranking-col-name {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.trainer-ranking-table col.ranking-colgroup-address,
+.trainer-ranking-table thead tr:last-child th:nth-child(3),
+.ranking-col-address {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.trainer-ranking-table col.ranking-colgroup-score,
+.trainer-ranking-table thead tr:last-child th:nth-child(5),
+.ranking-col-score {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+}
+
+.trainer-ranking-table {
+  min-width: 372px;
+}
+
+/* Phones: the issue title steps down to the next pixel size, the countdown
+   wraps under its label instead of running off the edge, and the tables keep
+   their column budget and scroll sideways inside their panel. */
+@media (max-width: 575.98px) {
+  .trainer-rankings-page .trainer-rankings-issue {
+    font-size: 16px !important;
+    line-height: 16px !important;
+  }
+
+  .trainer-rankings-cycle {
+    white-space: normal;
+  }
+
+  .trainer-rankings-cycle .ranking-cycle-prefix {
+    display: block;
+  }
+
+  .trainer-ranking-panel {
+    overflow-x: auto;
+  }
+
+  /* 32 + 60 + 60 + 160 + 52 = 364px: the white column of a 412px phone. */
+  .trainer-ranking-table {
+    min-width: 364px;
+  }
+
+  .trainer-ranking-table col.ranking-colgroup-rank,
+  .trainer-ranking-table thead tr:last-child th:nth-child(1),
+  .ranking-col-rank {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .trainer-ranking-table col.ranking-colgroup-name,
+  .trainer-ranking-table thead tr:last-child th:nth-child(2),
+  .ranking-col-name {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    padding-left: 3px;
+    padding-right: 3px;
   }
 }
