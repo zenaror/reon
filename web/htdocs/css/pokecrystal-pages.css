@@ -1884,3 +1884,12 @@ body.rankings-theme > main {
     line-height: 16px !important;
   }
 }
+
+/* Phones are always 1x: the zoom controls go, the scripts clamp to 1. */
+@media (max-width: 575.98px) {
+  .rankings-zoom-wrap,
+  .battle-control-zoom,
+  .exchange-page .trade-size-wrap {
+    display: none !important;
+  }
+}
