@@ -6,7 +6,13 @@
   var MOBILE_SCALE_MEDIA_QUERY = "(max-width: 768px)";
   var supportsElementZoomCache = null;
 
+  // Phones are always 1x: a 2x card grid does not fit and the control is hidden.
+  var phoneQuery = window.matchMedia ? window.matchMedia("(max-width: 575.98px)") : null;
+
   function clampScale(raw) {
+    if (phoneQuery && phoneQuery.matches) {
+      return "1";
+    }
     return String(raw) === "2" ? "2" : "1";
   }
 
@@ -132,6 +138,13 @@
 
   function applyTradeScale(scale) {
     var resolved = clampScale(scale);
+    if (phoneQuery && !phoneQuery.__reonBound) {
+      phoneQuery.__reonBound = true;
+      // Rotating past the breakpoint restores whatever the user chose.
+      phoneQuery.addEventListener("change", function () {
+        applyTradeScale(localStorage.getItem(SCALE_STORAGE_KEY) || "1");
+      });
+    }
     var page = document.querySelector(".exchange-page");
     if (!page) {
       return resolved;
