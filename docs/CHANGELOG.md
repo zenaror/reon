@@ -433,8 +433,17 @@ o que mudou. Setembro/2026.
   v1): árvore vendorizada atualizada e o retry de identidade do frontend
   retirado (o core re-deriva sozinho). Três plataformas do mesmo commit,
   conferidas por conteúdo, nenhum hash anterior
+* **PS Vita** no pacote (`_RELEASES/mGBA/Vita/mgba.vpk`, versão
+  `0.11-feature/vita-magb-9262-100ac18bf` = full_server 0ab45a2a0 + portas
+  de CMake, sockets não-bloqueantes do sceNet, mobile.log como opção de
+  menu). Testado hoje no hardware: login DION, homepage do Mobile Trainer,
+  código de pareamento, consulta de contador; ainda não: envio de e-mail,
+  P2P pelo relay, tela de bloqueio; sem otimização de desempenho ainda.
+  README da release com instalação (VitaShell, HENkaku/h-encore) e o
+  caminho `ux0:data/mGBA/`; dois trechos defasados corrigidos (menu só com
+  jogo, config do 3DS em `/mGBA/`)
 * Próximo (prioridade mais baixa, qualquer outra demanda passa na frente):
-  versão de PS Vita e otimizações do emulador para ARM
+  otimizações do emulador para ARM na Vita
 
 ## Mobile Adapter GB TestSuite ROM
 
