@@ -23,6 +23,9 @@
   --reon-green: #6eb122;
   --reon-yellow: #daac06;
   --reon-teal: #00938a;
+  /* Not a CGB hue: REON Mail's own orange (the webmail's bar colour), so
+     its gem in the side menu is not the same as Mario Kart's yellow. */
+  --reon-orange: #c25a10;
 
   /* Ink & paper */
   --reon-ink: #1a1c26;      /* near-black text + hard pixel borders */
