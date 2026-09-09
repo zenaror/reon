@@ -129,6 +129,32 @@
 
 .reon-page .reon-download__note:empty { display: none; }
 
+.reon-page .reon-download__note.is-warn { color: #9a3412; }
+
+/* Several pickers side by side (board / network / wiring). */
+.reon-page .reon-download--wide { grid-column: 1 / -1; }
+
+.reon-page .reon-download__picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 6px 0;
+}
+
+.reon-page .reon-download__picks label {
+  display: block;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+}
+
+.reon-page .reon-download__picks .reon-download__pick { margin: 4px 0 0; }
+
+.reon-page .reon-chrome-btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
 /* A block for signed-in visitors and one for everyone else, chosen by the
    data-signed-in the template stamps on the article. */
 [data-signed-in="0"] .when-signed-in,
