@@ -695,8 +695,9 @@ body.pokecrystal-index main#content {
   content: "\00D7";
 }
 
-/* Mail count in the navigation. The plain badge is a quantity; the accented
-   one means something arrived since this account last opened the inbox. */
+/* Mail count in the navigation: shown only when something arrived since
+   this account last opened the inbox (the plain grey total is no longer
+   rendered anywhere; the base class stays for the shape). */
 .mail-badge {
   display: inline-block;
   min-width: 18px;
