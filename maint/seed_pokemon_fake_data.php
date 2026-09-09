@@ -47,9 +47,9 @@ require_once dirname(__DIR__) . '/web/scripts/bxt_value_validation.php';
 require_once __DIR__ . '/gen2_base_stats.php';
 
 $opts = getopt('', [
-    'dry-run', 'purge', 'create-account', 'rebalance', 'help',
+    'dry-run', 'purge', 'create-account', 'rebalance', 'help', 'touch',
     'bt-per-room:', 'bt-rooms:', 'tc:', 'rankings:', 'pool:', 'seed:',
-    'cache:', 'manifest:', 'skip:',
+    'cache:', 'manifest:', 'skip:', 'honor-top:',
 ]);
 
 if (isset($opts['help'])) {
@@ -59,6 +59,11 @@ Options:
   --purge              delete everything attributed to the bot accounts (and honor-roll rows from the manifest)
   --create-account     create the bot accounts that do not exist yet
   --rebalance          only redistribute existing bot deposits over the bot accounts (no inserts)
+  --touch              set the bot Battle Tower records' timestamp to now, so the daily
+                       7-day expiry never removes them (run daily from a timer; no inserts)
+  --honor-top=N        promote the N best distinct trainers of every seeded level/room to the
+                       honor roll (the daily job only ever promotes the best one, so a room
+                       never reached bronze); skips trainers already there; no other inserts
   --bt-rooms=N|all     rooms per level to fill (default: all = 20)
   --bt-per-room=N      records per level/room (default: 7)
   --tc=N               Trade Corner deposits (default: 30)
@@ -291,6 +296,80 @@ function pick_account(array $accounts): array {
         }
     }
     return $accounts[0];
+}
+
+// ---------------------------------------------------------------------------
+// --touch: keep the seeded records alive. The daily job deletes records older
+// than 7 days; the honor roll survives that, but the rooms revert to
+// placeholders. Refreshing the timestamp is enough -- the game never shows it.
+// ---------------------------------------------------------------------------
+if (isset($opts['touch'])) {
+    $c = (int)$db->query("select count(*) c from bxt_battle_tower_records where account_id in ($accountIdList)")->fetch_assoc()['c'];
+    if (!$dryRun) {
+        $db->query("update bxt_battle_tower_records set `timestamp` = now() where account_id in ($accountIdList)");
+    }
+    echo ($dryRun ? 'would touch' : 'touched') . " $c bot Battle Tower records\n";
+    exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// --honor-top=N: the page ranks the honor roll by performance and shows one
+// row per trainer, so gold/silver/bronze need three distinct trainers in a
+// room; the daily job promotes only the best. Copy the next best ones over,
+// in the job's own order. Purge already covers them: the fingerprints of
+// every seeded record are in the manifest.
+// ---------------------------------------------------------------------------
+if (isset($opts['honor-top'])) {
+    $top = max(0, (int)$opts['honor-top']);
+    $region = REGION;
+    $cols = 'game_region, trainer_id, secret_id, account_id, player_name, player_name_decode, `class`, class_decode, '
+        . 'pokemon1, pokemon1_decode, pokemon2, pokemon2_decode, pokemon3, pokemon3_decode, message_start, message_start_decode, '
+        . 'room, level, level_decode, num_trainers_defeated, num_turns_required, damage_taken, num_fainted_pokemon';
+    $ins = $db->prepare("insert into bxt_battle_tower_honor_roll ($cols) select $cols from bxt_battle_tower_records where id = ?");
+    $rooms = $db->query("select level, room from bxt_battle_tower_records where account_id in ($accountIdList) group by level, room order by level, room");
+    $added = 0; $roomsDone = 0; $roomsShort = 0;
+    while ($lr = $rooms->fetch_assoc()) {
+        $level = (int)$lr['level']; $room = (int)$lr['room'];
+        $stmt = $db->prepare('select trainer_id, secret_id, account_id from bxt_battle_tower_honor_roll where game_region = ? and level = ? and room = ?');
+        $stmt->bind_param('sii', $region, $level, $room);
+        $stmt->execute();
+        $have = [];
+        foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $h) {
+            $have["{$h['trainer_id']}:{$h['secret_id']}:{$h['account_id']}"] = true;
+        }
+        $stmt->close();
+        $stmt = $db->prepare('select id, trainer_id, secret_id, account_id from bxt_battle_tower_records where game_region = ? and level = ? and room = ? '
+            . 'order by num_trainers_defeated desc, num_turns_required asc, damage_taken asc, num_fainted_pokemon asc');
+        $stmt->bind_param('sii', $region, $level, $room);
+        $stmt->execute();
+        $cands = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        foreach ($cands as $c) {
+            if (count($have) >= $top) {
+                break;
+            }
+            $key = "{$c['trainer_id']}:{$c['secret_id']}:{$c['account_id']}";
+            if (isset($have[$key])) {
+                continue;
+            }
+            if (!$dryRun) {
+                $ins->bind_param('i', $c['id']);
+                if (!$ins->execute()) {
+                    fwrite(STDERR, "honor roll insert failed: " . $ins->error . "\n");
+                    exit(1);
+                }
+            }
+            $have[$key] = true;
+            $added++;
+        }
+        $roomsDone++;
+        if (count($have) < $top) {
+            $roomsShort++;
+        }
+    }
+    $ins->close();
+    echo ($dryRun ? 'would add' : 'added') . " $added honor-roll rows over $roomsDone level/room pairs (top $top distinct trainers each; $roomsShort rooms still short)\n";
+    exit(0);
 }
 
 // ---------------------------------------------------------------------------

@@ -629,10 +629,17 @@ body.rankings-theme > main {
 }
 
 /* Under 380px the banner's right end would sit on the label's last
-   letters; slide the left slice under the edge instead. */
+   letters; slide the left slice under the edge instead. The rails narrow
+   to 8px -- their border strip, the rest of the art is white -- so a 360px
+   phone keeps a 344px column and the table (rankings.css) fits without
+   scrolling. */
 @media (max-width: 379.98px) {
   .trainer-rankings-page::before {
     background-position: right top, -30px top, left top;
+  }
+
+  body.rankings-theme > main {
+    --rankings-rail-width: 8px;
   }
 }
 
