@@ -284,12 +284,15 @@
 		// A replayed genuine answer can only be lower than the truth, which
 		// a client that never moves its counter backwards ignores.
 		//
-		// With `counter=<local>` on the query the device echoes its own
-		// counter, and the answer echoes it back inside the signed message:
-		// "<counter> <local> <sig>" over ppp_id|device|query-response|
-		// <counter>|<local>. The local counter is monotonic and unique per
-		// device, so it works as a nonce without the device needing a random
-		// source: a recorded answer cannot be replayed against a later query.
+		// With `counter=<local>` on the query the device spends the next
+		// value of its own counter on the query -- strictly increasing per
+		// query, even while blocked -- and the answer echoes it back inside
+		// the signed message: "<counter> <local> <sig>" over ppp_id|device|
+		// query-response|<counter>|<local>. That makes it a nonce without the
+		// device needing a random source: a recorded answer cannot be
+		// replayed against a later query. The echoed value is never stored
+		// here and never compared with the device's row (it runs ahead of the
+		// last counter accepted on authorize); the query stays read-only.
 		// That is what makes a signed "blocked" safe to act on -- a blocked
 		// device answered this way gets 200 "blocked <local> <sig>" over
 		// ppp_id|device|query-response|blocked|<local>, and the libmobile core
