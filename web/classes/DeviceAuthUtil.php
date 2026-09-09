@@ -284,12 +284,29 @@
 		// A replayed genuine answer can only be lower than the truth, which
 		// a client that never moves its counter backwards ignores.
 		//
+		// With `counter=<local>` on the query the device echoes its own
+		// counter, and the answer echoes it back inside the signed message:
+		// "<counter> <local> <sig>" over ppp_id|device|query-response|
+		// <counter>|<local>. The local counter is monotonic and unique per
+		// device, so it works as a nonce without the device needing a random
+		// source: a recorded answer cannot be replayed against a later query.
+		// That is what makes a signed "blocked" safe to act on -- a blocked
+		// device answered this way gets 200 "blocked <local> <sig>" over
+		// ppp_id|device|query-response|blocked|<local>, and the libmobile core
+		// refuses the session's network on it. A bare 403 would let anyone on
+		// the path (the game's DNS is configurable) deny service to a
+		// legitimate device with no key at all. Without the echo (older
+		// cores) the answer is the old form and a blocked device still gets
+		// 403, which those cores ignore as before.
+		//
 		// Returns [status, body]: 200 with the signed body above, 400
-		// (malformed), 403 (unknown ppp_id / bad signature).
-		public function handleQuery($pppId, $sig, $deviceId = "") {
+		// (malformed), 403 (unknown ppp_id / bad signature / blocked without
+		// echo).
+		public function handleQuery($pppId, $sig, $deviceId = "", $localRaw = "") {
 			if (!preg_match('/^g[0-9]{9}$/', $pppId)) return [400, ""];
 			if (!preg_match('/^[0-9a-f]{64}$/', $sig)) return [400, ""];
 			if ($deviceId !== "" && !preg_match('/^[0-9a-f]{16}$/', $deviceId)) return [400, ""];
+			if ($localRaw !== "" && !preg_match('/^(0|[1-9][0-9]*)$/', $localRaw)) return [400, ""];
 
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("
@@ -304,7 +321,8 @@
 			if (count($result) === 0) return [403, ""];
 
 			$account = $result[0];
-			$message = $deviceId === "" ? $pppId."|query" : $pppId."|".$deviceId."|query";
+			$prefix = $deviceId === "" ? $pppId : $pppId."|".$deviceId;
+			$message = $prefix."|query".($localRaw === "" ? "" : "|".$localRaw);
 			$expectedSig = hash_hmac("sha256", $message, $account["device_auth_key"]);
 			if (!hash_equals($expectedSig, $sig)) return [403, ""];
 
@@ -313,7 +331,11 @@
 			$stmt->bind_param("is", $userId, $deviceId);
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
-			if (count($result) > 0 && (int) $result[0]["blocked"] === 1) return [403, ""];
+			if (count($result) > 0 && (int) $result[0]["blocked"] === 1) {
+				if ($localRaw === "") return [403, ""];
+				$responseMessage = $prefix."|query-response|blocked|".$localRaw;
+				return [200, "blocked ".$localRaw." ".hash_hmac("sha256", $responseMessage, $account["device_auth_key"])];
+			}
 
 			// A device seen for the first time gets its row here, at 0, so it
 			// shows up on the account's device list as soon as it has talked
@@ -334,10 +356,12 @@
 				}
 			}
 			$counter = count($result) === 0 ? "0" : (string) (int) $result[0]["counter"];
-			$responseMessage = $deviceId === ""
-				? $pppId."|query-response|".$counter
-				: $pppId."|".$deviceId."|query-response|".$counter;
-			return [200, $counter." ".hash_hmac("sha256", $responseMessage, $account["device_auth_key"])];
+			if ($localRaw === "") {
+				$responseMessage = $prefix."|query-response|".$counter;
+				return [200, $counter." ".hash_hmac("sha256", $responseMessage, $account["device_auth_key"])];
+			}
+			$responseMessage = $prefix."|query-response|".$counter."|".$localRaw;
+			return [200, $counter." ".$localRaw." ".hash_hmac("sha256", $responseMessage, $account["device_auth_key"])];
 		}
 
 		// Whether any of the account's devices holds an open authorization
