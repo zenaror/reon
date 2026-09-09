@@ -173,5 +173,7 @@
 		print $out;
 
 	} else {
-		header("Location: /index.php");
+		// Not signed in: the file is personal, so ask for the login and
+		// come back to the account page, where the download button is.
+		header("Location: /login.php?next=".rawurlencode("/user/summary.php"));
 	}

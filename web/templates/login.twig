@@ -6,6 +6,7 @@
 		<div class="card m-auto">
 			<form method="post" class="card-body">
 				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				{% if next is defined and next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 				<fieldset>
 					<legend>{{'auth.login-to-reon'|trans}}</legend>
 					{% if login_fail %}

@@ -35,7 +35,8 @@
 					<ol></ol>
 				</nav>
 
-				<article class="reon-post reon-page" data-sections>{{ html|raw }}</article>
+				{# data-signed-in lets the Markdown show one of two blocks: .when-signed-in / .when-signed-out #}
+				<article class="reon-post reon-page" data-sections data-signed-in="{{ session_active ? 1 : 0 }}">{{ html|raw }}</article>
 			{% endif %}
 		</div>
 	</div>

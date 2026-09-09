@@ -35,6 +35,11 @@ restart: the next request reads the new text.
 
 ```html
 <div class="reon-note">A tip in a box (the ※ asides).</div>
+
+<!-- one of the two shows, depending on whether the visitor is signed in;
+     the login link's next= brings them back here afterwards -->
+<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="config.bin">Download</a></p>
+<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fguide.php">Log in to download</a></p>
 <div class="reon-note reon-note--warn">A warning in a box.</div>
 
 <div class="reon-downloads">

@@ -42,6 +42,13 @@
 		});
 		nav.hidden = false;
 
+		// The ids only exist now, so a link that arrived with #section has
+		// not scrolled yet; do it here.
+		if (location.hash) {
+			var target = document.getElementById(location.hash.slice(1));
+			if (target) target.scrollIntoView();
+		}
+
 		// The section whose heading was last scrolled past is the current one.
 		function update() {
 			var line = window.scrollY + Math.max(80, window.innerHeight * 0.25);

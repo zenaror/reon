@@ -9,9 +9,14 @@ Start with the [guide](/guide.php).
 
 ## Your config.bin
 
-Your personal `config.bin` is not here: it is tied to your account, and
-you get it from [Your Account](/user/summary.php). Download it once and
+Your personal `config.bin` is tied to your account. Download it once and
 keep it; the same file works on every device you own.
+
+<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="config.bin">Download your config.bin</a></p>
+<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fdownloads.php">Log in to download your config.bin</a></p>
+
+It is also on [Your Account](/user/summary.php), and the
+[guide](/guide.php#setup) says where to put it.
 
 ## Emulators
 
