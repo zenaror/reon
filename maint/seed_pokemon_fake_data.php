@@ -48,7 +48,7 @@ require_once __DIR__ . '/gen2_base_stats.php';
 
 $opts = getopt('', [
     'dry-run', 'purge', 'create-account', 'rebalance', 'help',
-    'bt-per-room:', 'bt-rooms:', 'tc:', 'pool:', 'seed:',
+    'bt-per-room:', 'bt-rooms:', 'tc:', 'rankings:', 'pool:', 'seed:',
     'cache:', 'manifest:', 'skip:',
 ]);
 
@@ -62,6 +62,7 @@ Options:
   --bt-rooms=N|all     rooms per level to fill (default: all = 20)
   --bt-per-room=N      records per level/room (default: 7)
   --tc=N               Trade Corner deposits (default: 30)
+  --rankings=N         Pokémon News ranking players, 3 rows each, one per current category (default: 0)
   --pool=N             DV-rerolled mons to validate per level (default: 50)
   --seed=N             RNG seed (default: random)
   --skip=L:R[,L:R]     level:room pairs to leave alone (default: 1:0, the only room with a real record)
@@ -76,6 +77,7 @@ $dryRun = isset($opts['dry-run']);
 $btPerRoom = (int)($opts['bt-per-room'] ?? 7);
 $btRooms = ($opts['bt-rooms'] ?? 'all') === 'all' ? 20 : (int)$opts['bt-rooms'];
 $tcCount = (int)($opts['tc'] ?? 30);
+$rankingCount = (int)($opts['rankings'] ?? 0);
 $poolSize = (int)($opts['pool'] ?? 50);
 $home = getenv('HOME') ?: sys_get_temp_dir();
 $cachePath = $opts['cache'] ?? ($home . '/.reon_seed_legality.json');
@@ -331,7 +333,7 @@ if (isset($opts['rebalance'])) {
 if (isset($opts['purge'])) {
     $manifest = is_file($manifestPath) ? (json_decode((string)file_get_contents($manifestPath), true) ?: []) : [];
     $counts = [];
-    foreach (['bxt_battle_tower_records', 'bxt_battle_tower_trainers', 'bxt_exchange'] as $table) {
+    foreach (['bxt_battle_tower_records', 'bxt_battle_tower_trainers', 'bxt_exchange', 'bxt_ranking'] as $table) {
         $counts[$table] = (int)$db->query("select count(*) c from `$table` where account_id in ($accountIdList)")->fetch_assoc()['c'];
         if (!$dryRun) {
             $db->query("delete from `$table` where account_id in ($accountIdList)");
@@ -629,6 +631,61 @@ save_cache();
 printf("Trade Corner: %d deposits prepared (%d legality checks run this pass)\n", count($tcDeposits), $legalityCalls);
 
 // ---------------------------------------------------------------------------
+// Pokémon News rankings: one player = one row per category of the current
+// vanilla news issue. Zip is three Gen II digits, message is a 12-byte Easy
+// Chat field (we reuse the 8-byte Battle Tower pool, zero-padded).
+// ---------------------------------------------------------------------------
+$rankingRows = [];
+$rankingNews = null;
+if ($rankingCount > 0) {
+    $res = $db->query("select id, ranking_category_1, ranking_category_2, ranking_category_3 from bxt_news where game_region = '" . REGION . "' and is_custom = 0 order by id desc limit 1");
+    $rankingNews = $res->fetch_assoc();
+    if (!$rankingNews) {
+        fwrite(STDERR, "no vanilla news row for region " . REGION . "; skipping rankings\n");
+    }
+}
+if ($rankingNews) {
+    $catSizes = [];
+    $res = $db->query("select id, size from bxt_ranking_categories");
+    while ($row = $res->fetch_assoc()) {
+        $catSizes[(int)$row['id']] = (int)$row['size'];
+    }
+    // Plausible ceilings per category id; anything else scales with its byte size.
+    $scoreCeil = [5 => 35, 14 => 120, 16 => 400, 7 => 900, 9 => 300, 12 => 200, 4 => 250000, 38 => 999999];
+    $categories = array_values(array_filter([(int)$rankingNews['ranking_category_1'], (int)$rankingNews['ranking_category_2'], (int)$rankingNews['ranking_category_3']]));
+    $messagePool = array_merge($messages['message_start'], $messages['message_win'], $messages['message_lose']);
+    $usedRankNames = [];
+    for ($i = 0; $i < $rankingCount; $i++) {
+        do {
+            $name = $names[mt_rand(0, count($names) - 1)];
+        } while (isset($usedRankNames[$name]) && count($usedRankNames) < count($names));
+        $usedRankNames[$name] = true;
+        [$tid, $sid] = fresh_ids($usedIds);
+        $gender = mt_rand(1, 100) <= 55 ? 0 : 1;
+        $age = mt_rand(9, 42);
+        $pregion = mt_rand(1, 63);
+        $zip = gen2_encode(sprintf('%03d', mt_rand(0, 999)));
+        $msg = str_pad($messagePool[mt_rand(0, count($messagePool) - 1)], 12, "\x00");
+        $age_days = mt_rand(0, 3 * 86400);
+        foreach ($categories as $cat) {
+            $ceil = $scoreCeil[$cat] ?? (($catSizes[$cat] ?? 2) >= 3 ? 500 : 60);
+            // Skewed low: most players have modest numbers, a few stand out.
+            $score = (int)round($ceil * pow(mt_rand(0, 1000) / 1000, 2.2));
+            if (mt_rand(1, 100) <= 10) {
+                $score = 0;
+            }
+            $rankingRows[] = [
+                'news_id' => (int)$rankingNews['id'], 'category' => $cat, 'tid' => $tid, 'sid' => $sid,
+                'name' => padded_name($name, 7), 'name_text' => $name, 'gender' => $gender, 'age' => $age,
+                'pregion' => $pregion, 'zip' => $zip, 'msg' => $msg, 'score' => $score, 'age_seconds' => $age_days,
+                'account' => pick_account($accounts),
+            ];
+        }
+    }
+    printf("Rankings: %d rows for %d players over categories %s (news %d)\n", count($rankingRows), $rankingCount, implode(',', $categories), (int)$rankingNews['id']);
+}
+
+// ---------------------------------------------------------------------------
 // Report.
 // ---------------------------------------------------------------------------
 foreach (array_slice($btRecords, 0, 3) as $rec) {
@@ -638,6 +695,11 @@ foreach (array_slice($btRecords, 0, 3) as $rec) {
         bxt_decode_trainer_class_for_region(REGION, $rec['class']), $rec['class'], $rec['tid'],
         $rec['ntd'], $rec['turns'], $rec['dmg'], $rec['fainted'], implode(', ', $mons),
         bxt_decode_player_message_for_region(REGION, $rec['msgs']['message_start']));
+}
+foreach (array_slice($rankingRows, 0, 3) as $r) {
+    printf("  RK %-7s cat=%d score=%d %s age=%d %s zip=%s \"%s\"\n", $r['name_text'], $r['category'], $r['score'],
+        bxt_decode_player_gender($r['gender']), $r['age'], bxt_decode_player_region(REGION, $r['pregion']),
+        bxt_decode_exchange_player_zip(REGION, $r['zip']), bxt_decode_player_message_for_region(REGION, rtrim($r['msg'], "\x00")));
 }
 foreach (array_slice($tcDeposits, 0, 5) as $d) {
     printf("  TC %-7s offers %s(%d) g=%d L%d wants %s(%d) g=%d\n", $d['name_text'],
@@ -654,7 +716,9 @@ if ($dryRun) {
 // ---------------------------------------------------------------------------
 // Insert.
 // ---------------------------------------------------------------------------
-$manifest = ['account_ids' => $accountIds, 'created_at' => date('c'), 'bt_ids' => [], 'bt_fingerprints' => [], 'tc_ids' => []];
+$manifest = is_file($manifestPath) ? (json_decode((string)file_get_contents($manifestPath), true) ?: []) : [];
+$manifest = array_merge(['bt_ids' => [], 'bt_fingerprints' => [], 'tc_ids' => [], 'ranking_rows' => 0], $manifest,
+    ['account_ids' => $accountIds, 'updated_at' => date('c')]);
 $db->begin_transaction();
 
 $btSql = 'insert into bxt_battle_tower_records (game_region, room, level, level_decode, trainer_id, secret_id, player_name, player_name_decode, `class`, class_decode, '
@@ -718,8 +782,34 @@ foreach ($tcDeposits as $d) {
     $manifest['tc_ids'][] = $db->insert_id;
 }
 $stmt->close();
+
+$rkSql = 'insert into bxt_ranking (game_region, news_id, category_id, category_id_decode, account_id, trainer_id, secret_id, '
+    . 'player_name, player_name_decode, player_gender, player_gender_decode, player_age, player_region, player_region_decode, '
+    . 'player_zip, player_zip_decode, player_message, player_message_decode, score, `timestamp`) '
+    . 'values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, now() - interval ? second)';
+$stmt = $db->prepare($rkSql);
+foreach ($rankingRows as $r) {
+    $region = REGION;
+    $catDecode = bxt_decode_ranking_category(REGION, $r['category']);
+    $nameDecode = bxt_decode_player_name_for_region(REGION, $r['name']);
+    $genderDecode = bxt_decode_player_gender($r['gender']);
+    $regionDecode = bxt_decode_player_region(REGION, $r['pregion']);
+    $zipDecode = bxt_decode_exchange_player_zip(REGION, $r['zip']);
+    $msgDecode = bxt_decode_player_message_for_region(REGION, rtrim($r['msg'], "\x00"));
+    $stmt->bind_param('siisiiissisiissssiii',
+        $region, $r['news_id'], $r['category'], $catDecode, $r['account']['id'], $r['tid'], $r['sid'],
+        $r['name'], $nameDecode, $r['gender'], $genderDecode, $r['age'], $r['pregion'], $regionDecode,
+        $r['zip'], $zipDecode, $r['msg'], $msgDecode, $r['score'], $r['age_seconds']);
+    if (!$stmt->execute()) {
+        $db->rollback();
+        fwrite(STDERR, "insert failed: " . $stmt->error . "\n");
+        exit(1);
+    }
+    $manifest['ranking_rows']++;
+}
+$stmt->close();
 $db->commit();
 
 file_put_contents($manifestPath, json_encode($manifest));
-printf("Inserted %d Battle Tower records and %d Trade Corner deposits (primary account_id=%d). Manifest: %s\n",
-    count($manifest['bt_ids']), count($manifest['tc_ids']), $primaryAccountId, $manifestPath);
+printf("Inserted %d Battle Tower records, %d Trade Corner deposits and %d ranking rows this run (primary account_id=%d). Manifest: %s\n",
+    count($btRecords), count($tcDeposits), count($rankingRows), $primaryAccountId, $manifestPath);
