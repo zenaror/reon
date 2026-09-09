@@ -35,6 +35,10 @@ home: Home
 games: Games
 mobile-home: Mobile Homepage
 news: News
+guide: "Get started"
+downloads: "Downloads"
+page-not-found: "This page doesn't exist yet."
+page-contents: "Contents"
 news-empty: "No news yet."
 news-see-more: "Read more"
 news-newer: "Newer"

@@ -36,6 +36,10 @@ home: Accueil
 games: Jeux
 mobile-home: Page d'Accueil Mobile
 news: Actualités
+guide: "Premiers pas"
+downloads: "Téléchargements"
+page-not-found: "Cette page n'existe pas encore."
+page-contents: "Sommaire"
 news-empty: "Pas encore d'actualités."
 news-see-more: "Lire la suite"
 news-newer: "Plus récentes"

@@ -1,0 +1,80 @@
+{% extends "main.twig" %}
+{% set body_class = "home home-v2" %}
+
+{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ (nav_item)|trans }}{% endif %}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/pages.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	{# Same portal furniture as the homepage and the news: ticker, sidebar,
+	   beige page box. The right column is one Markdown file, rendered. #}
+	<div class="reon-ticker">
+		<span class="reon-ticker__label">{{'news'|trans}}</span>
+		<marquee class="reon-ticker__scroll">{{'welcome-alpha'|trans}}</marquee>
+	</div>
+
+	<div class="home-layout">
+		{% include "_portal_sidebar.twig" %}
+
+		<div class="home-main">
+			{% if html is null %}
+				<div class="reon-pickup">{{ (nav_item)|trans }}<span class="bar"></span></div>
+				<div class="home-prose"><p>{{'page-not-found'|trans}}</p></div>
+			{% else %}
+				<div class="reon-pickup">{{ page_title }}<span class="bar"></span></div>
+
+				{# Built by the script below from the article's ## headings, so
+				   a long guide can be jumped through. Hidden until it has
+				   something to list. #}
+				<nav class="reon-page-toc" id="pageToc" hidden aria-label="{{'page-contents'|trans}}">
+					<h2 class="reon-box__bar">{{'page-contents'|trans}}</h2>
+					<ol></ol>
+				</nav>
+
+				<article class="reon-post reon-page" id="pageBody">{{ html|raw }}</article>
+			{% endif %}
+		</div>
+	</div>
+
+	<footer class="reon-footer">
+		<div class="reon-footer__nav">
+			<a class="reon-chrome-btn" href="#top">{{'homepage.top'|trans}}</a>
+		</div>
+	</footer>
+{% endblock %}
+
+{% block body %}
+<script>
+(function () {
+	var body = document.getElementById("pageBody");
+	var toc = document.getElementById("pageToc");
+	if (!body || !toc) return;
+	var heads = body.querySelectorAll("h2");
+	if (heads.length < 2) return;
+	var list = toc.querySelector("ol");
+	var seen = {};
+	heads.forEach(function (h) {
+		// Stable anchors from the heading text, so a link to a section
+		// keeps working after the text above it is edited.
+		var id = h.id || h.textContent.trim().toLowerCase()
+			.normalize("NFD").replace(/[̀-ͯ]/g, "")
+			.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "section";
+		var base = id, n = 2;
+		while (seen[id] || document.getElementById(id)) { id = base + "-" + (n++); }
+		seen[id] = true;
+		h.id = id;
+		var li = document.createElement("li");
+		var a = document.createElement("a");
+		a.href = "#" + id;
+		a.textContent = h.textContent;
+		li.appendChild(a);
+		list.appendChild(li);
+	});
+	toc.hidden = false;
+})();
+</script>
+{% endblock %}
