@@ -68,8 +68,8 @@
 }
 
 .battle-table-shell {
-  --bt-frame-left: 34px;
-  --bt-frame-right: 42px;
+  --bt-frame-left: 30px;
+  --bt-frame-right: 37px;
   --bt-frame-top: 45px;
   --bt-frame-bottom: 48px;
   width: min(980px, 100%);
@@ -652,6 +652,14 @@
 .battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"],
 .battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"] .battle-table-shell {
   width: min(1110px, 100%);
+}
+
+/* With both filters on ALL the frame is wider than its 980px art and the
+   top/bottom borders stretch; the sides take a little more width so the
+   corners still meet (owner-tuned values). */
+.battle-tower-page[data-bt-extra="2"] .battle-table-shell {
+  --bt-frame-left: 34px;
+  --bt-frame-right: 42px;
 }
 
 .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
