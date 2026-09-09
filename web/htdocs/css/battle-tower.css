@@ -134,6 +134,12 @@
   /* padding-top keeps the white backdrop flush under the top frame border
      (blocks the title's margin from collapsing out and exposing the wall). */
   padding-top: 6px;
+  /* The side art is 30px on the left and 37px on the right, but both draw
+     a 15px border and the rest is white, so the visible white box is
+     symmetric while this content box is not: everything centred in it sat
+     3.5px left of the frame's centre. Pad the difference on the left so the
+     content is centred between the two visible borders. */
+  padding-left: calc(var(--bt-frame-right) - var(--bt-frame-left));
 }
 
 .battle-table-grid {

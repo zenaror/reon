@@ -37,7 +37,13 @@
       // edge (the dotted border) slid under the white content box.
       var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
       var sideLeft = Math.max(0, Math.round(rect.left));
-      var sideRight = Math.max(0, Math.round(viewportWidth - rect.right));
+      // Derived from the rounded left side and the container's width, not
+      // rounded on its own: with a classic scrollbar the container sits at a
+      // half pixel (e.g. 132.5px on a 1585px viewport) and rounding both
+      // sides gave 133 + 133 for 265px of margin. The Rankings banner hangs
+      // off the left side, so its right frame line then landed 1px right of
+      // the right rail's. This keeps left + width + right exact.
+      var sideRight = Math.max(0, viewportWidth - sideLeft - Math.round(rect.width));
       var style = document.documentElement.style;
       style.setProperty("--" + prefix + "-viewport-width", viewportWidth + "px");
       style.setProperty("--" + prefix + "-nav-side-left", sideLeft + "px");

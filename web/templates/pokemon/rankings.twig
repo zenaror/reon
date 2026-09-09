@@ -171,7 +171,10 @@ initReonSideBackgrounds("trade-corner", {
         var SIDE_EDGE_WIDTH = 320;
         var TOP_EDGE_HEIGHT = 150;
         var header = document.querySelector("header.navbar.container-xxl, header.navbar");
-        var topEdgeTop = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
+        // Page coordinates, not viewport: the banner scrolls with the page,
+        // and a reload that restores a scrolled position would otherwise
+        // measure a negative bottom and pin the banner to the top.
+        var topEdgeTop = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom + window.scrollY)) : 0;
         var topEdgeLeft = sideLeft - SIDE_EDGE_WIDTH;
         var topEdgeRight = window.innerWidth - sideRight + SIDE_EDGE_WIDTH;
         var topEdgeWidth = Math.max(0, Math.round(topEdgeRight - topEdgeLeft));
