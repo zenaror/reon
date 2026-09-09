@@ -49,38 +49,12 @@ you reinstall your emulator or set up another device.
 
 ### 3. Give `config.bin` to your emulator
 
-**mGBA**
+**mGBA (PC)**
 
 1. Open a game that supports the Mobile Adapter GB.
 2. In the menu, open **Mobile Game Boy Adapter…**.
 3. Go to the **Settings** tab and press **Load config file**.
 4. Pick the `config.bin` you downloaded. That's it!
-
-**BGB**
-
-1. Download **BGB** from its official site ([bgb.bircd.org](https://bgb.bircd.org/))
-   and unzip it anywhere.
-2. From the [Downloads](/downloads.php) page, get **mobile-windows.exe**
-   (Windows) or **mobile-linux** (Linux). Put it in a folder of its own.
-3. Put your `config.bin` in that same folder, next to the program. Keep
-   the name `config.bin`.
-4. Open BGB, load your game, then **right-click the BGB window → Link →
-   Listen**. Leave the default port.
-5. Open a terminal / command prompt in the program's folder and run:
-   - Windows: `mobile-windows.exe --dns1 152.67.55.127 --relay 152.67.55.127`
-   - Linux: `./mobile-linux --dns1 152.67.55.127 --relay 152.67.55.127`
-     (on Linux, run `chmod +x mobile-linux` once first)
-6. The window shows a line like `[device-auth] Pairing code: ED32-E9B2`.
-   That code is how this computer appears in
-   [Connected devices](/user/devices.php) on your account, so you can
-   tell your devices apart, or block one.
-7. Keep that window open while you play. In the game, use the mobile
-   features as normal: the first time you connect, the program links this
-   computer to your account by itself.
-
-<div class="reon-note">If the program says <code>Could not connect
-(127.0.0.1:8765)</code>, BGB is not listening yet: do step 4 first, then
-run the program again.</div>
 
 **3DS (mGBA)**
 
@@ -99,42 +73,15 @@ online. Get excited!
 
 ## Get started with games
 
-### Pokémon Crystal
+The adapter is set up once; each game has its own page with its own
+setup steps and what you can do online:
 
-**Setup**
+- [Pokémon Crystal](/pokemon/)
+- [Mario Kart: Super Circuit](/mariokart/)
+- [Game Boy Wars 3](/gbwars/)
 
-First, check two things:
-
-- Your Pokémon Crystal ROM is the **patched** version. When the patched
-  game boots you will see the **Mobile System GB** logo before the intro
-  animation.
-- On that logo screen, you should see a flashing message that says
-  **Checking Mobile Adapter**. It is a good idea to plug the Mobile Adapter
-  in *before* starting the game, and to leave it in until you are done.
-
-Then get past the title screen. You will find a new menu item called
-**MOBILE**. Select it and follow the game's instructions. Get ready for a
-side of Pokémon Crystal you have never seen before!
-
-**What you can do**
-
-- **Battle and trade over Mobile:** [to be written]
-- **The PokéCom Center in Goldenrod:**
-  - **Trade Corner:** [to be written]
-  - **Pokémon News Machine:** [to be written]
-- **Battle Tower:** [to be written]
-- **Mobile Stadium:** [to be written]
-
-### Mario Kart: Super Circuit
-
-[To be written.]
-
-### Game Boy Wars 3
-
-[To be written.]
-
-<!-- Next game: copy the Pokémon Crystal section above and follow the
-     same shape: "Setup", then "What you can do". -->
+<!-- Game-specific text lives in web/pages/games/<game>.<locale>.md, not
+     here. This page is only what is the same for every game. -->
 
 ## Troubleshooting
 
@@ -144,6 +91,10 @@ side of Pokémon Crystal you have never seen before!
 what to do.]
 
 ### Frequently asked questions
+
+<!-- BGB (libmobile-bgb) steps were removed on purpose for now: on the
+     PC the guide shows only mGBA, so nobody is sent down the harder
+     setup by mistake. Add them back here when the time comes. -->
 
 **Do I need to download `config.bin` again?**
 Only if you lost it. The same file works on all your devices, and a fresh

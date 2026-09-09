@@ -1,6 +1,21 @@
 {# Portal sidebar: service status + the vine-threaded gem menu.
    Shared by every page that uses the home layout, so the adapter's
-   hand-calibrated join with the cable lives in exactly one place. #}
+   hand-calibrated join with the cable lives in exactly one place.
+
+   The gems are unlit until hovered; the one for the page being shown is
+   lit with a glow and is not a link (still listed, so the menu reads the
+   same everywhere). `current_path` comes from TemplateUtil. #}
+		{% set path = current_path|default('/') %}
+		{% set here = {
+			'home':      path == '/' or path == '/index.php',
+			'news':      path starts with '/news.php',
+			'guide':     path starts with '/guide.php',
+			'downloads': path starts with '/downloads.php',
+			'mail':      path starts with '/user/mail.php',
+			'pokemon':   path starts with '/pokemon/',
+			'gbwars':    path starts with '/gbwars/',
+			'mariokart': path starts with '/mariokart/',
+		} %}
 		<aside class="home-sidebar">
 			<section class="reon-box reon-box--sidebar">
 				<h2 class="reon-box__bar reon-box__bar--teal">{{'status'|trans}}</h2>
@@ -39,14 +54,27 @@
 				</svg>
 				{# the vine plugs into a REON adapter that slips under the page border #}
 				<img class="reon-menu__adapter" src="/images/mobile_adapter/REON_Blue_Adapter_Horizontal.svg" alt="" aria-hidden="true">
-				<a class="reon-menu-item" href="/index.php" style="--gem:var(--reon-blue)"><span class="reon-gem"></span><span class="label">{{'home'|trans}}</span></a>
-				<a class="reon-menu-item" href="/news.php" style="--gem:var(--reon-purple)"><span class="reon-gem"></span><span class="label">{{'news'|trans}}</span></a>
-				<a class="reon-menu-item" href="/guide.php" style="--gem:var(--reon-teal)"><span class="reon-gem"></span><span class="label">{{'guide'|trans}}</span></a>
-				<a class="reon-menu-item" href="/downloads.php" style="--gem:var(--reon-green)"><span class="reon-gem"></span><span class="label">{{'downloads'|trans}}</span></a>
-				<a class="reon-menu-item" href="/user/mail.php" style="--gem:var(--reon-orange)"><span class="reon-gem"></span><span class="label">{{'mail.title'|trans}}<span data-mail-badge data-mail-dot="1">{% if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif %}{% if mail_new > 0 %} <span class="mail-dot" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}" aria-hidden="true"></span>{% endif %}</span></span></a>
-				<a class="reon-menu-item" href="/pokemon/" style="--gem:var(--reon-red)"><span class="reon-gem"></span><span class="label">{{'pokemon-crystal'|trans}}</span></a>
-				<a class="reon-menu-item" href="/gbwars/" style="--gem:var(--reon-green)"><span class="reon-gem"></span><span class="label">{{'gameboy-wars'|trans}}</span></a>
-				<a class="reon-menu-item" href="/mariokart/" style="--gem:var(--reon-yellow)"><span class="reon-gem"></span><span class="label">{{'mario-kart.title'|trans}}</span></a>
+
+				{# One macro for every entry: an <a> normally, a <span> with
+				   aria-current for the page we are on. #}
+				{% macro item(active, href, gem, label, extra) %}
+					{% if active %}
+						<span class="reon-menu-item is-active" aria-current="page" style="--gem:{{ gem }}"><span class="reon-gem"></span><span class="label">{{ label }}{{ extra|default('')|raw }}</span></span>
+					{% else %}
+						<a class="reon-menu-item" href="{{ href }}" style="--gem:{{ gem }}"><span class="reon-gem"></span><span class="label">{{ label }}{{ extra|default('')|raw }}</span></a>
+					{% endif %}
+				{% endmacro %}
+				{% import _self as menu %}
+
+				{{ menu.item(here.home, '/index.php', 'var(--reon-blue)', 'home'|trans) }}
+				{{ menu.item(here.news, '/news.php', 'var(--reon-purple)', 'news'|trans) }}
+				{{ menu.item(here.guide, '/guide.php', 'var(--reon-teal)', 'guide'|trans) }}
+				{{ menu.item(here.downloads, '/downloads.php', 'var(--reon-green)', 'downloads'|trans) }}
+				{% set mail_extra %}<span data-mail-badge data-mail-dot="1">{% if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% elseif mail_count > 0 %} <span class="mail-badge">{{ mail_count }}</span>{% endif %}{% if mail_new > 0 %} <span class="mail-dot" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}" aria-hidden="true"></span>{% endif %}</span>{% endset %}
+				{{ menu.item(here.mail, '/user/mail.php', 'var(--reon-orange)', 'mail.title'|trans, mail_extra) }}
+				{{ menu.item(here.pokemon, '/pokemon/', 'var(--reon-red)', 'pokemon-crystal'|trans) }}
+				{{ menu.item(here.gbwars, '/gbwars/', 'var(--reon-green)', 'gameboy-wars'|trans) }}
+				{{ menu.item(here.mariokart, '/mariokart/', 'var(--reon-yellow)', 'mario-kart.title'|trans) }}
 				<a class="reon-menu-item" href="#" onclick="openGbcModal(); return false;" style="--gem:var(--reon-teal)"><span class="reon-gem"></span><span class="label">{{'mobile-home'|trans}}</span></a>
 			</nav>
 		</aside>

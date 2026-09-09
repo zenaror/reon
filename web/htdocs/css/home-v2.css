@@ -645,6 +645,49 @@ body.home-v2 main#content { overflow: hidden; }
     radial-gradient(circle at 34% 28%, #fff 0 2.5px, rgba(255, 255, 255, 0.65) 4px, transparent 8px),
     radial-gradient(circle at 50% 60%, var(--gem) 40%, color-mix(in srgb, var(--gem) 60%, #000) 100%);
   box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.45), 0 1px 1px rgba(0, 0, 0, 0.35);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Gems are unlit until the pointer is on them; the page being shown has
+   its gem lit and glowing, and its entry is a <span>, not a link. */
+.reon-menu-item .reon-gem {
+  filter: saturate(0.35) brightness(0.7);
+}
+
+.reon-menu-item:hover .reon-gem,
+.reon-menu-item:focus-visible .reon-gem,
+.reon-menu-item.is-active .reon-gem {
+  filter: none;
+}
+
+.reon-menu-item.is-active {
+  cursor: default;
+  color: #1a2340;
+}
+
+.reon-menu-item.is-active:active { transform: none; box-shadow: none; }
+
+.reon-menu-item.is-active .reon-gem {
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.45),
+    0 0 0 2px #fff,
+    0 0 6px 3px var(--gem),
+    0 0 14px 4px color-mix(in srgb, var(--gem) 55%, transparent);
+  animation: reon-gem-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes reon-gem-glow {
+  50% {
+    box-shadow:
+      inset 0 -1px 2px rgba(0, 0, 0, 0.45),
+      0 0 0 2px #fff,
+      0 0 9px 4px var(--gem),
+      0 0 20px 6px color-mix(in srgb, var(--gem) 55%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reon-menu-item.is-active .reon-gem { animation: none; }
 }
 
 /* dotted separator between service rows (GameCube list style); starts past

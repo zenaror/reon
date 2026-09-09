@@ -3,15 +3,42 @@
 {% set body_class = "pokecrystal-index" %}
 
 {% block title %}{{'pokemon-crystal'|trans}}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/game-page.css') }}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-	<h1>{{'pokemon-crystal'|trans}}</h1>
-	<p>{{'pokemon-pages.index-description'|trans}}</p>
-	<h2><a href="rankings.php">{{'rankings'|trans}}</a></h2>
-	<p>{{'pokemon-pages.rankings-description'|trans}}</p>
-	<h2><a href="tradecorner.php">{{'trade-corner'|trans}}</a></h2>
-	<p>{{'pokemon-pages.trade-corner-description'|trans}}</p>
-	<h2><a href="battletower.php">{{'battle-tower'|trans}}</a></h2>
-	<p>{{'pokemon-pages.battle-tower-description'|trans}}</p>
-	<h2><a href="saveconverter.php">{{'bxt-save-converter'|trans}}</a></h2>
-	<p>{{'pokemon-pages.bxt-save-converter-description'|trans}}</p>
+	{# One-page hub: the menu is built from the h2s below by page-sections.js.
+	   The text sections come from web/pages/games/pokemon.<locale>.md; the
+	   last section is the live one, with the links to the online services. #}
+	<header class="game-head">
+		<img class="game-head__logo" src="/images/crystal/logo.png" alt="">
+		<div>
+			<h1>{{'pokemon-crystal'|trans}}</h1>
+			<p class="game-head__tagline">{{'pokemon-pages.index-description'|trans}}</p>
+		</div>
+	</header>
+
+	<nav class="game-nav" data-sections-nav hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+
+	<div class="game-sections" data-sections>
+		{% if doc_html %}
+			<div class="game-doc">{{ doc_html|raw }}</div>
+		{% endif %}
+
+		<section class="game-section">
+			<h2>{{'game-page.services'|trans}}</h2>
+			<div class="game-services">
+				<a href="rankings.php"><strong>{{'rankings'|trans}}</strong>{{'pokemon-pages.rankings-description'|trans}}</a>
+				<a href="tradecorner.php"><strong>{{'trade-corner'|trans}}</strong>{{'pokemon-pages.trade-corner-description'|trans}}</a>
+				<a href="battletower.php"><strong>{{'battle-tower'|trans}}</strong>{{'pokemon-pages.battle-tower-description'|trans}}</a>
+				<a href="saveconverter.php"><strong>{{'bxt-save-converter'|trans}}</strong>{{'pokemon-pages.bxt-save-converter-description'|trans}}</a>
+			</div>
+		</section>
+	</div>
+{% endblock %}
+
+{% block body %}
+<script src="{{ asset('/js/page-sections.js') }}"></script>
 {% endblock %}
