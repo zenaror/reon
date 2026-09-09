@@ -19,6 +19,13 @@
 	{# A tab badge means "this wants you", not "this holds things": only unread
 	   mail qualifies. Plain totals live on the panel bar of the folder you are
 	   actually looking at, where they describe what is on screen. #}
+	{# "Message sent." sits above the whole toolbar: on a phone the buttons
+	   wrap above the tabs, and a notice wedged between tabs and list read as
+	   part of the list. #}
+	{% if messages is not null and sent|default(false) %}
+		<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
+	{% endif %}
+
 	<nav class="mt-tabs">
 		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">
 			{{'mail.inbox'|trans}}{% if mail_new > 0 %} <span class="mt-tab__count mt-tab__count--new" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>{% endif %}
@@ -115,10 +122,6 @@
 		</section>
 
 	{% elseif messages is not null %}
-		{% if sent|default(false) %}
-			<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
-		{% endif %}
-
 		{# Filled in by the background check below. A banner rather than a
 		   reload: reloading would discard a half-written message, and would
 		   also run markInboxSeen every minute, clearing the "new" marker for
