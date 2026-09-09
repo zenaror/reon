@@ -22,6 +22,17 @@
 		const BODY_MAX_LINES = 8;
 		const BODY_MAX_CHARS = 96;
 
+		// The domains a recipient can be "one of ours" under: the game's DION
+		// domain and the site's real-internet mail domain, lower-cased. The
+		// compose page uses them to decide when to show the Game Boy limits.
+		public function internalDomains() {
+			$cfg = ConfigUtil::getInstance()->getConfig();
+			return array_values(array_filter([
+				strtolower($cfg["email_domain_dion"] ?? ""),
+				strtolower($cfg["email_domain"] ?? ""),
+			]));
+		}
+
 		// Returns an error code, or null when the body fits.
 		public function checkBodyFits($body) {
 			$normalized = preg_replace('/\r\n|\r/', "\n", (string)$body);
@@ -172,12 +183,6 @@
 			$db = DBUtil::getInstance()->getDB();
 			$fromUserId = (int)$fromUserId;
 
-			// Checked before anything else, and for every destination: a
-			// message that cannot be displayed on a Game Boy is refused
-			// outright rather than sent and silently truncated later.
-			$tooLong = $this->checkBodyFits($body);
-			if ($tooLong !== null) return [false, $tooLong];
-
 			$stmt = $db->prepare("select username, dion_email_local from sys_users where id = ? limit 1");
 			$stmt->bind_param("i", $fromUserId);
 			$stmt->execute();
@@ -186,8 +191,16 @@
 
 			$recipientId = $this->resolveLocalRecipient($toAddress);
 			if ($recipientId === null) {
+				// Off to the real internet: no Game Boy will ever render it,
+				// so the 8-line / 96-character budget does not apply.
 				return $this->sendExternal($fromUserId, $sender, $toAddress, $subject, $body);
 			}
+
+			// A message another player will read on a Game Boy: refused
+			// outright when it cannot be displayed there, rather than sent
+			// and silently truncated later.
+			$tooLong = $this->checkBodyFits($body);
+			if ($tooLong !== null) return [false, $tooLong];
 
 			$cfg = ConfigUtil::getInstance()->getConfig();
 			// Sent from the DION address so a reply from inside a game lands
