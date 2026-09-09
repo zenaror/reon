@@ -76,6 +76,7 @@
 					"subject" => $parsed["subject"],
 					"from_name" => $parsed["from_name"],
 					"game" => $parsed["game"],
+					"body" => $parsed["body"],
 					"deleted_at" => $row["deleted_at"],
 					"deleted_by" => $row["deleted_by"],
 					// Distinguishes mail the game took a copy of from mail it
@@ -430,6 +431,7 @@
 					"subject" => $parsed["subject"],
 					"from_name" => $row["recipient"],
 					"game" => $parsed["game"],
+					"body" => $parsed["body"],
 					"unread" => false,
 				];
 			}
@@ -532,6 +534,166 @@
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
 			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
+		// ------------------------------------------------------------------
+		// Conversations. A webmail notion only: the games know nothing of
+		// threads, and no header ties a reply to what it answers (the Mobile
+		// Trainer sets none). So a conversation is the mail -- received and
+		// sent -- that shares a subject once the "Re:"/"Fw:" prefixes are
+		// stripped, with the same other party, however that party was
+		// written (username, short or long address).
+		// ------------------------------------------------------------------
+
+		public function normalizeSubject($subject) {
+			$s = trim((string)$subject);
+			$prefix = '/^(re|fw|fwd|aw|sv|tr|res|vs|wg)\s*(\[\d+\])?\s*:\s*/iu';
+			while (preg_match($prefix, $s)) {
+				$s = preg_replace($prefix, "", $s, 1);
+			}
+			return mb_strtolower(trim(preg_replace('/\s+/u', " ", $s)));
+		}
+
+		private $partyCache = [];
+
+		// The other side of a message, in a form that matches whether they
+		// appeared as a sender (their address) or as a recipient (a
+		// username, or an address at either of our domains): a REON account
+		// becomes "u<id>", anyone else their lower-cased address.
+		public function partyKey($address) {
+			$a = trim((string)$address);
+			if (preg_match('/<([^>]+)>/', $a, $m)) $a = $m[1];
+			$a = mb_strtolower($a);
+			if ($a === "") return "";
+			if (!array_key_exists($a, $this->partyCache)) {
+				$id = $this->resolveLocalRecipient($a);
+				$this->partyCache[$a] = $id !== null ? "u" . $id : $a;
+			}
+			return $this->partyCache[$a];
+		}
+
+		public function isPlayerAddress($address) {
+			return substr($this->partyKey($address), 0, 1) === "u";
+		}
+
+		// Every conversation of the inbox, newest activity first. Each carries
+		// its messages oldest first (received and sent, bodies included), the
+		// unread count, and the inbox ids a bulk action can act on.
+		public function threadsForUser($userId) {
+			$threads = [];
+			foreach ($this->listForUser($userId, "inbox") as $m) {
+				$m["kind"] = "in";
+				$this->threadAdd($threads, $m, $this->partyKey($m["sender"]), $m["sender"], $m["from_name"]);
+			}
+			foreach ($this->listSentForUser($userId) as $m) {
+				$m["kind"] = "out";
+				$this->threadAdd($threads, $m, $this->partyKey($m["recipient"]), $m["recipient"], "");
+			}
+			foreach ($threads as &$t) {
+				usort($t["messages"], function ($a, $b) {
+					return strcmp($a["timestamp"], $b["timestamp"]) ?: ((int)$a["id"] <=> (int)$b["id"]);
+				});
+				$t["count"] = count($t["messages"]);
+				$t["first"] = $t["messages"][0];
+				$t["last"] = $t["messages"][$t["count"] - 1];
+				// The oldest message names the conversation, without the
+				// "Re:" every reply piles on.
+				$t["subject"] = $t["first"]["subject"];
+			}
+			unset($t);
+			usort($threads, function ($a, $b) {
+				return strcmp($b["last"]["timestamp"], $a["last"]["timestamp"]);
+			});
+			return array_values($threads);
+		}
+
+		private function threadAdd(&$threads, $m, $partyKey, $partyAddress, $partyName) {
+			$key = md5($this->normalizeSubject($m["subject"]) . "|" . $partyKey);
+			if (!isset($threads[$key])) {
+				$threads[$key] = [
+					"key" => $key,
+					"subject" => $m["subject"],
+					"party" => $partyAddress,
+					"party_name" => "",
+					"party_is_player" => substr($partyKey, 0, 1) === "u",
+					"messages" => [],
+					"unread" => 0,
+					"inbox_ids" => [],
+					"has_sent" => false,
+					"game" => "",
+				];
+			}
+			$t = &$threads[$key];
+			$t["messages"][] = $m;
+			if ($m["kind"] === "in") {
+				$t["inbox_ids"][] = (int)$m["id"];
+				if ($m["unread"]) $t["unread"]++;
+				// Received mail names the other side best: the From header
+				// carries their display name; a sent copy only has an address.
+				if ($partyName !== "" && $t["party_name"] === "") $t["party_name"] = $partyName;
+				if ($m["game"] !== "" && $t["game"] === "") $t["game"] = $m["game"];
+				$t["party"] = $partyAddress;
+			} else {
+				$t["has_sent"] = true;
+			}
+		}
+
+		public function threadForUser($userId, $key) {
+			$key = (string)$key;
+			if (!preg_match('/^[0-9a-f]{32}$/', $key)) return null;
+			foreach ($this->threadsForUser($userId) as $t) {
+				if ($t["key"] === $key) return $t;
+			}
+			return null;
+		}
+
+		public function markReadMany($userId, $ids) {
+			return $this->bulk($userId, $ids, "update sys_inbox set read_at = now()", "read_at is null");
+		}
+
+		// ------------------------------------------------------------------
+		// Filtering, over the parsed rows: a text looked for in subject,
+		// names, addresses and body, and one of the switches -- unread only,
+		// players only, the real internet only.
+		// ------------------------------------------------------------------
+
+		const FILTERS = ["", "unread", "players", "internet"];
+
+		public function messageMatches($m, $q, $only) {
+			if ($only === "unread" && empty($m["unread"])) return false;
+			if ($only === "players" || $only === "internet") {
+				$address = (($m["kind"] ?? "in") === "out") ? ($m["recipient"] ?? "") : ($m["sender"] ?? "");
+				if (($only === "players") !== $this->isPlayerAddress($address)) return false;
+			}
+			if ($q !== "") {
+				$hay = mb_strtolower(implode("\n", [
+					$m["subject"] ?? "", $m["from_name"] ?? "", $m["sender"] ?? "",
+					$m["recipient"] ?? "", $m["body"] ?? "",
+				]));
+				if (mb_strpos($hay, mb_strtolower($q)) === false) return false;
+			}
+			return true;
+		}
+
+		public function filterMessages($rows, $q, $only) {
+			return array_values(array_filter($rows, function ($m) use ($q, $only) {
+				return $this->messageMatches($m, $q, $only);
+			}));
+		}
+
+		// A conversation stays when any of its messages matches; "unread"
+		// means the conversation has something unread.
+		public function filterThreads($threads, $q, $only) {
+			return array_values(array_filter($threads, function ($t) use ($q, $only) {
+				if ($only === "unread") {
+					if ($t["unread"] === 0) return false;
+					$only = "";
+				}
+				foreach ($t["messages"] as $m) {
+					if ($this->messageMatches($m, $q, $only)) return true;
+				}
+				return false;
+			}));
 		}
 
 		// Mail written on a Game Boy arrives as JIS: headers as MIME
