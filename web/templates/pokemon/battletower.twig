@@ -80,7 +80,9 @@
                     </thead>
                     <tbody>
                         {% for leader in leaders %}
-                            <tr class="bt-row">
+                            {# The top three get a medal tint, but only where the rows
+                               are a ranking of one room -- see the CSS gate. #}
+                            <tr class="bt-row{% if leader.rank <= 3 %} bt-rank-{{ leader.rank }}{% endif %}">
                                 {% if show_level %}<td class="bt-col-level">{{ leader.level }}</td>{% endif %}
                                 {% if show_room %}<td class="bt-col-room">{{ "%03d"|format(leader.room) }}</td>{% endif %}
                                 <td class="bt-leader-cell">
@@ -283,9 +285,11 @@
         return;
     }
 
-    // Phones are always 1x: a 2x table does not fit and the control is hidden.
-    const phone = window.matchMedia("(max-width: 575.98px)");
-    const clamp = (value) => (!phone.matches && String(value) === "2") ? "2" : "1";
+    // No choice here: desktops are always 2x, phones and tablets always 1x
+    // (a 2x table does not fit them). The control stays hidden.
+    // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room.
+    const desktop = window.matchMedia("(min-width: 1200px)");
+    const clamp = () => desktop.matches ? "2" : "1";
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {
@@ -305,9 +309,8 @@
         return zoom;
     };
 
-    applyZoom(localStorage.getItem(STORAGE_KEY) || "1");
-    // Rotating past the breakpoint restores whatever the user chose.
-    phone.addEventListener("change", () => applyZoom(localStorage.getItem(STORAGE_KEY) || "1"));
+    applyZoom();
+    desktop.addEventListener("change", () => applyZoom());
 
     buttons.forEach((button) => {
         button.addEventListener("click", () => {

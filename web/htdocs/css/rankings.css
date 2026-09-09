@@ -128,6 +128,93 @@
   justify-items: center;
 }
 
+/* Category tabs. Off by default; the script switches them on when the
+   tables stack on the desktop (2x), where they replace each table's own
+   category row. Styled as that row: 16px PokeCrystal on the header grey,
+   the open tab in the table's own #f8f8f8 and joined to it. The strip is
+   zoomed like the panels, so it lines up with the table below. */
+.trainer-rankings-tabs {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tabs {
+    display: flex;
+    /* The table below is its 372px column budget plus the outer collapsed
+       border; the strip matches it edge to edge. */
+    width: 373px;
+    zoom: 2;
+    margin: 0 auto;
+  }
+
+  /* Three labels share the table's width, so they take the 8px face (16px
+     on screen at 2x) over up to two lines: "BATTLE TOWER / WINS". */
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 26px;
+    margin: 0;
+    padding: 5px 4px;
+    border: 1px solid #cfcfcf;
+    border-bottom: 0;
+    background: #dfdfdf;
+    color: #000;
+    font-size: 8px !important;
+    line-height: 8px !important;
+    letter-spacing: 0;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tab + .trainer-rankings-tab {
+    border-left: 0;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tab.is-active {
+    background: #f8f8f8;
+    /* Sits over the table's top border, so tab and table read as one box. */
+    position: relative;
+    z-index: 1;
+    margin-bottom: -1px;
+    padding-bottom: 6px;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tab:focus-visible {
+    outline: 2px solid #84b6ff;
+    outline-offset: -2px;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-tab-count {
+    font-size: 8px !important;
+    line-height: 8px !important;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-ranking-panel.is-tab-hidden,
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-ranking-category-row {
+    display: none;
+  }
+
+  .trainer-rankings-page[data-rankings-tabs="1"] .trainer-rankings-grid {
+    animation: none;
+  }
+
+  /* At 2x the panel was half the grid column (320px) while its table is
+     373px: the table hung out of the panel's right side and sat 53px off
+     centre. The panel takes the table's width, so table and tabs are
+     centred together. */
+  .trainer-rankings-page[data-rankings-zoom="2"] .trainer-ranking-panel {
+    width: 373px;
+    max-width: none;
+  }
+}
+
 .trainer-ranking-table {
   width: 100%;
   border-collapse: collapse;
