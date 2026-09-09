@@ -504,13 +504,13 @@ body.rankings-theme > main {
   }
 
   /* Keep the banner art on phones and tablets: the top-edge plate is
-     centred (its "Pokémon News" label sits ~150px in from the left edge of a
-     ~2000px image and falls outside a narrow viewport), the white column
+     centred and nudged left (its "Pokémon News" label ends ~640px into a
+     ~2000px image; -160px keeps it out of view up to 991px), the white column
      below it stays, only the side rails go. The title keeps its seat in the
      plate: rows 25..119 of the 150px art, centre 72. */
   body.rankings-theme {
     background-position:
-      calc(50% + 48px) var(--rankings-top-edge-top),
+      calc(50% - 160px) var(--rankings-top-edge-top),
       left var(--rankings-top-edge-top),
       right var(--rankings-top-edge-top),
       left top;
