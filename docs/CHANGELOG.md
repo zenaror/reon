@@ -6,10 +6,11 @@ o que mudou. Setembro/2026.
 ## reon (servidor / reon-mail / web)
 
 * **REON Mail** — webmail com leitura, envio (interno e para a internet real)
-  e lixeira de 30 dias. Envio externo sai por submissão local, que não passa
-  pela política de device-auth: o portão do jogo continua tão restrito quanto
-  era, e o webmail é autorizado pela sessão web, com limite por hora e
-  registro de auditoria
+  e lixeira de 30 dias; não lidos em destaque na lista, resumo "N na caixa ·
+  M não lidos", selos de correio novo nos menus. Envio externo sai por
+  submissão local, que não passa pela política de device-auth: o portão do
+  jogo continua tão restrito quanto era, e o webmail é autorizado pela
+  sessão web, com limite por hora e registro de auditoria
 * Lixeira de e-mail — o `DELE` do POP3 passou a marcar em vez de apagar. O
   Mobile Trainer não tem modo "deixar no servidor": todos os caminhos dele
   apagam, e um deles apaga sem nem baixar
@@ -308,12 +309,6 @@ o que mudou. Setembro/2026.
   44px com LV ou ROOM abertas e no celular; agora o painel cresce pela
   coluna extra (440→484px, coluna única) em vez de borrar a arte. Medido
   ao vivo em 1600px e 390px
-* REON Mail: linha "N na caixa de entrada · M não lidos" sob a barra da
-  caixa, nos sete idiomas, atualizada pela mesma consulta de um minuto dos
-  selos
-* Indicadores de e-mail: só correio novo ganha selo (o laranja com a
-  contagem, e o ponto pulsante no menu lateral); o total cinza da caixa
-  inteira saiu de todos os lugares, a pedido do dono
 * **Publicação no GitHub** (github.com/zenaror/*, espelho do Gitea): README
   e instruções em inglês em todos os projetos (os quatro adaptadores já
   estavam; README de instalação, scripts de hardening e README do systemd
