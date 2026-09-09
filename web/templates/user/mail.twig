@@ -62,7 +62,7 @@
 				</p>
 			{% endif %}
 
-			<form class="mt-compose" method="post" action="/user/mail.php">
+			<form class="mt-compose" method="post" action="/user/mail.php" data-internal-domains="{{ internal_domains|default([])|join(',') }}">
 				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 				<input type="hidden" name="action" value="send">
 				<label>
@@ -78,11 +78,17 @@
 					<textarea name="body" id="mt-body" rows="9" required
 						data-max-lines="{{ body_max_lines }}" data-max-chars="{{ body_max_chars }}">{{ compose.body }}</textarea>
 				</label>
-				{# The counter mirrors the server's rule exactly, so nobody
-				   writes a whole message only to have it refused on submit. #}
-				<p class="mt-count" id="mt-body-count" aria-live="polite"></p>
+				{# The Game Boy budget only matters for mail another player reads
+				   in a game, so the counter and the note show once the "To"
+				   field names one of ours (a username, or an address at one of
+				   our domains); the server applies the same rule. The counter
+				   mirrors it exactly, so nobody writes a whole message only to
+				   have it refused on submit. #}
+				<div id="mt-limits" hidden>
+					<p class="mt-count" id="mt-body-count" aria-live="polite"></p>
+					<p class="mt-note">{{'mail.size-note'|trans({'%lines%': body_max_lines, '%chars%': body_max_chars})}}</p>
+				</div>
 				<p class="mt-note">{{'mail.compose-note'|trans}}</p>
-				<p class="mt-note">{{'mail.size-note'|trans({'%lines%': body_max_lines, '%chars%': body_max_chars})}}</p>
 				<div class="mt-statusbar mt-statusbar--inline">
 					<span class="mt-statusbar__hint">{{'mail.hint-compose'|trans}}</span>
 					<span class="mt-statusbar__acts">
@@ -97,6 +103,26 @@
 				var box = document.getElementById("mt-body");
 				var out = document.getElementById("mt-body-count");
 				if (!box || !out) return;
+
+				var form = box.closest("form");
+				var to = form ? form.querySelector("input[name=to]") : null;
+				var limits = document.getElementById("mt-limits");
+				var domains = (form && form.dataset.internalDomains ? form.dataset.internalDomains : "")
+					.split(",").filter(Boolean);
+
+				// Same test as MailUtil::resolveLocalRecipient, minus the lookup:
+				// a bare name, or an address at one of our domains, is a player.
+				function isInternal(address) {
+					var v = address.trim().toLowerCase();
+					if (!v) return false;
+					var at = v.indexOf("@");
+					if (at < 0) return true;
+					return domains.indexOf(v.slice(at + 1)) >= 0;
+				}
+
+				function toggleLimits() {
+					if (limits && to) limits.hidden = !isInternal(to.value);
+				}
 
 				var maxLines = parseInt(box.dataset.maxLines, 10);
 				var maxChars = parseInt(box.dataset.maxChars, 10);
@@ -116,7 +142,9 @@
 				}
 
 				box.addEventListener("input", update);
+				if (to) to.addEventListener("input", toggleLimits);
 				update();
+				toggleLimits();
 			})();
 			</script>
 		</section>

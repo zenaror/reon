@@ -64,6 +64,7 @@
 					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"internal_domains" => $mail->internalDomains(),
 				]);
 				return;
 			}
@@ -105,6 +106,7 @@
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"internal_domains" => $mail->internalDomains(),
 		]);
 		return;
 	}
@@ -130,6 +132,7 @@
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
+			"internal_domains" => $mail->internalDomains(),
 		]);
 		return;
 	}
