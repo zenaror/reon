@@ -314,6 +314,25 @@
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
 			if (count($result) > 0 && (int) $result[0]["blocked"] === 1) return [403, ""];
+
+			// A device seen for the first time gets its row here, at 0, so it
+			// shows up on the account's device list as soon as it has talked
+			// to the server (the query runs at every session start; the first
+			// authorize only comes when the game opens a mail connection, and
+			// a device that just downloaded a page had none). Same cap as
+			// handleRequest. "Last seen" stays with authorize/deauthorize:
+			// those carry a fresh counter, while a replayed query must not be
+			// able to stamp a recent time and a foreign IP on a device.
+			if (count($result) === 0 && $deviceId !== "") {
+				$stmt = $db->prepare("select count(*) as n from sys_device_counter where user_id = ?");
+				$stmt->bind_param("i", $userId);
+				$stmt->execute();
+				if ((int) DBUtil::fancy_get_result($stmt)[0]["n"] < self::MAX_DEVICES_PER_ACCOUNT) {
+					$stmt = $db->prepare("insert ignore into sys_device_counter (user_id, device_id, counter, authorized, authorized_until) values (?, ?, 0, 0, null)");
+					$stmt->bind_param("is", $userId, $deviceId);
+					$stmt->execute();
+				}
+			}
 			$counter = count($result) === 0 ? "0" : (string) (int) $result[0]["counter"];
 			$responseMessage = $deviceId === ""
 				? $pppId."|query-response|".$counter
