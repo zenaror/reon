@@ -67,17 +67,43 @@
 	// filled from the chosen option's data-note, and the card's
 	// [data-download-for] button following the choice.
 	function initPickers() {
-		document.querySelectorAll(".reon-download__pick").forEach(function (pick) {
-			var card = pick.closest(".reon-download") || pick.parentNode;
+		document.querySelectorAll(".reon-download").forEach(function (card) {
+			var picks = card.querySelectorAll(".reon-download__pick");
+			if (!picks.length) return;
 			var button = card.querySelector("[data-download-for]");
 			var note = card.querySelector(".reon-download__note");
-			function apply() {
-				var opt = pick.options[pick.selectedIndex];
-				if (!opt) return;
-				if (button) button.href = opt.value;
-				if (note) note.textContent = opt.dataset.note || "";
+			var builds = null;
+			if (card.dataset.builds) {
+				try { builds = JSON.parse(card.dataset.builds); } catch (e) { builds = null; }
 			}
-			pick.addEventListener("change", apply);
+			function apply() {
+				var href = "", text = "", found = true;
+				if (builds) {
+					// Several pickers: their values joined with "|" name a build.
+					var key = Array.prototype.map.call(picks, function (p) { return p.value; }).join("|");
+					var build = builds[key];
+					if (build) { href = build.href || "#"; text = build.note || ""; }
+					else { found = false; text = card.dataset.unavailable || ""; }
+				} else {
+					// One picker: the option's value is the link.
+					var opt = picks[0].options[picks[0].selectedIndex];
+					if (!opt) return;
+					href = opt.value; text = opt.dataset.note || "";
+				}
+				if (button) {
+					button.href = found ? href : "#";
+					button.classList.toggle("is-disabled", !found);
+					button.setAttribute("aria-disabled", found ? "false" : "true");
+				}
+				if (note) {
+					note.textContent = text;
+					note.classList.toggle("is-warn", !found);
+				}
+			}
+			picks.forEach(function (p) { p.addEventListener("change", apply); });
+			if (button) button.addEventListener("click", function (e) {
+				if (button.classList.contains("is-disabled")) e.preventDefault();
+			});
 			apply();
 		});
 	}

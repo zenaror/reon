@@ -59,6 +59,21 @@ restart: the next request reads the new text.
     <p class="reon-download__note"></p>
     <a class="reon-chrome-btn" href="…/windows.zip" data-download-for="pick">Download</a>
   </div>
+
+  <!-- several pickers: their values joined with "|" look up a build in
+       data-builds; a missing combination disables the button and shows
+       data-unavailable -->
+  <div class="reon-download reon-download--wide"
+       data-builds='{"pico|reon": {"href": "…", "note": "file.uf2"}}'
+       data-unavailable="No build for this combination yet.">
+    <h3>Name</h3>
+    <div class="reon-download__picks">
+      <label>Board <select class="reon-download__pick"><option value="pico">Pico</option></select></label>
+      <label>Wiring <select class="reon-download__pick"><option value="reon">REON</option></select></label>
+    </div>
+    <p class="reon-download__note"></p>
+    <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
+  </div>
 </div>
 ```
 

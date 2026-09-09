@@ -50,37 +50,37 @@ Mobile Adapter. Find your board below, then pick the wiring you built.
 - **Wiring:** either the REON pinout, or the pinout of the stacksmashing board.
 
 <div class="reon-downloads">
-  <div class="reon-download">
-    <h3>Pico W</h3>
-    <p>Wi-Fi on board.</p>
-    <select class="reon-download__pick" aria-label="Wiring">
-      <option value="#" data-note="picow-reon.uf2">REON pinout</option>
-      <option value="#" data-note="picow-sm.uf2">stacksmashing pinout</option>
-    </select>
+  <div class="reon-download reon-download--wide" data-builds='{
+    "pico|w|reon":   {"href": "#", "note": "picow-reon.uf2"},
+    "pico|w|sm":     {"href": "#", "note": "picow-sm.uf2"},
+    "pico|esp|reon": {"href": "#", "note": "pico-esp-reon.uf2"},
+    "pico|esp|sm":   {"href": "#", "note": "pico-esp-sm.uf2"},
+    "pico2|w|reon":  {"href": "#", "note": "pico2w-reon.uf2"},
+    "pico2|esp|reon":{"href": "#", "note": "pico2-esp-reon.uf2"}
+  }' data-unavailable="No build for this combination yet.">
+    <h3>PicoAdapterGB</h3>
+    <div class="reon-download__picks">
+      <label>Board
+        <select class="reon-download__pick" data-pick="board">
+          <option value="pico">Pico</option>
+          <option value="pico2">Pico 2</option>
+        </select>
+      </label>
+      <label>Network
+        <select class="reon-download__pick" data-pick="radio">
+          <option value="w">Wi-Fi on board (Pico W)</option>
+          <option value="esp">ESP module</option>
+        </select>
+      </label>
+      <label>Wiring
+        <select class="reon-download__pick" data-pick="pinout">
+          <option value="reon">REON pinout</option>
+          <option value="sm">stacksmashing pinout</option>
+        </select>
+      </label>
+    </div>
     <p class="reon-download__note"></p>
     <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
-  </div>
-  <div class="reon-download">
-    <h3>Pico 2 W</h3>
-    <p>Wi-Fi on board. REON pinout.</p>
-    <p class="reon-download__note">pico2w-reon.uf2</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
-  </div>
-  <div class="reon-download">
-    <h3>Pico + ESP module</h3>
-    <p>Network through an ESP module.</p>
-    <select class="reon-download__pick" aria-label="Wiring">
-      <option value="#" data-note="pico-esp-reon.uf2">REON pinout</option>
-      <option value="#" data-note="pico-esp-sm.uf2">stacksmashing pinout</option>
-    </select>
-    <p class="reon-download__note"></p>
-    <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
-  </div>
-  <div class="reon-download">
-    <h3>Pico 2 + ESP module</h3>
-    <p>Network through an ESP module. REON pinout.</p>
-    <p class="reon-download__note">pico2-esp-reon.uf2</p>
-    <a class="reon-chrome-btn" href="#">Download</a>
   </div>
 </div>
 
