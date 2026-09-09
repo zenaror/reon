@@ -183,6 +183,49 @@
 			return 200;
 		}
 
+		// GET /api/adapter/device-auth?ppp_id=...&device=...&action=query&sig=...
+		//
+		// Read-only: tells the device the last counter the server accepted
+		// from it, so a device that lost its local state (or whose state
+		// rolled back) can continue from there instead of being refused as
+		// stale until its batches happen to overtake. sig is HMAC-SHA256
+		// over ppp_id|device|query (ppp_id|query in the legacy form) -- no
+		// counter, the request changes nothing, so replaying it gains an
+		// attacker nothing but a number that is not secret. A device without
+		// a row yet gets 0.
+		//
+		// Returns [status, body]: 200 with the counter in decimal as the
+		// whole body, 400 (malformed), 403 (unknown ppp_id / bad signature).
+		public function handleQuery($pppId, $sig, $deviceId = "") {
+			if (!preg_match('/^g[0-9]{9}$/', $pppId)) return [400, ""];
+			if (!preg_match('/^[0-9a-f]{64}$/', $sig)) return [400, ""];
+			if ($deviceId !== "" && !preg_match('/^[0-9a-f]{16}$/', $deviceId)) return [400, ""];
+
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("
+				select a.user_id, a.device_auth_key
+				from sys_device_authorization a
+				inner join sys_users u on u.id = a.user_id
+				where u.dion_ppp_id = ?
+			");
+			$stmt->bind_param("s", $pppId);
+			$stmt->execute();
+			$result = DBUtil::fancy_get_result($stmt);
+			if (count($result) === 0) return [403, ""];
+
+			$account = $result[0];
+			$message = $deviceId === "" ? $pppId."|query" : $pppId."|".$deviceId."|query";
+			$expectedSig = hash_hmac("sha256", $message, $account["device_auth_key"]);
+			if (!hash_equals($expectedSig, $sig)) return [403, ""];
+
+			$stmt = $db->prepare("select counter from sys_device_counter where user_id = ? and device_id = ?");
+			$userId = (int) $account["user_id"];
+			$stmt->bind_param("is", $userId, $deviceId);
+			$stmt->execute();
+			$result = DBUtil::fancy_get_result($stmt);
+			return [200, count($result) === 0 ? "0" : (string) (int) $result[0]["counter"]];
+		}
+
 		// Whether any of the account's devices holds an open authorization
 		// window right now (the relay policy asks the same question of the
 		// sender's account, see mail/relayPolicy.js).
