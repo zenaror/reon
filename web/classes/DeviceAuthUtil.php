@@ -56,8 +56,10 @@
 		// The website's explicit "revoke all devices" action: rotates the key,
 		// so every device holding the old one (emulator and real hardware can
 		// share it) has to redownload config.bin before it can authorize
-		// again, and drops every device row -- with the old key gone, nothing
-		// signed under it can be replayed, so the rows no longer guard anything.
+		// again. The device rows stay: a device's id comes from its hardware,
+		// so it will present the same id under the new key, and keeping the
+		// row keeps its nickname, its block and its history. Open windows are
+		// closed here since nothing signed under the old key counts any more.
 		public function revokeAllDevices($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$key = random_bytes(32);
@@ -69,9 +71,79 @@
 			$stmt->bind_param("is", $userId, $key);
 			$stmt->execute();
 
-			$stmt = $db->prepare("delete from sys_device_counter where user_id = ?");
+			$stmt = $db->prepare("update sys_device_counter set authorized = 0, authorized_until = null where user_id = ?");
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
+		}
+
+		// The account page's "connected devices" list, most recently seen
+		// first. Each row carries the pairing code the device itself can show
+		// (see pairingCode) so the owner can tell which physical device a row
+		// is before naming or blocking it.
+		public function listDevices($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("
+				select device_id, nickname, counter, authorized, authorized_until, blocked, last_ip, last_seen_at, created_at,
+				       (authorized = 1 and authorized_until > now()) as authorized_now
+				from sys_device_counter
+				where user_id = ?
+				order by coalesce(last_seen_at, created_at) desc, id desc
+			");
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			$rows = DBUtil::fancy_get_result($stmt);
+			foreach ($rows as &$row) {
+				$row["pairing_code"] = self::pairingCode($row["device_id"]);
+			}
+			return $rows;
+		}
+
+		// What the device shows on its own screen/console so the owner can
+		// match it to a row here: the first 8 hex digits of the device id,
+		// upper case, split 4-4. The legacy device (requests without an id)
+		// has nothing to show.
+		public static function pairingCode($deviceId) {
+			if ($deviceId === "" || $deviceId === null) return "----";
+			return strtoupper(substr($deviceId, 0, 4))."-".strtoupper(substr($deviceId, 4, 4));
+		}
+
+		// Nickname given by the owner; empty clears it. Returns false when
+		// the device is not this account's.
+		public function setNickname($userId, $deviceId, $nickname) {
+			$nickname = trim($nickname);
+			if ($nickname === "") $nickname = null;
+			elseif (mb_strlen($nickname) > 32) $nickname = mb_substr($nickname, 0, 32);
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("update sys_device_counter set nickname = ? where user_id = ? and device_id = ?");
+			$stmt->bind_param("sis", $nickname, $userId, $deviceId);
+			$stmt->execute();
+			return $stmt->affected_rows >= 0 && $this->ownsDevice($userId, $deviceId);
+		}
+
+		// Blocking keeps the row and its counter and answers 403 to everything
+		// the device sends; unblocking lets it continue where it was. A block
+		// also closes any window the device had open.
+		public function setBlocked($userId, $deviceId, $blocked) {
+			if (!$this->ownsDevice($userId, $deviceId)) return false;
+			$db = DBUtil::getInstance()->getDB();
+			$flag = $blocked ? 1 : 0;
+			if ($blocked) {
+				$stmt = $db->prepare("update sys_device_counter set blocked = 1, authorized = 0, authorized_until = null where user_id = ? and device_id = ?");
+				$stmt->bind_param("is", $userId, $deviceId);
+			} else {
+				$stmt = $db->prepare("update sys_device_counter set blocked = 0 where user_id = ? and device_id = ?");
+				$stmt->bind_param("is", $userId, $deviceId);
+			}
+			$stmt->execute();
+			return true;
+		}
+
+		private function ownsDevice($userId, $deviceId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select 1 from sys_device_counter where user_id = ? and device_id = ?");
+			$stmt->bind_param("is", $userId, $deviceId);
+			$stmt->execute();
+			return count(DBUtil::fancy_get_result($stmt)) > 0;
 		}
 
 		public function hasDeviceAuth($userId) {
@@ -94,8 +166,9 @@
 		//
 		// Returns an HTTP status: 200 (accepted, idempotent on a repeated
 		// counter), 400 (malformed request), 403 (unknown ppp_id / bad
-		// signature / stale counter / too many devices on the account).
-		public function handleRequest($pppId, $action, $counterRaw, $sig, $deviceId = "") {
+		// signature / stale counter / blocked device / too many devices on
+		// the account). $ip is recorded as where the device was last seen.
+		public function handleRequest($pppId, $action, $counterRaw, $sig, $deviceId = "", $ip = null) {
 			if (!preg_match('/^g[0-9]{9}$/', $pppId)) return 400;
 			if ($action !== "authorize" && $action !== "deauthorize") return 400;
 			if (!preg_match('/^(0|[1-9][0-9]*)$/', $counterRaw)) return 400;
@@ -128,7 +201,7 @@
 			// time is simply this account's next device: its row is created
 			// at the counter it presents. Only a valid signature gets this
 			// far, so an attacker without the key cannot fill the account up.
-			$stmt = $db->prepare("select id, counter from sys_device_counter where user_id = ? and device_id = ?");
+			$stmt = $db->prepare("select id, counter, blocked from sys_device_counter where user_id = ? and device_id = ?");
 			$stmt->bind_param("is", $userId, $deviceId);
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
@@ -140,16 +213,21 @@
 				if ((int) DBUtil::fancy_get_result($stmt)[0]["n"] >= self::MAX_DEVICES_PER_ACCOUNT) return 403;
 
 				if ($action === "authorize") {
-					$stmt = $db->prepare("insert into sys_device_counter (user_id, device_id, counter, authorized, authorized_until) values (?, ?, ?, 1, date_add(now(), interval 30 minute))");
+					$stmt = $db->prepare("insert into sys_device_counter (user_id, device_id, counter, authorized, authorized_until, last_ip, last_seen_at) values (?, ?, ?, 1, date_add(now(), interval 30 minute), ?, now())");
 				} else {
-					$stmt = $db->prepare("insert into sys_device_counter (user_id, device_id, counter, authorized, authorized_until) values (?, ?, ?, 0, null)");
+					$stmt = $db->prepare("insert into sys_device_counter (user_id, device_id, counter, authorized, authorized_until, last_ip, last_seen_at) values (?, ?, ?, 0, null, ?, now())");
 				}
-				$stmt->bind_param("isi", $userId, $deviceId, $counter);
+				$stmt->bind_param("isis", $userId, $deviceId, $counter, $ip);
 				$stmt->execute();
 				return 200;
 			}
 
 			$row = $result[0];
+			// Blocked on the account page: the row and its counter stay (so
+			// nothing captured earlier can be replayed), the device gets the
+			// same 403 as a stale counter until the owner unblocks it.
+			if ((int) $row["blocked"] === 1) return 403;
+
 			$lastCounter = (int) $row["counter"];
 			if ($counter < $lastCounter) return 403; // stale/replayed counter
 
@@ -174,11 +252,11 @@
 			if ($counter === $lastCounter && $action !== "deauthorize") return 200;
 
 			if ($action === "authorize") {
-				$stmt = $db->prepare("update sys_device_counter set counter = ?, authorized = 1, authorized_until = date_add(now(), interval 30 minute) where id = ?");
+				$stmt = $db->prepare("update sys_device_counter set counter = ?, authorized = 1, authorized_until = date_add(now(), interval 30 minute), last_ip = ?, last_seen_at = now() where id = ?");
 			} else {
-				$stmt = $db->prepare("update sys_device_counter set counter = ?, authorized = 0, authorized_until = null where id = ?");
+				$stmt = $db->prepare("update sys_device_counter set counter = ?, authorized = 0, authorized_until = null, last_ip = ?, last_seen_at = now() where id = ?");
 			}
-			$stmt->bind_param("ii", $counter, $row["id"]);
+			$stmt->bind_param("isi", $counter, $ip, $row["id"]);
 			$stmt->execute();
 			return 200;
 		}
@@ -230,11 +308,12 @@
 			$expectedSig = hash_hmac("sha256", $message, $account["device_auth_key"]);
 			if (!hash_equals($expectedSig, $sig)) return [403, ""];
 
-			$stmt = $db->prepare("select counter from sys_device_counter where user_id = ? and device_id = ?");
+			$stmt = $db->prepare("select counter, blocked from sys_device_counter where user_id = ? and device_id = ?");
 			$userId = (int) $account["user_id"];
 			$stmt->bind_param("is", $userId, $deviceId);
 			$stmt->execute();
 			$result = DBUtil::fancy_get_result($stmt);
+			if (count($result) > 0 && (int) $result[0]["blocked"] === 1) return [403, ""];
 			$counter = count($result) === 0 ? "0" : (string) (int) $result[0]["counter"];
 			$responseMessage = $deviceId === ""
 				? $pppId."|query-response|".$counter

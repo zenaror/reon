@@ -40,7 +40,9 @@
             }
         }
         if (array_key_exists("timeZone", $_POST)) {
-            if ($_POST["timeZone"] === "+0900" || in_array($_POST["timeZone"], timezone_identifiers_list(), true)) {
+            // Identifiers only; the default is Asia/Tokyo (the game's own
+            // time zone). "+0900" was the old spelling of that default.
+            if (in_array($_POST["timeZone"], timezone_identifiers_list(), true)) {
                 $db = DBUtil::getInstance()->getDB();
                 $stmt = $db->prepare("update sys_users set timezone = ? where id = ?");
                 $stmt->bind_param("si", $_POST["timeZone"], $_SESSION["user_id"]);

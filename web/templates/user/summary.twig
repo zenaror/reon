@@ -106,10 +106,7 @@
 					<noscript>
 						<a href="reroll_password.php" class="btn btn-primary">{{'account.reroll-log-in-password'|trans}}</a>
 					</noscript>
-					<button type="button" class="btn btn-primary js-only" data-bs-toggle="modal" data-bs-target="#confirmRevokeDevicesModal">{{'account.revoke-devices'|trans}}</button>
-					<noscript>
-						<a href="revoke_devices.php" class="btn btn-primary">{{'account.revoke-devices'|trans}}</a>
-					</noscript>
+					<a href="devices.php" class="btn btn-primary">{{'devices.title'|trans}}</a>
 				</div>
 			</div>
 		</div>
@@ -169,9 +166,11 @@
                             <label for="timeZone">{{ "account.time-zone"|trans }}</label>
                             <small><p>{{ "account.time-zone-blurb"|trans }}</p></small>
                             <select id="timeZone" name="timeZone">
-                                <option value="+0900"{% if (time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
+                                <option value="Asia/Tokyo"{% if (time_zone == "Asia/Tokyo" or time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
                                 {% for zone in all_time_zones %}
+                                {% if zone != "Asia/Tokyo" %}
                                 <option value="{{ zone|e }}"{% if (zone == time_zone) %} selected{% endif %}>{{ zone }}</option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             {% if ("timeZoneValue" in errors) %}
@@ -205,21 +204,5 @@
 			</div>
 		</div>
 	</div>
-	<div id="confirmRevokeDevicesModal" class="modal fade" tabindex="-1" aria-labelledby="confirmRevokeDevicesModalLabel" aria-hidden="true">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h1 id="confirmRevokeDevicesModalLabel" class="modal-title fs-5">{{'account.revoke-devices'|trans}}</h1>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					{{'account.revoke-devices-confirm-message'|trans}}<br>
-					{{'account.revoke-devices-warning'|trans}}
-				</div>
-				<div class="modal-footer">
-					<a href="revoke_devices.php" class="btn btn-primary">{{'account.revoke-devices'|trans}}</a>
-				</div>
-			</div>
-		</div>
 	</div>
 {% endblock %}

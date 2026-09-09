@@ -24,7 +24,8 @@
 			$_GET["action"] ?? "",
 			$_GET["counter"] ?? "",
 			$_GET["sig"] ?? "",
-			$_GET["device"] ?? ""
+			$_GET["device"] ?? "",
+			$_SERVER["REMOTE_ADDR"] ?? null
 		));
 	}
 ?>
