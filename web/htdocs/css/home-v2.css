@@ -1135,8 +1135,11 @@ body.home-v2 main#content { overflow: hidden; }
 }
 
 @media (max-width: 640px) {
-  .mt-list__row { flex-wrap: wrap; }
-  .mt-list__act { width: 100%; padding-left: 46px; }
+  /* .mt-list__row no longer wraps: that was for a per-row action button
+     (.mt-list__act) an earlier design had; the list's actions live in one
+     .mt-statusbar--inline below it now. Wrapping the row pushed the num
+     box onto its own line above the subject/meta, which is a layout bug,
+     not a feature -- fixed 2026-09-10. */
   .mt-fields > div { flex-direction: column; }
   .mt-fields dt { flex-basis: auto; border-right: 0; border-bottom: 2px solid var(--mt-frame); }
 }
