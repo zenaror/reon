@@ -125,12 +125,27 @@
 		// adapter model
 		$lib_data .= hex2bin("08"); // TODO: pull from user data
 
-		// dns types
-		$lib_data .= hex2bin("00"); // DNS1
-		$lib_data .= hex2bin("00"); // DNS2
+		// dns1/dns2 type. libmobile only overrides the game's DNS servers
+		// when the type isn't MOBILE_ADDRTYPE_NONE (config.c), so a
+		// frontend with its own DNS setting (mGBA/BGB's manual entry in
+		// their adapter settings dialog) still wins once the user has
+		// saved one -- this just gives every frontend, including one with
+		// no such UI (e.g. a libretro core), a working default straight
+		// out of the bin, pointed at the same server that answers the
+		// games' *.dion.ne.jp queries (see docs, "REON DNS is on port
+		// 53").
+		$lib_data .= hex2bin("01"); // DNS1 type = MOBILE_ADDRTYPE_IPV4
+		$lib_data .= hex2bin("01"); // DNS2 type = MOBILE_ADDRTYPE_IPV4
 
 		// P2P port
 		$lib_data .= pack('v', 1027);
+
+		// relay type (offset 0x0a). The relay's *address* is the same for
+		// every account (REON only runs the one), so it's written
+		// unconditionally here, same as the DNS types above -- only the
+		// per-account relay_token below depends on whether this account
+		// has been provisioned.
+		$lib_data .= hex2bin("01"); // relay type = MOBILE_ADDRTYPE_IPV4
 
 		// relay_token_init (offset 0x0b) + relay_token (offset 0x50-0x5f),
 		// relative to this "LM" region -- provisioned at signup
@@ -141,6 +156,27 @@
 		if ($relay !== null) {
 			$lib_data = skip_to($lib_data, 0x0b - 5);
 			$lib_data .= hex2bin("01"); // relay_token_init = true
+		}
+
+		// DNS1/DNS2 port (offset 0x1a/0x1c) + relay port (offset 0x1e),
+		// relative to this "LM" region. 53 is standard DNS; 31227 is
+		// libmobile's own MOBILE_DEFAULT_RELAY_PORT (mobile.h), confirmed
+		// against what reon-mobile-relay.service actually listens on.
+		$lib_data = skip_to($lib_data, 0x1a - 5);
+		$lib_data .= pack('v', 53); // DNS1 port
+		$lib_data .= pack('v', 53); // DNS2 port
+		$lib_data .= pack('v', 31227); // relay port
+
+		// DNS1/DNS2/relay host (offset 0x20/0x30/0x40) -- same server for
+		// all three, REON only runs the one.
+		$lib_data = skip_to($lib_data, 0x20 - 5);
+		$lib_data .= pack('C*', 152, 67, 55, 127); // DNS1 host
+		$lib_data = skip_to($lib_data, 0x30 - 5);
+		$lib_data .= pack('C*', 152, 67, 55, 127); // DNS2 host
+		$lib_data = skip_to($lib_data, 0x40 - 5);
+		$lib_data .= pack('C*', 152, 67, 55, 127); // relay host
+
+		if ($relay !== null) {
 			$lib_data = skip_to($lib_data, 0x50 - 5);
 			$lib_data .= $relay["token"];
 		}
