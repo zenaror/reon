@@ -88,23 +88,24 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### app/pokemon-battle — Battle Tower
 
-* filtros de nível e sala aceitam ALL, com as colunas aparecendo
-  só quando o filtro correspondente está aberto
-* Fix: com LV e ROOM abertas, a coluna do líder encolhia para ~77px (a tabela
-  é de largura fixa em 440px e essa era a única coluna `auto`), o sprite
-  engolia tudo e o nome do treinador vazava para a coluna dos Pokémon. LV/ROOM
-  ficaram mais estreitas, o sprite encolhe quando qualquer uma aparece e a
-  caixa de mensagem cede 24px só quando as duas aparecem
-* com um nível escolhido, o honor roll é **ordenado por
+* **Visão ALL** — os filtros de nível e sala aceitam ALL, e as colunas LV e
+  ROOM aparecem só quando o filtro correspondente está aberto. A tabela é de
+  largura fixa (440px do layout de referência) e a coluna do líder era a
+  única `auto`, então as colunas novas foram encaixadas sem espremê-la: LV e
+  ROOM estreitas, o sprite encolhe quando qualquer uma aparece e a caixa de
+  mensagem cede 24px só quando as duas aparecem
+* Com um nível escolhido, o honor roll é **ordenado por
   desempenho** (vitórias, depois menos turnos, menos dano, menos desmaios) —
   do nível com ROOM:ALL, da sala com sala escolhida; L:ALL segue sendo a
   visão geral de todos os níveis e salas. O mesmo treinador líder em vários
   dias aparece uma vez, pela melhor corrida. Migração adiciona desempenho e
-  identidade ao honor roll (backfill dos registros) e o cron passa a gravá-los
-* **paginação** — 10/20/50/100/ALL por página (padrão 20), com
+  identidade ao honor roll (backfill dos registros) e o cron passa a gravá-los.
+  O desempate é por menos turnos e menos dano, e não por mais — a corrida mais
+  lenta e mais castigada não ganha empate
+* **Paginação** — 10/20/50/100/ALL por página (padrão 20), com
   os mesmos botões do zoom; contador "1–20 OF 200" e navegação, tudo abaixo
   da tabela
-* com LV e ROOM abertas a tabela é um painel único de 518px
+* Com LV e ROOM abertas a tabela é um painel único de 518px
   (as duas colunas somadas aos 440px do layout de referência), com a
   mensagem na linha do líder — a caixa não pode encolher porque o jogo quebra
   em 18 caracteres, exatamente o que a arte de 155px comporta
@@ -113,7 +114,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   tabela rola na horizontal, com título e filtros parados; a divisão em dois
   painéis (que no celular só repetia o cabeçalho no meio) não acontece mais
   abaixo de 992px
-* zoom fixo — 2× no desktop (≥ 1200px), 1× abaixo disso, sem
+* Zoom fixo — 2× no desktop (≥ 1200px), 1× abaixo disso, sem
   controle; moldura do honor roll montada de fatias (cantos + faixa) em vez
   de esticar a arte; 1º/2º/3º com fundo ouro/prata/bronze quando LEVEL e
   ROOM estão filtrados; painel ALL/ALL em 2× alargado para não cortar as
@@ -124,15 +125,13 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   header em meio pixel e os dois lados eram arredondados separados — o
   direito agora deriva do esquerdo); placa do Rankings pregada no topo ao
   recarregar com a página rolada (medida passou a coordenadas da página)
-* Fix: o desempate do cron ordenava turnos e dano em ordem decrescente — a
-  corrida mais lenta e mais castigada ganhava o empate
-* mensagens quebram como o jogo (`PrintEZChatBattleMessage`:
+* Mensagens quebram como o jogo (`PrintEZChatBattleMessage`:
   linhas de 18 caracteres, palavra Easy Chat inteira), em vez de 2 palavras
   por linha fixas que estouravam a caixa
 
 ### Rankings
 
-* **as três categorias viram guias sempre que as tabelas
+* **As três categorias viram guias sempre que as tabelas
   empilham** — 2× no desktop, e qualquer tela até 1080px (tablet/celular) —
   uma tabela por vez, como o Pokémon News do jogo; no 1× do desktop seguem
   lado a lado. A busca continua
@@ -154,9 +153,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   stats recalculados pela fórmula da Gen II, todos aprovados no legality
   checker. Tudo preso a uma conta bot (`reonbot`) para o `--purge` tirar de
   volta. Ofertas e pedidos do Trade Corner são conjuntos disjuntos (não casam
-  entre si) e nenhum completa um pedido real existente
-* Fix: um placeholder de L60 tinha um espaço dentro do hex da mensagem de
-  vitória; `hex2bin()` devolvia `false` e o jogo recebia a mensagem zerada
+  entre si) e nenhum completa um pedido real existente. As mensagens de
+  vitória são validadas na geração: um espaço perdido dentro do hex faz
+  `hex2bin()` devolver `false` e o jogo receber mensagem zerada
 * Dados sintéticos também no **Rankings** (`--rankings=N`): 60 jogadores × 3
   categorias do Pokémon News vigente, CEP em dígitos Gen II, mensagem Easy
   Chat, scores enviesados para baixo; o manifesto do seeder acumula entre
