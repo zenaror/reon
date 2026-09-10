@@ -971,6 +971,7 @@ mail:
   filter-clear: "Zurücksetzen"
   filter-none: "Nichts passt zum Filter."
   thread-with: "%count% Nachrichten mit %party%"
+  thread-unread: "%count% ungelesen"
   thread-you: "Du"
   thread-delete: "Unterhaltung löschen"
   thread-hint: "Unterhaltung lesen"

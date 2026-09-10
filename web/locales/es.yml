@@ -972,6 +972,7 @@ mail:
   filter-clear: "Limpiar"
   filter-none: "Nada coincide con el filtro."
   thread-with: "%count% mensajes con %party%"
+  thread-unread: "%count% sin leer"
   thread-you: "Tú"
   thread-delete: "Borrar conversación"
   thread-hint: "Leyendo una conversación"

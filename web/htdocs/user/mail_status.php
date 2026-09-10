@@ -21,4 +21,5 @@
 	echo json_encode([
 		"count" => $mail->countForUser($userId),
 		"new" => $mail->countNewForUser($userId),
+		"game_waiting" => $mail->countGameWaitingForUser($userId),
 	]);

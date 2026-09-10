@@ -93,6 +93,11 @@
 										      title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>
 										<span class="visually-hidden">{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}</span>
 									{% endif -%}
+									{%- if mail_game_waiting|default(0) > 0 %}
+										<span class="mail-badge mail-badge--game"
+										      title="{{ 'mail.game-waiting'|trans({'%count%': mail_game_waiting}) }}">{{ mail_game_waiting }}</span>
+										<span class="visually-hidden">{{ 'mail.game-waiting'|trans({'%count%': mail_game_waiting}) }}</span>
+									{% endif -%}
 									</span>
 								</a>
 								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
@@ -100,6 +105,7 @@
 									<li><a class="dropdown-item" href="/user/mail.php">
 										{{'mail.title'|trans}}<span data-mail-badge>
 										{%- if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% endif -%}
+										{%- if mail_game_waiting|default(0) > 0 %} <span class="mail-badge mail-badge--game" title="{{ 'mail.game-waiting'|trans({'%count%': mail_game_waiting}) }}">{{ mail_game_waiting }}</span>{% endif -%}
 										</span>
 									</a></li>
 									<li><hr class="dropdown-divider"></li>
@@ -319,6 +325,7 @@
 		<script>
 			window.REON_MAIL_STRINGS = {
 				newArrived: {{ 'mail.new-arrived'|trans|json_encode|raw }},
+				gameWaiting: {{ 'mail.game-waiting'|trans|json_encode|raw }},
 				inInbox: {{ 'account.emails-in-inbox'|trans|json_encode|raw }}
 			};
 		</script>

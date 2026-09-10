@@ -1012,6 +1012,7 @@ mail:
   filter-clear: "クリア"
   filter-none: "条件に合うメールはありません。"
   thread-with: "%party% との %count% 通"
+  thread-unread: "未読 %count% 通"
   thread-you: "あなた"
   thread-delete: "会話を削除"
   thread-hint: "会話を表示中"

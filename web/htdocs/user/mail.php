@@ -13,13 +13,23 @@
 	$userId = $_SESSION["user_id"];
 	$mail = MailUtil::getInstance();
 
-	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent"], true) ? $_GET["folder"] : "inbox";
+	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent", "game"], true) ? $_GET["folder"] : "inbox";
 
 	// The filter bar: free text plus one switch. Carried in the URL so a
 	// filtered list can be refreshed, bookmarked, or returned to.
 	$q = trim((string)($_GET["q"] ?? ""));
 	$only = in_array($_GET["only"] ?? "", MailUtil::FILTERS, true) ? $_GET["only"] : "";
 	$filter = ["q" => $q, "only" => $only, "active" => $q !== "" || $only !== ""];
+
+	// Rows per page. Kept in the session rather than only in the URL so the
+	// choice survives switching folders and coming back later, which is what
+	// picking a page size is for.
+	if (isset($_GET["per"]) && in_array((int)$_GET["per"], MailUtil::PAGE_SIZES, true)) {
+		$_SESSION["mail_per_page"] = (int)$_GET["per"];
+	}
+	$per = $_SESSION["mail_per_page"] ?? MailUtil::PAGE_SIZE_DEFAULT;
+	if (!in_array($per, MailUtil::PAGE_SIZES, true)) $per = MailUtil::PAGE_SIZE_DEFAULT;
+	$page = max(1, (int)($_GET["page"] ?? 1));
 
 	// Actions are POST-only so a crawler, a prefetch, or a stray <img> can
 	// never destroy mail by being followed.
@@ -46,10 +56,29 @@
 		} elseif ($action === "delete") {
 			$mail->deleteForeverMany($userId, $ids);
 			$back = "/user/mail.php?folder=trash";
+		} elseif ($action === "delete-sent") {
+			// Its own action rather than reusing "delete": that one is scoped
+			// to sys_inbox's trash, and these ids belong to sys_sent.
+			$mail->deleteSentMany($userId, $ids);
+			$back = "/user/mail.php?folder=sent";
 		} elseif ($action === "send") {
 			$to = trim($_POST["to"] ?? "");
 			$subject = trim($_POST["subject"] ?? "");
 			$body = (string)($_POST["body"] ?? "");
+			$replyId = $_POST["reply"] ?? null;
+
+			// A reply's destination is never taken from the form: it's
+			// re-derived server-side from the message being replied to,
+			// the same way the compose screen prefilled it, so the field
+			// being edited client-side (dev tools, a raw POST) can't
+			// silently detach the message onto a different recipient's
+			// thread while still looking like a reply.
+			if ($replyId !== null) {
+				$original = $mail->getForUser($userId, $replyId);
+				if ($original !== null) {
+					$to = $original["sender"];
+				}
+			}
 
 			if ($to === "" || $body === "") {
 				$error = "empty";
@@ -65,13 +94,15 @@
 				echo TemplateUtil::render("/user/mail", [
 					"message" => null,
 					"messages" => null,
-					"compose" => ["to" => $to, "subject" => $subject, "body" => $body],
+					"compose" => ["to" => $to, "subject" => $subject, "body" => $body, "reply_id" => $replyId],
 					"compose_error" => $error,
 					"folder" => "inbox",
 					"trash_count" => $mail->countTrashForUser($userId),
 		"sent_count" => $mail->countSentForUser($userId),
 					"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,
+			"subject_max_chars" => MailUtil::SUBJECT_MAX_CHARS,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 			"internal_domains" => $mail->internalDomains(),
 				]);
@@ -90,17 +121,20 @@
 	// Compose is its own view rather than a panel on the list, so a long
 	// message has the whole width to be written in.
 	if (isset($_GET["compose"])) {
-		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => ""];
+		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => "", "reply_id" => null];
 
 		// Replying is addressed by message id, not by handing the address and
 		// subject over in the URL: getForUser is scoped by recipient, so this
 		// can only ever pre-fill from a message that belongs to the caller.
+		// reply_id rides along to the template (locks the "to" field) and
+		// back on submit (mail.php re-derives "to" from it server-side).
 		if (isset($_GET["reply"])) {
 			$original = $mail->getForUser($userId, $_GET["reply"]);
 			if ($original !== null) {
 				$subject = trim((string)$original["subject"]);
 				$prefill["to"] = $original["sender"];
 				$prefill["subject"] = preg_match('/^re:\s/i', $subject) ? $subject : ("Re: " . $subject);
+				$prefill["reply_id"] = $_GET["reply"];
 			}
 		}
 
@@ -114,6 +148,8 @@
 		"sent_count" => $mail->countSentForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,
+			"subject_max_chars" => MailUtil::SUBJECT_MAX_CHARS,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 			"internal_domains" => $mail->internalDomains(),
 		]);
@@ -140,6 +176,8 @@
 			"sent_count" => $mail->countSentForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,
+			"subject_max_chars" => MailUtil::SUBJECT_MAX_CHARS,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 			"internal_domains" => $mail->internalDomains(),
 		]);
@@ -150,6 +188,13 @@
 		$message = $folder === "sent"
 			? $mail->getSentForUser($userId, $_GET["id"])
 			: $mail->getForUser($userId, $_GET["id"]);
+		// A game's own mail has no reading view: the body is a cartridge's
+		// binary payload, and the page that would show it is the page that
+		// offers replying and deleting. Typing the id by hand gets the same
+		// answer as a message that is not yours.
+		if ($message !== null && !empty($message["is_game"])) {
+			$message = null;
+		}
 		if ($message === null) {
 			http_response_code(404);
 		} elseif ($folder !== "sent") {
@@ -166,6 +211,8 @@
 		"sent_count" => $mail->countSentForUser($userId),
 			"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 			"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,
+			"subject_max_chars" => MailUtil::SUBJECT_MAX_CHARS,
 			"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 			"internal_domains" => $mail->internalDomains(),
 		]);
@@ -184,9 +231,13 @@
 			return !empty($t["inbox_ids"]);
 		}));
 		$threads = $mail->filterThreads($threads, $q, $only);
+		[$threads, $pagination] = $mail->paginate($threads, $page, $per);
 	} else {
+		// "game" is read-only: the rows are a game's own traffic, and the only
+		// thing to do with them is look.
 		$rows = $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder);
 		$messages = $mail->filterMessages($rows, $q, $only);
+		[$messages, $pagination] = $mail->paginate($messages, $page, $per);
 	}
 
 	echo TemplateUtil::render("/user/mail", [
@@ -194,12 +245,16 @@
 		"messages" => $messages,
 		"threads" => $threads,
 		"filter" => $filter,
+		"pagination" => $pagination,
 		"compose" => null,
 		"sent" => isset($_GET["sent"]),
 		"folder" => $folder,
 		"trash_count" => $mail->countTrashForUser($userId),
 		"sent_count" => $mail->countSentForUser($userId),
+		"game_count" => $mail->countGameForUser($userId),
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 		"body_max_lines" => MailUtil::BODY_MAX_LINES,
+			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,
+			"subject_max_chars" => MailUtil::SUBJECT_MAX_CHARS,
 		"body_max_chars" => MailUtil::BODY_MAX_CHARS,
 	]);
