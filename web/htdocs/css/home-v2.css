@@ -1334,49 +1334,6 @@ body.home-v2 main#content { overflow: hidden; }
   50% { color: #fff; background: #b03000; }
 }
 
-/* A game's traffic gets its own colour: the orange badge means "a person
-   wrote to you", and this one means "a cartridge has something to collect".
-   Reusing orange would make the two indistinguishable at a glance, which is
-   the one thing the badge exists to do. */
-.mt-tab__count--game {
-  background: #2f6fb5;
-  color: #fff;
-}
-
-.mt-note--game {
-  margin: 0 0 10px;
-}
-
-/* A game's mail has no "unread": what matters is whether the cartridge has
-   been to collect it. The waiting ones carry the same blue as the tab badge,
-   so the number up there and the rows down here plainly describe the same
-   thing; the collected ones stay legible but step back. */
-.mt-list__row.is-waiting {
-  background: #e8f1fa;
-}
-
-.is-waiting .mt-list__subject {
-  font-weight: bold;
-  color: #17415f;
-}
-
-/* The cartridge a message belongs to, beside its state: the two together
-   read as one phrase ("POCKET MONSTERS EN . waiting"). */
-.mt-list__for {
-  font-weight: bold;
-  color: #17415f;
-}
-
-.mt-list__state {
-  font-weight: bold;
-  color: #2f6fb5;
-}
-
-.mt-list__row:not(.is-waiting) .mt-list__state {
-  font-weight: normal;
-  color: var(--mt-ink-soft, #6b6b6b);
-}
-
 /* Page controls under a folder listing: page size on the left, the pager on
    the right, stacking on a phone rather than squeezing. */
 .mt-pager {

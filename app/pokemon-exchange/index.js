@@ -4,6 +4,8 @@ const mysql = require("mysql2/promise");
 
 const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
+const { notify } = require("../../lib/notifications");
+const { mailUser } = require("../../lib/usermail");
 
 // ------------------------------
 // Config
@@ -3620,6 +3622,69 @@ async function insertExchangeLogRow(connection, row1, row2) {
   await connection.execute(sql, params);
 }
 
+// Tells a player what became of the Pokémon they left at the Trade Corner.
+//
+// Two channels, on purpose. The notification is the record on the site: it
+// stays in their history with a time on it, whether or not they were looking.
+// The e-mail goes to the address they signed up with, because the whole point
+// of a deposit is that they walked away from it -- a result they only find by
+// coming back and checking is half a result.
+//
+// The trade itself is already committed by the time this runs; neither call
+// can throw, and neither is allowed to be the reason a completed exchange
+// looks like a failure.
+async function tellPlayerAboutTrade(connection, row, outcome) {
+  const region = row["game_region"];
+  const names = DEFAULT_POKEMON_NAMES_BY_REGION[String(region || "").toLowerCase()]
+    || DEFAULT_POKEMON_NAMES_EN;
+  const offer = names[String(row["offer_species"])] || `#${row["offer_species"]}`;
+  const request = names[String(row["request_species"])] || `#${row["request_species"]}`;
+  const title = resolveCrystalGameTitleByRegion(region);
+
+  // Which way round the arrow points is the difference between the two
+  // outcomes: one says what was swapped, the other what is still waiting.
+  const done = outcome === "done";
+  const detail = done ? `${offer} -> ${request}` : `${offer} (${request})`;
+
+  await notify(connection, row["account_id"], "trade", {
+    key: done ? "notify.trade-done" : "notify.trade-none",
+    body: detail,
+    game: title,
+    link: "/pokemon/tradecorner.php"
+  });
+
+  const subject = done
+    ? "REON - your Trade Corner exchange went through"
+    : "REON - your Trade Corner deposit is still waiting";
+  const body = done
+    ? [
+        "Your Trade Corner exchange has been made.",
+        "",
+        `  You gave     ${offer}`,
+        `  You received ${request}`,
+        "",
+        "Connect with your Mobile Adapter and visit the Trade Corner to",
+        "collect it. The game downloads the result itself -- there is",
+        "nothing to do on the website.",
+        "",
+        "-- REON"
+      ].join("\n")
+    : [
+        "Nobody turned up for your Trade Corner exchange.",
+        "",
+        `  You offered  ${offer}`,
+        `  You asked for ${request}`,
+        "",
+        "The deposit has expired and your Pokémon is waiting to be taken",
+        "back. Connect with your Mobile Adapter and visit the Trade Corner",
+        "to withdraw it, or leave a new request.",
+        "",
+        "-- REON"
+      ].join("\n");
+
+  await mailUser(connection, config, row["account_id"], subject, body);
+}
+
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
 
@@ -3634,9 +3699,22 @@ async function doExchange() {
 
     const table = "bxt_exchange";
 
+    // Read the expiring deposits before they are removed: after the DELETE
+    // there is no record left of whose Pokémon went unmatched, and "nobody
+    // came" is exactly the outcome a player is owed a word about.
+    const [expired] = await connection.execute(
+      "SELECT * FROM " + table + " WHERE timestamp < NOW() - INTERVAL 7 DAY"
+    );
+
     await connection.execute(
       "DELETE FROM " + table + " WHERE timestamp < NOW() - INTERVAL 7 DAY"
     );
+
+    // Nothing is announced from inside the transaction. A notification row
+    // would roll back with it, but an e-mail that has already left cannot --
+    // so the outcomes are collected here and delivered once the exchange is
+    // actually committed.
+    const toTell = expired.map(row => [row, "none"]);
 
     const [trades] = await connection.execute(
       "SELECT bxt_exchange.*, sys_users.trade_region_allowlist " +
@@ -3750,6 +3828,8 @@ async function doExchange() {
             [a["email"], a["account_id"], a["trainer_id"], a["secret_id"]]
           );
 
+          toTell.push([a, "done"], [b, "done"]);
+
           break;
         }
       }
@@ -3757,6 +3837,10 @@ async function doExchange() {
 
     await connection.commit();
     console.log(`Finished exchange; performed ${numTrades} trade(s)`);
+
+    for (const [row, outcome] of toTell) {
+      await tellPlayerAboutTrade(connection, row, outcome);
+    }
   } catch (e) {
     console.error("Exchange failed, rolling back:", e);
     try {

@@ -718,14 +718,6 @@ body.pokecrystal-index main#content {
   color: #fff5e2;
 }
 
-/* A game's own mail, in a colour of its own: the orange above means a person
-   wrote to you, this one means a cartridge still has something to collect.
-   Two different facts deserve two different signals. */
-.mail-badge--game {
-  background: #2f6fb5;
-  color: #eaf3fc;
-}
-
 /* Beside REON Mail, the count itself pulses. There used to be a bare dot next
    to it, which meant reading two things to learn one -- a dot saying
    "something arrived" and a number saying how much. The number carries both,
@@ -874,4 +866,196 @@ body.pokecrystal-index main#content {
 .passport-footnote a {
   color: var(--reon-blue-deep);
   font-weight: 600;
+}
+
+/* ------------------------------------------------------------- notifications
+   The bell beside the account name, its dropdown, and the history page.
+
+   Colour is the whole grammar here. The orange badge on the account name
+   still means one thing and one thing only -- a letter is waiting in the
+   mailbox -- so the bell had to be a different colour or the two would say
+   the same thing in the same voice. Purple is nothing else on this site. */
+
+.reon-bell__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Bootstrap puts a caret on every .dropdown-toggle; a bell that is plainly a
+   bell does not need one, and the caret makes the icon read as a menu label
+   rather than as a thing. */
+.reon-bell__toggle::after {
+  display: none !important;
+}
+
+.reon-bell__icon {
+  vertical-align: -3px;
+}
+
+.notify-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--reon-purple);
+  color: #efeeff;
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The same slow fade the mail badge uses, for the same reason: the number
+   carries the information and the movement only asks for attention. A hard
+   blink in the corner of the eye is unpleasant at best. */
+.notify-badge--pulse {
+  animation: mail-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notify-badge--pulse { animation: none; }
+}
+
+.notify-menu {
+  width: min(360px, calc(100vw - 24px));
+  padding: 0;
+}
+
+.notify-menu__head {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.15);
+  font-weight: bold;
+}
+
+/* The menu holds a bounded number of rows and then scrolls, rather than
+   growing until it runs off the bottom of the screen. */
+.notify-menu__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notify-menu__empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--reon-ink-soft);
+}
+
+.notify-menu__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notify-menu__row,
+.notify-list__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.1);
+}
+
+.notify-menu__row:last-child,
+.notify-list__row:last-child { border-bottom: 0; }
+
+/* Unread is a left edge in the category's own colour, not a background wash:
+   the row still has to be readable, and a tinted row that also carries a
+   coloured tag ends up saying the same thing twice. */
+.notify-menu__row.is-unread,
+.notify-list__row.is-unread {
+  box-shadow: inset 3px 0 0 var(--reon-purple);
+}
+
+.notify-menu__text,
+.notify-list__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notify-menu__title,
+.notify-list__title {
+  overflow-wrap: anywhere;
+}
+
+.notify-menu__row.is-unread .notify-menu__title,
+.notify-list__row.is-unread .notify-list__title {
+  font-weight: bold;
+}
+
+.notify-menu__body,
+.notify-list__body {
+  color: var(--reon-ink-soft);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.notify-menu__when,
+.notify-list__when {
+  flex: 0 0 auto;
+  color: var(--reon-ink-soft);
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.notify-list__game {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.notify-menu__all {
+  text-align: center;
+  font-weight: bold;
+}
+
+/* What kind of thing happened. One word, one colour, the same in the
+   dropdown and on the history page. */
+.notify-tag {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--reon-silver);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.notify-tag--mail   { background: var(--reon-orange); }
+.notify-tag--trade  { background: var(--reon-green); color: #16300a; }
+.notify-tag--game   { background: #2f6fb5; }
+.notify-tag--system { background: var(--reon-silver); }
+.notify-tag--admin  { background: var(--reon-purple); }
+
+/* History page: the same rows inside the mailbox's panel. */
+.notify-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The panel on this page has nothing above it to tuck under, so it does not
+   need the notch the folder tabs cut into the mailbox's corner. */
+.mt-panel--flat {
+  border-radius: 10px;
+}
+
+@media (max-width: 480px) {
+  .notify-menu__row,
+  .notify-list__row {
+    flex-wrap: wrap;
+  }
+  .notify-menu__when,
+  .notify-list__when {
+    text-align: left;
+  }
 }

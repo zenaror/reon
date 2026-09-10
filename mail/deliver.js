@@ -18,6 +18,7 @@
 const fs = require("fs");
 const mysql = require("mysql2/promise");
 const { Command } = require("commander");
+const { notify, isGameMail } = require("../lib/notifications");
 
 const program = new Command();
 program
@@ -94,6 +95,24 @@ async function main() {
 		// internal sends, and outboundRelay.js records what leaves the server,
 		// so no message is filed twice.
 		await recordSent(conn, opts.from, recipientArg, message);
+
+		// And a line in the bell, so a letter that lands while nobody is
+		// looking still leaves a trace with a time on it. This does not
+		// replace the mail badge -- that says "there is something to read",
+		// this says "this arrived at this hour", and the owner asked for
+		// both.
+		//
+		// Not for a game's own mail. That is delivered exactly as before and
+		// POP3 serves it exactly as before, but the player never sees it on
+		// the web and has nothing to do about it; the application that acts
+		// on it raises its own notification when there is something to say.
+		if (!isGameMail(message)) {
+			await notify(conn, rows[0]["id"], "mail", {
+				key: "notify.new-mail",
+				params: { from: String(opts.from).split("@")[0] },
+				link: "/user/mail.php"
+			});
+		}
 	} finally {
 		await conn.end();
 	}

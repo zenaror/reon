@@ -61,13 +61,15 @@
 				$mail = MailUtil::getInstance();
 				$vars["mail_count"] = $mail->countForUser($_SESSION["user_id"]);
 				$vars["mail_new"] = $mail->countNewForUser($_SESSION["user_id"]);
-				// A game's own mail is counted apart: nobody "reads" it here,
-				// so what matters is whether a game still has to come get it.
-				$vars["mail_game_waiting"] = $mail->countGameWaitingForUser($_SESSION["user_id"]);
+
+				// The bell's count, for the same reason: it belongs to the
+				// header, which every page renders.
+				require_once(__DIR__."/NotificationUtil.php");
+				$vars["notify_new"] = NotificationUtil::getInstance()->countUnread($_SESSION["user_id"]);
 			} else {
 				$vars["mail_count"] = 0;
 				$vars["mail_new"] = 0;
-				$vars["mail_game_waiting"] = 0;
+				$vars["notify_new"] = 0;
 			}
 
 			// The config.bin "passport" modal: shown once, on whichever page
