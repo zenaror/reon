@@ -48,7 +48,6 @@
 			// thing the helper exists to avoid.
 			"reon-auto-schedule"    => ["kind" => "job",    "label" => "Auto schedule",
 			                            "extra" => "reon-auto-schedule-refresh",
-			                            "extra_label" => "admin.services-refresh",
 			                            "extra_confirm" => "admin.services-refresh-confirm"],
 			"reon-mail-bottle"      => ["kind" => "job",    "label" => "Mail de Cute"],
 			"reon-mail-trash-purge" => ["kind" => "job",    "label" => "Mail trash purge"],
@@ -129,7 +128,6 @@
 					"can_stop" => self::canStop($name),
 					"timer" => null,
 					"extra" => $meta["extra"] ?? null,
-					"extra_label" => $meta["extra_label"] ?? null,
 					"extra_confirm" => $meta["extra_confirm"] ?? null,
 				];
 
