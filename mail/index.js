@@ -23,4 +23,4 @@ const mysqlConfig = {
 // bridge domain, delivering into sys_inbox via mail/deliver.js). POP3 keeps
 // serving the same table regardless of who wrote the rows.
 let smtp = config["disable_smtp"] === true ? null : new SMTPServer(mysqlConfig, config["email_domain"], config["email_domain_dion"]);
-let pop3 = new POP3Server(mysqlConfig);
+let pop3 = new POP3Server(mysqlConfig, config["email_domain"], config["email_domain_dion"]);
