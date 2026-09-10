@@ -142,6 +142,20 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   mora no servidor e não num campo de formulário. Sem ele instalado o painel
   diz isso e não executa nada — controle que finge funcionar é pior que
   controle que falta
+* **Rodar o Auto schedule com `--refresh`**, em botão próprio e vermelho, com
+  aviso que diz o que acontece: limpa o ranking de **todas** as regiões
+  configuradas, não só das que tiveram notícia rodada, e não tem desfazer. É
+  uma *unit* separada (`reon-auto-schedule-refresh`, sem timer) e não uma
+  flag, porque `systemctl start` não aceita argumento — a alternativa seria a
+  aplicação web montar linha de comando, que é justamente o que o auxiliar
+  existe para evitar. O "Rodar agora" comum também ganhou aviso: fora de hora
+  ele roda a notícia pendente e limpa o ranking de quem rodar
+* **Ler log e reiniciar serviço deixaram de ser a mesma permissão.** Os dois
+  passavam pelo auxiliar, então um servidor que só queria a página de Logs
+  tinha de conceder sudo para reinícios junto. Ler o journal não precisa disso:
+  participar do grupo `systemd-journal` basta, dá leitura e mais nada. O
+  `journalctl` passou a ser tentado direto primeiro, com o auxiliar como
+  segunda opção, e a página mostra o comando de um comando só
 * **Os serviços contínuos ligam, desligam e reiniciam** pelo painel — menos o
   nginx, que só reinicia: desligá-lo de uma página servida por ele tiraria o
   botão que o liga de volta, e essa é uma porta de mão única. O auxiliar

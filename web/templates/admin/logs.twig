@@ -24,7 +24,16 @@
 	</form>
 
 	{% if not available %}
-		<p class="admin-notice admin-notice--bad">{{ 'admin.logs-unavailable'|trans }}</p>
+		{# The command is here rather than a bare "not enabled": joining the
+		   journal group grants reading and nothing else, which is a much
+		   smaller thing to hand out than the sudo rule the Services page
+		   needs. Someone who wants logs should not have to grant restarts. #}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.logs-unavailable'|trans }}</strong></p>
+			<p class="mb-1">{{ 'admin.logs-unavailable-why'|trans({'%user%': web_user}) }}</p>
+			<pre class="admin-console mb-0">sudo usermod -aG systemd-journal {{ web_user }}
+sudo systemctl restart php8.5-fpm</pre>
+		</div>
 	{% elseif text is empty %}
 		<p>{{ 'admin.logs-empty'|trans }}</p>
 	{% else %}

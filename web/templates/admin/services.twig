@@ -111,7 +111,14 @@
 							<td>{{ u.timer.next ?: '—' }}</td>
 							<td>
 								<div class="admin-form__row">
-									{{ _self.act(u.name, 'run', 'admin.services-run', csrf_field, csrf_token, null, 'btn-outline-primary') }}
+									{{ _self.act(u.name, 'run', 'admin.services-run', csrf_field, csrf_token, u.extra ? 'admin.services-run-confirm' : null, 'btn-outline-primary') }}
+									{# A second, destructive way to run this same job. Its own
+									   button, its own warning, and plainly not the ordinary one:
+									   the difference between "rotate what is due" and "clear
+									   every ranking there is" must not live in a checkbox. #}
+									{% if u.extra %}
+										{{ _self.act(u.extra, 'run', u.extra_label, csrf_field, csrf_token, u.extra_confirm, 'btn-outline-danger') }}
+									{% endif %}
 									{% if u.timer.enabled %}
 										{{ _self.act(u.name, 'disable', 'admin.services-disable', csrf_field, csrf_token, 'admin.services-disable-confirm', 'btn-outline-danger') }}
 									{% else %}

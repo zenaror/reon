@@ -24,5 +24,10 @@
 		"unit" => $unit,
 		"lines" => $lines,
 		"text" => $text,
-		"available" => $control->available(),
+		// Two different capabilities, asked separately: reading the journal
+		// needs only group membership, restarting needs the helper.
+		"available" => $control->canReadJournal(),
+		"web_user" => function_exists("posix_getpwuid") && function_exists("posix_geteuid")
+			? (posix_getpwuid(posix_geteuid())["name"] ?? "?")
+			: "?",
 	]);
