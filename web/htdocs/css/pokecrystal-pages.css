@@ -1771,6 +1771,17 @@ body.rankings-theme > main {
   padding-left: 2px;
 }
 
+/* The item value column has a fixed 94px budget (222px card - 48px label -
+   8px gap - sprite/padding). At the default 8px pixel size the longest real
+   Gen 2 item names (12 chars, e.g. BRIGHTPOWDER, THUNDERSTONE) render flush
+   against that edge with no slack, so on-device font hinting clips the last
+   glyph. Drop to the next whole pixel size (not a fractional em, per the
+   whole-pixel rule for this bitmap font) only for names long enough to be
+   at risk. */
+.exchange-page .crystal-trade .offer-item.offer-item--long {
+  font-size: 7px !important;
+}
+
 .crystal-trade .trade-offer .media-area {
   line-height: 1;
   min-width: var(--trade-sprite-size);
