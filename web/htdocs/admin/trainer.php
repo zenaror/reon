@@ -72,8 +72,7 @@
 				// on screen for exactly the message that most needed to be
 				// clear.
 				$notice = TemplateUtil::translate("admin.trainer-img-" . $detail, [
-					"%w%" => TrainerPageUtil::IMAGE_MAX_W,
-					"%h%" => TrainerPageUtil::IMAGE_MAX_H,
+					"%n%" => TrainerPageUtil::IMAGE_MAX_DIMENSION,
 				]) . ($facts ? " (" . $trainer->describeFacts($facts) . ")" : "");
 				$noticeKind = "bad";
 			}
@@ -134,8 +133,8 @@
 			"html" => $trainer->read($_GET["page"]),
 			"tags" => TrainerPageUtil::KNOWN_TAGS,
 			"images" => $trainer->images($_GET["page"]),
-			"image_max_w" => TrainerPageUtil::IMAGE_MAX_W,
-			"image_max_h" => TrainerPageUtil::IMAGE_MAX_H,
+			"image_max" => TrainerPageUtil::IMAGE_MAX_DIMENSION,
+			"image_dir" => $trainer->imageDir($_GET["page"]),
 		]);
 		return;
 	}
