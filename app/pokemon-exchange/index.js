@@ -3495,7 +3495,7 @@ async function sendExchangeSuccessEmail(
 
   await connection.execute(
     "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
-    ["system@" + config["email_domain"], rows[0]["id"], raw]
+    ["system@" + config["email_domain_dion"], rows[0]["id"], raw]
   );
 }
 

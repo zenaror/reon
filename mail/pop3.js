@@ -3,9 +3,13 @@ const mysql = require("mysql2");
 const POP3Connection = require("./pop3Connection").POP3Connection;
 
 class POP3Server {
-	constructor(mysqlConfig) {
+	constructor(mysqlConfig, emailDomain, emailDomainDion) {
 		this.connections = new Set();
 		this.mysql = mysql.createPool(mysqlConfig);
+		// Mail sent from one of our own domains was written for these games
+		// and is handed over untouched; see POP3Connection#_getMail.
+		this.internalDomains = [emailDomain, emailDomainDion]
+			.filter(Boolean).map(domain => String(domain).toLowerCase());
 		net.createServer(sock => this._onClientConnect(sock)).listen(110, "0.0.0.0");
 		console.log("POP3 server listening");
 	}

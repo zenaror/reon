@@ -253,18 +253,38 @@ class POP3Connection extends EventEmitter {
 				if (this._maildrop[i]["deleted"]) deleteList.push(this._maildrop[i]["id"]);
 			}
 			if (deleteList.length > 0) {
-				// Moved to the trash rather than removed. The Mobile Trainer can
-				// delete a message without ever downloading it, so a hard delete
-				// here destroyed mail nothing had read; a purge job clears the
-				// trash after its retention window instead.
-				this._server.mysql.query("update sys_inbox set deleted_at = now(), deleted_by = 'game' where id in (?) and deleted_at is null", [deleteList], function (error, results, fields) {
-					if (error) {
-						this._onError(error);
-					} else {
-						this._send(true, "bye");
-						this.close();
-					}
-				}.bind(this));
+				// Two different deletes, because two different things are being
+				// deleted.
+				//
+				// A person's mail is moved to the trash rather than removed:
+				// the Mobile Trainer can delete a message without ever
+				// downloading it, so a hard delete destroyed mail nothing had
+				// read. A purge job clears the trash after its retention
+				// window instead.
+				//
+				// A game's own mail that the game has actually collected is
+				// removed outright. Keeping a copy of a finished trade
+				// somewhere restorable is a way to receive the same Pokémon
+				// twice, and no restore path should be able to hand a
+				// cartridge the same result again. Only once retrieved_at is
+				// set, so a game that deletes without downloading still gets
+				// the trash's safety net.
+				const gameMail = "(message like '%X-Game-code:%' and message like '%X-GBmail-type: exclusive%')";
+				this._server.mysql.query(
+					"delete from sys_inbox where id in (?) and deleted_at is null and retrieved_at is not null and " + gameMail,
+					[deleteList],
+					function (error) {
+						if (error) { this._onError(error); return; }
+						this._server.mysql.query("update sys_inbox set deleted_at = now(), deleted_by = 'game' where id in (?) and deleted_at is null", [deleteList], function (error2) {
+							if (error2) {
+								this._onError(error2);
+							} else {
+								this._send(true, "bye");
+								this.close();
+							}
+						}.bind(this));
+					}.bind(this)
+				);
 			} else {
 				this._send(true, "bye");
 				this.close();
@@ -436,7 +456,7 @@ class POP3Connection extends EventEmitter {
 	}
 
 	_getMail(id, callback) {
-		this._server.mysql.query("select message, concat(substring(dayname(timestamp), 1, 3), ', ', day(timestamp), ' ', substring(monthname(timestamp), 1, 3), ' ', year(timestamp), ' ', time(timestamp), ' +0000')as timestamp from sys_inbox where id = ?", [id], function (error, results, fields) {
+		this._server.mysql.query("select message, sender, concat(substring(dayname(timestamp), 1, 3), ', ', day(timestamp), ' ', substring(monthname(timestamp), 1, 3), ' ', year(timestamp), ' ', time(timestamp), ' +0000')as timestamp from sys_inbox where id = ?", [id], function (error, results, fields) {
 			// This callback runs on its own tick of the event loop, well
 			// after _onData's try/catch around _onCommand() has already
 			// returned -- nothing upstream can catch an exception thrown
@@ -453,15 +473,49 @@ class POP3Connection extends EventEmitter {
 					this._onError(new Error("message "+id+" vanished from sys_inbox mid-session"));
 					return;
 				}
-				let mailContent = this._slimMessage(results[0]["message"]);
-				let endOfHeaders = mailContent.indexOf("\r\n\r\n") + 2;
-				mailContent = mailContent.slice(0, endOfHeaders) + "Date: " + results[0]["timestamp"] + "\r\n" + mailContent.slice(endOfHeaders);
+				// Mail from our own domains was written for these games -- a
+				// Trade Corner result, bottle mail, one player writing to
+				// another -- and already carries exactly the headers they
+				// parse, so nothing is taken away from it. Dropping headers
+				// here is what stripped X-Game-result out of the Trade
+				// Corner's mail and made Pokémon Crystal discard finished
+				// trades. Foreign mail still gets slimmed: its Received/DKIM/
+				// X-Proofpoint noise is no game's wire format, and every byte
+				// of it is paid for over the serial link.
+				let mailContent = this._isInternalSender(results[0]["sender"])
+					? results[0]["message"].toString()
+					: this._slimMessage(results[0]["message"]);
+
+				// Added to both: no message stored here carries a Date of its
+				// own, and the mailbox has a timestamp to offer.
+				mailContent = this._withDate(mailContent, results[0]["timestamp"]);
 
 				callback.call(this, mailContent);
 			} catch (thrown) {
 				this._onError(thrown);
 			}
 		}.bind(this));
+	}
+
+	// Puts the mailbox timestamp in as the last header. Adds nothing when the
+	// message already states a Date -- two of them is not a date, it's an
+	// ambiguity -- and leaves a message with no header/body separator alone
+	// rather than splicing a header into the middle of its body.
+	_withDate(mailContent, timestamp) {
+		let sep = mailContent.indexOf("\r\n\r\n");
+		if (sep === -1) return mailContent;
+		if (/^Date:/im.test(mailContent.slice(0, sep))) return mailContent;
+		return mailContent.slice(0, sep + 2) + "Date: " + timestamp + "\r\n" + mailContent.slice(sep + 2);
+	}
+
+	// Whether the message came from inside REON rather than off the internet.
+	// Decided by the sender's domain, which is what deliver.js/smtp.js and the
+	// Trade Corner job all write into sys_inbox.sender.
+	_isInternalSender(sender) {
+		let at = String(sender || "").lastIndexOf("@");
+		if (at < 0) return false;
+		let domain = String(sender).slice(at + 1).toLowerCase();
+		return (this._server.internalDomains || []).indexOf(domain) >= 0;
 	}
 
 	// Real mail servers (Postfix included) attach Received/DKIM-Signature/
@@ -496,7 +550,14 @@ class POP3Connection extends EventEmitter {
 			}
 		}
 
-		const KEEP = ["mime-version", "from", "to", "subject", "x-game-title", "x-game-code"];
+		// The X-Game-* headers are not noise to strip: they are the mobile
+		// protocol itself. Pokémon Crystal's Trade Corner reads the finished
+		// trade out of X-Game-result and silently discards any message where
+		// it is missing, which is exactly what dropping it here caused.
+		const KEEP = [
+			"mime-version", "from", "to", "subject",
+			"x-game-title", "x-game-code", "x-game-result", "x-gbmail-type",
+		];
 		let lines = [];
 		for (let key of KEEP) {
 			if (!headers[key]) continue;
@@ -505,6 +566,14 @@ class POP3Connection extends EventEmitter {
 			lines.push(headers[key].name + ": " + value);
 		}
 		lines.push("Content-Type: " + (contentType || "text/plain; charset=us-ascii"));
+
+		// A single-part body is forwarded byte for byte, so whatever encoded
+		// it still describes it. The multipart branch above hands back the
+		// part it kept already decoded, and re-announcing the old encoding
+		// there would describe the body wrongly.
+		if (!multipart && headers["content-transfer-encoding"]) {
+			lines.push("Content-Transfer-Encoding: " + this._normalizeHeaderValue(headers["content-transfer-encoding"].value));
+		}
 
 		return lines.join("\r\n") + "\r\n\r\n" + body;
 	}
