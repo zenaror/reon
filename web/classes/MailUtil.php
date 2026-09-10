@@ -722,12 +722,34 @@
 
 			return [
 				"subject" => $this->decodeHeader($headers["subject"] ?? ""),
-				// The display name sits in parentheses after the address.
-				"from_name" => preg_match('/\(([^)]*)\)/', $headers["from"] ?? "", $m)
-					? $this->decodeHeader($m[1]) : "",
+				"from_name" => $this->fromDisplayName($headers["from"] ?? ""),
 				"game" => $headers["x-game-title"] ?? "",
 				"body" => $this->decodeBody($body, $charset),
 			];
+		}
+
+		// Whatever a From header can hand us: real inbound mail writes the
+		// ordinary "Name <addr>" form, our own outbound game mail writes
+		// "addr (Name)", and the exchange job's trade-result mail writes a
+		// bare literal with neither ("MISSINGNO.", straight from the
+		// original Mobile GB protocol, not an address at all). Empty means
+		// none of those held a name; the template then falls back to the
+		// stored sender column, which is correct for a bare address but was
+		// wrongly reached for the last case -- that fallback is an internal
+		// relay address the header itself already disagreed with.
+		private function fromDisplayName($from) {
+			$from = trim((string)$from);
+			if ($from === "") return "";
+			if (preg_match('/^"?([^"<]*?)"?\s*<[^>]+>\s*$/', $from, $m) && trim($m[1]) !== "") {
+				return $this->decodeHeader(trim($m[1]));
+			}
+			if (preg_match('/\(([^)]*)\)/', $from, $m)) {
+				return $this->decodeHeader($m[1]);
+			}
+			if (strpos($from, "@") === false && strpos($from, "<") === false) {
+				return $this->decodeHeader($from);
+			}
+			return "";
 		}
 
 		// A header may mix encoded-words with literal text. Handing the whole
