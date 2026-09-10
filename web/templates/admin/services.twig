@@ -111,13 +111,16 @@
 							<td>{{ u.timer.next ?: '—' }}</td>
 							<td>
 								<div class="admin-form__row">
-									{{ _self.act(u.name, 'run', 'admin.services-run', csrf_field, csrf_token, u.extra ? 'admin.services-run-confirm' : null, 'btn-outline-primary') }}
-									{# A second, destructive way to run this same job. Its own
-									   button, its own warning, and plainly not the ordinary one:
-									   the difference between "rotate what is due" and "clear
-									   every ranking there is" must not live in a checkbox. #}
+									{# Where a job has an on-demand variant, that variant *is*
+									   "run now" and the plain one is not offered: the scheduled
+									   run happens by itself every few minutes, so the only reason
+									   to press a button is to do the thing the timer will not do.
+									   It keeps the red and keeps the warning, because what it
+									   does is still destructive. #}
 									{% if u.extra %}
-										{{ _self.act(u.extra, 'run', u.extra_label, csrf_field, csrf_token, u.extra_confirm, 'btn-outline-danger') }}
+										{{ _self.act(u.extra, 'run', 'admin.services-run', csrf_field, csrf_token, u.extra_confirm, 'btn-outline-danger') }}
+									{% else %}
+										{{ _self.act(u.name, 'run', 'admin.services-run', csrf_field, csrf_token, null, 'btn-outline-primary') }}
 									{% endif %}
 									{% if u.timer.enabled %}
 										{{ _self.act(u.name, 'disable', 'admin.services-disable', csrf_field, csrf_token, 'admin.services-disable-confirm', 'btn-outline-danger') }}
