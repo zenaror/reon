@@ -46,6 +46,7 @@ ALLOWED=(
 	reon-pokemon-exchange
 	reon-pokemon-battle
 	reon-auto-schedule
+	reon-auto-schedule-refresh
 	reon-mail-bottle
 	reon-mail-trash-purge
 	reon-service-status
@@ -55,7 +56,10 @@ ALLOWED=(
 
 # Units whose schedule and enabled state this script may touch. Only the
 # timer-driven jobs -- there is no timer to reschedule on a daemon, and
-# listing one here would be a way to ask for a drop-in on it.
+# listing one here would be a way to ask for a drop-in on it. The on-demand
+# refresh unit is absent for the same reason from the other side: it has no
+# timer, and offering a schedule for something that must only ever be run by
+# hand is how it ends up running by itself.
 TIMED=(
 	reon-pokemon-exchange
 	reon-pokemon-battle

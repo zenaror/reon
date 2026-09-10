@@ -36,10 +36,28 @@
 			"postfix"               => ["kind" => "daemon", "label" => "Postfix"],
 			"reon-pokemon-exchange" => ["kind" => "job",    "label" => "Trade Corner"],
 			"reon-pokemon-battle"   => ["kind" => "job",    "label" => "Battle Tower"],
-			"reon-auto-schedule"    => ["kind" => "job",    "label" => "Auto schedule"],
+			// `extra` is a second, on-demand unit this job can also be run as.
+			// Here it is the same scheduler with --refresh, which clears the
+			// rankings of every configured region rather than only the ones
+			// whose news actually rotated -- a different act, and one nobody
+			// should reach by pressing the ordinary "run now".
+			//
+			// It is a separate unit rather than a flag because `systemctl
+			// start` takes no arguments, and the alternative would have been
+			// the web application assembling a command line, which is the
+			// thing the helper exists to avoid.
+			"reon-auto-schedule"    => ["kind" => "job",    "label" => "Auto schedule",
+			                            "extra" => "reon-auto-schedule-refresh",
+			                            "extra_label" => "admin.services-refresh",
+			                            "extra_confirm" => "admin.services-refresh-confirm"],
 			"reon-mail-bottle"      => ["kind" => "job",    "label" => "Mail de Cute"],
 			"reon-mail-trash-purge" => ["kind" => "job",    "label" => "Mail trash purge"],
 			"reon-service-status"   => ["kind" => "job",    "label" => "Service status probe"],
+			// Reachable through the button on the row above and nowhere else;
+			// `hidden` keeps it off the listing so it is never taken for a
+			// scheduled job of its own.
+			"reon-auto-schedule-refresh" => ["kind" => "job", "label" => "Auto schedule (--refresh)",
+			                                 "hidden" => true],
 		];
 
 		// Stopping nginx from a page nginx is serving is a one-way door: the
@@ -82,11 +100,14 @@
 			$units = array_keys(self::UNITS);
 
 			$services = $this->show(array_map(function ($u) { return $u . ".service"; }, $units));
-			$jobs = array_values(array_filter($units, function ($u) { return self::isJob($u); }));
+			$jobs = array_values(array_filter($units, function ($u) {
+				return self::isJob($u) && empty(self::UNITS[$u]["hidden"]);
+			}));
 			$timers = $this->show(array_map(function ($u) { return $u . ".timer"; }, $jobs));
 
 			$out = [];
 			foreach (self::UNITS as $name => $meta) {
+				if (!empty($meta["hidden"])) continue;
 				$service = $services[$name . ".service"] ?? [];
 				$timer = $timers[$name . ".timer"] ?? [];
 
@@ -107,6 +128,9 @@
 					"state" => $state,
 					"can_stop" => self::canStop($name),
 					"timer" => null,
+					"extra" => $meta["extra"] ?? null,
+					"extra_label" => $meta["extra_label"] ?? null,
+					"extra_confirm" => $meta["extra_confirm"] ?? null,
 				];
 
 				if (self::isJob($name)) {
@@ -172,6 +196,15 @@
 			if (in_array($verb, ["run", "enable", "disable", "timer-set", "timer-reset"], true) && !self::isJob($unit)) {
 				return [false, "not a scheduled job"];
 			}
+			// A unit reachable only as another job's extra action has no
+			// timer of its own. The helper refuses these too, and would have
+			// been enough on its own -- but two layers disagreeing about what
+			// is allowed is how one of them ends up being changed to match
+			// the wrong one.
+			if (in_array($verb, ["enable", "disable", "timer-set", "timer-reset"], true)
+			    && !empty(self::UNITS[$unit]["hidden"])) {
+				return [false, "on-demand only"];
+			}
 			if (!$this->available()) return [false, "helper-missing"];
 
 			$cmd = ["/usr/bin/sudo", "-n", self::HELPER, $verb, $unit];
@@ -182,13 +215,44 @@
 			return [$out["code"] === 0, $detail === "" ? "ok" : $detail];
 		}
 
+		// Reading a log and restarting a service are not the same privilege,
+		// and this used to treat them as one: both went through the helper,
+		// so a server that only wanted the Logs page had to grant sudo for
+		// restarts as well. Reading the journal needs nothing of the sort --
+		// membership of `systemd-journal` (or `adm`) is enough, and it grants
+		// no power to change anything.
+		//
+		// So journalctl is tried directly first, and the helper is the
+		// fallback for a server that has it. Returns null when neither works,
+		// which is the page's cue to say what to grant.
 		public function journal($unit, $lines = 200) {
 			if (!self::isKnown($unit)) return "";
+			$lines = max(10, min(1000, (int)$lines));
+
+			$direct = $this->run([
+				"/usr/bin/journalctl", "-u", $unit . ".service",
+				"-n", (string)$lines, "--no-pager", "-q", "--output", "short-iso",
+			]);
+			if ($direct["code"] === 0 && trim($direct["stdout"]) !== "") {
+				return $direct["stdout"];
+			}
+
 			if (!$this->available()) return null;
 
-			$lines = max(10, min(1000, (int)$lines));
 			$out = $this->run(["/usr/bin/sudo", "-n", self::HELPER, "log", $unit, (string)$lines]);
-			return $out["stdout"] . $out["stderr"];
+			$text = $out["stdout"] . $out["stderr"];
+			return trim($text) === "" ? null : $text;
+		}
+
+		// Whether the journal is readable at all, by either route. Asked by
+		// the page so it can tell the difference between "this unit has said
+		// nothing" and "we are not allowed to look".
+		public function canReadJournal() {
+			if ($this->available()) return true;
+			$probe = $this->run([
+				"/usr/bin/journalctl", "-n", "1", "--no-pager", "-q",
+			]);
+			return $probe["code"] === 0 && trim($probe["stdout"]) !== "";
 		}
 
 		// Always an argument list, never a shell string: nothing here can
