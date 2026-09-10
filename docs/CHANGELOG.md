@@ -17,10 +17,37 @@ o que mudou. Setembro/2026.
 * Lixeira de e-mail — o `DELE` do POP3 passou a marcar em vez de apagar. O
   Mobile Trainer não tem modo "deixar no servidor": todos os caminhos dele
   apagam, e um deles apaga sem nem baixar
-* Assunto entregue ao jogo cortado em 10 caracteres, contados em caracteres e
-  não bytes, para não partir um caractere ISO-2022-JP ao meio
-* Mensagem limitada ao que cabe num Game Boy (8 linhas, 96 caracteres),
-  recusada na composição em vez de truncada depois
+* Assunto limitado a 10 caracteres na composição, e não mais cortado na
+  entrega: um jogo nunca escreve título maior, então o webmail é o único
+  caminho por onde um título grande chega
+* Mensagem limitada ao que cabe num Game Boy — 8 linhas de 12 caracteres,
+  contadas depois da quebra. Uma linha de 96 caracteres passava nos dois
+  totais e mesmo assim ocupava as 8 linhas da tela sozinha. A caixa de
+  composição quebra enquanto se digita, e trocar para um jogador depois de
+  escrever solto pergunta antes de reformatar e cortar
+* **Fix: o Trade Corner nunca concluía uma troca.** O POP3 monta a mensagem
+  entregue ao Game Boy a partir de uma lista de cabeçalhos permitidos, para
+  não gastar segundos de cabo serial com o ruído de servidor de e-mail real.
+  O `X-Game-result`, de onde o Crystal lê o resultado, não estava na lista:
+  o jogo recebia a mensagem sem o único campo que importava e a descartava
+  calado. Correspondência interna passou a ser entregue exatamente como está
+  gravada; só a externa é tratada
+* **Aba de Jogo no webmail** — a correspondência que um jogo manda para si
+  mesmo sai da caixa de entrada e da lixeira e passa a ter aba própria, só
+  leitura, com selo de cor distinta contando o que um cartucho ainda tem para
+  buscar. Um resultado de troca já buscado é apagado de vez em vez de ir para
+  a lixeira: guardar cópia restaurável de uma troca concluída é caminho para
+  receber o mesmo Pokémon duas vezes
+* Paginação nas pastas do webmail, 15 por página, com o tamanho à escolha e
+  lembrado; cópias enviadas podem ser apagadas
+* Fix: o `config.bin` saía sem servidores DNS (tipo `NONE`), então todo
+  frontend precisava ser apontado para o REON à mão, e um sem tela de
+  configuração — um núcleo libretro, por exemplo — não tinha como ser
+  apontado. Agora sai com DNS e relay preenchidos, e um frontend que tenha a
+  própria configuração continua tendo preferência
+* Fix: no cartão do Trade Corner o último caractere de um item longo saía
+  cortado (BRIGHTPOWDER virava BRIGHTPOWDEF). A coluna do item tem largura
+  fixa e os nomes de 12 caracteres a preenchiam sem folga nenhuma
 * Sistema de notícias com painel em Markdown; painel de status dos serviços;
   usuário REON no cadastro, com o endereço de 8 caracteres derivado dele
 * Battle Tower: filtros de nível e sala aceitam ALL, com as colunas aparecendo
