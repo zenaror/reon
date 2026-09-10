@@ -21,35 +21,47 @@
 	// accent colour, with the unread count. (The grey whole-mailbox total is
 	// gone; the owner asked for the new-mail signal alone.) The dot belongs
 	// only where a spot asks for it (the side menu).
-	function render(count, unread) {
-		var n = unread;
-		var label = strings.newArrived.replace("%count%", unread);
+	//
+	// A game's own mail gets its own badge beside that one, in its own
+	// colour, because it says something different: not "someone wrote to
+	// you" but "a cartridge still has something to collect". Sharing the
+	// orange would make the two indistinguishable, which is the one job a
+	// badge has.
+	function mark(spot, n, label, cls, wantsDot) {
+		if (n <= 0) return;
+
+		var badge = document.createElement("span");
+		badge.className = "mail-badge " + cls;
+		badge.title = label;
+		badge.textContent = String(n);
+
+		var hidden = document.createElement("span");
+		hidden.className = "visually-hidden";
+		hidden.textContent = label;
+
+		spot.appendChild(document.createTextNode(" "));
+		spot.appendChild(badge);
+		spot.appendChild(hidden);
+
+		if (wantsDot) {
+			var dot = document.createElement("span");
+			dot.className = "mail-dot" + (cls === "mail-badge--game" ? " mail-dot--game" : "");
+			dot.title = label;
+			dot.setAttribute("aria-hidden", "true");
+			spot.appendChild(document.createTextNode(" "));
+			spot.appendChild(dot);
+		}
+	}
+
+	function render(unread, gameWaiting) {
+		var unreadLabel = strings.newArrived.replace("%count%", unread);
+		var gameLabel = (strings.gameWaiting || "%count%").replace("%count%", gameWaiting);
 
 		spots.forEach(function (spot) {
 			spot.textContent = "";
-			if (n <= 0) return;
-
-			var badge = document.createElement("span");
-			badge.className = "mail-badge mail-badge--new";
-			badge.title = label;
-			badge.textContent = String(n);
-
-			var hidden = document.createElement("span");
-			hidden.className = "visually-hidden";
-			hidden.textContent = label;
-
-			spot.appendChild(document.createTextNode(" "));
-			spot.appendChild(badge);
-			spot.appendChild(hidden);
-
-			if (unread > 0 && spot.hasAttribute("data-mail-dot")) {
-				var dot = document.createElement("span");
-				dot.className = "mail-dot";
-				dot.title = label;
-				dot.setAttribute("aria-hidden", "true");
-				spot.appendChild(document.createTextNode(" "));
-				spot.appendChild(dot);
-			}
+			var wantsDot = spot.hasAttribute("data-mail-dot");
+			mark(spot, unread, unreadLabel, "mail-badge--new", wantsDot);
+			mark(spot, gameWaiting, gameLabel, "mail-badge--game", wantsDot);
 		});
 	}
 
@@ -58,7 +70,7 @@
 			.then(function (r) { return r.ok ? r.json() : null; })
 			.then(function (data) {
 				if (!data) return;
-				render(data.count, data["new"]);
+				render(data["new"] || 0, data.game_waiting || 0);
 				document.dispatchEvent(new CustomEvent("reon:mailstatus", { detail: data }));
 			})
 			// A failed check is not worth telling anyone about; the next one

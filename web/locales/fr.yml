@@ -1035,6 +1035,7 @@ mail:
   filter-clear: "Effacer"
   filter-none: "Rien ne correspond au filtre."
   thread-with: "%count% messages avec %party%"
+  thread-unread: "%count% non lus"
   thread-you: "Vous"
   thread-delete: "Supprimer la conversation"
   thread-hint: "Lecture d'une conversation"

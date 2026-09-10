@@ -70,7 +70,7 @@
 				{{ menu.item(here.news, '/news.php', 'var(--reon-purple)', 'news'|trans) }}
 				{{ menu.item(here.guide, '/guide.php', 'var(--reon-pink)', 'guide'|trans) }}
 				{{ menu.item(here.downloads, '/downloads.php', 'var(--reon-silver)', 'downloads'|trans) }}
-				{% set mail_extra %}<span data-mail-badge data-mail-dot="1">{% if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span> <span class="mail-dot" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}" aria-hidden="true"></span>{% endif %}</span>{% endset %}
+				{% set mail_extra %}<span data-mail-badge data-mail-dot="1">{% if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span> <span class="mail-dot" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}" aria-hidden="true"></span>{% endif %}{% if mail_game_waiting|default(0) > 0 %} <span class="mail-badge mail-badge--game">{{ mail_game_waiting }}</span> <span class="mail-dot mail-dot--game" title="{{ 'mail.game-waiting'|trans({'%count%': mail_game_waiting}) }}" aria-hidden="true"></span>{% endif %}</span>{% endset %}
 				{{ menu.item(here.mail, '/user/mail.php', 'var(--reon-orange)', 'mail.title'|trans, mail_extra) }}
 				{{ menu.item(here.pokemon, '/pokemon/', 'var(--reon-red)', 'pokemon-crystal'|trans) }}
 				{{ menu.item(here.gbwars, '/gbwars/', 'var(--reon-green)', 'gameboy-wars'|trans) }}

@@ -15,12 +15,38 @@
 		const TRASH_RETENTION_DAYS = 30;
 
 		// What a Mobile Trainer message can hold: 8 lines of 12 characters.
-		// The Trainer wraps long lines itself, so the per-line width is not
-		// enforced here -- only the totals, which are what it cannot exceed.
 		// Line breaks are not counted against the character budget: 96 is the
 		// text capacity (8 x 12), not the size of the stored message.
+		//
+		// The two totals are not independent limits. A single 96-character
+		// line is one line and 96 characters -- inside both totals -- yet it
+		// occupies all 8 rows once it is broken to the 12-column width, and
+		// anything after it falls off the screen. So the line count that
+		// matters is the one *after* wrapping, which is what checkBodyFits
+		// measures.
 		const BODY_MAX_LINES = 8;
 		const BODY_MAX_CHARS = 96;
+		const BODY_MAX_LINE_CHARS = 12;
+
+		// What the game's mailbox shows of a title. A game never writes a
+		// longer one, so the only way an over-long title reaches a player is
+		// the webmail -- which makes this a rule about what may be composed
+		// here, checked at that moment, rather than something to trim off a
+		// message on its way out. Delivery hands a player's mail to the game
+		// exactly as it was stored.
+		const SUBJECT_MAX_CHARS = 10;
+
+		// How many rows a folder shows at once, and what the reader may pick
+		// instead. Paging happens in PHP on the already-filtered list rather
+		// than in SQL: the inbox lists conversations, which only exist after
+		// the rows are read and grouped, so there is no query to LIMIT.
+		const PAGE_SIZES = [10, 15, 25, 50, 100];
+		const PAGE_SIZE_DEFAULT = 15;
+
+		// The local part our own services send from. Nobody can register it as
+		// a username, so an address at one of our domains under this name is
+		// always machine traffic.
+		const SERVICE_LOCAL_PART = "system";
 
 		// The domains a recipient can be "one of ours" under: the game's DION
 		// domain and the site's real-internet mail domain, lower-cased. The
@@ -33,13 +59,118 @@
 			]));
 		}
 
+		// Breaks a single line to the screen width, at spaces where possible.
+		// A word with no space to break at (a long URL, a keysmash) is cut at
+		// the column, which is what the screen does to it anyway.
+		private function wrapOneLine($line) {
+			$width = self::BODY_MAX_LINE_CHARS;
+			$out = [];
+			$current = "";
+
+			foreach (explode(" ", $line) as $word) {
+				while (mb_strlen($word) > $width) {
+					if ($current !== "") { $out[] = $current; $current = ""; }
+					$out[] = mb_substr($word, 0, $width);
+					$word = mb_substr($word, $width);
+				}
+				if ($current === "") {
+					$current = $word;
+				} elseif (mb_strlen($current) + 1 + mb_strlen($word) <= $width) {
+					$current .= " ".$word;
+				} else {
+					$out[] = $current;
+					$current = $word;
+				}
+			}
+
+			$out[] = $current;
+			return $out;
+		}
+
+		// The body as the game will actually lay it out. The compose page runs
+		// the same wrap in JavaScript so what is typed is what is stored.
+		public function wrapBody($body) {
+			$normalized = preg_replace('/\r\n|\r/', "\n", (string)$body);
+			$out = [];
+			foreach (explode("\n", $normalized) as $line) {
+				foreach ($this->wrapOneLine($line) as $piece) $out[] = $piece;
+			}
+			return implode("\n", $out);
+		}
+
+		// One page of an already-filtered list, plus what the controls need to
+		// describe it. The page number is clamped rather than trusted: a
+		// bookmarked page 9, a narrowed filter, or deleting the last page's
+		// only row should land on the last real page, never on an empty one.
+		public function paginate($rows, $page, $per) {
+			$per = (int)$per > 0 ? (int)$per : self::PAGE_SIZE_DEFAULT;
+			$total = count($rows);
+			$pages = max(1, (int)ceil($total / $per));
+			$page = max(1, min((int)$page, $pages));
+			$offset = ($page - 1) * $per;
+
+			return [array_slice($rows, $offset, $per), [
+				"page" => $page,
+				"pages" => $pages,
+				"per" => $per,
+				"total" => $total,
+				"offset" => $offset,
+				"sizes" => self::PAGE_SIZES,
+			]];
+		}
+
+		// The addresses our own services write from.
+		public function serviceSenders() {
+			$out = [];
+			foreach ($this->internalDomains() as $domain) {
+				// Config, not user input, but kept to the shape a domain can
+				// legally take -- these end up inside a SQL literal below.
+				if (preg_match('/^[a-z0-9.-]+$/', $domain)) {
+					$out[] = self::SERVICE_LOCAL_PART."@".$domain;
+				}
+			}
+			return $out;
+		}
+
+		public function isServiceSender($sender) {
+			return in_array(strtolower(trim((string)$sender)), $this->serviceSenders(), true);
+		}
+
+		// A message is a game's own traffic when its headers say so -- the pair
+		// the Mobile Trainer itself tests -- or when it came from one of our
+		// service addresses. Both tests, because they cover different holes: a
+		// service could send something those headers do not describe, and a
+		// game can post mail from a player's own address (bottle mail does),
+		// which is a letter between people and must stay in the inbox.
+		public function isGameMail($parsed, $sender) {
+			return !empty($parsed["is_game"]) || $this->isServiceSender($sender);
+		}
+
+		// The same rule in SQL: the counters run over the whole mailbox on
+		// every page render, so they must not read and parse every blob.
+		private function gameMailSql() {
+			$sql = "(message like '%X-Game-code:%' and message like '%X-GBmail-type: exclusive%')";
+			$senders = $this->serviceSenders();
+			if (!empty($senders)) {
+				$list = implode(",", array_map(function ($a) { return "'".$a."'"; }, $senders));
+				$sql = "($sql or lower(sender) in ($list))";
+			}
+			return $sql;
+		}
+
+		// Returns an error code, or null when the subject fits.
+		public function checkSubjectFits($subject) {
+			if (mb_strlen(trim((string)$subject)) > self::SUBJECT_MAX_CHARS) return "subject-too-long";
+			return null;
+		}
+
 		// Returns an error code, or null when the body fits.
 		public function checkBodyFits($body) {
-			$normalized = preg_replace('/\r\n|\r/', "\n", (string)$body);
-			$lines = explode("\n", $normalized);
+			$wrapped = $this->wrapBody($body);
+			$lines = explode("\n", $wrapped);
 
 			if (count($lines) > self::BODY_MAX_LINES) return "too-many-lines";
-			if (mb_strlen(str_replace("\n", "", $normalized)) > self::BODY_MAX_CHARS) return "too-many-chars";
+			if (mb_strlen(str_replace("\n", "", $wrapped)) > self::BODY_MAX_CHARS) return "too-many-chars";
 			return null;
 		}
 
@@ -52,9 +183,14 @@
 			return self::$instance;
 		}
 
+		// Folders over one table: "inbox" and "trash" are the human ones and
+		// never show a game's own mail; "game" is the read-only window onto
+		// exactly that mail, whether it is still waiting or the game has
+		// already taken and deleted it.
 		public function listForUser($userId, $folder = "inbox") {
 			$db = DBUtil::getInstance()->getDB();
-			$where = $folder === "trash" ? "deleted_at is not null" : "deleted_at is null";
+			$where = $folder === "trash" ? "deleted_at is not null"
+				: ($folder === "game" ? "1" : "deleted_at is null");
 			$stmt = $db->prepare("
 				select id, sender, timestamp, message, deleted_at, deleted_by, retrieved_at, read_at
 				from sys_inbox
@@ -69,8 +205,11 @@
 			$out = [];
 			while ($row = $result->fetch_assoc()) {
 				$parsed = $this->parse($row["message"]);
+				$isGame = $this->isGameMail($parsed, $row["sender"]);
+				if ($folder === "game" ? !$isGame : $isGame) continue;
 				$out[] = [
 					"id" => $row["id"],
+					"is_game" => $isGame,
 					"sender" => $row["sender"],
 					"timestamp" => $row["timestamp"],
 					"subject" => $parsed["subject"],
@@ -200,7 +339,8 @@
 			// A message another player will read on a Game Boy: refused
 			// outright when it cannot be displayed there, rather than sent
 			// and silently truncated later.
-			$tooLong = $this->checkBodyFits($body);
+			$tooLong = $this->checkSubjectFits($subject);
+			if ($tooLong === null) $tooLong = $this->checkBodyFits($body);
 			if ($tooLong !== null) return [false, $tooLong];
 
 			$cfg = ConfigUtil::getInstance()->getConfig();
@@ -329,7 +469,12 @@
 
 			$db = DBUtil::getInstance()->getDB();
 			$placeholders = implode(",", array_fill(0, count($ids), "?"));
-			$stmt = $db->prepare("$sqlHead where recipient = ? and $guard and id in ($placeholders)");
+			// A game's own mail is read-only in the webmail, and that is
+			// enforced here rather than only by hiding the buttons: trashing a
+			// trade result would take it away from the cartridge waiting to
+			// collect it. An id that names one simply matches nothing.
+			$notGame = "not ".$this->gameMailSql();
+			$stmt = $db->prepare("$sqlHead where recipient = ? and $guard and $notGame and id in ($placeholders)");
 
 			$params = array_merge([(int)$userId], $ids);
 			$stmt->bind_param(str_repeat("i", count($params)), ...$params);
@@ -350,6 +495,25 @@
 		public function deleteForeverMany($userId, $ids) {
 			return $this->bulk($userId, $ids,
 				"delete from sys_inbox", "deleted_at is not null");
+		}
+
+		// Sent copies have no trash of their own: sys_sent has no deleted_at,
+		// and a copy of something already delivered has nowhere to be
+		// restored to. So removing one is final, and the button asks first.
+		// Scoped by user_id (sys_sent's owner column) rather than by
+		// recipient, which is why it cannot reuse bulk().
+		public function deleteSentMany($userId, $ids) {
+			$ids = array_values(array_filter(array_map("intval", (array)$ids)));
+			if (empty($ids)) return 0;
+
+			$db = DBUtil::getInstance()->getDB();
+			$placeholders = implode(",", array_fill(0, count($ids), "?"));
+			$stmt = $db->prepare("delete from sys_sent where user_id = ? and id in ($placeholders)");
+
+			$params = array_merge([(int)$userId], $ids);
+			$stmt->bind_param(str_repeat("i", count($params)), ...$params);
+			$stmt->execute();
+			return $stmt->affected_rows;
 		}
 
 		// Restoring puts the message back in POP3's maildrop, so the game will
@@ -384,7 +548,8 @@
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
 				"select count(*) as c from sys_inbox
-				 where recipient = ? and deleted_at is null and read_at is null"
+				 where recipient = ? and deleted_at is null and read_at is null
+				   and not " . $this->gameMailSql()
 			);
 			$userId = (int)$userId;
 			$stmt->bind_param("i", $userId);
@@ -490,7 +655,7 @@
 
 		public function countTrashForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is not null");
+			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is not null and not " . $this->gameMailSql());
 			$userId = (int)$userId;
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
@@ -522,14 +687,43 @@
 				"subject" => $parsed["subject"],
 				"from_name" => $parsed["from_name"],
 				"game" => $parsed["game"],
+				// Read-only in the webmail: it is a game's own traffic, and
+				// deleting or replying to it would break the game, not tidy
+				// a mailbox.
+				"is_game" => $this->isGameMail($parsed, $row["sender"]),
 				"body" => $parsed["body"],
 				"deleted_at" => $row["deleted_at"],
 			];
 		}
 
+		// Waiting for a game to fetch it: still in the mailbox, and the game
+		// has not taken a copy yet. Deliberately not "unread" -- nobody reads
+		// these in the webmail, so read_at would never move.
+		public function countGameWaitingForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select count(*) as c from sys_inbox
+				 where recipient = ? and deleted_at is null and retrieved_at is null
+				   and " . $this->gameMailSql()
+			);
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
+		public function countGameForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and " . $this->gameMailSql());
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			return (int)$stmt->get_result()->fetch_assoc()["c"];
+		}
+
 		public function countForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is null");
+			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is null and not " . $this->gameMailSql());
 			$userId = (int)$userId;
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
@@ -724,6 +918,11 @@
 				"subject" => $this->decodeHeader($headers["subject"] ?? ""),
 				"from_name" => $this->fromDisplayName($headers["from"] ?? ""),
 				"game" => $headers["x-game-title"] ?? "",
+				// The same pair the Mobile Trainer itself tests before deciding
+				// a message is not for it (proved by probe, 2026-09-10): a game
+				// code plus "exclusive". Either alone is ordinary mail.
+				"is_game" => isset($headers["x-game-code"])
+					&& strtolower($headers["x-gbmail-type"] ?? "") === "exclusive",
 				"body" => $this->decodeBody($body, $charset),
 			];
 		}
