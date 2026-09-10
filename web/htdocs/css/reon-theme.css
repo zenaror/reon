@@ -726,33 +726,26 @@ body.pokecrystal-index main#content {
   color: #eaf3fc;
 }
 
-.mail-dot--game {
-  background: #2f6fb5;
-}
-
-/* Pulsing dot beside REON Mail when something has arrived since the mailbox
-   was last opened. A slow fade rather than a hard blink: a sharp on/off in
-   the corner of the eye is genuinely unpleasant to sit next to, and for some
+/* Beside REON Mail, the count itself pulses. There used to be a bare dot next
+   to it, which meant reading two things to learn one -- a dot saying
+   "something arrived" and a number saying how much. The number carries both,
+   and pulsing it lets each colour keep its own meaning while it asks for
+   attention. A slow fade rather than a hard blink: a sharp on/off in the
+   corner of the eye is genuinely unpleasant to sit next to, and for some
    people it is worse than unpleasant. */
-.mail-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #c25a10;
-  vertical-align: 1px;
-  animation: mail-dot-pulse 1.8s ease-in-out infinite;
+.mail-badge--pulse {
+  animation: mail-badge-pulse 1.8s ease-in-out infinite;
 }
 
-@keyframes mail-dot-pulse {
+@keyframes mail-badge-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.82); }
+  50% { opacity: 0.45; transform: scale(0.9); }
 }
 
-/* Anyone who has asked for less motion still gets the dot -- it carries the
+/* Anyone who has asked for less motion still gets the badge -- it carries the
    information -- just without the movement. */
 @media (prefers-reduced-motion: reduce) {
-  .mail-dot { animation: none; }
+  .mail-badge--pulse { animation: none; }
 }
 
 /* ----------------------------------------------------------- passport modal
