@@ -171,6 +171,17 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### app/pokemon-exchange — Trade Corner
 
+* **Fix: o log de depuração do depósito media a variável, não o depósito.**
+  A linha fazia `strlen($request_data)`, e `$request_data` é a string
+  `"php://input"` — o nome do stream. Onze caracteres, em todo depósito,
+  desde sempre. Agora lê o `CONTENT_LENGTH` de verdade
+* Largura do campo de carta instrumentada. O tamanho do campo de mail da
+  oferta é genuinamente indefinido fora do japonês: a constante que lemos diz
+  47, e uma medição de save real feita por outra sessão diz 33 — e o nosso
+  parser é comprovadamente o do **depósito**, que é o lado onde os 33 se
+  aplicariam. Como o mail é o último campo do pacote, pedir bytes demais não
+  desalinha nada: o `fread` devolve o que existe, então o que ele devolveu é
+  a medição. O próximo depósito de um Crystal EN responde
 * **Uma definição só para os grupos de região do Trade Corner.** Havia três e
   elas não combinavam: o default da coluna dizia `efdsipuj`, o parâmetro do
   `createUser` dizia `e,f,d,s,i,p,u,j`, e duas listas `in_array` separadas
