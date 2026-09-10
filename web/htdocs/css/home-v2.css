@@ -820,20 +820,22 @@ body.home-v2 main#content { overflow: hidden; }
   border-color: var(--mt-frame);
 }
 
+/* Shape lives here so every variant is the same pill; the variants below
+   only choose a colour. It used to sit on the "new" variant alone, which
+   left any other count square. */
 .mt-tab__count {
+  padding: 0 6px;
+  border-radius: 999px;
   font-size: 0.85em;
-  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+  opacity: 1;
 }
 
 /* The unread count is the one number that asks for something, so it is filled
    rather than dimmed -- it has to read at a glance from another tab. */
 .mt-tab__count--new {
-  padding: 0 6px;
-  border-radius: 999px;
   background: var(--mt-orange);
   color: var(--mt-frame);
-  opacity: 1;
-  font-variant-numeric: tabular-nums;
 }
 
 .mt-tab--on .mt-tab__count--new {
@@ -1339,7 +1341,6 @@ body.home-v2 main#content { overflow: hidden; }
 .mt-tab__count--game {
   background: #2f6fb5;
   color: #fff;
-  border-color: #1d4a7d;
 }
 
 .mt-note--game {

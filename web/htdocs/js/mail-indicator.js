@@ -27,11 +27,11 @@
 	// you" but "a cartridge still has something to collect". Sharing the
 	// orange would make the two indistinguishable, which is the one job a
 	// badge has.
-	function mark(spot, n, label, cls, wantsDot) {
+	function mark(spot, n, label, cls, pulses) {
 		if (n <= 0) return;
 
 		var badge = document.createElement("span");
-		badge.className = "mail-badge " + cls;
+		badge.className = "mail-badge " + cls + (pulses ? " mail-badge--pulse" : "");
 		badge.title = label;
 		badge.textContent = String(n);
 
@@ -43,14 +43,6 @@
 		spot.appendChild(badge);
 		spot.appendChild(hidden);
 
-		if (wantsDot) {
-			var dot = document.createElement("span");
-			dot.className = "mail-dot" + (cls === "mail-badge--game" ? " mail-dot--game" : "");
-			dot.title = label;
-			dot.setAttribute("aria-hidden", "true");
-			spot.appendChild(document.createTextNode(" "));
-			spot.appendChild(dot);
-		}
 	}
 
 	function render(unread, gameWaiting) {
@@ -59,9 +51,11 @@
 
 		spots.forEach(function (spot) {
 			spot.textContent = "";
-			var wantsDot = spot.hasAttribute("data-mail-dot");
-			mark(spot, unread, unreadLabel, "mail-badge--new", wantsDot);
-			mark(spot, gameWaiting, gameLabel, "mail-badge--game", wantsDot);
+			// Only the side menu asks for the pulse: the same number blinking
+			// in three places at once is noise, not a signal.
+			var pulses = spot.hasAttribute("data-mail-pulse");
+			mark(spot, unread, unreadLabel, "mail-badge--new", pulses);
+			mark(spot, gameWaiting, gameLabel, "mail-badge--game", pulses);
 		});
 	}
 
