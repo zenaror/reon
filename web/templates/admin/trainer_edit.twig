@@ -86,7 +86,7 @@
 										{# Checked again on listing, not only on upload: a file
 										   that would be refused today is worth flagging even
 										   though nothing refused it when it arrived. #}
-										<span class="admin-pill admin-pill--down">{{ ('admin.trainer-img-' ~ img.reason)|trans({'%w%': image_max_w, '%h%': image_max_h}) }}</span>
+										<span class="admin-pill admin-pill--down">{{ ('admin.trainer-img-' ~ img.reason)|trans({'%n%': image_max}) }}</span>
 									{% endif %}
 									<span class="admin-form__hint">
 										{% if img.facts.width is defined %}{{ img.facts.width }}×{{ img.facts.height }}{% endif %}
@@ -119,7 +119,7 @@
 				<input type="hidden" name="page" value="{{ page.url }}">
 				<label>
 					{{ 'admin.trainer-img-file'|trans }}
-					<span class="admin-form__hint">{{ 'admin.trainer-img-rules'|trans({'%w%': image_max_w, '%h%': image_max_h}) }}</span>
+					<span class="admin-form__hint">{{ 'admin.trainer-img-rules'|trans({'%n%': image_max}) }}</span>
 					<input type="file" name="image" accept=".bmp,image/bmp" required>
 				</label>
 				<label>

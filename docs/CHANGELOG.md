@@ -233,6 +233,25 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   dentro de `<html>`. Imagem é BMP 1BPP, no máximo 144×96. Ainda assim nada é
   recusado por estar fora da lista: a doc não diz o que o adaptador faz com
   uma tag desconhecida, e recusar uma que funciona seria o erro pior
+* **As regras de imagem corrigidas contra o site real, não contra a doc.** A
+  dandocs diz "1BPP, no máximo 144×96, sem tabela de cores". Confrontada com
+  as 37 imagens que o Mobile Trainer de verdade serve, essa regra recusa
+  **34** — imagens que um console renderiza hoje. Duas partes dela não se
+  sustentam: as reais chegam a 144×208 e 12×244 (o que todas respeitam é o
+  limite documentado de 8 bits, e é esse que ficou), e carregam `biClrUsed =
+  2`, que é simplesmente o que um bitmap de duas cores tem. O 1BPP se
+  sustenta: as 37 são 1BPP. Recusar o que comprovadamente funciona é o pior
+  dos dois erros disponíveis
+* **Achado de quebra:** o `images/banner.bmp` do servidor de testes é **4BPP**
+  e o `credits/index.html` aponta para ele — o adaptador só desenha 1BPP, então
+  essa página mostra imagem quebrada num console. A versão correta (1BPP,
+  144×33) está em `images (desktop viewable)/`. Foi o validador que achou
+* O editor passou a caber na árvore real: 137 páginas em vez de duas, `.txt`
+  incluído (o site serve três como conteúdo), nomes com espaço e parêntese
+  intactos, e as imagens procuradas no `images/` mais próximo acima da página
+  em vez de num `img/` fixo ao lado — com o caminho relativo pronto para
+  copiar, que muda conforme a profundidade (`images/banner.bmp` na raiz,
+  `../images/banner.bmp` em `topix/`)
 * **Envio de imagem, com validação de verdade contra a dandocs** — não a
   extensão do arquivo, o cabeçalho BMP: exatamente 1BPP, planos exatamente 1,
   sem compressão, tabela de cores vazia, largura e altura cabendo em 8 bits

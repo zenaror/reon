@@ -51,15 +51,27 @@
 		// editor warns and lets the author decide.
 		const REFUSE_UNKNOWN_TAGS = false;
 
-		// <img> takes 1BPP BMP only, and no larger than this. The screen
-		// itself is 160x144, so an image may be nearly the full width but
-		// never the full height.
-		const IMAGE_MAX_W = 144;
-		const IMAGE_MAX_H = 96;
+		// What <img> accepts, corrected against the real site rather than the
+		// documentation.
+		//
+		// dandocs says "1BPP BMP, at most 144x96, no colour table". Of the 37
+		// images the live Mobile Trainer actually serves, that rule refuses
+		// **34** -- images a console renders today. So two parts of it are
+		// wrong here:
+		//
+		//   the 144x96 cap   real ones are 144x208, 48x208, 12x244. What they
+		//                    all do respect is the documented 8-bit fit, so
+		//                    that is the rule kept.
+		//   "no colour table" real ones carry biClrUsed = 2, which is simply
+		//                    what a two-colour bitmap has.
+		//
+		// 1BPP itself holds: every one of the 37 is 1BPP. Refusing something
+		// that demonstrably works is the worse error of the two available.
+		const IMAGE_MAX_DIMENSION = 255;
 
-		// The directory a page's images live in, beside the page itself:
-		// the existing page asks for "img/banner.bmp".
-		const IMAGE_DIR = "img";
+		// Where the site keeps its images. "images" is what the real tree
+		// uses; "img" was read off the single sample page this started from.
+		const IMAGE_DIRS = ["images", "img"];
 
 		// A 144x96 1BPP bitmap is under 2 KB. This is generous enough to
 		// accept anything legitimate and small enough that a wrong file is
@@ -92,7 +104,9 @@
 				if (!$file->isFile()) continue;
 				// Any page, not only the index: an index that links to
 				// nothing is the only thing the old rule could describe.
-				if (!preg_match('/\.html?$/i', $file->getFilename())) continue;
+				// .txt counts -- the real site serves three of them as
+				// content, and a page the console fetches is a page.
+				if (!preg_match('/\.(html?|txt)$/i', $file->getFilename())) continue;
 
 				$real = $file->getRealPath();
 				$relative = str_replace(DIRECTORY_SEPARATOR, "/", substr($real, strlen($root)));
@@ -281,17 +295,18 @@
 			if ($depth !== 1) return [false, "not-1bpp", $facts];
 			if ($planes !== 1) return [false, "planes", $facts];
 			if ($compression !== 0) return [false, "compressed", $facts];
-			if ($palette !== 0) return [false, "palette", $facts];
+			// A 1BPP bitmap has two colours; declaring them is normal, and the
+			// real site's images do. Anything past that is not a 1BPP file.
+			if ($palette > 2) return [false, "palette", $facts];
 			// Not "empty": that key already names the page-has-no-images
 			// state, and a reason code colliding with an unrelated string is
 			// how a validator ends up saying something reassuring about a
 			// file it just refused.
 			if ($width < 1 || $facts["height"] < 1) return [false, "empty-image", $facts];
-			if ($width > 255 || $facts["height"] > 255) return [false, "not-8-bit", $facts];
-			if ($pixelOffset > 65535) return [false, "offset-too-far", $facts];
-			if ($width > self::IMAGE_MAX_W || $facts["height"] > self::IMAGE_MAX_H) {
-				return [false, "too-large", $facts];
+			if ($width > self::IMAGE_MAX_DIMENSION || $facts["height"] > self::IMAGE_MAX_DIMENSION) {
+				return [false, "not-8-bit", $facts];
 			}
+			if ($pixelOffset > 65535) return [false, "offset-too-far", $facts];
 
 			return [true, "ok", $facts];
 		}
@@ -299,12 +314,45 @@
 		// The images a page can reference, with the same check applied to
 		// what is already there -- a file that would be refused today is
 		// worth flagging even though it was accepted before this existed.
+		// The image directory a page should use: the nearest one at or above
+		// it, so a page in archive/en/ finds archive/en/images and one at the
+		// root finds the root's. Returns null when there is none.
+		public function imageDir($url) {
+			$page = $this->page($url);
+			if ($page === null) return null;
+
+			$root = $this->root();
+			$dir = dirname($page["path"]);
+			while ($dir !== false && strpos($dir, (string)$root) === 0) {
+				foreach (self::IMAGE_DIRS as $name) {
+					$candidate = $dir . DIRECTORY_SEPARATOR . $name;
+					if (is_dir($candidate)) return $candidate;
+				}
+				$parent = dirname($dir);
+				if ($parent === $dir) break;
+				$dir = $parent;
+			}
+			return null;
+		}
+
+		// What a page would have to write to reach a file: the path relative
+		// to the page's own directory, which is what goes in the src.
+		private function relativeTo($from, $to) {
+			$from = explode("/", trim(str_replace(DIRECTORY_SEPARATOR, "/", $from), "/"));
+			$to = explode("/", trim(str_replace(DIRECTORY_SEPARATOR, "/", $to), "/"));
+			while ($from && $to && $from[0] === $to[0]) {
+				array_shift($from);
+				array_shift($to);
+			}
+			return str_repeat("../", count($from)) . implode("/", $to);
+		}
+
 		public function images($url) {
 			$page = $this->page($url);
 			if ($page === null) return [];
 
-			$dir = dirname($page["path"]) . DIRECTORY_SEPARATOR . self::IMAGE_DIR;
-			if (!is_dir($dir)) return [];
+			$dir = $this->imageDir($url);
+			if ($dir === null || !is_dir($dir)) return [];
 
 			$out = [];
 			foreach (scandir($dir) as $name) {
@@ -312,11 +360,16 @@
 				$path = $dir . DIRECTORY_SEPARATOR . $name;
 				if (!is_file($path)) continue;
 
+				// Only images: the real tree also holds a .pdn or two, which
+				// are somebody's editor files, not content.
+				if (!preg_match('/\.bmp$/i', $name)) continue;
+
 				[$ok, $reason, $facts] = $this->checkBmp((string)@file_get_contents($path));
 				$out[] = [
 					"name" => $name,
-					// What the page would write to reach it.
-					"ref" => self::IMAGE_DIR . "/" . $name,
+					// What this page would write to reach it -- relative to
+					// the page, since the images may be several levels up.
+					"ref" => $this->relativeTo(dirname($page["path"]), $path),
 					"size" => filesize($path),
 					"ok" => $ok,
 					"reason" => $reason,
@@ -350,7 +403,10 @@
 			[$ok, $reason, $facts] = $this->checkBmp($bytes);
 			if (!$ok) return [false, $reason, $facts];
 
-			$dir = dirname($page["path"]) . DIRECTORY_SEPARATOR . self::IMAGE_DIR;
+			$dir = $this->imageDir($url);
+			if ($dir === null) {
+				$dir = dirname($page["path"]) . DIRECTORY_SEPARATOR . self::IMAGE_DIRS[0];
+			}
 			if (!is_dir($dir) && !@mkdir($dir, 0775, true)) return [false, "mkdir-failed", $facts];
 			if (!is_writable($dir)) return [false, "not-writable", $facts];
 
@@ -386,8 +442,9 @@
 			// the request, the same rule the pages themselves follow.
 			foreach ($this->images($url) as $image) {
 				if ($image["name"] !== $name) continue;
-				$path = dirname($page["path"]) . DIRECTORY_SEPARATOR . self::IMAGE_DIR
-					. DIRECTORY_SEPARATOR . $image["name"];
+				$dir = $this->imageDir($url);
+				if ($dir === null) return [false, "no-such-image"];
+				$path = $dir . DIRECTORY_SEPARATOR . $image["name"];
 				if (!@unlink($path)) return [false, "delete-failed"];
 				return [true, "ok"];
 			}
