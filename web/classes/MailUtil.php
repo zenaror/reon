@@ -183,14 +183,16 @@
 			return self::$instance;
 		}
 
-		// Folders over one table: "inbox" and "trash" are the human ones and
-		// never show a game's own mail; "game" is the read-only window onto
-		// exactly that mail, whether it is still waiting or the game has
-		// already taken and deleted it.
+		// Folders over one table, and neither of them ever shows a game's own
+		// mail. That mail is still a real message here and POP3 still serves
+		// it -- the cartridge cannot work otherwise -- but the web is not
+		// where it is read: its body is a binary payload, and offering a row
+		// for it only invites someone to open, reply to, or delete something
+		// a game is still waiting for. It stays backstage; what a game did
+		// reaches the player through a notification instead.
 		public function listForUser($userId, $folder = "inbox") {
 			$db = DBUtil::getInstance()->getDB();
-			$where = $folder === "trash" ? "deleted_at is not null"
-				: ($folder === "game" ? "1" : "deleted_at is null");
+			$where = $folder === "trash" ? "deleted_at is not null" : "deleted_at is null";
 			$stmt = $db->prepare("
 				select id, sender, timestamp, message, deleted_at, deleted_by, retrieved_at, read_at
 				from sys_inbox
@@ -205,11 +207,9 @@
 			$out = [];
 			while ($row = $result->fetch_assoc()) {
 				$parsed = $this->parse($row["message"]);
-				$isGame = $this->isGameMail($parsed, $row["sender"]);
-				if ($folder === "game" ? !$isGame : $isGame) continue;
+				if ($this->isGameMail($parsed, $row["sender"])) continue;
 				$out[] = [
 					"id" => $row["id"],
-					"is_game" => $isGame,
 					"sender" => $row["sender"],
 					"timestamp" => $row["timestamp"],
 					"subject" => $parsed["subject"],
@@ -357,7 +357,20 @@
 			$stmt->bind_param("sis", $fromAddress, $recipientId, $message);
 			$stmt->execute();
 			$ok = $stmt->affected_rows > 0;
-			if ($ok) $this->recordSent($fromUserId, $toAddress, $message);
+			if ($ok) {
+				$this->recordSent($fromUserId, $toAddress, $message);
+				// A line in the recipient's bell beside the mail badge. The
+				// badge says there is something to read; this says a letter
+				// from this person arrived at this hour, and stays on the
+				// record after the badge has been cleared.
+				require_once(__DIR__."/NotificationUtil.php");
+				NotificationUtil::getInstance()->add($recipientId, "mail", [
+					"key" => "notify.new-mail",
+					"params" => ["from" => (string)$sender["username"]],
+					"body" => trim((string)$subject) !== "" ? trim((string)$subject) : null,
+					"link" => "/user/mail.php",
+				]);
+			}
 			return [$ok, $ok ? "sent" : "insert-failed"];
 		}
 
@@ -694,31 +707,6 @@
 				"body" => $parsed["body"],
 				"deleted_at" => $row["deleted_at"],
 			];
-		}
-
-		// Waiting for a game to fetch it: still in the mailbox, and the game
-		// has not taken a copy yet. Deliberately not "unread" -- nobody reads
-		// these in the webmail, so read_at would never move.
-		public function countGameWaitingForUser($userId) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare(
-				"select count(*) as c from sys_inbox
-				 where recipient = ? and deleted_at is null and retrieved_at is null
-				   and " . $this->gameMailSql()
-			);
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
-			$stmt->execute();
-			return (int)$stmt->get_result()->fetch_assoc()["c"];
-		}
-
-		public function countGameForUser($userId) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and " . $this->gameMailSql());
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
-			$stmt->execute();
-			return (int)$stmt->get_result()->fetch_assoc()["c"];
 		}
 
 		public function countForUser($userId) {

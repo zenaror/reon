@@ -13,7 +13,7 @@
 	$userId = $_SESSION["user_id"];
 	$mail = MailUtil::getInstance();
 
-	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent", "game"], true) ? $_GET["folder"] : "inbox";
+	$folder = in_array($_GET["folder"] ?? "", ["trash", "sent"], true) ? $_GET["folder"] : "inbox";
 
 	// The filter bar: free text plus one switch. Carried in the URL so a
 	// filtered list can be refreshed, bookmarked, or returned to.
@@ -190,8 +190,10 @@
 			: $mail->getForUser($userId, $_GET["id"]);
 		// A game's own mail has no reading view: the body is a cartridge's
 		// binary payload, and the page that would show it is the page that
-		// offers replying and deleting. Typing the id by hand gets the same
-		// answer as a message that is not yours.
+		// offers replying and deleting. Nothing lists these any more, so this
+		// is the id typed by hand -- and it gets the same answer as a message
+		// that is not yours. The check stays here, not in the template: a
+		// listing can be removed, an SQL guard cannot be walked around.
 		if ($message !== null && !empty($message["is_game"])) {
 			$message = null;
 		}
@@ -233,8 +235,6 @@
 		$threads = $mail->filterThreads($threads, $q, $only);
 		[$threads, $pagination] = $mail->paginate($threads, $page, $per);
 	} else {
-		// "game" is read-only: the rows are a game's own traffic, and the only
-		// thing to do with them is look.
 		$rows = $folder === "sent" ? $mail->listSentForUser($userId) : $mail->listForUser($userId, $folder);
 		$messages = $mail->filterMessages($rows, $q, $only);
 		[$messages, $pagination] = $mail->paginate($messages, $page, $per);
@@ -251,7 +251,6 @@
 		"folder" => $folder,
 		"trash_count" => $mail->countTrashForUser($userId),
 		"sent_count" => $mail->countSentForUser($userId),
-		"game_count" => $mail->countGameForUser($userId),
 		"retention_days" => MailUtil::TRASH_RETENTION_DAYS,
 		"body_max_lines" => MailUtil::BODY_MAX_LINES,
 			"body_max_line_chars" => MailUtil::BODY_MAX_LINE_CHARS,

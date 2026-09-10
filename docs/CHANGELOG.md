@@ -63,23 +63,59 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   totais e mesmo assim ocupava as 8 linhas da tela sozinha. A caixa de
   composição quebra enquanto se digita, e trocar para um jogador depois de
   escrever solto pergunta antes de reformatar e cortar
-* **Aba de Jogo no webmail** — a correspondência que um jogo manda para si
-  mesmo sai da caixa de entrada e da lixeira e passa a ter aba própria, só
-  leitura, com selo de cor distinta contando o que um cartucho ainda tem para
-  buscar. Um resultado de troca já buscado é apagado de vez em vez de ir para
-  a lixeira: guardar cópia restaurável de uma troca concluída é caminho para
-  receber o mesmo Pokémon duas vezes
+* **Correspondência de jogo fica nos bastidores** — a mensagem que um jogo
+  manda para si mesmo continua sendo e-mail de verdade na caixa e no POP3,
+  porque o cartucho depende disso para funcionar, mas some por completo da
+  web: fora da caixa de entrada, fora da lixeira, sem guia, sem contador e
+  sem página de leitura (o `?id=` de uma dessas responde igual a mensagem de
+  outra pessoa). Um contador de cartas que ninguém pode abrir é pergunta sem
+  resposta; o que um jogo fez chega ao jogador pelo sino. Um resultado de
+  troca já buscado é apagado de vez em vez de ir para a lixeira: guardar
+  cópia restaurável de uma troca concluída é caminho para receber o mesmo
+  Pokémon duas vezes
 * Paginação nas pastas do webmail, 15 por página, com o tamanho à escolha e
   lembrado; cópias enviadas podem ser apagadas
 * Indicadores de e-mail ao vivo — os badges do menu da conta, do item dentro
   dele e do menu lateral se atualizam a cada minuto em qualquer página, uma
   consulta só; o webmail escuta a mesma em vez de fazer outra
 
+### Notificações
+
+* **Sino no cabeçalho, ao lado do nome da conta** — tudo que aconteceu com o
+  jogador e não é carta: troca concluída, troca que ninguém apareceu para
+  fazer, aviso escrito por um administrador. Sem novidade é só o sino; com
+  novidade a bolinha numerada pisca em roxo, cor que não é usada em mais
+  nada — o laranja continua querendo dizer uma coisa só, que há carta para
+  ler. Abrir o sino mostra as últimas e marca como lidas; a página
+  `/user/notifications.php` guarda o histórico inteiro, paginado
+* **O histórico não se apaga** — o dono da notificação não tem botão de
+  excluir, e não existe método de exclusão na classe: uma notificação é o
+  registro de que algo aconteceu, e registro que se apaga não é registro.
+  Marcar como lida é o único estado que o leitor controla
+* Texto guardado como chave de tradução mais parâmetros, não como frase
+  pronta: o site fala sete idiomas e o cron que grava a linha não fala
+  nenhum, então as palavras são escolhidas na hora de ler. Só o que uma
+  pessoa digitou é gravado literalmente
+* Carta que chega gera as duas coisas — o selo laranja, que diz "há algo
+  para ler", e a notificação, que diz "isto chegou nesta hora" e continua no
+  histórico depois que o selo apaga
+* Um poll só por minuto para as duas coisas: o sino pega carona na consulta
+  que já existia para os selos de e-mail. A lista do menu só é buscada
+  quando alguém abre o sino — e é POST com token, porque abrir também marca
+  como lido
+
 ### app/pokemon-exchange — Trade Corner
 
 * Fix: no cartão do Trade Corner o último caractere de um item longo saía
   cortado (BRIGHTPOWDER virava BRIGHTPOWDEF). A coluna do item tem largura
   fixa e os nomes de 12 caracteres a preenchiam sem folga nenhuma
+* **O jogador fica sabendo o que houve com o Pokémon que deixou** — troca
+  concluída e depósito que expirou sem par (os sete dias) geram notificação
+  no site e e-mail para o endereço real do cadastro. Depositar é justamente
+  ir embora; resultado que só se descobre voltando para conferir é meio
+  resultado. Os avisos saem depois do commit da transação, nunca de dentro
+  dela: linha de notificação volta atrás num rollback, e-mail que já saiu
+  não volta
 * Fix: Trade Corner — aviso e cronômetro dos cards borrados (ponto do
   Darkshade): alturas em `em` (21,6px e 12,8px) e `letter-spacing` de 0,32px
   punham o texto centralizado — e, pela altura do slot, toda a segunda fileira

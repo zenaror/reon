@@ -37,14 +37,6 @@
 		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">
 			{{'mail.inbox'|trans}}{% if mail_new > 0 %} <span class="mt-tab__count mt-tab__count--new" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>{% endif %}
 		</a>
-		{# A game's own traffic. It sits next to the inbox because it is the
-		   other half of what arrives, and it is kept out of the inbox itself
-		   so it never buries a letter. Its badge counts what a game has still
-		   to come and collect rather than what is unread -- nobody reads
-		   these here -- and is coloured apart from the orange of real mail. #}
-		<a class="mt-tab{{ folder == 'game' ? ' mt-tab--on' : '' }}" id="mt-game-tab" href="/user/mail.php?folder=game">
-			{{'mail.game-tab'|trans}}{% if mail_game_waiting > 0 %} <span class="mt-tab__count mt-tab__count--game" title="{{ 'mail.game-waiting'|trans({'%count%': mail_game_waiting}) }}">{{ mail_game_waiting }}</span>{% endif %}
-		</a>
 		<a class="mt-tab{{ folder == 'sent' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=sent">{{'mail.sent'|trans}}</a>
 		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">{{'mail.trash'|trans}}</a>
 
@@ -371,16 +363,12 @@
 			{% elseif folder == 'sent' %}
 				<p class="mt-summary">{{ 'mail.sent-summary'|trans({'%total%': folder_total}) }}</p>
 			{% else %}
-				<p class="mt-summary">{{ folder == 'game' ? 'mail.game-summary'|trans({'%total%': game_count|default(0), '%waiting%': mail_game_waiting|default(0)}) : 'mail.trash-summary'|trans({'%total%': folder_total}) }}</p>
+				<p class="mt-summary">{{ 'mail.trash-summary'|trans({'%total%': folder_total}) }}</p>
 			{% endif %}
 
 			{# The filter: free text plus one switch, as a GET form so the
 			   filtered list has a URL. "Players"/"Internet" is who the other
 			   side is, whichever folder. #}
-			{% if folder == 'game' %}
-				<p class="mt-note mt-note--game">{{'mail.game-note'|trans}}</p>
-			{% endif %}
-
 			<form class="mt-filter" method="get" action="/user/mail.php" role="search">
 				{% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
 				<input class="mt-filter__q" type="search" name="q" value="{{ filter.q|default('') }}" placeholder="{{'mail.filter-placeholder'|trans}}" aria-label="{{'mail.filter-placeholder'|trans}}">
@@ -396,7 +384,7 @@
 
 			{% set rows_empty = listing_threads ? (threads is empty) : (messages is empty) %}
 			{% if rows_empty %}
-				<p class="mt-empty">{% if filter.active|default(false) %}{{'mail.filter-none'|trans}}{% elseif folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% elseif folder == 'game' %}{{'mail.game-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
+				<p class="mt-empty">{% if filter.active|default(false) %}{{'mail.filter-none'|trans}}{% elseif folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
 			{% else %}
 				{# One form around the whole list: the checkboxes post as ids[],
 				   and the buttons in the bar below act on the selection. Per-row
@@ -405,10 +393,10 @@
 				   Sent gets no form at all. There is nothing to do to a sent
 				   copy -- no trash, no restore -- so a checkbox there offered a
 				   selection that no button could act on. #}
-				{# Every folder can be picked from now: the inbox and trash act
-				   on sys_inbox, Sent deletes its own copies (sys_sent), which
-				   have no trash to fall into. #}
-				{% set pickable = folder != 'game' %}
+				{# Every folder can be picked from: the inbox and trash act on
+				   sys_inbox, Sent deletes its own copies (sys_sent), which have
+				   no trash to fall into. #}
+				{% set pickable = true %}
 				{% if pickable %}
 				<form method="post" action="/user/mail.php" id="mt-listform">
 					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
@@ -445,7 +433,7 @@
 						{% endfor %}
 						{% else %}
 						{% for m in messages %}
-							<li class="mt-list__row{{ folder != 'trash' and folder != 'game' and m.unread ? ' is-unread' : '' }}{{ folder == 'game' and not m.retrieved ? ' is-waiting' : '' }}">
+							<li class="mt-list__row{{ folder != 'trash' and m.unread ? ' is-unread' : '' }}">
 								{% if pickable %}
 									<label class="mt-list__pick">
 										<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
@@ -459,25 +447,10 @@
 									{# The game gets a 10-character subject; the list has room for
 									   far more, and the whole thing is on the message page. #}
 									{% set subj = m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' %}
-									{% if folder == 'game' %}
-											{# Not a link: a game's mail is listed, never opened. Its
-											   body is a cartridge's binary payload, there is nothing
-											   here for a person to read, and the page that would show
-											   it is the page that used to offer deleting it. #}
-											<span class="mt-list__subject" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</span>
-										{% else %}
-											<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
-										{% endif %}
+									<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
 									<span class="mt-list__meta">
 										{% if folder == 'sent' %}{{'mail.to'|trans}}: {% endif %}{{ m.from_name ?: m.sender }} &middot; {{ m.timestamp|date("Y.m.d H:i") }}
 									{%- if folder == 'sent' %} &middot; {{ m.origin == 'game' ? 'mail.via-game'|trans : 'mail.via-web'|trans }}{% endif %}
-										{% if folder == 'game' %}
-											{# Which cartridge this belongs to, from the message's own
-											   X-Game-title. Blank when a service sent something without
-											   one, so the row still reads sensibly without it. #}
-											{% if m.game %} &middot; <span class="mt-list__for">{{ m.game }}</span>{% endif %}
-											&middot; <span class="mt-list__state">{{ m.retrieved ? 'mail.game-collected'|trans : 'mail.game-waiting-row'|trans }}</span>
-										{% endif %}
 										{% if folder == 'trash' %}
 											&middot; {{ m.deleted_by == 'game' ? 'mail.by-game'|trans : 'mail.by-web'|trans }}
 											{# Whether the game took a copy before deleting is the one thing
@@ -578,24 +551,6 @@
 					summary.textContent = summary.dataset.template
 						.replace("%total%", e.detail.count)
 						.replace("%unread%", e.detail["new"]);
-				}
-
-				// The game tab's badge tracks the same poll, so a trade result
-				// landing while the page is open shows up without a reload.
-				var gameTab = document.getElementById("mt-game-tab");
-				if (gameTab) {
-					var waiting = e.detail.game_waiting || 0;
-					var pill = gameTab.querySelector(".mt-tab__count--game");
-					if (waiting > 0 && !pill) {
-						pill = document.createElement("span");
-						pill.className = "mt-tab__count mt-tab__count--game";
-						gameTab.appendChild(document.createTextNode(" "));
-						gameTab.appendChild(pill);
-					}
-					if (pill) {
-						pill.textContent = String(waiting);
-						pill.hidden = waiting <= 0;
-					}
 				}
 			});
 		})();
@@ -726,16 +681,11 @@
 		{# The black hint bar is the Mobile Trainer's bottom status line, and it
 		   names the action the buttons beside it perform. #}
 		<div class="mt-statusbar">
-			<span class="mt-statusbar__hint">{{ message.is_game|default(false) ? 'mail.hint-game'|trans : (message.deleted_at ? 'mail.hint-trash'|trans : 'mail.hint-read'|trans) }}</span>
+			<span class="mt-statusbar__hint">{{ message.deleted_at ? 'mail.hint-trash'|trans : 'mail.hint-read'|trans }}</span>
 			<span class="mt-statusbar__acts">
 				{% set back_to = folder != 'inbox' ? '/user/mail.php?folder=' ~ folder : (message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php') %}
 				<a class="mt-btn" href="{{ back_to }}">{{'mail.back'|trans}}</a>
-				{# A game's own mail is shown and nothing more. Replying would
-				   write to a service address nobody reads, and deleting it
-				   would take a trade result away from the cartridge waiting
-				   for it -- the game deletes its own mail once it has it. #}
-				{% if message.is_game|default(false) %}
-				{% elseif message.deleted_at %}
+				{% if message.deleted_at %}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ message.id }}">{{'mail.reply'|trans}}</a>
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">

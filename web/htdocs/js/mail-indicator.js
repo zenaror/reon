@@ -22,11 +22,11 @@
 	// gone; the owner asked for the new-mail signal alone.) The dot belongs
 	// only where a spot asks for it (the side menu).
 	//
-	// A game's own mail gets its own badge beside that one, in its own
-	// colour, because it says something different: not "someone wrote to
-	// you" but "a cartridge still has something to collect". Sharing the
-	// orange would make the two indistinguishable, which is the one job a
-	// badge has.
+	// A game's own mail is not counted here at all. It is still a real
+	// message and POP3 still serves it, but the web never mentions it: a
+	// counter for letters the reader cannot open is a question with no
+	// answer. What a game did -- a trade that resolved, content refreshed --
+	// reaches them through the bell instead.
 	function mark(spot, n, label, cls, pulses) {
 		if (n <= 0) return;
 
@@ -45,9 +45,8 @@
 
 	}
 
-	function render(unread, gameWaiting) {
+	function render(unread) {
 		var unreadLabel = strings.newArrived.replace("%count%", unread);
-		var gameLabel = (strings.gameWaiting || "%count%").replace("%count%", gameWaiting);
 
 		spots.forEach(function (spot) {
 			spot.textContent = "";
@@ -55,7 +54,6 @@
 			// in three places at once is noise, not a signal.
 			var pulses = spot.hasAttribute("data-mail-pulse");
 			mark(spot, unread, unreadLabel, "mail-badge--new", pulses);
-			mark(spot, gameWaiting, gameLabel, "mail-badge--game", pulses);
 		});
 	}
 
@@ -64,7 +62,7 @@
 			.then(function (r) { return r.ok ? r.json() : null; })
 			.then(function (data) {
 				if (!data) return;
-				render(data["new"] || 0, data.game_waiting || 0);
+				render(data["new"] || 0);
 				document.dispatchEvent(new CustomEvent("reon:mailstatus", { detail: data }));
 			})
 			// A failed check is not worth telling anyone about; the next one
