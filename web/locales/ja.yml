@@ -13,6 +13,8 @@ mobile-home: モバイルホームページ
 news: ニュース
 guide: "はじめに"
 downloads: "ダウンロード"
+terms: "利用規約"
+privacy: "プライバシーポリシー"
 page-not-found: "このページはまだありません。"
 page-contents: "目次"
 game-page:
@@ -1161,6 +1163,13 @@ admin:
   news-maker-template: 元にする号
   news-maker-template-hint: メニュー、スクリプト、組み方を借りてくる本物の号です。
   news-maker-minigame: ミニゲーム
+  news-maker-prizes: 賞品
+  news-maker-prizes-hint: ミニゲームに勝ったときに渡されるものです。一覧はミニゲーム自身のコードから読み取るため、ミニゲームを変えると一覧も変わります。だいじなものも含めてアイテム表をすべて表示します。カートリッジは認識しますが、ニュースから受け取ることをゲームは想定していません。
+  news-maker-prize: 賞品 %n%
+  news-maker-prize-default: そのまま：%item%
+  news-maker-prize-fixed: ミニゲームが決めます。
+  news-maker-prize-none: このミニゲームは賞品を渡しません。
+  news-maker-bad-prize: 存在しないアイテムです：
   news-maker-headline-hint: ニュース画面そのものに出る号の名前です。本体が受信している間の見出し部分と、ページ上部のタイトルに使われます。最大 %n% 文字で、これは実在する号のうち最も幅の広いものに合わせた数です。
   news-maker-body-hint: 「ニュースガイド」の項目の中身、つまりプレイヤーが読む記事です。空行で段落が始まり、1行目が文章枠を開き、2行目はその下に並び、残りはスクロールします。**1行 %n% 文字**で、これは枠の幅が %n% マスだからです。行数に制限はありません。文章はスクロールします。
   news-maker-random: ランキングをランダムに

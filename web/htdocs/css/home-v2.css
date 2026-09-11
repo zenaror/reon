@@ -101,6 +101,23 @@ body.home-v2 header.navbar nav > ul.navbar-nav {
   height: 22px;
 }
 
+/* Termos e privacidade, debaixo do menu de gemas e deliberadamente discretos:
+   precisam estar em toda página, e não competir com as seções do site. */
+.reon-legal {
+  margin: 14px 0 0;
+  padding-left: 12px;
+  /* --mt-1, e não um tamanho menor inventado: a escala da fonte tem quatro
+     degraus inteiros, e um valor fracionário borra a fonte bitmap. Discrição
+     aqui vem da opacidade, não do corpo. */
+  font-size: var(--mt-1);
+  line-height: 18px;
+  opacity: .7;
+}
+
+.reon-legal a {
+  color: inherit;
+}
+
 @media (max-width: 640px) {
   .home-layout { flex-direction: column; }
   .home-sidebar { flex-basis: auto; width: 100%; }

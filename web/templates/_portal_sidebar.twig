@@ -77,4 +77,13 @@
 				{{ menu.item(here.mariokart, '/mariokart/', 'var(--reon-yellow)', 'mario-kart.title'|trans) }}
 				<a class="reon-menu-item" href="#" onclick="openGbcModal(); return false;" style="--gem:var(--reon-teal)"><span class="reon-gem"></span><span class="label">{{'mobile-home'|trans}}</span></a>
 			</nav>
+
+			{# Fora do menu de gemas de propósito: as gemas são as seções do
+			   site, e estas duas páginas precisam existir em todo lugar sem
+			   entrar nessa fileira. #}
+			<p class="reon-legal">
+				<a href="/terms.php">{{'terms'|trans}}</a>
+				·
+				<a href="/privacy.php">{{'privacy'|trans}}</a>
+			</p>
 		</aside>

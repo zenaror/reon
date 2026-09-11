@@ -37,6 +37,18 @@
 		foreach ([0, 1, 2] as $slot) {
 			$issue["rankings"][] = (string)($_POST["ranking"][$slot] ?? "");
 		}
+
+		// Um prêmio por slot do minijogo escolhido, na ordem em que o script
+		// chega neles. Slot vazio ou ausente significa "o que o minijogo já
+		// dava" -- guardar o padrão explicitamente faria a edição envelhecer
+		// mal se o minijogo mudasse de prêmio numa atualização da toolchain.
+		$issue["prizes"] = [];
+		foreach ((array)($_POST["prize"] ?? []) as $slot => $item) {
+			if (!ctype_digit((string)$slot)) continue;
+			$issue["prizes"][(int)$slot] = trim((string)$item);
+		}
+		ksort($issue["prizes"]);
+		$issue["prizes"] = array_values($issue["prizes"]);
 		foreach (array_keys(NewsMakerUtil::LANGUAGES) as $language) {
 			$issue["headline"][$language] = trim((string)($_POST["headline"][$language] ?? ""));
 			$issue["message"][$language] = trim((string)($_POST["message"][$language] ?? ""));
@@ -99,6 +111,16 @@
 					. ": " . $one["length"] . "/" . $one["limit"] . " — \"" . $one["text"] . "\"";
 			}
 			$notice = TemplateUtil::translate("admin.news-maker-too-long") . " " . implode(" · ", $lines);
+			$noticeKind = "bad";
+		} elseif (
+			($action !== "delete" && $action !== "withdraw")
+			&& ($unknown = $maker->checkPrizes($issue)) !== []
+		) {
+			// O montador recusaria um nome de item inexistente, mas só na
+			// hora de compilar e com a mensagem dele; aqui a recusa diz qual
+			// prêmio e antes de gravar.
+			$notice = TemplateUtil::translate("admin.news-maker-bad-prize")
+				. " " . implode(" · ", array_slice($unknown, 0, 6));
 			$noticeKind = "bad";
 		} elseif (!$resolved && $action !== "delete" && $action !== "withdraw") {
 			$notice = TemplateUtil::translate("admin.news-maker-" . explode(":", $rankings)[0]);
@@ -256,6 +278,8 @@
 			"regions" => array_keys(NewsMakerUtil::REGION_LANGUAGE),
 			"templates" => $maker->templates(),
 			"minigames" => $maker->minigames(),
+			"prize_items" => $maker->items(),
+			"prizes_by_minigame" => $maker->prizesByMinigame(),
 			"categories" => $maker->rankingCategories(),
 			"missing" => $maker->missing(),
 			"tool" => $maker->toolVersion(),
@@ -290,7 +314,7 @@
 			"issue" => [
 				"slug" => "", "name" => "", "message" => [], "date" => "",
 				"template" => $templates ? $templates[0] : "",
-				"minigame" => "", "rankings" => ["", "", ""],
+				"minigame" => "", "rankings" => ["", "", ""], "prizes" => [],
 				"headline" => [], "body" => [],
 			],
 			"results" => null, "log" => "",

@@ -10,6 +10,7 @@
 	<script src="{{ asset('/js/news-lines.js') }}" defer></script>
 	<script src="{{ asset('/js/news-date.js') }}" defer></script>
 	<script src="{{ asset('/js/news-regions.js') }}" defer></script>
+	<script src="{{ asset('/js/news-prizes.js') }}" defer></script>
 {% endblock %}
 
 {% block admin_body %}
@@ -115,12 +116,58 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 
 			<label>
 				{{ 'admin.news-maker-minigame'|trans }}
-				<select name="minigame">
+				<select name="minigame" data-news-minigame>
 					{% for file, label in minigames %}
 						<option value="{{ file }}"{% if file == issue.minigame|default('') %} selected{% endif %}>{{ label }}</option>
 					{% endfor %}
 				</select>
 			</label>
+
+			{# Os prêmios são do minijogo, não da edição: trocar o minijogo
+			   troca a lista inteira, e a lista sai do código do próprio
+			   minijogo -- o que aparece aqui é o que o jogo entrega.
+
+			   Todos os conjuntos são desenhados e só o do minijogo escolhido
+			   fica visível. Cada um é um `fieldset disabled`, e é o `disabled`
+			   -- não o `hidden` -- que impede um conjunto escondido de mandar
+			   os prêmios dele junto no POST. #}
+			<div class="news-prizes" data-news-prizes>
+				<span class="admin-form__label">{{ 'admin.news-maker-prizes'|trans }}</span>
+				<span class="admin-form__hint">{{ 'admin.news-maker-prizes-hint'|trans }}</span>
+				{% for file, slots in prizes_by_minigame %}
+					<fieldset class="news-prizes__set" data-news-prize-set="{{ file }}"
+					          {% if file != issue.minigame|default('') %}hidden disabled{% endif %}>
+						{% if slots is empty %}
+							<p class="admin-form__hint mb-0">{{ 'admin.news-maker-prize-none'|trans }}</p>
+						{% endif %}
+						{% for i, slot in slots %}
+							<label>
+								{{ 'admin.news-maker-prize'|trans({'%n%': i + 1}) }}{% if slot.quantity > 1 %} ×{{ slot.quantity }}{% endif %}
+								{% if slot.fixed %}
+									{# Prêmio que o minijogo monta sozinho (parâmetro de macro,
+									   ou constante da tabela dele). Mostrado, e não escondido:
+									   o jogador vai receber, e uma lista mais curta do que o
+									   jogo entrega seria mentira. #}
+									<span class="admin-form__hint">{{ 'admin.news-maker-prize-fixed'|trans }}</span>
+									<input type="text" value="{{ slot.label }}" disabled>
+								{% else %}
+									<select name="prize[{{ i }}]">
+										<option value="">— {{ 'admin.news-maker-prize-default'|trans({'%item%': slot.label}) }} —</option>
+										{# `prize_items`, e não `items`: admin/layout.twig faz
+										   `{% set items = [...] %}` para o próprio menu, e o bloco
+										   do filho é renderizado no escopo do pai -- um `items`
+										   aqui viraria a lista de menu, calado, com 9 opções
+										   escritas "Array". #}
+										{% for value, label in prize_items %}
+											<option value="{{ value }}"{% if value == issue.prizes[i]|default('') %} selected{% endif %}>{{ label }}</option>
+										{% endfor %}
+									</select>
+								{% endif %}
+							</label>
+						{% endfor %}
+					</fieldset>
+				{% endfor %}
+			</div>
 
 			{% for slot in 0..2 %}
 				<label>

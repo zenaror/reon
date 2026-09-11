@@ -212,6 +212,177 @@
 			]);
 		}
 
+
+		// ------------------------------------------------------- os prêmios
+
+		// Every item a prize can be, as CONSTANT => label.
+		//
+		// Read from the toolchain's own item_constants.asm, so the list is
+		// exactly what the cartridge knows and cannot drift from it. Three
+		// kinds of line define an item there: the plain `const NAME`, and the
+		// `add_tm` / `add_hm` macros, which prefix their argument.
+		//
+		// The `ITEM_xx` entries are dropped: they are the gaps left in the
+		// table -- ids that exist and name nothing -- and handing one out
+		// gives the player an item the game has no name or sprite for.
+		public function items() {
+			$dir = $this->sourceDir();
+			if ($dir === false) return [];
+
+			$text = (string)@file_get_contents(
+				$dir . "/pokecrystal/constants/item_constants.asm");
+
+			$found = [];
+			foreach (explode("\n", $text) as $line) {
+				// Anchored on purpose: inside the add_tm macro the body line
+				// is `const TM_\1`, which an unanchored pattern would read as
+				// an item called "TM_".
+				if (preg_match('/^\s*const\s+([A-Z0-9_]+)\s*(?:;.*)?$/', $line, $m)) {
+					$name = $m[1];
+				} elseif (preg_match('/^\s*add_(tm|hm)\s+([A-Z0-9_]+)\s*(?:;.*)?$/', $line, $m)) {
+					$name = strtoupper($m[1]) . "_" . $m[2];
+				} else {
+					continue;
+				}
+
+				if ($name === "NO_ITEM") continue;
+				if (preg_match('/^ITEM_[0-9A-F]{2}$/', $name)) continue;
+				$found[$name] = str_replace("_", " ", $name);
+			}
+			return $found;
+		}
+
+		// The prizes a minigame hands out, in the order its script reaches
+		// them.
+		//
+		// A prize is an `nsc_giveitem` call in the minigame's own source, in
+		// one of two forms -- with a quantity and without. The first argument
+		// is not always an item: `game_personality` passes a macro parameter,
+		// and `game_cry_memory` names constants its own table fills in. Those
+		// are returned marked `fixed` rather than dropped, so the panel can
+		// say "this one belongs to the game" instead of showing a shorter
+		// list than the player will actually receive.
+		public function prizes($minigame) {
+			$dir = $this->sourceDir();
+			if ($dir === false || !isset($this->minigames()[$minigame])) return [];
+
+			$items = $this->items();
+			$text = (string)@file_get_contents($dir . "/" . $minigame);
+
+			$found = [];
+			foreach (explode("\n", $text) as $line) {
+				if (!preg_match('/^\s*nsc_giveitem\s+(.+)$/', $line, $m)) continue;
+
+				$args = array_map("trim",
+					explode(",", (string)preg_replace('/;.*$/', "", $m[1])));
+				$item = $args[0];
+
+				// Four arguments means the second is a quantity; three means
+				// the macro supplies 1.
+				$quantity = count($args) >= 4 && ctype_digit($args[1]) ? (int)$args[1] : 1;
+
+				$found[] = [
+					"item" => $item,
+					"label" => $items[$item] ?? str_replace("_", " ", $item),
+					"quantity" => $quantity,
+					"fixed" => !isset($items[$item]),
+				];
+			}
+			return $found;
+		}
+
+		// Every minigame's prize slots, for the panel: choosing a different
+		// minigame changes which prizes exist, and the screen has to redraw
+		// them without a round trip.
+		public function prizesByMinigame() {
+			$found = [];
+			foreach (array_keys($this->minigames()) as $minigame) {
+				$found[$minigame] = $this->prizes($minigame);
+			}
+			return $found;
+		}
+
+		// The prizes this issue asks for that no item answers to, as readable
+		// "slot: value" pairs. Empty when everything checks out.
+		//
+		// A slot the minigame does not offer is refused too: `game_personality`
+		// builds its prize from a macro parameter and `game_cry_memory` names
+		// constants, and accepting a choice for one of those would save a
+		// setting the build is going to ignore.
+		public function checkPrizes($issue) {
+			$chosen = array_values((array)($issue["prizes"] ?? []));
+			if (!$chosen) return [];
+
+			$slots = $this->prizes((string)($issue["minigame"] ?? ""));
+			$items = $this->items();
+
+			$bad = [];
+			foreach ($chosen as $i => $item) {
+				$item = trim((string)$item);
+				if ($item === "") continue;
+				if (!isset($slots[$i]) || $slots[$i]["fixed"] || !isset($items[$item])) {
+					$bad[] = ($i + 1) . ": " . $item;
+				}
+			}
+			return $bad;
+		}
+
+		// The minigame's source with this issue's prizes written into it, or
+		// null when the issue changed none of them -- in which case the build
+		// includes the toolchain's own file and no copy exists at all.
+		//
+		// The sound moves with the item. Every prize is followed by an
+		// `nsc_playsound` chosen for the item that used to be there, so
+		// swapping a TM for a BERRY and leaving the line alone makes the game
+		// play the TM fanfare for a berry. The rule applied here is upstream's
+		// own: `game_personality` picks its sound with
+		// `STRSUB("\4", 1, 3) == "TM_"`.
+		public function minigameWithPrizes($minigame, $chosen) {
+			$dir = $this->sourceDir();
+			if ($dir === false) return null;
+
+			$slots = $this->prizes($minigame);
+			if (!$slots) return null;
+
+			$items = $this->items();
+			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
+			$ordinal = -1;
+			$changed = false;
+
+			foreach ($lines as $i => $line) {
+				if (!preg_match('/^(\s*nsc_giveitem\s+)([^,]+)(,.*)$/', $line, $m)) continue;
+
+				$ordinal++;
+				$slot = $slots[$ordinal] ?? null;
+				if ($slot === null || $slot["fixed"]) continue;
+
+				$want = trim((string)($chosen[$ordinal] ?? ""));
+				if ($want === "" || $want === $slot["item"] || !isset($items[$want])) continue;
+
+				$lines[$i] = $m[1] . $want . $m[3];
+				$changed = true;
+				self::retuneGiftSound($lines, $i, $want);
+			}
+
+			return $changed ? implode("\n", $lines) : null;
+		}
+
+		// Rewrites the gift sound belonging to the prize on line $at. Stops at
+		// the next prize, so a minigame with several never retunes a
+		// neighbour's.
+		private static function retuneGiftSound(&$lines, $at, $item) {
+			$want = preg_match('/^(?:TM|HM)_/', $item) ? "SFX_GET_TM" : "SFX_ITEM";
+			$last = min($at + 12, count($lines) - 1);
+
+			for ($i = $at + 1; $i <= $last; $i++) {
+				if (strpos($lines[$i], "nsc_giveitem") !== false) return;
+				if (preg_match('/^(\s*nsc_playsound\s+)(?:SFX_GET_TM|SFX_ITEM)\s*$/', $lines[$i], $m)) {
+					$lines[$i] = $m[1] . $want;
+					return;
+				}
+			}
+		}
+
 		// ------------------------------------------------------------ text		// ------------------------------------------------------------ text
 
 		// Plain text, as a person types it, into the macros a textbox wants.
@@ -358,7 +529,7 @@
 		// toolchain checkout, which meant the web user needed write access to
 		// somebody else's source tree to render a news page -- a permission
 		// worth refusing, and refusing it is what caught this.
-		public function buildLanguage($source, $language, $rankings, $minigame) {
+		public function buildLanguage($source, $language, $rankings, $minigame, $prizes = []) {
 			$dir = $this->sourceDir();
 			if ($dir === false) return [false, "no-source", ""];
 			if (!isset(self::LANGUAGES[$language])) return [false, "bad-language", ""];
@@ -372,6 +543,24 @@
 
 			$work = sys_get_temp_dir() . "/reon-news-" . bin2hex(random_bytes(6));
 			if (!@mkdir($work, 0700)) return [false, "cannot-make-workdir", ""];
+
+			// An issue that changed a prize builds against its own copy of the
+			// minigame, written here beside the generated source -- never into
+			// the toolchain, for the same reason the issue itself is not built
+			// there. When nothing was changed there is no copy and the build
+			// includes the toolchain's file unchanged.
+			$include = $minigame;
+			$custom = $this->minigameWithPrizes($minigame, $prizes);
+			if ($custom !== null) {
+				// Absolute, so `INCLUDE "{MINIGAME_FILE}"` resolves to this
+				// copy whatever order the assembler searches in.
+				$include = $work . "/" . $minigame;
+				if (!@mkdir(dirname($include), 0700, true)
+				 || @file_put_contents($include, $custom) === false) {
+					@rmdir($work);
+					return [false, "cannot-write-minigame", ""];
+				}
+			}
 
 			$log = "";
 			try {
@@ -388,7 +577,7 @@
 					"-D", "RANKING_1=" . $rankings[0],
 					"-D", "RANKING_2=" . $rankings[1],
 					"-D", "RANKING_3=" . $rankings[2],
-					"-D", "MINIGAME_FILE=" . $minigame,
+					"-D", "MINIGAME_FILE=" . $include,
 					"-D", "_LANG_" . self::LANGUAGES[$language],
 				], $work);
 				$log .= $assemble["stderr"];
@@ -416,6 +605,10 @@
 			} finally {
 				foreach (["issue.asm", "issue.o", "issue.bin"] as $name) {
 					@unlink($work . "/" . $name);
+				}
+				if ($include !== $minigame) {
+					@unlink($include);
+					@rmdir(dirname($include));
 				}
 				@rmdir($work);
 			}
@@ -601,6 +794,7 @@
 
 			$rankings = array_values((array)($issue["rankings"] ?? []));
 			$minigame = (string)($issue["minigame"] ?? "");
+			$prizes = array_values((array)($issue["prizes"] ?? []));
 			$results = [];
 			$log = "";
 
@@ -627,7 +821,8 @@
 					continue;
 				}
 
-				[$built, $bytes, $buildLog] = $this->buildLanguage($source, $language, $rankings, $minigame);
+				[$built, $bytes, $buildLog] = $this->buildLanguage(
+					$source, $language, $rankings, $minigame, $prizes);
 				$log .= $buildLog;
 				if (!$built) {
 					$results[$region] = [false, $bytes];

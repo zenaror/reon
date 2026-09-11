@@ -24,6 +24,16 @@
 								<label for="agree" class="form-check-label">
 									{{'auth.i-agree-terms'|trans}}
 								</label>
+								{# Os dois documentos que a frase acima cita, ligados aqui e
+								   não dentro dela: a frase existe em sete idiomas e embutir
+								   marcação em cada tradução é um jeito de uma delas quebrar
+								   sem ninguém ver. Consentimento por referência a documento
+								   que não se abre não é consentimento. #}
+								<div class="form-text">
+									<a href="/terms.php" target="_blank" rel="noopener">{{'terms'|trans}}</a>
+									·
+									<a href="/privacy.php" target="_blank" rel="noopener">{{'privacy'|trans}}</a>
+								</div>
 								<input id="agree" type="checkbox" name="agree" required class="form-check-input{% if result == 1 %}{{ " is-invalid" }}{% endif %}">
 								<div class="invalid-feedback">
 									{{'auth.you-must-agree'|trans}}
