@@ -6,6 +6,12 @@
 	<a class="btn btn-sm btn-outline-secondary" href="/admin/news_maker.php">{{ 'admin.news-maker-back'|trans }}</a>
 {% endblock %}
 
+{% block admin_head %}
+	<script src="{{ asset('/js/news-lines.js') }}" defer></script>
+	<script src="{{ asset('/js/news-date.js') }}" defer></script>
+	<script src="{{ asset('/js/news-regions.js') }}" defer></script>
+{% endblock %}
+
 {% block admin_body %}
 	{# What each region's build did, shown before the form so the answer is
 	   where the eye already is after pressing Publish. #}
@@ -59,11 +65,29 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 				<input type="text" name="name" required maxlength="60" value="{{ issue.name|default('') }}">
 			</label>
 
-			<label>
+		{# Mês e dia separados, e não um calendário: a data é **sem ano** -- ela
+		   se repete todo ano, e um calendário obrigaria a escolher um ano que
+		   não significa nada aqui. Fevereiro vai até 28 pelo mesmo motivo:
+		   o dia 29 só existiria em ano bissexto, e a edição não sairia em
+		   três de cada quatro anos. #}
+		{% set picked_month = issue.date|default('') ? issue.date|slice(0, 2) : '' %}
+		{% set picked_day = issue.date|default('') ? issue.date|slice(3, 2) : '' %}
+			<label data-news-date>
 				{{ 'admin.news-maker-date'|trans }}
 				<span class="admin-form__hint">{{ 'admin.news-maker-date-hint'|trans }}</span>
-				<input type="text" name="date" maxlength="5" pattern="[0-1][0-9]-[0-3][0-9]"
-				       value="{{ issue.date|default('') }}" placeholder="03-15">
+				<span class="admin-form__row">
+					<select name="date_month" data-news-month
+					        data-days="{{ days_in_month|join(',') }}">
+						{% for n in 1..12 %}
+							<option value="{{ n }}"{% if picked_month and picked_month|number_format == n %} selected{% endif %}>{{ ('admin.month-' ~ n)|trans }}</option>
+						{% endfor %}
+					</select>
+					<select name="date_day" data-news-day data-picked="{{ picked_day|number_format ?: 1 }}">
+						{% for n in 1..31 %}
+							<option value="{{ n }}"{% if picked_day and picked_day|number_format == n %} selected{% endif %}>{{ n }}</option>
+						{% endfor %}
+					</select>
+				</span>
 			</label>
 
 			<label>
@@ -88,7 +112,12 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			{% for slot in 0..2 %}
 				<label>
 					{{ 'admin.news-maker-ranking'|trans({'%n%': slot + 1}) }}
+					{% if slot == 0 %}<span class="admin-form__hint">{{ 'admin.news-maker-ranking-hint'|trans }}</span>{% endif %}
 					<select name="ranking[{{ slot }}]">
+						{# Sorteado ao salvar, não a cada compilação: a definição
+						   guarda o que saiu, senão a mesma edição daria rankings
+						   diferentes a cada build. #}
+						<option value="__random__"{% if issue.rankings[slot]|default('') == '' %} selected{% endif %}>— {{ 'admin.news-maker-random'|trans }} —</option>
 						{% for key, label in categories %}
 							<option value="{{ key }}"{% if key == issue.rankings[slot]|default('') %} selected{% endif %}>{{ label }}</option>
 						{% endfor %}
@@ -101,23 +130,29 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			<h2 class="admin-section__title">{{ 'admin.news-maker-text'|trans }}</h2>
 			<p class="admin-form__hint">{{ 'admin.news-maker-text-hint'|trans }}</p>
 			{% for key, letter in languages %}
-				<div class="admin-form news-lang">
+				<div class="admin-form news-lang" data-news-lang="{{ key }}">
+					<h3 style="margin:0 0 4px">{{ ('admin.news-maker-lang-' ~ key)|trans }}</h3>
 					<label>
-						{{ ('admin.news-maker-lang-' ~ key)|trans }}
-						<input type="text" name="headline[{{ key }}]" maxlength="60"
+						{{ 'admin.news-maker-headline'|trans }}
+						<span class="admin-form__hint">{{ 'admin.news-maker-headline-hint'|trans({'%n%': headline_max}) }}</span>
+						<input type="text" name="headline[{{ key }}]"
+						       maxlength="{{ headline_max }}"
 						       value="{{ issue.headline[key]|default('') }}"
-						       placeholder="{{ 'admin.news-maker-headline'|trans }}">
+						       placeholder="POKéMON NEWS No.1">
 					</label>
 					<label>
 						{{ 'admin.news-maker-message'|trans }}
-						<span class="admin-form__hint">{{ 'admin.news-maker-message-hint'|trans }}</span>
-						<input type="text" name="message[{{ key }}]" maxlength="40"
+						<span class="admin-form__hint">{{ 'admin.news-maker-message-hint'|trans({'%n%': message_max}) }}</span>
+						<input type="text" name="message[{{ key }}]" maxlength="{{ message_max }}"
 						       value="{{ issue.message[key]|default('') }}"
 						       placeholder="{{ issue.headline[key]|default('') }}">
 					</label>
 					<label>
 						{{ 'admin.news-maker-body'|trans }}
-						<textarea name="body[{{ key }}]" rows="6" spellcheck="false">{{ issue.body[key]|default('') }}</textarea>
+						<span class="admin-form__hint">{{ 'admin.news-maker-body-hint'|trans({'%n%': body_line_max}) }}</span>
+						<textarea name="body[{{ key }}]" rows="6" spellcheck="false"
+						          data-news-body data-max="{{ body_line_max }}">{{ issue.body[key]|default('') }}</textarea>
+						<span class="admin-form__hint" data-news-count></span>
 					</label>
 				</div>
 			{% endfor %}
@@ -126,12 +161,26 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 		<section class="admin-section">
 			<h2 class="admin-section__title">{{ 'admin.news-maker-regions'|trans }}</h2>
 			<p class="admin-form__hint">{{ 'admin.news-maker-regions-hint'|trans }}</p>
-			<div class="admin-form__row">
-				{% for region in regions %}
-					<label class="news-region">
-						<input type="checkbox" name="regions[]" value="{{ region }}"
-						       {% if region in issue.scheduled|default(issue.built|default([])) %}checked{% endif %}>
-						{{ region|upper }}
+			{# Um destino por idioma, não por região. Inglês são três cartuchos
+			   -- Estados Unidos, Europa e Austrália -- que consomem o mesmo
+			   texto e compilam o mesmo binário, então pedir três cliques para
+			   escrever o mesmo arquivo em três pastas seria ruído. Os outros
+			   cinco ficam separados porque cada um carrega texto próprio. #}
+			<div class="news-regions">
+				{% for language, group in targets %}
+					<label class="news-region" data-news-region="{{ language }}"
+					       data-news-needs="{{ language }}"
+					       data-news-why="{{ 'admin.news-maker-region-needs'|trans({'%lang%': ('admin.news-maker-lang-' ~ language)|trans}) }}">
+						<input type="checkbox" name="regions[]" value="{{ language }}"
+						       {% if group|first in issue.scheduled|default(issue.built|default([])) %}checked{% endif %}>
+						<span>
+							{{ ('admin.news-maker-lang-' ~ language)|trans }}
+							{# Quais cartuchos recebem, dito onde não atrapalha:
+							   é a resposta para "e o P e o U, foram?". #}
+							{% if group|length > 1 %}
+								<span class="admin-form__hint">{% for r in group %}{{ ('region.language.' ~ r)|trans }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+							{% endif %}
+						</span>
 					</label>
 				{% endfor %}
 			</div>
