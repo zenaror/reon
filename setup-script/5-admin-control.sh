@@ -23,10 +23,55 @@ set -euo pipefail
 
 HELPER=/usr/local/sbin/reon-admin-ctl
 SUDOERS=/etc/sudoers.d/reon-admin
-WEB_USER="${WEB_USER:-www-data}"
 
 if [ "$(id -u)" -ne 0 ]; then
 	echo "Run this as root (sudo $0)." >&2
+	exit 1
+fi
+
+# Who actually serves the PHP, rather than who usually does.
+#
+# This used to default to www-data, and on the REON server that was wrong: it
+# runs two php-fpm pools and nginx is pointed at the one owned by `reon`. The
+# rule went to a user that never handles a request, so every button on the
+# admin panel's Services page failed with a sudo refusal -- and because
+# nothing checks a sudoers entry until something needs it, that stayed
+# invisible for as long as nobody pressed one.
+#
+# So it is read off the configuration instead of assumed: find the socket
+# nginx sends FastCGI to, then the pool that listens on it, then that pool's
+# user. WEB_USER=... still overrides, and www-data is only the last resort.
+detect_web_user() {
+	local socket pool
+
+	socket=$(grep -rhoE 'fastcgi_pass[[:space:]]+unix:[^;]+' \
+		/etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null |
+		head -1 | sed -E 's/.*unix:[[:space:]]*//')
+	[ -n "$socket" ] || return 1
+
+	# `listen` may be quoted or spaced differently, so match the path itself.
+	pool=$(grep -rlF "$socket" /etc/php/*/fpm/pool.d/*.conf 2>/dev/null | head -1)
+	[ -n "$pool" ] || return 1
+
+	grep -hoE '^[[:space:]]*user[[:space:]]*=[[:space:]]*[^[:space:];]+' "$pool" |
+		head -1 | sed -E 's/.*=[[:space:]]*//'
+}
+
+if [ -n "${WEB_USER:-}" ]; then
+	echo "Using WEB_USER=$WEB_USER (given on the command line)."
+else
+	WEB_USER=$(detect_web_user || true)
+	if [ -n "$WEB_USER" ]; then
+		echo "Detected the web user as \"$WEB_USER\" from the nginx and PHP-FPM configuration."
+	else
+		WEB_USER=www-data
+		echo "Could not tell which user serves the PHP; falling back to \"$WEB_USER\"." >&2
+		echo "If the Services page reports that control is not enabled, re-run with WEB_USER=<user>." >&2
+	fi
+fi
+
+if ! id -u "$WEB_USER" >/dev/null 2>&1; then
+	echo "There is no user called \"$WEB_USER\"; nothing was granted." >&2
 	exit 1
 fi
 

@@ -75,9 +75,29 @@
 			return self::$instance;
 		}
 
+		// O helper existir não é o mesmo que poder chamá-lo.
+		//
+		// Isto checava só o arquivo, e respondia "disponível" para um usuário
+		// sem a regra de sudo -- então a página de serviços tentava, o sudo
+		// recusava, e o que aparecia na tela era a recusa crua do sudo em vez
+		// do aviso que existe justamente para esse caso. Pior: a regra é
+		// concedida a um usuário nomeado, e o script de instalação assume
+		// `www-data`, que não é necessariamente quem serve o PHP.
+		//
+		// `sudo -n -l` responde se a regra existe para quem está perguntando,
+		// sem executar nada e sem pedir senha.
 		public function available() {
-			return is_file(self::HELPER) && is_executable(self::HELPER);
+			if (self::$allowed !== null) return self::$allowed;
+			if (!is_file(self::HELPER) || !is_executable(self::HELPER)) {
+				return self::$allowed = false;
+			}
+			$out = $this->run(["/usr/bin/sudo", "-n", "-l", self::HELPER]);
+			return self::$allowed = ($out["code"] === 0);
 		}
+
+		// Uma consulta por requisição: `available()` é chamada por cada linha
+		// da página de serviços, e cada chamada custaria um processo.
+		private static $allowed = null;
 
 		public static function isKnown($unit) {
 			return isset(self::UNITS[$unit]);

@@ -4,6 +4,8 @@
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/AdminUtil.php");
 	require_once("../../classes/NewsMakerUtil.php");
+	require_once("../../classes/ServiceControlUtil.php");
+	require_once("../../classes/DBUtil.php");
 	session_start();
 
 	AdminUtil::guard();
@@ -49,6 +51,21 @@
 		$action = (string)($_POST["action"] ?? "save");
 		$issue = readIssue($maker);
 
+		// "Publicar agora" é o mesmo publicar, com duas diferenças: a data
+		// passa a ser hoje e o agendador roda em seguida, em vez de esperar o
+		// timer de 15 minutos.
+		//
+		// A data é reescrita, e não ignorada. O agendador escolhe a edição cuja
+		// data já chegou; mandar ir ao ar sem mexer no calendário deixaria a
+		// linha dizendo uma data e o jogo servindo outra, e a próxima rodada
+		// decidiria pela data. Hoje é quando ela foi ao ar, então hoje é o que
+		// o calendário passa a dizer.
+		$runNow = ($action === "publish-now");
+		if ($runNow) {
+			$action = "publish";
+			$issue["date"] = (string)NewsMakerUtil::composeDate(date("n"), date("j"));
+		}
+
 		// Sorteia o que ficou como aleatório e recusa repetição. Feito antes
 		// de salvar, para a definição guardar o que de fato saiu -- sortear
 		// de novo a cada build daria edições diferentes com o mesmo nome.
@@ -88,11 +105,25 @@
 			$noticeKind = "bad";
 
 		} elseif ($action === "withdraw") {
+			// As regiões são lidas ANTES de retirar: retirar apaga os arquivos
+			// compilados, e é deles que sai a lista.
+			$affected = array_merge(
+				$maker->builtRegions($issue["slug"]),
+				$maker->scheduledRegions($issue["slug"]));
+
 			// Out of the calendar and off the disk: the game stops using it.
 			[$gone, $why] = $maker->withdraw($issue["slug"]);
 			$admin->log("news.withdraw", $issue["slug"], $why);
 			if ($gone) {
-				$notice = TemplateUtil::translate("admin.news-maker-withdrawn");
+				// E a oficial volta no lugar, aqui e agora. Tirar do calendário
+				// só impede a próxima rodada de reaplicar: a linha custom
+				// continuaria servindo esta edição até a notícia vanilla girar
+				// a região, o que pode levar um mês.
+				[$back] = $admin->restoreOfficialNews($affected);
+				$admin->log("news.restore-official", $issue["slug"], (string)$back);
+				$notice = TemplateUtil::translate("admin.news-maker-withdrawn")
+					. " " . TemplateUtil::translate("admin.news-maker-restored",
+						["%count%" => $back]);
 			} else {
 				$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => $why]);
 				$noticeKind = "bad";
@@ -100,12 +131,17 @@
 			$issue = $maker->issue($issue["slug"]) ?: $issue;
 
 		} elseif ($action === "delete") {
+			$affected = array_merge(
+				$maker->builtRegions($issue["slug"]),
+				$maker->scheduledRegions($issue["slug"]));
+
 			// Withdrawn first, so deleting the definition can never leave a
 			// scheduled entry pointing at a file nobody can rebuild.
 			$maker->withdraw($issue["slug"]);
 			$dir = $maker->issuesDir();
 			if ($dir !== false) @unlink($dir . "/" . $issue["slug"] . ".json");
-			$admin->log("news.issue-delete", $issue["slug"]);
+			[$back] = $admin->restoreOfficialNews($affected);
+			$admin->log("news.issue-delete", $issue["slug"], "restored:" . $back);
 			header("Location: /admin/news_maker.php?deleted=1");
 			return;
 
@@ -162,6 +198,25 @@
 						[$sched, $why] = $maker->setScheduled(
 							$issue["slug"], $issue["date"], $good, $issue["rankings"]);
 						if (!$sched) $log .= "\nschedule: " . $why;
+
+						// O agendador roda aqui mesmo, pelo mesmo helper que a
+						// página de serviços usa -- nada de privilégio novo.
+						// Ele é quem calcula os nomes decodificados das
+						// categorias e faz a gravação; reimplementar isso em
+						// PHP seria uma segunda versão da mesma regra, livre
+						// para divergir.
+						if ($sched && $runNow) {
+							[$ran, $ranWhy] = ServiceControlUtil::getInstance()
+								->act("reon-auto-schedule", "run");
+							$admin->log("news.publish-now", $issue["slug"], $ranWhy);
+							$log .= "\nrun: " . $ranWhy;
+							if (!$ran) {
+								$notice = TemplateUtil::translate(
+									"admin.news-maker-run-failed", ["%detail%" => $ranWhy]);
+								$noticeKind = "bad";
+								$runNow = false;
+							}
+						}
 					}
 					if (!is_array($results) || $results === []) {
 						$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => (string)$log]);
@@ -173,6 +228,9 @@
 						$admin->log("news.publish", $issue["slug"], $good . "/" . count($results));
 						$notice = TemplateUtil::translate("admin.news-maker-published",
 							["%good%" => $good, "%total%" => count($results)]);
+						if ($runNow) {
+							$notice .= " " . TemplateUtil::translate("admin.news-maker-ran");
+						}
 						$noticeKind = $good === count($results) ? "ok" : "bad";
 					}
 				}

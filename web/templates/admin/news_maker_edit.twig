@@ -205,6 +205,11 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			{% if not issue.locked|default(false) %}
 				<button class="btn btn-outline-primary" type="submit" name="action" value="save"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-save'|trans }}</button>
 				<button class="btn btn-primary" type="submit" name="action" value="publish"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-publish'|trans }}</button>
+				{# Publicar agora reescreve a data para hoje, então o aviso diz
+				   isso antes de acontecer, e não depois. #}
+				<button class="btn btn-primary" type="submit" name="action" value="publish-now"
+				        {% if missing is not empty %}disabled{% endif %}
+				        onclick="return confirm('{{ 'admin.news-maker-publish-now-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-publish-now'|trans }}</button>
 			{% endif %}
 			{% if issue.slug and issue.built|default([]) is not empty %}
 				<button class="btn btn-outline-danger" type="submit" name="action" value="withdraw"

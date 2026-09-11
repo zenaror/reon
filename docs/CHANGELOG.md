@@ -131,6 +131,21 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   onde o `auto-schedule` já lê. Nada disso precisa de privilégio: o montador
   roda como o usuário web, em diretório temporário, e alcança a ferramenta só
   pelo caminho de includes
+* **Publicar agora**, em botão próprio, para não esperar o ciclo de 15
+  minutos. Ele reescreve a data da edição para hoje em vez de ignorá-la: o
+  agendador escolhe pela data, e mandar ir ao ar sem mexer no calendário
+  deixaria a linha dizendo uma data e o jogo servindo outra. Se o auxiliar de
+  serviços não estiver autorizado para o usuário que serve o PHP, a edição
+  fica compilada e agendada e a tela diz que ela sai no próximo ciclo — não
+  finge que foi
+* **Retirar ou apagar devolve a edição oficial na hora.** Antes, sair do
+  calendário só impedia a próxima rodada de reaplicar: a linha custom
+  continuava servindo a edição retirada até a notícia vanilla girar aquela
+  região, o que pode levar um mês. Agora o conteúdo da linha vanilla é
+  copiado para dentro da linha custom — copiado, e não apagado e recriado,
+  porque `bxt_ranking.news_id` aponta para o id dela, e um id novo deixaria
+  os rankings enviados pelos jogadores apontando para uma linha que não
+  existe mais
 * **Edição publicada é imutável.** Enquanto não foi ao ar dá para mexer à
   vontade, e salvar recompila. Depois que o agendador a colocou no
   `bxt_news`, a tela passa a ser só de leitura: recompilar por cima trocaria
@@ -185,7 +200,19 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   de sudoers, um script, uma lista fixa de verbos e uma lista de units que
   mora no servidor e não num campo de formulário. Sem ele instalado o painel
   diz isso e não executa nada — controle que finge funcionar é pior que
-  controle que falta
+  controle que falta. E "instalado" passou a significar *chamável*, não
+  *existente*: a checagem olhava só se o arquivo estava lá, então respondia
+  que estava tudo pronto para um usuário sem a regra de sudo, e a tela
+  mostrava a recusa crua do sudo em vez do aviso feito para esse caso. Agora
+  ela pergunta ao próprio sudo (`sudo -n -l`), uma vez por requisição
+* **O script descobre quem serve o PHP, em vez de supor.** A regra de sudoers
+  é concedida a um usuário **nomeado**, e o padrão era `www-data` — que neste
+  servidor está errado: ele roda dois pools de php-fpm e o nginx aponta para o
+  do usuário `reon`. A regra ia para quem nunca atende uma requisição, então
+  nenhum botão da página de Serviços funcionava, e isso ficou invisível
+  enquanto ninguém apertou um. Agora o script acha o socket no
+  `fastcgi_pass`, o pool que escuta nele e o usuário desse pool; `WEB_USER=`
+  ainda manda, e `www-data` ficou só como último recurso
 * **Rodar o Auto schedule com `--refresh`**, em botão próprio e vermelho, com
   aviso que diz o que acontece: limpa o ranking de **todas** as regiões
   configuradas, não só das que tiveram notícia rodada, e não tem desfazer. É

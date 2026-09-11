@@ -1145,6 +1145,11 @@ admin:
   news-maker-failed-region: fehlgeschlagen
   news-maker-failed: 'Nicht möglich: %detail%'
   news-maker-deleted: Ausgabe gelöscht.
+  news-maker-publish-now: "Jetzt veröffentlichen"
+  news-maker-publish-now-confirm: "Diese Ausgabe jetzt veröffentlichen? Ihr Datum wird heute, und der Planer läuft direkt danach, statt auf den nächsten Durchlauf zu warten. Nach der Veröffentlichung ist sie nicht mehr änderbar."
+  news-maker-ran: "Der Planer ist gelaufen: sie ist online."
+  news-maker-run-failed: "Gebaut und eingeplant, aber der Planer konnte jetzt nicht ausgeführt werden (%detail%). Sie erscheint im nächsten Durchlauf, innerhalb von 15 Minuten."
+  news-maker-restored: "Die offizielle Ausgabe steht in %count% Region(en) wieder an ihrer Stelle."
   news-maker-locked: Diese Ausgabe wurde bereits veröffentlicht und kann nicht mehr geändert werden.
   news-maker-locked-title: Veröffentlichte Ausgabe — nur lesen
   news-maker-locked-why: Sie ist bereits erschienen, und Spieler haben sie möglicherweise gelesen. Ein erneutes Übersetzen darüber würde den Inhalt unbemerkt ändern, unter demselben Namen und demselben Datum. Um etwas zu ändern, löschen Sie diese Ausgabe und veröffentlichen Sie eine neue.
