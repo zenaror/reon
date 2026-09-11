@@ -765,6 +765,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   atingidos só porque as structs nasciam zeradas dos dois lados — levado ao
   core
 * Batching N=50 ainda sem teste em hardware real (rodada única, pendente)
+* `30a1d42` **não resolve mais**: a limpeza do e-mail pessoal reescreveu o
+  branch e esse commit ficou órfão — existe como objeto solto no clone de
+  quem já o tinha, mas nenhuma ref atual o alcança, então num clone novo ele
+  não está. Os seis `.uf2` publicados carregam esse hash **dentro**, na string
+  de versão, e por isso apontam para um commit que não existe mais. A
+  verificação de então provou conteúdo idêntico (`diff --stat` vazio), que é
+  coisa diferente de alcançabilidade do hash citado — a lacuna foi achada
+  depois, e só é fechada quando os binários forem refeitos com o hash final.
+  O hash antigo fica registrado porque era o que valia quando isto foi escrito
 * `30a1d42`: submódulo em b136972 (relay v1), nenhuma linha de firmware
   mudou; seis Release .uf2 regenerados e copiados para
   `_RELEASES/PicoAdapterGB` (sha256 conferido). Aviso do mantenedor: `strings`
