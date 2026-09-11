@@ -109,6 +109,30 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Painel de administração (`/admin`)
 
+* **Criador de Pokémon News** (`/admin/news_maker.php`). Uma edição de news
+  não é documento: é um programa que o jogo interpreta, montado a partir de
+  fonte rgbds. O `pokecrystal-news-maker` entra como submódulo e é a
+  ferramenta de verdade — codificador escrito à mão para um formato do qual
+  temos sete amostras seria palpite fantasiado de recurso. A edição é
+  **template mais substituições**: as sete edições históricas compartilham um
+  esqueleto de ~600 linhas e diferem em título por idioma, texto do artigo por
+  idioma, três categorias de ranking e o minigame — e é só isso que o painel
+  deixa mexer. O resto fica como está numa edição que comprovadamente funciona
+* Texto simples vira as macros da caixa de diálogo: linha em branco começa
+  parágrafo, a primeira linha abre a caixa, a segunda fica embaixo, o resto
+  rola
+* A linha da caixa de correio é escrita nos **caracteres do próprio jogo** —
+  `POKéMON NEWS No.1` são 14 bytes, não 17, porque alguns valem por mais de um
+  caractere. A tabela `bxt_encoding.json`, que só era usada para decodificar,
+  passou a ser invertida para codificar. É por idioma: a tabela japonesa não
+  tem letra latina nenhuma, e o que o jogo não sabe desenhar é recusado **com
+  o nome do caractere**, em vez de virar `?` na tela de um Game Boy
+* Sai o par `.bin` + `.bin.message` em `files/bxt_custom/<região>/`, que é de
+  onde o `auto-schedule` já lê — agendar continua funcionando sem alteração
+  nenhuma. Nada disso precisa de privilégio: o montador roda como o usuário
+  web, em diretório temporário, e alcança a ferramenta só pelo caminho de
+  includes
+
 * **Um painel de verdade em `/admin`**, com o que era só a tela de notícias
   puxado para dentro dele: painel com os números do serviço, notícias,
   notificações, contas, serviços, logs, páginas do Mobile Trainer e o

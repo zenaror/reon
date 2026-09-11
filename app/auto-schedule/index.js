@@ -305,6 +305,40 @@ function loadPokemonNewsCustomConfig(rootDir) {
     merged.schedule = {};
   }
 
+  // Issues made in the admin panel are scheduled from a file of their own,
+  // merged over whatever this config declares.
+  //
+  // A separate file on purpose. The panel runs as the web user and this
+  // config also carries the *vanilla* schedule; letting a web application
+  // write here would put the ordinary news one bad save away from breaking.
+  // Owning a smaller file means a malformed write can only cost the track
+  // the panel is responsible for.
+  //
+  // Per region, entries are merged rather than replaced, so a hand-written
+  // custom entry and a panel-made one can coexist.
+  const overlayPath = path.resolve(__dirname, "bxt_news_custom.schedule.json");
+  if (fs.existsSync(overlayPath)) {
+    try {
+      const overlay = JSON.parse(fs.readFileSync(overlayPath, "utf8"));
+      const regions = overlay && typeof overlay.schedule === "object" ? overlay.schedule : null;
+      if (regions) {
+        for (const [region, entries] of Object.entries(regions)) {
+          if (!entries || typeof entries !== "object" || Array.isArray(entries)) continue;
+          const existing =
+            merged.schedule[region] && typeof merged.schedule[region] === "object"
+              && !Array.isArray(merged.schedule[region])
+              ? merged.schedule[region]
+              : {};
+          merged.schedule[region] = { ...existing, ...entries };
+        }
+      }
+    } catch (e) {
+      // A broken overlay must not take the whole run down with it: the
+      // vanilla news still has to go out today.
+      console.warn(`[news] ignoring unreadable ${path.basename(overlayPath)}: ${e.message}`);
+    }
+  }
+
   return merged;
 }
 

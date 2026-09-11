@@ -1,0 +1,155 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ issue.name|default('admin.news-maker-new'|trans) }}{% endblock %}
+
+{% block admin_actions %}
+	<a class="btn btn-sm btn-outline-secondary" href="/admin/news_maker.php">{{ 'admin.news-maker-back'|trans }}</a>
+{% endblock %}
+
+{% block admin_body %}
+	{# What each region's build did, shown before the form so the answer is
+	   where the eye already is after pressing Publish. #}
+	{% if results %}
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.news-maker-result'|trans }}</h2>
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<tbody>
+						{% for region, one in results %}
+							<tr>
+								<td>{{ region|upper }}</td>
+								<td>
+									{% if one[0] %}
+										<span class="admin-pill admin-pill--up">ok</span> {{ one[1] }} bytes
+									{% else %}
+										<span class="admin-pill admin-pill--down">{{ 'admin.news-maker-failed-region'|trans }}</span>
+										<code class="admin-form__hint">{{ one[1] }}</code>
+									{% endif %}
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% if log %}<pre class="admin-console mt-2">{{ log }}</pre>{% endif %}
+		</section>
+	{% endif %}
+
+	{# The one permission this needs, said with the command. Deliberately a
+	   single file rather than the directory: the shared config next to it
+	   also carries the *vanilla* schedule, and the panel has no business
+	   being able to write that. #}
+	{% if not schedule_writable|default(false) %}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.news-maker-schedule-locked'|trans }}</strong></p>
+			<p class="mb-1">{{ 'admin.news-maker-schedule-why'|trans }}</p>
+			<pre class="admin-console mb-0">echo '{"schedule":{}}' | sudo tee {{ schedule_path }} >/dev/null
+sudo chown reon:reon {{ schedule_path }}</pre>
+		</div>
+	{% endif %}
+
+	<form method="post" id="news-issue-form">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="slug" value="{{ issue.slug }}">
+
+		<div class="admin-form">
+			<label>
+				{{ 'admin.news-maker-name'|trans }}
+				<span class="admin-form__hint">{{ 'admin.news-maker-name-hint'|trans }}</span>
+				<input type="text" name="name" required maxlength="60" value="{{ issue.name|default('') }}">
+			</label>
+
+			<label>
+				{{ 'admin.news-maker-date'|trans }}
+				<span class="admin-form__hint">{{ 'admin.news-maker-date-hint'|trans }}</span>
+				<input type="text" name="date" maxlength="5" pattern="[0-1][0-9]-[0-3][0-9]"
+				       value="{{ issue.date|default('') }}" placeholder="03-15">
+			</label>
+
+			<label>
+				{{ 'admin.news-maker-template'|trans }}
+				<span class="admin-form__hint">{{ 'admin.news-maker-template-hint'|trans }}</span>
+				<select name="template">
+					{% for template in templates %}
+						<option value="{{ template }}"{% if template == issue.template|default('') %} selected{% endif %}>{{ template }}</option>
+					{% endfor %}
+				</select>
+			</label>
+
+			<label>
+				{{ 'admin.news-maker-minigame'|trans }}
+				<select name="minigame">
+					{% for file, label in minigames %}
+						<option value="{{ file }}"{% if file == issue.minigame|default('') %} selected{% endif %}>{{ label }}</option>
+					{% endfor %}
+				</select>
+			</label>
+
+			{% for slot in 0..2 %}
+				<label>
+					{{ 'admin.news-maker-ranking'|trans({'%n%': slot + 1}) }}
+					<select name="ranking[{{ slot }}]">
+						{% for key, label in categories %}
+							<option value="{{ key }}"{% if key == issue.rankings[slot]|default('') %} selected{% endif %}>{{ label }}</option>
+						{% endfor %}
+					</select>
+				</label>
+			{% endfor %}
+		</div>
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.news-maker-text'|trans }}</h2>
+			<p class="admin-form__hint">{{ 'admin.news-maker-text-hint'|trans }}</p>
+			{% for key, letter in languages %}
+				<div class="admin-form news-lang">
+					<label>
+						{{ ('admin.news-maker-lang-' ~ key)|trans }}
+						<input type="text" name="headline[{{ key }}]" maxlength="60"
+						       value="{{ issue.headline[key]|default('') }}"
+						       placeholder="{{ 'admin.news-maker-headline'|trans }}">
+					</label>
+					<label>
+						{{ 'admin.news-maker-message'|trans }}
+						<span class="admin-form__hint">{{ 'admin.news-maker-message-hint'|trans }}</span>
+						<input type="text" name="message[{{ key }}]" maxlength="40"
+						       value="{{ issue.message[key]|default('') }}"
+						       placeholder="{{ issue.headline[key]|default('') }}">
+					</label>
+					<label>
+						{{ 'admin.news-maker-body'|trans }}
+						<textarea name="body[{{ key }}]" rows="6" spellcheck="false">{{ issue.body[key]|default('') }}</textarea>
+					</label>
+				</div>
+			{% endfor %}
+		</section>
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.news-maker-regions'|trans }}</h2>
+			<p class="admin-form__hint">{{ 'admin.news-maker-regions-hint'|trans }}</p>
+			<div class="admin-form__row">
+				{% for region in regions %}
+					<label class="news-region">
+						<input type="checkbox" name="regions[]" value="{{ region }}"
+						       {% if region in issue.scheduled|default(issue.built|default([])) %}checked{% endif %}>
+						{{ region|upper }}
+					</label>
+				{% endfor %}
+			</div>
+		</section>
+
+		<div class="trainer-edit__actions">
+			<button class="btn btn-outline-primary" type="submit" name="action" value="save"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-save'|trans }}</button>
+			<button class="btn btn-primary" type="submit" name="action" value="publish"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-publish'|trans }}</button>
+			{% if issue.slug and issue.built|default([]) is not empty %}
+				<button class="btn btn-outline-danger" type="submit" name="action" value="withdraw"
+				        formnovalidate
+				        onclick="return confirm('{{ 'admin.news-maker-withdraw-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-withdraw'|trans }}</button>
+			{% endif %}
+			{% if issue.slug %}
+				<button class="btn btn-outline-danger" type="submit" name="action" value="delete"
+				        formnovalidate
+				        onclick="return confirm('{{ 'admin.news-maker-delete-confirm'|trans|e('js') }}');">{{ 'admin.trainer-delete'|trans }}</button>
+			{% endif %}
+		</div>
+	</form>
+{% endblock %}
