@@ -1,0 +1,111 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ user.username }}{% endblock %}
+
+{% block admin_actions %}
+	<a class="btn btn-sm btn-outline-secondary" href="/admin/users.php">{{ 'admin.user-back'|trans }}</a>
+{% endblock %}
+
+{% block admin_body %}
+	<section class="admin-section">
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<tbody>
+					<tr><th>{{ 'admin.users-id'|trans }}</th><td>{{ user.id }}</td></tr>
+					<tr><th>{{ 'admin.users-email'|trans }}</th><td>{{ user.email|default('—') }}</td></tr>
+					<tr><th>{{ 'admin.users-dion'|trans }}</th><td><code>{{ user.dion_email_local }}</code></td></tr>
+					<tr><th>PPP</th><td><code>{{ user.dion_ppp_id }}</code></td></tr>
+					<tr>
+						<th>{{ 'admin.users-state'|trans }}</th>
+						<td>
+							{% if user.banned %}
+								<span class="admin-pill admin-pill--down">{{ 'admin.users-banned'|trans }}</span>
+								<span class="admin-form__hint">{{ 'admin.user-banned-since'|trans({'%when%': user.banned_at}) }}{% if user.banned_reason %} — {{ user.banned_reason }}{% endif %}</span>
+							{% else %}
+								<span class="admin-pill admin-pill--up">{{ 'admin.users-active'|trans }}</span>
+							{% endif %}
+							{% if user.is_admin %} <span class="admin-pill admin-pill--on">{{ 'admin.users-admin'|trans }}</span>{% endif %}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section class="admin-section">
+		{% if user.banned %}
+			<form class="admin-form" method="post">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="user" value="{{ user.id }}">
+				<input type="hidden" name="action" value="unban">
+				<button class="btn btn-outline-primary" type="submit">{{ 'admin.user-unban'|trans }}</button>
+			</form>
+		{% else %}
+			<form class="admin-form" method="post" onsubmit="return confirm('{{ 'admin.user-ban-confirm'|trans|e('js') }}');">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="user" value="{{ user.id }}">
+				<input type="hidden" name="action" value="ban">
+				<label>
+					{{ 'admin.user-ban-reason'|trans }}
+					<input type="text" name="reason" maxlength="190">
+				</label>
+				<div class="admin-form__row">
+					<button class="btn btn-outline-danger" type="submit">{{ 'admin.user-ban'|trans }}</button>
+				</div>
+			</form>
+		{% endif %}
+
+		<form method="post" class="d-inline" onsubmit="return confirm('{{ 'admin.user-admin-confirm'|trans|e('js') }}');">
+			<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+			<input type="hidden" name="user" value="{{ user.id }}">
+			<input type="hidden" name="action" value="{{ user.is_admin ? 'admin-revoke' : 'admin-grant' }}">
+			<button class="btn btn-sm btn-outline-secondary" type="submit">{{ user.is_admin ? 'admin.user-drop-admin'|trans : 'admin.user-make-admin'|trans }}</button>
+		</form>
+	</section>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.user-devices'|trans }}</h2>
+		{% if devices is empty %}
+			<p>{{ 'admin.user-no-devices'|trans }}</p>
+		{% else %}
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>{{ 'admin.user-device-code'|trans }}</th>
+							<th>{{ 'admin.user-device-nick'|trans }}</th>
+							<th>{{ 'admin.user-device-state'|trans }}</th>
+							<th>{{ 'admin.user-device-seen'|trans }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for d in devices %}
+							<tr>
+								<td><code>{{ d.pairing_code }}</code></td>
+								<td>{{ d.nickname|default('—') }}</td>
+								<td>
+									{% if d.blocked %}
+										<span class="admin-pill admin-pill--down">{{ 'admin.user-blocked'|trans }}</span>
+									{% else %}
+										<span class="admin-pill admin-pill--up">{{ 'admin.user-allowed'|trans }}</span>
+									{% endif %}
+								</td>
+								<td>{{ d.last_seen_at|default('—') }}{% if d.last_ip %} <span class="admin-form__hint">{{ d.last_ip }}</span>{% endif %}</td>
+								<td>
+									<form method="post">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="user" value="{{ user.id }}">
+										<input type="hidden" name="device" value="{{ d.device_id }}">
+										<input type="hidden" name="action" value="{{ d.blocked ? 'device-unblock' : 'device-block' }}">
+										<button class="btn btn-sm btn-outline-secondary" type="submit">{{ d.blocked ? 'admin.user-device-unblock'|trans : 'admin.user-device-block'|trans }}</button>
+									</form>
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+	</section>
+{% endblock %}

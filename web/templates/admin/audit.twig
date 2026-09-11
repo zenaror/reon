@@ -1,0 +1,34 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.audit-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	{% if log is empty %}
+		<p>{{ 'admin.audit-empty'|trans }}</p>
+	{% else %}
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.audit-when'|trans }}</th>
+						<th>{{ 'admin.audit-who'|trans }}</th>
+						<th>{{ 'admin.audit-what'|trans }}</th>
+						<th>{{ 'admin.audit-target'|trans }}</th>
+						<th>IP</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for row in log %}
+						<tr>
+							<td>{{ row.created_at|date("Y.m.d H:i") }}</td>
+							<td>{{ row.username|default('—') }}</td>
+							<td><code>{{ row.action }}</code></td>
+							<td>{{ row.target|default('—') }}{% if row.detail %} <span class="admin-form__hint">{{ row.detail }}</span>{% endif %}</td>
+							<td><code class="admin-form__hint">{{ row.ip|default('—') }}</code></td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% endif %}
+{% endblock %}

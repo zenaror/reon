@@ -39,10 +39,11 @@
 	$userId = $_SESSION["user_id"];
 	$notify = NotificationUtil::getInstance();
 
-	// Listed before marking, so the rows come back carrying the unread flags
-	// they had when the reader opened the menu rather than the flags this
-	// request is about to clear.
-	$items = $notify->listForUser($userId, NotificationUtil::RECENT);
+	// Only what is still unread, and listed before it is marked: the menu is
+	// a tray of what is new, not a second copy of the history. Something
+	// already read lives on /user/notifications.php and nowhere else, so
+	// this list empties as it is read instead of growing forever.
+	$items = $notify->listForUser($userId, NotificationUtil::RECENT, 0, true);
 	$unread = $notify->countUnread($userId);
 	$notify->markAllRead($userId);
 

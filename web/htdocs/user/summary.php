@@ -4,6 +4,7 @@
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/RelayUtil.php");
 	require_once("../../classes/CsrfUtil.php");
+	require_once("../../classes/UserUtil.php");
 	session_start();
 
 	if (SessionUtil::getInstance()->isSessionActive()) {
@@ -17,12 +18,15 @@
         $errors = array(); //~To contain multiple problems at once
         //~Update user settings if needed, before preparing to render the page
         if (array_key_exists("tradeRegions",$_POST)) {
-            if (
-                in_array($_POST["tradeRegions"],array("e,f,d,s,i,p,u,j","efdsipu,j","efdsipuj"))
-            ) {
+            //~Validated by its format, not against a list of three literals:
+            //~the pool format allows more than the menu offers, and one of the
+            //~values already in the database ("e,fdsipuj") was not on that list
+            //~-- so that account could not have saved this form at all.
+            $regions = UserUtil::normalizeTradeRegions($_POST["tradeRegions"]);
+            if ($regions !== null) {
                 $db = DBUtil::getInstance()->getDB();
                 $stmt = $db->prepare("update sys_users set trade_region_allowlist = ? where id = ?");
-                $stmt->bind_param("si", $_POST["tradeRegions"], $_SESSION["user_id"]);
+                $stmt->bind_param("si", $regions, $_SESSION["user_id"]);
                 $stmt->execute();
             } else { //~If region setting is invalid, make no changes and issue an error
                 $errors[] = "regionValue";

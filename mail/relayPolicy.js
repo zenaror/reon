@@ -85,7 +85,9 @@ class RelayPolicyServer {
 			// with a device currently authorized (the window is per device,
 			// see sys_device_counter; any of the account's devices will do).
 			this.mysql.query(
-				"select c.id from sys_users u inner join sys_device_counter c on c.user_id = u.id where u.dion_email_local = ? and c.authorized = 1 and c.authorized_until > now() limit 1",
+				// ...and not from a banned one, which holds no authorization
+				// however recently its console connected.
+				"select c.id from sys_users u inner join sys_device_counter c on c.user_id = u.id where u.dion_email_local = ? and u.banned_at is null and c.authorized = 1 and c.authorized_until > now() limit 1",
 				[senderLocal],
 				(error, results) => {
 					if (error) {

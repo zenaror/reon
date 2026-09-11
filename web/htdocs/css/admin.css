@@ -1,0 +1,359 @@
+/* The administration panel.
+   Deliberately plainer than the rest of the site: this is a workshop, not a
+   shopfront. What it borrows from the site is the palette and the hard
+   square edges, so it is recognisably REON; what it does not borrow is the
+   decoration, because every pixel here is in the way of a table. */
+
+/* The browser's own [hidden] rule is the weakest thing in the cascade, and
+   this file gives labels and rows a display of their own -- which silently
+   beats it. Anything the panel hides is meant to be gone, so the rule is
+   stated here where it can win. */
+[hidden] {
+  display: none !important;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-nav {
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.admin-nav__title {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--reon-blue-deep);
+  color: #fff;
+  font-size: var(--mt-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-nav__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-nav__link {
+  display: block;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.12);
+  color: var(--reon-ink);
+  text-decoration: none;
+}
+
+.admin-nav__link:hover {
+  background: var(--reon-paper);
+}
+
+/* The page you are on is not a link to itself: it is filled, and it stays
+   in the list so the menu reads the same from every module. */
+.admin-nav__link.is-here {
+  background: var(--reon-blue-deep);
+  color: #fff;
+  font-weight: bold;
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-main__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--reon-line);
+}
+
+/* What just happened, above the thing it happened to. Green for done, red
+   for refused -- and refused says why, never just "error". */
+.admin-notice {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border: 2px solid var(--reon-green);
+  background: #f0f8e6;
+}
+
+.admin-notice--bad {
+  border-color: var(--reon-red);
+  background: #fceef2;
+}
+
+/* The dashboard's figures. Tiles, because these are the numbers the panel
+   exists to watch; everything else on the panel is a table. */
+.admin-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.admin-tile {
+  padding: 10px 12px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+}
+
+.admin-tile__n {
+  display: block;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.admin-tile__label {
+  display: block;
+  color: var(--reon-ink-soft);
+  font-size: 0.82em;
+}
+
+/* A count that means something is wrong is the one thing on the dashboard
+   allowed to shout. */
+.admin-tile--warn .admin-tile__n { color: var(--reon-red); }
+
+.admin-section {
+  margin-bottom: 26px;
+}
+
+.admin-section__title {
+  margin: 0 0 8px;
+  font-size: var(--mt-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--reon-ink-soft);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--reon-panel);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.12);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table th {
+  border-bottom: 2px solid var(--reon-line);
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-table tr.is-banned td { background: #fceef2; }
+
+.admin-table__num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Wide tables scroll in their own box rather than pushing the page sideways. */
+.admin-scroll {
+  overflow-x: auto;
+}
+
+.admin-form {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+}
+
+.admin-form label {
+  display: grid;
+  gap: 4px;
+  font-weight: bold;
+}
+
+.admin-form input[type="text"],
+.admin-form input[type="search"],
+.admin-form select,
+.admin-form textarea {
+  padding: 6px 8px;
+  border: 2px solid var(--reon-line);
+  background: #fff;
+  font: inherit;
+  border-radius: 0;
+}
+
+.admin-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-form__hint {
+  color: var(--reon-ink-soft);
+  font-size: 0.85em;
+  font-weight: normal;
+}
+
+.admin-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* The console output of a log or a service command: fixed width, dark, and
+   scrolling in both directions so a long line is not wrapped into nonsense. */
+.admin-console {
+  max-height: 460px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border: 2px solid var(--reon-line);
+  background: #12141c;
+  color: #d7dde8;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.admin-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-pill--up     { background: var(--reon-green); color: #16300a; }
+.admin-pill--down   { background: var(--reon-red); color: #fff; }
+.admin-pill--unknown{ background: var(--reon-silver); color: #fff; }
+.admin-pill--on     { background: var(--reon-blue-deep); color: #fff; }
+.admin-pill--off    { background: var(--reon-silver); color: #fff; }
+
+@media (max-width: 720px) {
+  .admin-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------- the account picker
+   A <select multiple> wearing a better coat: chips for what is chosen, one
+   line to type in, and the matches under it. The select itself is still
+   there, hidden, holding the answer -- so this is decoration over a working
+   control, not a replacement for one. */
+
+.picker {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 2px solid var(--reon-line);
+  background: #fff;
+  cursor: text;
+}
+
+/* The whole box takes the focus ring, not the bare input inside it: the box
+   is what reads as the field. */
+.picker:focus-within {
+  outline: 2px solid var(--reon-blue-deep);
+  outline-offset: 1px;
+}
+
+.picker__chips {
+  display: contents;
+}
+
+.picker__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px 1px 8px;
+  border-radius: 999px;
+  background: var(--reon-blue-deep);
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.picker__drop {
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.picker__drop:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.picker__input {
+  flex: 1 1 120px;
+  min-width: 80px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: normal;
+}
+
+.picker__input:focus {
+  outline: none;
+}
+
+.picker__menu {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: -2px;
+  right: -2px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 2px solid var(--reon-line);
+  background: #fff;
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.picker__item {
+  padding: 5px 10px;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+/* One highlight, moved by the arrow keys and by the pointer alike, so the
+   keyboard and the mouse are never disagreeing about what Enter would pick. */
+.picker__item.is-on {
+  background: var(--reon-blue-deep);
+  color: #fff;
+}
+
+.picker__empty {
+  padding: 6px 10px;
+  color: var(--reon-ink-soft);
+  font-weight: normal;
+}

@@ -3,21 +3,25 @@
 	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/NewsUtil.php");
+	require_once("../../classes/AdminUtil.php");
 	session_start();
 
-	if (!SessionUtil::getInstance()->isAdmin()) {
-		http_response_code(404);
-		return;
-	}
+	// The panel's single guard, rather than this page's own copy of the
+	// check: a module that decides for itself is a module that one day
+	// decides differently.
+	AdminUtil::guard();
 
 	$news = NewsUtil::getInstance();
+	$admin = AdminUtil::getInstance();
 
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
 		$action = isset($_POST["action"]) ? $_POST["action"] : "";
 
 		if ($action === "delete" && isset($_POST["id"])) {
+			$post = $news->getById($_POST["id"]);
 			$news->delete($_POST["id"]);
+			$admin->log("news.delete", $post ? $post["title"] : $_POST["id"]);
 			header("Location: /admin/news.php");
 			return;
 		}
@@ -37,8 +41,10 @@
 
 			if (isset($_POST["id"]) && $_POST["id"] !== "") {
 				$news->update($_POST["id"], $title, $body, $published);
+				$admin->log($published ? "news.publish" : "news.update", $title);
 			} else {
 				$news->create($title, $body, $published);
+				$admin->log($published ? "news.publish" : "news.create", $title);
 			}
 			header("Location: /admin/news.php");
 			return;

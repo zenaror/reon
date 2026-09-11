@@ -36,6 +36,9 @@
 			$vars["session_active"] = SessionUtil::getInstance()->isSessionActive();
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
 			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
+			// So the account menu can offer the admin panel to the people who
+			// have it, instead of the panel being a URL you have to know.
+			$vars["curr_is_admin"] = SessionUtil::getInstance()->isAdmin();
 			// Path of the page being rendered, so the side menu can tell
 			// which of its entries is the current page.
 			$vars["current_path"] = parse_url($_SERVER["REQUEST_URI"] ?? "/", PHP_URL_PATH) ?: "/";

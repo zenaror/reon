@@ -3340,12 +3340,26 @@ function loadTradeRegionGroupsFromPhpConfig(phpPath) {
 
 const TRADE_REGION_GROUPS = loadTradeRegionGroupsFromPhpConfig(phpConfigPath);
 
+// The allowlist is a list of pools separated by commas, each pool a set of
+// region letters that trade with one another ("efdsipu,j" = the Latin
+// languages together, Japanese apart). The default when an account has none
+// on file is the same one the column default, the signup form and
+// tradecorner.php's COALESCE all use -- and it is applied here too, because
+// `null.split` throws and a trade run that dies on one account's missing
+// setting has abandoned everybody else's.
+const TRADE_REGIONS_DEFAULT = "efdsipuj";
+
 function regionCanTrade(a, b, aPool, bPool) {
   if (!a || !b) return false;
   var regions = { "a": String(a).toLowerCase(), "b": String(b).toLowerCase() }
-  
+
+  var poolText = function (value) {
+    var text = String(value == null ? "" : value).toLowerCase().trim();
+    return text === "" ? TRADE_REGIONS_DEFAULT : text;
+  };
+
   //~Set up per-player language pools
-  var regionPools = { "a": aPool.split(","), "b": bPool.split(",") }
+  var regionPools = { "a": poolText(aPool).split(","), "b": poolText(bPool).split(",") }
   
   //~For each player, isolate down to the language pool their game falls into
   for (var player in regionPools) {

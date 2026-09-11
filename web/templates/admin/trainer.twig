@@ -1,0 +1,44 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.trainer-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p>{{ 'admin.trainer-intro'|trans }}</p>
+
+	{% if pages is empty %}
+		<p>{{ 'admin.trainer-none'|trans }}</p>
+	{% else %}
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.trainer-page'|trans }}</th>
+						<th class="admin-table__num">{{ 'admin.trainer-size'|trans }}</th>
+						<th>{{ 'admin.trainer-changed'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for p in pages %}
+						<tr>
+							<td><code>{{ p.url }}</code></td>
+							<td class="admin-table__num">{{ p.size }}</td>
+							<td>{{ p.changed|date("Y.m.d H:i") }}</td>
+							<td>
+								{# A page the web server cannot write is shown, not hidden: the
+								   reason it is uneditable is a file permission somebody has to
+								   go and change, and it will not get changed if the page simply
+								   does not appear. #}
+								{% if p.writable %}
+									<a href="/admin/trainer.php?page={{ p.url|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a>
+								{% else %}
+									<span class="admin-pill admin-pill--off">read-only</span>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% endif %}
+{% endblock %}

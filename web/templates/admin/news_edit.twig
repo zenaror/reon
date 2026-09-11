@@ -1,8 +1,8 @@
-{% extends "main.twig" %}
+{% extends "admin/layout.twig" %}
 
-{% block title %}{{'admin.news-title'|trans}}{% endblock %}
+{% block admin_title %}{{'admin.news-title'|trans}}{% endblock %}
 
-{% block content %}
+{% block admin_body %}
 	<h1 class="h4 mb-3">{% if post and post.id %}{{'admin.news-editing'|trans}}{% else %}{{'admin.news-new'|trans}}{% endif %}</h1>
 
 	{% if error == "title-required" %}
