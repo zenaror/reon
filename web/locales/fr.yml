@@ -38,6 +38,8 @@ mobile-home: Page d'Accueil Mobile
 news: Actualités
 guide: "Premiers pas"
 downloads: "Téléchargements"
+terms: "Conditions d'utilisation"
+privacy: "Politique de confidentialité"
 page-not-found: "Cette page n'existe pas encore."
 page-contents: "Sommaire"
 game-page:
@@ -1184,6 +1186,13 @@ admin:
   news-maker-template: D'après
   news-maker-template-hint: Le vrai numéro dont celui-ci emprunte les menus, les scripts et la mise en page.
   news-maker-minigame: Mini-jeu
+  news-maker-prizes: Prix
+  news-maker-prizes-hint: "Ce que le mini-jeu remet en cas de victoire. La liste est lue dans le code du mini-jeu lui-même : en changer change la liste. Toute la table d'objets est proposée, objets clés compris — la cartouche les connaît, mais le jeu ne s'attend pas à en recevoir un par les actualités."
+  news-maker-prize: Prix %n%
+  news-maker-prize-default: "tel quel : %item%"
+  news-maker-prize-fixed: C'est le mini-jeu qui choisit.
+  news-maker-prize-none: Ce mini-jeu ne remet aucun prix.
+  news-maker-bad-prize: "Cet objet n'existe pas :"
   news-maker-headline-hint: Le nom du numéro sur l'écran d'actualités lui-même — sur la bannière pendant que la console le télécharge, et comme titre en haut de la page. Au plus %n% caractères, ce qu'utilise le vrai numéro le plus large.
   news-maker-body-hint: 'Le texte derrière « Guide des actualités » : l''article que lit le joueur. Une ligne vide commence un paragraphe ; la première ligne ouvre la boîte de dialogue, la deuxième se place en dessous, le reste défile. **%n% caractères par ligne**, parce que la boîte fait %n% cases de large. Pas de limite de lignes : le texte défile.'
   news-maker-random: CLASSEMENT ALÉATOIRE

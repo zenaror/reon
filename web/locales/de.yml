@@ -13,6 +13,8 @@ mobile-home: Mobile Startseite
 news: Aktuelles
 guide: "Erste Schritte"
 downloads: "Downloads"
+terms: "Nutzungsbedingungen"
+privacy: "Datenschutzerklärung"
 page-not-found: "Diese Seite gibt es noch nicht."
 page-contents: "Inhalt"
 game-page:
@@ -1120,6 +1122,13 @@ admin:
   news-maker-template: Beruht auf
   news-maker-template-hint: Die echte Ausgabe, deren Menüs, Skripte und Aufbau diese übernimmt.
   news-maker-minigame: Minispiel
+  news-maker-prizes: Preise
+  news-maker-prizes-hint: Was das Minispiel bei einem Sieg aushändigt. Die Liste wird aus dem Code des Minispiels selbst gelesen, ein anderes Minispiel ergibt also eine andere Liste. Die gesamte Gegenstandstabelle steht zur Wahl, Schlüsselgegenstände eingeschlossen — das Modul kennt sie, doch das Spiel rechnet nicht damit, einen davon aus den Nachrichten zu erhalten.
+  news-maker-prize: Preis %n%
+  news-maker-prize-default: "wie vorgesehen: %item%"
+  news-maker-prize-fixed: Das wählt das Minispiel.
+  news-maker-prize-none: Dieses Minispiel händigt keinen Preis aus.
+  news-maker-bad-prize: "Diesen Gegenstand gibt es nicht:"
   news-maker-headline-hint: Der Name der Ausgabe auf dem Nachrichtenbildschirm selbst — auf dem Banner, während die Konsole sie lädt, und als Titel oben auf der Seite. Höchstens %n% Zeichen, so viel wie die breiteste echte Ausgabe nutzt.
   news-maker-body-hint: 'Der Text hinter „Nachrichtenführer“ — der Artikel, den der Spieler liest. Eine leere Zeile beginnt einen Absatz; die erste Zeile öffnet das Textfeld, die zweite steht darunter, der Rest läuft durch. **%n% Zeichen pro Zeile**, weil das Textfeld %n% Kacheln breit ist. Keine Grenze für die Anzahl der Zeilen: der Text läuft durch.'
   news-maker-random: ZUFÄLLIGE RANGLISTE

@@ -37,6 +37,8 @@ mobile-home: Mobile Homepage
 news: News
 guide: "Get started"
 downloads: "Downloads"
+terms: "Terms of use"
+privacy: "Privacy policy"
 page-not-found: "This page doesn't exist yet."
 page-contents: "Contents"
 game-page:
@@ -1885,6 +1887,13 @@ admin:
   news-maker-template: "Based on"
   news-maker-template-hint: "The real issue whose menus, scripts and layout this one borrows."
   news-maker-minigame: "Minigame"
+  news-maker-prizes: "Prizes"
+  news-maker-prizes-hint: "What the minigame hands out when the player wins. The list is read from the minigame's own code, so choosing another minigame changes it. The whole item table is offered, key items included — the cartridge knows them, but the game never expects to receive one from the news."
+  news-maker-prize: "Prize %n%"
+  news-maker-prize-default: "as it comes: %item%"
+  news-maker-prize-fixed: "The minigame picks this one."
+  news-maker-prize-none: "This minigame hands out no prize."
+  news-maker-bad-prize: "No such item:"
   news-maker-headline-hint: "The issue's name on the news screen itself — on the banner while the console downloads it, and as the title at the top of the page. At most %n% characters, which is what the widest real issue uses."
   news-maker-body-hint: "The text behind the \"News guide\" item — the article the player reads. A blank line starts a paragraph; the first line opens the textbox, the second sits under it, the rest scroll. **%n% characters per line**, because the textbox is %n% tiles wide. No limit on how many lines: the text scrolls."
   news-maker-random: "RANDOM RANKING"

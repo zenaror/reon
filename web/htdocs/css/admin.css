@@ -542,3 +542,35 @@
 .news-region.is-empty:has(input:checked)::after {
   color: #fff;
 }
+
+/* Os prêmios do minijogo. Um item da mesma grade do formulário, para os
+   campos ficarem alinhados com os de cima em vez de indentados dentro de uma
+   caixa própria. */
+.news-prizes {
+  display: grid;
+  gap: 4px;
+}
+
+/* O fieldset existe pelo `disabled`, que é o que impede o conjunto escondido
+   de postar; visualmente ele não deve aparecer. */
+.news-prizes__set {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* O prêmio que o minijogo monta sozinho: legível, e claramente não editável. */
+.news-prizes__set input[disabled] {
+  background: var(--reon-panel);
+  color: inherit;
+  opacity: .7;
+}
+
+/* O rótulo do bloco, com o peso dos outros rótulos do formulário -- que vêm
+   de `.admin-form label`, e este não é um label. */
+.admin-form__label {
+  font-weight: bold;
+}

@@ -42,6 +42,8 @@ games: Jogos
 news: Notícias
 guide: "Como começar"
 downloads: "Downloads"
+terms: "Termos de uso"
+privacy: "Política de privacidade"
 page-not-found: "Esta página ainda não existe."
 page-contents: "Conteúdo"
 game-page:
@@ -247,6 +249,13 @@ admin:
   news-maker-template: "Baseada em"
   news-maker-template-hint: "A edição real de onde vêm os menus, scripts e layout."
   news-maker-minigame: "Minigame"
+  news-maker-prizes: "Prêmios"
+  news-maker-prizes-hint: "O que o minijogo entrega quando o jogador ganha. A lista é lida do código do próprio minijogo, então trocar de minijogo troca a lista. A tabela de itens é oferecida inteira, itens-chave inclusive — o cartucho os conhece, mas o jogo não espera receber um deles pela notícia."
+  news-maker-prize: "Prêmio %n%"
+  news-maker-prize-default: "como vem: %item%"
+  news-maker-prize-fixed: "Quem escolhe é o minijogo."
+  news-maker-prize-none: "Este minijogo não entrega prêmio."
+  news-maker-bad-prize: "Item inexistente:"
   news-maker-headline-hint: "O nome da edição na própria tela de notícias — no banner enquanto o console baixa, e como título no alto da página. No máximo %n% caracteres, que é o que a edição real mais larga usa."
   news-maker-body-hint: "O texto por trás do item \"News guide\" — a matéria que o jogador lê. Linha em branco começa parágrafo; a primeira linha abre a caixa, a segunda fica embaixo, o resto rola. **%n% caracteres por linha**, porque a caixa tem %n% tiles de largura. Sem limite de quantidade de linhas: o texto rola."
   news-maker-random: "RANDOM RANKING"

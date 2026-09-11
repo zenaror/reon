@@ -13,6 +13,8 @@ mobile-home: Pagina mobile
 news: Notizie
 guide: "Per iniziare"
 downloads: "Download"
+terms: "Termini d'uso"
+privacy: "Informativa sulla privacy"
 page-not-found: "Questa pagina non esiste ancora."
 page-contents: "Contenuti"
 game-page:
@@ -1120,6 +1122,13 @@ admin:
   news-maker-template: Basato su
   news-maker-template-hint: Il numero vero di cui questo prende menu, script e impaginazione.
   news-maker-minigame: Minigioco
+  news-maker-prizes: Premi
+  news-maker-prizes-hint: "Ciò che il minigioco consegna a chi vince. L'elenco è letto dal codice del minigioco stesso, quindi cambiare minigioco cambia l'elenco. Viene offerta tutta la tabella degli oggetti, oggetti chiave compresi: la cartuccia li conosce, ma il gioco non si aspetta di riceverne uno dalle notizie."
+  news-maker-prize: Premio %n%
+  news-maker-prize-default: "com'è: %item%"
+  news-maker-prize-fixed: Lo sceglie il minigioco.
+  news-maker-prize-none: Questo minigioco non consegna premi.
+  news-maker-bad-prize: "Questo oggetto non esiste:"
   news-maker-headline-hint: Il nome del numero sulla schermata delle notizie — sullo striscione mentre la console lo scarica, e come titolo in cima alla pagina. Al massimo %n% caratteri, quanti ne usa il numero vero più largo.
   news-maker-body-hint: 'Il testo dietro «Guida alle notizie»: l''articolo che legge il giocatore. Una riga vuota comincia un paragrafo; la prima riga apre il riquadro, la seconda sta sotto, il resto scorre. **%n% caratteri per riga**, perché il riquadro è largo %n% caselle. Nessun limite al numero di righe: il testo scorre.'
   news-maker-random: CLASSIFICA CASUALE

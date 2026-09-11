@@ -141,6 +141,22 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   desmarcado, e o campo escondido continua sendo enviado: desmarcar não apaga
   nada. Sem JavaScript aparece tudo, como antes — quem recusa de verdade
   continua sendo o servidor, antes de compilar
+* **O prêmio do minijogo é da edição.** Quem entrega item é o minijogo, e o
+  item estava escrito no código dele: toda edição com o `HI-LO` dava um
+  `STAR PIECE`, sempre. Agora a tela lê os `nsc_giveitem` do próprio minijogo
+  e oferece um item para cada um — dos 224 que o cartucho conhece, tirados do
+  `item_constants.asm` da ferramenta, então a lista não pode divergir do jogo.
+  O som vai junto: cada prêmio é seguido de um `nsc_playsound` escolhido para
+  o item que estava lá, e trocar só o item faria o jogo tocar a fanfarra de TM
+  para uma `BERRY` — a regra aplicada é a do próprio upstream, que decide pelo
+  prefixo `TM_`. Prêmio que o minijogo monta sozinho (o `game_personality`
+  passa por parâmetro de macro, o `game_cry_memory` nomeia constantes da
+  tabela dele) aparece na lista marcado como fixo, e não escondido: o jogador
+  vai receber, e mostrar menos do que o jogo entrega seria mentira. Quem não
+  escolhe nada continua com o prêmio original, e nesse caso nenhuma cópia é
+  feita — o build inclui o arquivo da ferramenta como sempre; o submódulo
+  nunca é tocado, a cópia com o prêmio trocado nasce no diretório temporário
+  do build
 * **Publicar agora**, em botão próprio, para não esperar o ciclo de 15
   minutos. Ele reescreve a data da edição para hoje em vez de ignorá-la: o
   agendador escolhe pela data, e mandar ir ao ar sem mexer no calendário
@@ -685,6 +701,21 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   que é igual para todo jogo e aponta para os hubs. BGB fora do guia e dos
   downloads por enquanto: no PC só o mGBA. Um script (`page-sections.js`)
   monta o menu dos hubs e o sumário das páginas Markdown a partir dos `##`
+* **Termos de uso e política de privacidade** (`/terms.php`, `/privacy.php`),
+  em Markdown como as outras páginas. O cadastro exigia marcar "concordo com
+  os termos de uso e a política de privacidade" em sete idiomas e nenhum dos
+  dois documentos existia — consentimento colhido por referência a documento
+  que não abria. Os dois são **rascunho**, dizem isso no topo, e descrevem o
+  que o serviço faz hoje em vez do que uma política costuma dizer: a senha de
+  login do jogo guardada em claro está lá **com o motivo** (o adaptador prova
+  quem é com um MD5 de desafio mais senha, então o servidor precisa da senha),
+  o que as páginas de ranking mostram sem login, a saída de e-mail pela Brevo
+  na França como transferência internacional, e o que **não** existe —
+  exclusão de conta e exportação de dados não estão construídas, e a página
+  diz isso em vez de prometer botão que não há. O que ainda é decisão do dono
+  fica entre colchetes, como no guia. Ligados de onde o consentimento é dado,
+  no cadastro, e embaixo do menu de gemas — fora da fileira de gemas, que é
+  das seções do site
 * Ponto do Darkshade: o guia e a página de downloads linkam direto o que
   mandam baixar (seções do Downloads; mGBA com seletor de plataforma, Pico
   numa caixa só com três seletores — placa, rede, pinout — que casam com
