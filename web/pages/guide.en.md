@@ -33,14 +33,14 @@ That is one way the Mobile GB System differs from later services such as the
 Nintendo Wi-Fi Connection: there are no "friend codes" tied to one device
 that you cannot control. Your account is yours, on any device.</div>
 
-### 2. Download your `config.bin`
+### 2. Download your `mobile_config.bin`
 
 Right after signing up you will see a large message with a big blue
-**config.bin** button. Press it. This small file is what your emulator (or
+**mobile_config.bin** button. Press it. This small file is what your emulator (or
 adapter) needs to find REON.
 
-<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="config.bin">Download your config.bin</a></p>
-<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fguide.php%23setup">Log in to download your config.bin</a></p>
+<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="mobile_config.bin">Download your mobile_config.bin</a></p>
+<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fguide.php%23setup">Log in to download your mobile_config.bin</a></p>
 
 <div class="reon-note">※ Closed that window without pressing the button?
 No problem. The button above, and <a href="/user/summary.php">Your
@@ -50,7 +50,7 @@ Keep a copy somewhere safe. You only need to download it **once**: the
 same file works on every device you own, and you will need it again if
 you reinstall your emulator or set up another device.
 
-### 3. Give `config.bin` to your emulator
+### 3. Give `mobile_config.bin` to your emulator
 
 **mGBA (PC)**
 
@@ -58,7 +58,7 @@ you reinstall your emulator or set up another device.
    game that supports the Mobile Adapter GB.
 2. In the menu, open **Mobile Game Boy Adapter…**.
 3. Go to the **Settings** tab and press **Load config file**.
-4. Pick the `config.bin` you downloaded. That's it!
+4. Pick the `mobile_config.bin` you downloaded. That's it!
 
 **3DS (mGBA)**
 
@@ -102,11 +102,11 @@ what to do.]
      PC the guide shows only mGBA, so nobody is sent down the harder
      setup by mistake. Add them back here when the time comes. -->
 
-**Do I need to download `config.bin` again?**
+**Do I need to download `mobile_config.bin` again?**
 Only if you lost it. The same file works on all your devices, and a fresh
 copy is always available from [Your Account](/user/summary.php).
 
-**I use the same `config.bin` on my PC and my 3DS. Is that OK?**
+**I use the same `mobile_config.bin` on my PC and my 3DS. Is that OK?**
 Yes. Each device gets its own **pairing code**, which you can see on the
 device and on your [Connected devices](/user/devices.php) page. You can
 give each one a name there, and block one you no longer use.
