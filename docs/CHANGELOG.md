@@ -722,9 +722,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   na França como transferência internacional, e o que **não** existe —
   exclusão de conta e exportação de dados não estão construídas, e a página
   diz isso em vez de prometer botão que não há. O que ainda é decisão do dono
-  fica entre colchetes, como no guia. Ligados de onde o consentimento é dado,
-  no cadastro, e embaixo do menu de gemas — fora da fileira de gemas, que é
-  das seções do site
+  fica entre colchetes, como no guia. No cadastro eles abrem **em modal, sem
+  sair da tela**: o formulário já tem e-mail digitado, e trocar de página para
+  ler o que se vai aceitar custa o que já foi preenchido. O corpo do modal é o
+  mesmo HTML que as páginas servem, embutido na página e não buscado ao abrir
+  — é o documento que o consentimento referencia, e ele tem de estar legível
+  ali mesmo se a rede falhar no meio. O link continua apontando para a página
+  inteira, então sem JavaScript ele abre normalmente. Fora do cadastro, ficam
+  embaixo do menu de gemas — fora da fileira de gemas, que é das seções do
+  site. **Só existem em inglês por enquanto**: a moldura está nos sete
+  idiomas, o texto não
 * Ponto do Darkshade: o guia e a página de downloads linkam direto o que
   mandam baixar (seções do Downloads; mGBA com seletor de plataforma, Pico
   numa caixa só com três seletores — placa, rede, pinout — que casam com
