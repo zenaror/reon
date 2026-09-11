@@ -1048,3 +1048,286 @@ notify:
   new-mail: "Neue Post von %from%"
   trade-done: "Tausch abgeschlossen"
   trade-none: "Noch kein Tausch"
+admin:
+  news-title: Nachrichtenverwaltung
+  news-new: Neuer Beitrag
+  news-editing: Beitrag bearbeiten
+  news-date: Datum
+  news-post-title: Titel
+  news-state: Status
+  news-published: Veröffentlicht
+  news-draft: Entwurf
+  news-view: Ansehen
+  news-edit: Bearbeiten
+  news-delete: Löschen
+  news-delete-confirm: Diesen Beitrag löschen?
+  news-title-required: Ein Titel ist erforderlich.
+  news-body: Text
+  news-markdown-hint: 'Markdown: **fett**, _kursiv_, ## Überschrift, [Link](url), ![](Bild).'
+  news-publish: Veröffentlicht (auf der Seite sichtbar)
+  news-save: Speichern
+  news-cancel: Abbrechen
+  news-preview: Vorschau
+  news-md-link: Link
+  news-md-list: Liste
+  news-md-image: Bild
+  news-upload-failed: Das Hochladen ist fehlgeschlagen.
+  panel: Verwaltung
+  nav-dashboard: Übersicht
+  nav-news: Nachrichten
+  nav-news-maker: Pokémon News
+  news-maker-title: Pokémon News
+  news-maker-intro: Eine Ausgabe ist ein kleines Programm, das das Spiel ausführt, gebaut mit der echten Werkzeugkette. Sie wählen die Worte, die Ranglisten und das Minispiel; alles andere kommt aus einer Ausgabe, von der bekannt ist, dass sie funktioniert.
+  news-maker-unavailable: 'Bauen noch nicht möglich — es fehlt:'
+  news-maker-new: Neue Ausgabe
+  news-maker-back: Zurück zu den Ausgaben
+  news-maker-none: Es wurde noch keine Ausgabe erstellt.
+  news-maker-issue: Ausgabe
+  news-maker-rankings: Ranglisten
+  news-maker-built: Gebaut für
+  news-maker-not-built: nicht gebaut
+  news-maker-name: Name
+  news-maker-name-hint: Für Sie und für den Dateinamen. Wird im Spiel nicht angezeigt.
+  news-maker-message: Zeile im Briefkasten
+  news-maker-message-hint: Die einzige Zeile, die der Briefkasten des Spiels zu dieser Ausgabe zeigt, bevor sie jemand öffnet. Bleibt sie leer, wird die Schlagzeile dieser Sprache verwendet. Höchstens %n% Zeichen, und in den eigenen Zeichen des Spiels geschrieben — was es nicht zeichnen kann, wird mit Namen abgelehnt.
+  news-maker-schedule-locked: Ausgaben lassen sich bauen, aber noch nicht einplanen.
+  news-maker-schedule-why: 'Der Kalender für eigene Ausgaben ist eine Datei für sich, und der Webserver kann sie nicht schreiben. Absichtlich ist es nicht die Konfiguration daneben: die trägt auch den Plan der gewöhnlichen Nachrichten, und den zu ändern ist nicht die Sache dieses Bereichs:'
+  news-maker-built-only: gebaut, aber nicht im Kalender — kein Spieler sieht es
+  month-1: Januar
+  month-2: Februar
+  month-3: März
+  month-4: April
+  month-5: Mai
+  month-6: Juni
+  month-7: Juli
+  month-8: August
+  month-9: September
+  month-10: Oktober
+  month-11: November
+  month-12: Dezember
+  news-maker-date: Erscheint am
+  news-maker-date-hint: Der Tag, an dem diese Ausgabe übernimmt; sie erscheint weiter, bis der Tag einer anderen kommt. Sie wählen Monat und Tag; das Jahr ist das laufende, ein noch kommender Tag wartet also, statt sofort zu erscheinen. Der Februar endet am 28., weil ein 29. nur in einem Schaltjahr vorkäme.
+  news-maker-withdraw: Zurückziehen
+  news-maker-withdrawn: Zurückgezogen. Das Spiel verwendet sie nicht mehr.
+  news-maker-withdraw-confirm: Diese Ausgabe aus dem Kalender nehmen und das Gebaute löschen? Sie erscheint nicht mehr — die Nachrichtenzeile behält ihren Inhalt aber, bis die gewöhnlichen Nachrichten diese Region das nächste Mal wechseln, denn dann spiegelt der Planer sie neu.
+  news-maker-lang-j: Japanisch
+  news-maker-lang-e: Englisch
+  news-maker-lang-d: Deutsch
+  news-maker-lang-f: Französisch
+  news-maker-lang-i: Italienisch
+  news-maker-lang-s: Spanisch
+  news-maker-scheduled: Im Kalender
+  news-maker-template: Beruht auf
+  news-maker-template-hint: Die echte Ausgabe, deren Menüs, Skripte und Aufbau diese übernimmt.
+  news-maker-minigame: Minispiel
+  news-maker-headline-hint: Der Name der Ausgabe auf dem Nachrichtenbildschirm selbst — auf dem Banner, während die Konsole sie lädt, und als Titel oben auf der Seite. Höchstens %n% Zeichen, so viel wie die breiteste echte Ausgabe nutzt.
+  news-maker-body-hint: 'Der Text hinter „Nachrichtenführer“ — der Artikel, den der Spieler liest. Eine leere Zeile beginnt einen Absatz; die erste Zeile öffnet das Textfeld, die zweite steht darunter, der Rest läuft durch. **%n% Zeichen pro Zeile**, weil das Textfeld %n% Kacheln breit ist. Keine Grenze für die Anzahl der Zeilen: der Text läuft durch.'
+  news-maker-random: ZUFÄLLIGE RANGLISTE
+  news-maker-ranking-hint: 'Die drei Ranglisten, um die es in dieser Ausgabe geht. „ZUFÄLLIGE RANGLISTE“ zieht beim Speichern eine Kategorie, und das Gezogene bleibt: dieselbe Ausgabe wechselt zwischen zwei Bauläufen nicht die Ranglisten. Die drei müssen sich unterscheiden, denn sie stehen auf einem Bildschirm nebeneinander.'
+  news-maker-duplicate-ranking: Die drei Ranglisten müssen sich voneinander unterscheiden.
+  news-maker-no-categories: Es gibt nicht genug Ranglistenkategorien für die drei Plätze.
+  news-maker-unknown-ranking: Das ist keine Ranglistenkategorie, die diese Werkzeugkette kennt.
+  news-maker-too-long: 'Zu lang für den Bildschirm:'
+  news-maker-region-empty: 'Eine Region, deren Sprache keinen Text hat, lässt sich nicht bauen — sie käme nicht leer heraus, sondern mit dem Artikel der Vorlage von 2002:'
+  news-maker-region-needs: Schreiben Sie zuerst die Schlagzeile und den Artikel auf %lang%.
+  news-maker-ranking: Rangliste %n%
+  news-maker-text: Texte
+  news-maker-text-hint: Drei verschiedene Texte, jeder erscheint an anderer Stelle. Lassen Sie eine Sprache leer, behält diese Sprache, was die Vorlage hatte.
+  news-maker-headline: Schlagzeile
+  news-maker-body: Artikel
+  news-maker-regions: Bauen für
+  news-maker-regions-hint: Ein Baulauf pro Region. Eine Region lässt sich erst wählen, wenn ihre Sprache Schlagzeile und Artikel hat — E, P und U nehmen alle drei den englischen Text; F und D, S und I teilen eine Zeichentabelle.
+  news-maker-save: Speichern
+  news-maker-publish: Speichern und bauen
+  news-maker-saved: Gespeichert.
+  news-maker-published: '%good% von %total% Regionen gebaut.'
+  news-maker-result: Ergebnis
+  news-maker-failed-region: fehlgeschlagen
+  news-maker-failed: 'Nicht möglich: %detail%'
+  news-maker-deleted: Ausgabe gelöscht.
+  news-maker-locked: Diese Ausgabe wurde bereits veröffentlicht und kann nicht mehr geändert werden.
+  news-maker-locked-title: Veröffentlichte Ausgabe — nur lesen
+  news-maker-locked-why: Sie ist bereits erschienen, und Spieler haben sie möglicherweise gelesen. Ein erneutes Übersetzen darüber würde den Inhalt unbemerkt ändern, unter demselben Namen und demselben Datum. Um etwas zu ändern, löschen Sie diese Ausgabe und veröffentlichen Sie eine neue.
+  news-maker-delete-confirm: Diese Ausgabe löschen? Was dafür schon gebaut wurde, bleibt, wo es ist.
+  news-maker-need-name: Geben Sie ihr zuerst einen Namen.
+  news-maker-need-region: Wählen Sie mindestens eine Region zum Bauen.
+  nav-notifications: Benachrichtigungen
+  nav-users: Konten
+  nav-services: Dienste
+  nav-logs: Protokolle
+  nav-trainer: Mobile Trainer
+  nav-audit: Aktivität
+  count-users: Konten
+  count-banned: Gesperrt
+  count-devices: Konsolen
+  count-devices-blocked: Konsolen blockiert
+  count-mail-today: Post, letzte 24 h
+  count-trades: Wartende Tauschangebote
+  count-news: Nachrichtenbeiträge
+  count-notifications: Gesendete Benachrichtigungen
+  audit-title: Verwaltungsaktivität
+  audit-empty: Hier wurde noch nichts getan.
+  audit-when: Wann
+  audit-who: Wer
+  audit-what: Was
+  audit-target: Ziel
+  audit-all: Gesamte Aktivität ansehen
+  notify-title: Benachrichtigung senden
+  notify-intro: Benachrichtigungen erscheinen unter der Glocke in der Kopfzeile und bleiben im Verlauf des Empfängers. Danach lassen sie sich nicht mehr löschen, weder von Ihnen noch von ihm.
+  notify-to: An
+  notify-to-all: Alle
+  notify-to-user: Ausgewählte Konten
+  notify-to-many: '%count% Konten'
+  notify-user-hint: Namen eingeben …
+  notify-user-remove: Entfernen
+  notify-sent-many: An %count% Konten gesendet.
+  notify-user: Konto
+  notify-category: Art
+  notify-headline: Schlagzeile
+  notify-body: Einzelheiten (optional)
+  notify-link: Link (optional)
+  notify-send: Senden
+  notify-sent: An %who% gesendet.
+  notify-sent-all: An %count% Konten gesendet.
+  notify-need-title: Eine Schlagzeile ist erforderlich.
+  notify-no-user: Wählen Sie ein Konto als Empfänger.
+  notify-recent: Kürzlich gesendet
+  notify-when: Wann
+  notify-who: An
+  users-title: Konten
+  users-search: Nach Name oder Adresse suchen
+  users-search-go: Suchen
+  users-id: ID
+  users-name: Name
+  users-email: Adresse
+  users-dion: DION
+  users-devices: Konsolen
+  users-state: Status
+  users-actions: ''
+  users-open: Öffnen
+  users-none: Kein Konto passt.
+  users-active: Aktiv
+  users-banned: Gesperrt
+  users-admin: Verwaltung
+  user-title: Konto
+  user-back: Zurück zu den Konten
+  user-ban: Sperren
+  user-unban: Sperre aufheben
+  user-ban-reason: Grund (erscheint im Aktivitätsprotokoll)
+  user-ban-confirm: Dieses Konto sperren? Es verliert die Seite, den Briefkasten und den Adapter.
+  user-make-admin: Verwaltung gewähren
+  user-drop-admin: Verwaltung entziehen
+  user-admin-confirm: Diesem Konto den Verwaltungsbereich geben?
+  user-banned-since: Gesperrt seit %when%
+  user-devices: Konsolen
+  user-device-code: Code
+  user-device-nick: Name
+  user-device-state: Status
+  user-device-seen: Zuletzt gesehen
+  user-device-block: Blockieren
+  user-device-unblock: Freigeben
+  user-blocked: Blockiert
+  user-allowed: Erlaubt
+  user-no-devices: Mit diesem Konto hat sich noch keine Konsole verbunden.
+  err-no-such-user: Dieses Konto gibt es nicht.
+  err-not-yourself: Nicht beim Konto, mit dem Sie angemeldet sind.
+  err-not-an-admin: Ein Verwalter kann nicht gesperrt werden. Entziehen Sie ihm zuerst die Verwaltung.
+  services-title: Dienste
+  services-note: Das Neustarten läuft über ein Hilfsprogramm, das der Server ausdrücklich erlauben muss. Solange es nicht eingerichtet ist, melden die Schaltflächen nur, was sie ausgeführt hätten, und ändern nichts.
+  services-service: Dienst
+  services-state: Status
+  services-restart: Neu starten
+  services-restart-confirm: Diesen Dienst neu starten? Wer verbunden ist, wird getrennt.
+  services-done: '%service%: %detail%'
+  services-failed: '%service% konnte nicht neu gestartet werden: %detail%'
+  services-unavailable: Auf diesem Server ist das Neustarten noch nicht freigeschaltet. Es wurde nichts ausgeführt.
+  services-daemons: Laufen immer
+  services-jobs: Geplante Aufgaben
+  services-jobs-note: Sie laufen über einen systemd-Timer. Führen Sie eine jetzt aus, schalten Sie ihren Timer ab oder geben Sie ihr einen anderen Plan — der Plan wird als Ergänzung geschrieben, die vom Projekt gelieferte Unit wird also nie angetastet, und „Zurücksetzen“ stellt sie wieder her.
+  services-start: Starten
+  services-stop: Anhalten
+  services-run: Jetzt ausführen
+  services-refresh-confirm: Dies löscht die Ranglisten ALLER eingerichteten Regionen, nicht nur derer, deren Nachrichten heute gewechselt haben, und lässt sich nicht rückgängig machen. Nachrichten erneut anwenden und alle Ranglisten löschen?
+  services-enable: Einschalten
+  services-disable: Ausschalten
+  services-on: ein
+  services-off: aus
+  services-running: läuft
+  services-no-timer: kein Timer
+  services-schedule: Zeitplan
+  services-schedule-hint: systemd-Kalender, z. B. *-*-* *:0/15:00
+  services-schedule-reset: Zurücksetzen
+  services-schedule-reset-confirm: Zurück zu dem Zeitplan, mit dem diese Aufgabe ausgeliefert wird?
+  services-next: Nächster Lauf
+  services-stop-confirm: Diesen Dienst anhalten? Er bleibt aus, bis ihn jemand wieder startet.
+  services-disable-confirm: Diese Aufgabe ausschalten? Sie läuft erst wieder, wenn sie erneut eingeschaltet wird.
+  services-no-stop: 'Kein Anhalten: diese Seite wird von ihm ausgeliefert, ihn anzuhalten würde also die Schaltfläche wegnehmen, die ihn wieder startet.'
+  logs-title: Dienstprotokolle
+  logs-service: Dienst
+  logs-lines: Zeilen
+  logs-show: Anzeigen
+  logs-empty: Nichts anzuzeigen.
+  logs-unavailable: Das Systemprotokoll lässt sich noch nicht lesen, es gibt also nichts anzuzeigen.
+  logs-unavailable-why: 'PHP läuft als „%user%“, und das Systemprotokoll zu lesen setzt die Mitgliedschaft in der Protokollgruppe voraus. Das gewährt Lesen und sonst nichts — es ist nicht die sudo-Regel, die die Seite „Dienste“ braucht, und es erlaubt niemandem, etwas neu zu starten:'
+  trainer-title: Mobile-Trainer-Seiten
+  trainer-intro: Die Seiten, die ein Game Boy über den Mobile Trainer sieht. Sie gehen unverändert an den Adapter, der eine kleine Teilmenge von HTML zeichnet.
+  trainer-page: Seite
+  trainer-size: Größe
+  trainer-changed: Geändert
+  trainer-edit: Bearbeiten
+  trainer-save: Speichern
+  trainer-saved: Gespeichert.
+  trainer-failed: 'Konnte nicht gespeichert werden: %detail%'
+  trainer-none: Unter web/htdocs/01 wurde keine Seite gefunden.
+  trainer-back: Zurück zu den Seiten
+  trainer-tags: Tags, die der Adapter zeichnet
+  trainer-new: Neue Seite
+  trainer-new-intro: Eine Seite ist eine Datei im Verzeichnis eines Spiels. Legen Sie sie hier an und verweisen Sie dann von einer anderen Seite mit &lt;a href="name.html"&gt; darauf.
+  trainer-dir: Spielverzeichnis
+  trainer-file: Dateiname
+  trainer-file-hint: Kleinbuchstaben, Buchstaben, Ziffern, - und _. „.html“ wird angefügt.
+  trainer-entry: Startseite
+  trainer-create: Anlegen
+  trainer-view: Ansehen
+  trainer-open: Öffnen
+  trainer-delete: Löschen
+  trainer-delete-confirm: Diese Seite löschen? Eine Konsole, die sie anfordert, bekommt nichts.
+  trainer-deleted: Seite gelöscht.
+  trainer-locked: nur lesen
+  trainer-preview: So sieht sie die Konsole
+  trainer-preview-note: '160x144 in doppelter Größe, mit der Schrift des Trainers selbst — eine Zeile bricht hier also etwa dort, wo sie dort bricht. Etwa: der Adapter benutzt seinen eigenen Zeichner, keinen Browser.'
+  trainer-tags-note: 'Aus der Dokumentation des Adapters, und das ist die vollständige Liste — <p>, <table> und <form> stehen nicht darauf. Nichts wird abgelehnt, weil es fehlt, denn die Dokumentation sagt nicht, was der Adapter mit einem Tag macht, das er nicht kennt. Zwei Überraschungen: <b> färbt den Text rot statt ihn fett zu setzen, und <center> wirkt nur innerhalb von <html>. Bilder sind ausschließlich 1BPP-BMP, jede Seite höchstens 255 Pixel.'
+  trainer-images: Bilder
+  trainer-img-empty: Diese Seite hat noch keine Bilder.
+  trainer-img-name: Datei
+  trainer-img-write: Schreiben Sie das in die Seite
+  trainer-img-facts: Geprüft
+  trainer-img-file: BMP-Datei
+  trainer-img-rules: Nur 1BPP-BMP, jede Seite höchstens %n% Pixel, ohne Komprimierung. Geprüft an dem, was die Bilder der laufenden Seite tatsächlich sind, nicht an der Dokumentation — die würde 34 der 37 bereits vorhandenen ablehnen.
+  trainer-img-rename: Benennen (optional)
+  trainer-img-rename-hint: Kleinbuchstaben, Buchstaben, Ziffern, - und _. „.bmp“ wird angefügt. Bleibt es leer, wird der Name der hochgeladenen Datei verwendet.
+  trainer-img-upload: Hochladen
+  trainer-img-added: '%name% hochgeladen.'
+  trainer-img-deleted: Bild gelöscht.
+  trainer-img-delete-confirm: Dieses Bild löschen? Eine Seite, die noch darauf zeigt, bekommt ein Symbol für ein fehlendes Bild.
+  trainer-img-ok: ok
+  trainer-img-none: Es wurde keine Datei empfangen.
+  trainer-img-bad-name: In diesem Namen ist nichts Verwendbares.
+  trainer-img-not-a-bmp: Kein BMP.
+  trainer-img-odd-header: BMP-Kopf in einer Form, die hier nicht gelesen werden kann.
+  trainer-img-not-1bpp: Muss 1BPP sein. Der Adapter zeichnet nichts anderes.
+  trainer-img-planes: Die Zahl der BMP-Ebenen muss 1 sein.
+  trainer-img-compressed: Komprimierte BMP werden nicht angenommen.
+  trainer-img-palette: Mehr Farben angegeben, als ein 1BPP-Bild haben kann.
+  trainer-img-empty-image: Das Bild hat keine Pixel.
+  trainer-img-not-8-bit: Breite und Höhe müssen jeweils in 8 Bit passen (höchstens %n%).
+  trainer-img-offset-too-far: Die Pixeldaten beginnen zu weit in der Datei, um angesprochen werden zu können.
+  trainer-img-too-large: Größer, als das Format zulässt.
+  trainer-img-too-big: Die Datei ist zu groß.
+  trainer-img-not-writable: In das Bildverzeichnis kann nicht geschrieben werden.
+  trainer-img-mkdir-failed: Das Bildverzeichnis konnte nicht angelegt werden.
+  trainer-img-write-failed: Die Datei konnte nicht geschrieben werden.
+  trainer-img-replace-failed: Die Datei konnte nicht an ihren Platz gebracht werden.
+  trainer-img-no-such-page: Diese Seite gibt es nicht.
+  trainer-readonly: Der Webserver kann diese Dateien nicht schreiben, hier lässt sich also noch nichts speichern.
+  trainer-readonly-why: 'PHP läuft als „%user%“, und die Seiten gehören dem Konto, das sie ausgerollt hat. Diesem Benutzer Schreibrecht zu geben ist ein einziger Befehl:'
