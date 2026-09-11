@@ -574,6 +574,21 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Servidor e segurança
 
+* **Jail de fail2ban para o POP3 do jogo**, com a regra ao contrário do óbvio.
+  A porta 110 é aberta para a internet por necessidade — é por ela que o
+  Mobile Adapter GB busca o correio — e o preço é ser varrida o dia inteiro
+  por quem cataloga a internet. A regra natural, "conectou e não autenticou",
+  puniria justamente o adaptador com conexão ruim, que cai antes de terminar o
+  login e voltaria banido. Então é **lista de permissão**: conta como falha
+  qualquer comando fora do vocabulário do jogo. Um cliente legítimo só sabe
+  falar os onze comandos implementados, e uma conexão que morre antes de
+  mandar qualquer coisa não gera linha nenhuma para casar — não há caminho em
+  que ele seja pego. Medido contra onze dias de log real, 3090 linhas: 347
+  acertos, **nenhuma conta autenticada entre eles**. O que cai na regra é
+  `CAPA`, `STLS`, `AUTH`, requisições HTTP inteiras mandadas para a 110 e até
+  um banner de SSH. Banimento de uma hora, e não permanente, porque IP de
+  nuvem é reciclado entre inquilinos e banir o endereço de hoje para sempre é
+  banir o jogador de amanhã que alugou a mesma máquina
 * Fix: 33-000 no upload do Pokémon Crystal — cabeçalhos de segurança do nginx
   quebravam o parser HTTP do jogo; agora são omitidos em `/cgb/`, `/api/` e
   `/01/`
