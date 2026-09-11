@@ -1089,3 +1089,286 @@ notify:
   new-mail: "%from% さんから新しいメール"
   trade-done: "こうかんが成立しました"
   trade-none: "まだこうかんできていません"
+admin:
+  news-title: ニュース管理
+  news-new: 新しい記事
+  news-editing: 記事を編集
+  news-date: 日付
+  news-post-title: タイトル
+  news-state: 状態
+  news-published: 公開済み
+  news-draft: 下書き
+  news-view: 表示
+  news-edit: 編集
+  news-delete: 削除
+  news-delete-confirm: この記事を削除しますか？
+  news-title-required: タイトルは必須です。
+  news-body: 本文
+  news-markdown-hint: Markdown：**太字**、_斜体_、## 見出し、[リンク](url)、![](画像)。
+  news-publish: 公開（サイトに表示）
+  news-save: 保存
+  news-cancel: 取消
+  news-preview: プレビュー
+  news-md-link: リンク
+  news-md-list: 箇条書き
+  news-md-image: 画像
+  news-upload-failed: アップロードに失敗しました。
+  panel: 管理
+  nav-dashboard: ダッシュボード
+  nav-news: ニュース
+  nav-news-maker: ポケモンニュース
+  news-maker-title: ポケモンニュース
+  news-maker-intro: ニュースの号は、ゲームが実行する小さなプログラムで、本物のツールチェーンで組み立てられます。言葉、ランキング、ミニゲームを選ぶのはあなたで、それ以外はすべて動作が確認されている号から受け継ぎます。
+  news-maker-unavailable: まだビルドできません — 不足しているもの：
+  news-maker-new: 新しい号
+  news-maker-back: 号の一覧に戻る
+  news-maker-none: まだ号が作られていません。
+  news-maker-issue: 号
+  news-maker-rankings: ランキング
+  news-maker-built: ビルド済みの地域
+  news-maker-not-built: 未ビルド
+  news-maker-name: 名前
+  news-maker-name-hint: あなたのためと、ファイル名のためです。ゲーム内には表示されません。
+  news-maker-message: メールボックスの一行
+  news-maker-message-hint: 誰かが開く前に、ゲームのメールボックスがこの号について表示するたった一行です。空のままにすると、この言語の見出しが使われます。最大 %n% 文字で、ゲーム自身の文字で書かれるため、描けない文字はその名を示して拒否されます。
+  news-maker-schedule-locked: 号はビルドできますが、まだ予定に入れられません。
+  news-maker-schedule-why: 独自の号のカレンダーは専用のファイルで、ウェブサーバーは書き込めません。隣にある設定ではないのは意図的です。あちらには通常のニュースの予定も入っていて、この画面が変更してよいものではありません：
+  news-maker-built-only: ビルド済みだがカレンダーに無い — 誰の目にも触れません
+  month-1: 1月
+  month-2: 2月
+  month-3: 3月
+  month-4: 4月
+  month-5: 5月
+  month-6: 6月
+  month-7: 7月
+  month-8: 8月
+  month-9: 9月
+  month-10: 10月
+  month-11: 11月
+  month-12: 12月
+  news-maker-date: 公開日
+  news-maker-date-hint: この号が引き継ぐ日です。別の号の日が来るまで、そのまま配信され続けます。月と日を選び、年は今年になります。まだ来ていない日はすぐには出ず、その日を待ちます。2月が28日までなのは、29日はうるう年にしか存在しないからです。
+  news-maker-withdraw: 取り下げる
+  news-maker-withdrawn: 取り下げました。ゲームはもう使いません。
+  news-maker-withdraw-confirm: この号をカレンダーから外し、ビルドしたものを削除しますか？配信は止まりますが、ニュースの行はこの号の内容を保ちます。通常のニュースがその地域で次に入れ替わるときに、スケジューラーが改めて写すためです。
+  news-maker-lang-j: 日本語
+  news-maker-lang-e: 英語
+  news-maker-lang-d: ドイツ語
+  news-maker-lang-f: フランス語
+  news-maker-lang-i: イタリア語
+  news-maker-lang-s: スペイン語
+  news-maker-scheduled: カレンダーに有り
+  news-maker-template: 元にする号
+  news-maker-template-hint: メニュー、スクリプト、組み方を借りてくる本物の号です。
+  news-maker-minigame: ミニゲーム
+  news-maker-headline-hint: ニュース画面そのものに出る号の名前です。本体が受信している間の見出し部分と、ページ上部のタイトルに使われます。最大 %n% 文字で、これは実在する号のうち最も幅の広いものに合わせた数です。
+  news-maker-body-hint: 「ニュースガイド」の項目の中身、つまりプレイヤーが読む記事です。空行で段落が始まり、1行目が文章枠を開き、2行目はその下に並び、残りはスクロールします。**1行 %n% 文字**で、これは枠の幅が %n% マスだからです。行数に制限はありません。文章はスクロールします。
+  news-maker-random: ランキングをランダムに
+  news-maker-ranking-hint: この号が扱う3つのランキングです。「ランキングをランダムに」は保存時にカテゴリを抽選し、出た結果はそのまま残ります。同じ号がビルドごとにランキングを変えることはありません。3つは互いに異なる必要があります。ひとつの画面に並んで表示されるからです。
+  news-maker-duplicate-ranking: 3つのランキングは互いに異なるものにしてください。
+  news-maker-no-categories: 3つの枠を埋めるだけのランキングのカテゴリがありません。
+  news-maker-unknown-ranking: これはこのツールチェーンが知っているランキングのカテゴリではありません。
+  news-maker-too-long: 画面に収まりません：
+  news-maker-region-empty: その言語の文章が無い地域はビルドできません。空になるのではなく、テンプレートの2002年の記事が出てしまいます：
+  news-maker-region-needs: まず %lang% で見出しと記事を書いてください。
+  news-maker-ranking: ランキング %n%
+  news-maker-text: 文章
+  news-maker-text-hint: 3つの異なる文章で、それぞれ出る場所が違います。ある言語を空のままにすると、その言語はテンプレートの内容のままになります。
+  news-maker-headline: 見出し
+  news-maker-body: 記事
+  news-maker-regions: ビルドする地域
+  news-maker-regions-hint: 地域ごとに1回ビルドします。地域を選べるのは、その言語に見出しと記事がそろってからです。E、P、U の3つはいずれも英語の文章を使い、F と D、S と I はそれぞれ文字表を共有します。
+  news-maker-save: 保存
+  news-maker-publish: 保存してビルド
+  news-maker-saved: 保存しました。
+  news-maker-published: '%total% 地域のうち %good% 地域をビルドしました。'
+  news-maker-result: 結果
+  news-maker-failed-region: 失敗
+  news-maker-failed: できませんでした：%detail%
+  news-maker-deleted: 号を削除しました。
+  news-maker-locked: この号はすでに公開されているため、変更できません。
+  news-maker-locked-title: 公開済みの号 — 閲覧のみ
+  news-maker-locked-why: すでに配信され、プレイヤーが読んでいる可能性があります。上書きして再ビルドすると、同じ名前と同じ日付のまま、誰も気づかないうちに内容が変わってしまいます。変更するには、この号を削除して別の号を公開してください。
+  news-maker-delete-confirm: この号を削除しますか？すでにビルドされたものはそのまま残ります。
+  news-maker-need-name: まず名前を付けてください。
+  news-maker-need-region: ビルドする地域を少なくとも1つ選んでください。
+  nav-notifications: お知らせ
+  nav-users: アカウント
+  nav-services: サービス
+  nav-logs: ログ
+  nav-trainer: モバイルトレーナー
+  nav-audit: 操作履歴
+  count-users: アカウント
+  count-banned: 利用停止
+  count-devices: 本体
+  count-devices-blocked: 遮断した本体
+  count-mail-today: メール（24時間）
+  count-trades: 待機中の交換
+  count-news: ニュース記事
+  count-notifications: 送信したお知らせ
+  audit-title: 管理操作の履歴
+  audit-empty: ここではまだ何も行われていません。
+  audit-when: 日時
+  audit-who: 実行者
+  audit-what: 内容
+  audit-target: 対象
+  audit-all: すべての履歴を見る
+  notify-title: お知らせを送る
+  notify-intro: お知らせはヘッダーのベルの下に表示され、受け取った人の履歴に残ります。あとから削除することはできません。あなたにも、相手にもできません。
+  notify-to: 宛先
+  notify-to-all: 全員
+  notify-to-user: 選んだアカウント
+  notify-to-many: '%count% 件のアカウント'
+  notify-user-hint: 名前を入力…
+  notify-user-remove: 外す
+  notify-sent-many: '%count% 件のアカウントに送信しました。'
+  notify-user: アカウント
+  notify-category: 種類
+  notify-headline: 見出し
+  notify-body: 詳細（任意）
+  notify-link: リンク（任意）
+  notify-send: 送信
+  notify-sent: '%who% に送信しました。'
+  notify-sent-all: '%count% 件のアカウントに送信しました。'
+  notify-need-title: 見出しは必須です。
+  notify-no-user: 送る相手のアカウントを選んでください。
+  notify-recent: 最近送ったもの
+  notify-when: 日時
+  notify-who: 宛先
+  users-title: アカウント
+  users-search: 名前かアドレスで検索
+  users-search-go: 検索
+  users-id: ID
+  users-name: 名前
+  users-email: アドレス
+  users-dion: DION
+  users-devices: 本体
+  users-state: 状態
+  users-actions: ''
+  users-open: 開く
+  users-none: 一致するアカウントがありません。
+  users-active: 有効
+  users-banned: 利用停止
+  users-admin: 管理者
+  user-title: アカウント
+  user-back: アカウント一覧に戻る
+  user-ban: 利用停止にする
+  user-unban: 利用停止を解除
+  user-ban-reason: 理由（操作履歴に表示されます）
+  user-ban-confirm: このアカウントを利用停止にしますか？サイト、メールボックス、アダプタのすべてが使えなくなります。
+  user-make-admin: 管理権限を与える
+  user-drop-admin: 管理権限を外す
+  user-admin-confirm: このアカウントに管理画面を与えますか？
+  user-banned-since: '%when% から利用停止'
+  user-devices: 本体
+  user-device-code: コード
+  user-device-nick: 名前
+  user-device-state: 状態
+  user-device-seen: 最後の接続
+  user-device-block: 遮断
+  user-device-unblock: 遮断を解除
+  user-blocked: 遮断中
+  user-allowed: 許可
+  user-no-devices: このアカウントで接続した本体はありません。
+  err-no-such-user: そのアカウントはありません。
+  err-not-yourself: 今ログインしているアカウントには行えません。
+  err-not-an-admin: 管理者を利用停止にはできません。先に管理権限を外してください。
+  services-title: サービス
+  services-note: 再起動は、サーバー側で明示的に許可する必要がある補助プログラムを通して行います。それが入るまで、ボタンは実行するはずだった内容を表示するだけで、何も変えません。
+  services-service: サービス
+  services-state: 状態
+  services-restart: 再起動
+  services-restart-confirm: このサービスを再起動しますか？接続中の人は切断されます。
+  services-done: '%service%：%detail%'
+  services-failed: '%service% を再起動できませんでした：%detail%'
+  services-unavailable: このサーバーでは再起動がまだ有効になっていません。何も実行されていません。
+  services-daemons: 常時動作
+  services-jobs: 定期実行の処理
+  services-jobs-note: これらは systemd のタイマーで動きます。今すぐ実行する、タイマーを切る、別の時刻を与える、のいずれもできます。時刻は追加設定として書かれるので、リポジトリが配布するユニットには一切触れず、「戻す」で元に戻ります。
+  services-start: 開始
+  services-stop: 停止
+  services-run: 今すぐ実行
+  services-refresh-confirm: これは設定されているすべての地域のランキングを消します。今日ニュースが入れ替わった地域だけではありません。元に戻すことはできません。ニュースを再適用し、すべてのランキングを消しますか？
+  services-enable: 有効にする
+  services-disable: 無効にする
+  services-on: 有効
+  services-off: 無効
+  services-running: 動作中
+  services-no-timer: タイマー無し
+  services-schedule: 実行時刻
+  services-schedule-hint: systemd のカレンダー書式。例：*-*-* *:0/15:00
+  services-schedule-reset: 戻す
+  services-schedule-reset-confirm: この処理に元から付いている実行時刻に戻しますか？
+  services-next: 次回の実行
+  services-stop-confirm: このサービスを停止しますか？誰かが起動するまで止まったままです。
+  services-disable-confirm: この処理を無効にしますか？もう一度有効にするまで実行されません。
+  services-no-stop: 停止はありません。このページを配信しているのがそれ自身なので、止めると再開のボタンごと無くなります。
+  logs-title: サービスのログ
+  logs-service: サービス
+  logs-lines: 行数
+  logs-show: 表示
+  logs-empty: 表示するものがありません。
+  logs-unavailable: システムのジャーナルをまだ読めないため、表示するものがありません。
+  logs-unavailable-why: PHP は「%user%」として動いており、システムのジャーナルを読むにはジャーナルのグループに属している必要があります。これは読み取りだけを与えるもので、サービスのページが必要とする sudo の設定ではなく、誰かが何かを再起動できるようになるわけでもありません：
+  trainer-title: モバイルトレーナーのページ
+  trainer-intro: モバイルトレーナーを通してゲームボーイが見るページです。アダプタにはそのまま渡され、アダプタは HTML のごく一部だけを描きます。
+  trainer-page: ページ
+  trainer-size: サイズ
+  trainer-changed: 更新
+  trainer-edit: 編集
+  trainer-save: 保存
+  trainer-saved: 保存しました。
+  trainer-failed: 保存できませんでした：%detail%
+  trainer-none: web/htdocs/01 にページが見つかりません。
+  trainer-back: ページ一覧に戻る
+  trainer-tags: アダプタが描くタグ
+  trainer-new: 新しいページ
+  trainer-new-intro: ページとは、ゲームのディレクトリの中にあるファイルです。ここで作り、別のページから &lt;a href="name.html"&gt; で参照してください。
+  trainer-dir: ゲームのディレクトリ
+  trainer-file: ファイル名
+  trainer-file-hint: 小文字、英字、数字、- と _。「.html」は自動で付きます。
+  trainer-entry: 入口のページ
+  trainer-create: 作成
+  trainer-view: 表示
+  trainer-open: 開く
+  trainer-delete: 削除
+  trainer-delete-confirm: このページを削除しますか？これを要求した本体には何も返りません。
+  trainer-deleted: ページを削除しました。
+  trainer-locked: 閲覧のみ
+  trainer-preview: 本体から見た状態
+  trainer-preview-note: 160x144 の2倍、トレーナー自身のフォントで表示しています。ですから行の折り返しは、実機とおおよそ同じ位置になります。あくまでおおよそで、アダプタはブラウザではなく独自の描画を使います。
+  trainer-tags-note: アダプタの説明書によるもので、これが全部です。<p>、<table>、<form> は入っていません。無いからといって拒否はしません。説明書は、知らないタグをアダプタがどう扱うのか書いていないからです。意外な点が2つあります。<b> は太字ではなく文字を赤にし、<center> は <html> の内側でしか効きません。画像は 1BPP の BMP だけで、縦横それぞれ最大 255 ピクセルです。
+  trainer-images: 画像
+  trainer-img-empty: このページにはまだ画像がありません。
+  trainer-img-name: ファイル
+  trainer-img-write: ページにはこう書きます
+  trainer-img-facts: 確認結果
+  trainer-img-file: BMP ファイル
+  trainer-img-rules: 1BPP の BMP だけ、縦横それぞれ最大 %n% ピクセル、圧縮なし。説明書ではなく、稼働中のサイトの画像が実際にどうなっているかに合わせて確認します。説明書どおりだと、すでにある37枚のうち34枚を拒否してしまいます。
+  trainer-img-rename: 名前を付ける（任意）
+  trainer-img-rename-hint: 小文字、英字、数字、- と _。「.bmp」は自動で付きます。空のままなら、アップロードしたファイルの名前を使います。
+  trainer-img-upload: アップロード
+  trainer-img-added: '%name% をアップロードしました。'
+  trainer-img-deleted: 画像を削除しました。
+  trainer-img-delete-confirm: この画像を削除しますか？まだ参照しているページには、画像が壊れた印が出ます。
+  trainer-img-ok: 問題なし
+  trainer-img-none: ファイルが届いていません。
+  trainer-img-bad-name: その名前には使える文字がありません。
+  trainer-img-not-a-bmp: BMP ではありません。
+  trainer-img-odd-header: BMP のヘッダーが、ここでは読めない形です。
+  trainer-img-not-1bpp: 1BPP でなければなりません。アダプタはそれ以外を描きません。
+  trainer-img-planes: BMP のプレーン数は 1 でなければなりません。
+  trainer-img-compressed: 圧縮された BMP は受け付けません。
+  trainer-img-palette: 1BPP のビットマップが持てる色数を超えています。
+  trainer-img-empty-image: 画像にピクセルがありません。
+  trainer-img-not-8-bit: 幅と高さは、それぞれ 8 ビットに収まらなければなりません（最大 %n%）。
+  trainer-img-offset-too-far: ピクセルデータの位置がファイルの奥すぎて、指し示せません。
+  trainer-img-too-large: この形式で許される大きさを超えています。
+  trainer-img-too-big: ファイルが大きすぎます。
+  trainer-img-not-writable: 画像のディレクトリに書き込めません。
+  trainer-img-mkdir-failed: 画像のディレクトリを作成できませんでした。
+  trainer-img-write-failed: ファイルを書き込めませんでした。
+  trainer-img-replace-failed: ファイルを所定の場所に置けませんでした。
+  trainer-img-no-such-page: そのページはありません。
+  trainer-readonly: ウェブサーバーがこれらのファイルに書き込めないため、ここではまだ何も保存できません。
+  trainer-readonly-why: PHP は「%user%」として動いており、ページはそれを配置したアカウントのものです。そのユーザーに書き込み権限を与えるのは、コマンド1つです：

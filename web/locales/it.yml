@@ -1048,3 +1048,286 @@ notify:
   new-mail: "Nuova posta da %from%"
   trade-done: "Scambio effettuato"
   trade-none: "Ancora nessuno scambio"
+admin:
+  news-title: Gestione notizie
+  news-new: Nuovo articolo
+  news-editing: Modifica dell'articolo
+  news-date: Data
+  news-post-title: Titolo
+  news-state: Stato
+  news-published: Pubblicato
+  news-draft: Bozza
+  news-view: Vedi
+  news-edit: Modifica
+  news-delete: Elimina
+  news-delete-confirm: Eliminare questo articolo?
+  news-title-required: Serve un titolo.
+  news-body: Testo
+  news-markdown-hint: 'Markdown: **grassetto**, _corsivo_, ## titolo, [link](url), ![](immagine).'
+  news-publish: Pubblicato (visibile sul sito)
+  news-save: Salva
+  news-cancel: Annulla
+  news-preview: Anteprima
+  news-md-link: Link
+  news-md-list: Elenco
+  news-md-image: Immagine
+  news-upload-failed: Caricamento fallito.
+  panel: Amministrazione
+  nav-dashboard: Pannello
+  nav-news: Notizie
+  nav-news-maker: Pokémon News
+  news-maker-title: Pokémon News
+  news-maker-intro: Un numero della rivista è un piccolo programma che il gioco esegue, costruito con gli strumenti veri. Tu scegli le parole, le classifiche e il minigioco; tutto il resto viene da un numero che si sa funzionare.
+  news-maker-unavailable: 'Non si può ancora compilare — manca:'
+  news-maker-new: Nuovo numero
+  news-maker-back: Torna ai numeri
+  news-maker-none: Non è stato ancora creato nessun numero.
+  news-maker-issue: Numero
+  news-maker-rankings: Classifiche
+  news-maker-built: Compilato per
+  news-maker-not-built: non compilato
+  news-maker-name: Nome
+  news-maker-name-hint: Per te e per il nome del file. Non viene mostrato nel gioco.
+  news-maker-message: Riga della casella postale
+  news-maker-message-hint: 'L''unica riga che la casella postale del gioco mostra per questo numero prima che qualcuno lo apra. Se la lasci vuota, viene usato il titolo di questa lingua. Al massimo %n% caratteri, e scritta con i caratteri propri del gioco: ciò che non sa disegnare viene rifiutato indicando quale è.'
+  news-maker-schedule-locked: I numeri si possono compilare, ma non ancora programmare.
+  news-maker-schedule-why: 'Il calendario dei numeri fatti in casa è un file a parte, e il server web non può scriverlo. Di proposito non è la configurazione accanto: quella contiene anche il calendario delle notizie ordinarie, che questo pannello non ha motivo di cambiare:'
+  news-maker-built-only: compilato, ma fuori dal calendario — nessun giocatore lo vede
+  month-1: gennaio
+  month-2: febbraio
+  month-3: marzo
+  month-4: aprile
+  month-5: maggio
+  month-6: giugno
+  month-7: luglio
+  month-8: agosto
+  month-9: settembre
+  month-10: ottobre
+  month-11: novembre
+  month-12: dicembre
+  news-maker-date: Esce il
+  news-maker-date-hint: Il giorno in cui questo numero prende il posto degli altri, e continua a uscire finché non arriva il giorno di un altro. Scegli il mese e il giorno; l'anno è quello corrente, così un giorno che non è ancora arrivato aspetta invece di uscire subito. Febbraio si ferma al 28, perché un 29 esisterebbe solo in un anno bisestile.
+  news-maker-withdraw: Ritira
+  news-maker-withdrawn: Ritirato. Il gioco non lo userà più.
+  news-maker-withdraw-confirm: Togliere questo numero dal calendario ed eliminare ciò che è stato compilato? Smette di uscire, ma la riga delle notizie conserva il suo contenuto fino al prossimo cambio delle notizie ordinarie per quella regione, perché è allora che il programmatore la ricopia.
+  news-maker-lang-j: giapponese
+  news-maker-lang-e: inglese
+  news-maker-lang-d: tedesco
+  news-maker-lang-f: francese
+  news-maker-lang-i: italiano
+  news-maker-lang-s: spagnolo
+  news-maker-scheduled: Nel calendario
+  news-maker-template: Basato su
+  news-maker-template-hint: Il numero vero di cui questo prende menu, script e impaginazione.
+  news-maker-minigame: Minigioco
+  news-maker-headline-hint: Il nome del numero sulla schermata delle notizie — sullo striscione mentre la console lo scarica, e come titolo in cima alla pagina. Al massimo %n% caratteri, quanti ne usa il numero vero più largo.
+  news-maker-body-hint: 'Il testo dietro «Guida alle notizie»: l''articolo che legge il giocatore. Una riga vuota comincia un paragrafo; la prima riga apre il riquadro, la seconda sta sotto, il resto scorre. **%n% caratteri per riga**, perché il riquadro è largo %n% caselle. Nessun limite al numero di righe: il testo scorre.'
+  news-maker-random: CLASSIFICA CASUALE
+  news-maker-ranking-hint: 'Le tre classifiche di cui parla questo numero. «CLASSIFICA CASUALE» estrae una categoria al salvataggio, e ciò che è uscito resta: lo stesso numero non cambia classifiche tra una compilazione e l''altra. Le tre devono essere diverse: stanno una accanto all''altra su una sola schermata.'
+  news-maker-duplicate-ranking: Le tre classifiche devono essere diverse tra loro.
+  news-maker-no-categories: Non ci sono abbastanza categorie di classifica per riempire i tre posti.
+  news-maker-unknown-ranking: Questa non è una categoria di classifica che questi strumenti conoscano.
+  news-maker-too-long: 'Troppo lungo per lo schermo:'
+  news-maker-region-empty: 'Non si può compilare una regione la cui lingua non ha testo: non uscirebbe vuota, uscirebbe con l''articolo del 2002 del modello:'
+  news-maker-region-needs: Scrivi prima il titolo e l'articolo in %lang%.
+  news-maker-ranking: Classifica %n%
+  news-maker-text: Testi
+  news-maker-text-hint: Tre testi diversi, ognuno compare in un punto diverso. Se lasci vuota una lingua, quella lingua mantiene ciò che aveva il modello.
+  news-maker-headline: Titolo
+  news-maker-body: Articolo
+  news-maker-regions: Compila per
+  news-maker-regions-hint: Una compilazione per regione. Una regione si può scegliere solo quando la sua lingua ha titolo e articolo — E, P e U usano tutte e tre il testo inglese; F e D, S e I condividono una tabella di caratteri.
+  news-maker-save: Salva
+  news-maker-publish: Salva e compila
+  news-maker-saved: Salvato.
+  news-maker-published: Compilate %good% regioni su %total%.
+  news-maker-result: Risultato
+  news-maker-failed-region: fallita
+  news-maker-failed: 'Non è stato possibile: %detail%'
+  news-maker-deleted: Numero eliminato.
+  news-maker-locked: 'Questo numero è già stato pubblicato: non può più essere modificato.'
+  news-maker-locked-title: Numero pubblicato — sola lettura
+  news-maker-locked-why: È già uscito e i giocatori potrebbero averlo letto. Ricompilarlo sopra cambierebbe il contenuto senza che nessuno possa accorgersene, con lo stesso nome e la stessa data. Per cambiare qualcosa, elimina questo numero e pubblicane un altro.
+  news-maker-delete-confirm: Eliminare questo numero? Ciò che è già stato compilato resta dov'è.
+  news-maker-need-name: Dagli prima un nome.
+  news-maker-need-region: Scegli almeno una regione per cui compilare.
+  nav-notifications: Notifiche
+  nav-users: Account
+  nav-services: Servizi
+  nav-logs: Registri
+  nav-trainer: Mobile Trainer
+  nav-audit: Attività
+  count-users: Account
+  count-banned: Bloccati
+  count-devices: Console
+  count-devices-blocked: Console bloccate
+  count-mail-today: Posta, ultime 24 h
+  count-trades: Scambi in attesa
+  count-news: Articoli di notizie
+  count-notifications: Notifiche inviate
+  audit-title: Attività di amministrazione
+  audit-empty: Qui non è stato ancora fatto nulla.
+  audit-when: Quando
+  audit-who: Chi
+  audit-what: Cosa
+  audit-target: Oggetto
+  audit-all: Vedi tutta l'attività
+  notify-title: Invia una notifica
+  notify-intro: Le notifiche compaiono sotto la campanella nell'intestazione e restano nella cronologia di chi le riceve. Dopo non si possono eliminare, né da te né da lui.
+  notify-to: A
+  notify-to-all: Tutti
+  notify-to-user: Account scelti
+  notify-to-many: '%count% account'
+  notify-user-hint: Scrivi un nome…
+  notify-user-remove: Togli
+  notify-sent-many: Inviata a %count% account.
+  notify-user: Account
+  notify-category: Tipo
+  notify-headline: Titolo
+  notify-body: Dettaglio (facoltativo)
+  notify-link: Link (facoltativo)
+  notify-send: Invia
+  notify-sent: Inviata a %who%.
+  notify-sent-all: Inviata a %count% account.
+  notify-need-title: Serve un titolo.
+  notify-no-user: Scegli a quale account inviarla.
+  notify-recent: Inviate di recente
+  notify-when: Quando
+  notify-who: A
+  users-title: Account
+  users-search: Cerca per nome o indirizzo
+  users-search-go: Cerca
+  users-id: ID
+  users-name: Nome
+  users-email: Indirizzo
+  users-dion: DION
+  users-devices: Console
+  users-state: Stato
+  users-actions: ''
+  users-open: Apri
+  users-none: Nessun account corrisponde.
+  users-active: Attivo
+  users-banned: Bloccato
+  users-admin: Amministratore
+  user-title: Account
+  user-back: Torna agli account
+  user-ban: Blocca
+  user-unban: Togli il blocco
+  user-ban-reason: Motivo (compare nel registro delle attività)
+  user-ban-confirm: Bloccare questo account? Perde il sito, la casella postale e l'adattatore.
+  user-make-admin: Dai l'amministrazione
+  user-drop-admin: Togli l'amministrazione
+  user-admin-confirm: Dare a questo account il pannello di amministrazione?
+  user-banned-since: Bloccato dal %when%
+  user-devices: Console
+  user-device-code: Codice
+  user-device-nick: Nome
+  user-device-state: Stato
+  user-device-seen: Vista l'ultima volta
+  user-device-block: Blocca
+  user-device-unblock: Sblocca
+  user-blocked: Bloccata
+  user-allowed: Consentita
+  user-no-devices: Nessuna console si è collegata con questo account.
+  err-no-such-user: Questo account non esiste.
+  err-not-yourself: Non sull'account con cui hai effettuato l'accesso.
+  err-not-an-admin: Un amministratore non può essere bloccato. Togligli prima l'amministrazione.
+  services-title: Servizi
+  services-note: Il riavvio passa per un programma di supporto che il server deve permettere esplicitamente. Finché non è installato, i pulsanti dicono cosa avrebbero eseguito e non cambiano nulla.
+  services-service: Servizio
+  services-state: Stato
+  services-restart: Riavvia
+  services-restart-confirm: Riavviare questo servizio? Chi è collegato viene disconnesso.
+  services-done: '%service%: %detail%'
+  services-failed: '%service% non è stato riavviato: %detail%'
+  services-unavailable: Su questo server il riavvio non è ancora abilitato. Non è stato eseguito nulla.
+  services-daemons: Sempre in funzione
+  services-jobs: Operazioni programmate
+  services-jobs-note: Girano su un timer di systemd. Eseguine una adesso, spegni il suo timer oppure dagli un altro orario — l'orario viene scritto come aggiunta, così l'unità che arriva col progetto non viene mai toccata e «Ripristina» la rimette a posto.
+  services-start: Avvia
+  services-stop: Ferma
+  services-run: Esegui adesso
+  services-refresh-confirm: Questo cancella le classifiche di TUTTE le regioni configurate, non solo di quelle le cui notizie sono cambiate oggi, e non si può annullare. Riapplicare le notizie e cancellare tutte le classifiche?
+  services-enable: Accendi
+  services-disable: Spegni
+  services-on: acceso
+  services-off: spento
+  services-running: in funzione
+  services-no-timer: nessun timer
+  services-schedule: Orario
+  services-schedule-hint: Calendario systemd, per es. *-*-* *:0/15:00
+  services-schedule-reset: Ripristina
+  services-schedule-reset-confirm: Tornare all'orario con cui questa operazione viene distribuita?
+  services-next: Prossima esecuzione
+  services-stop-confirm: Fermare questo servizio? Resta fermo finché qualcuno non lo riavvia.
+  services-disable-confirm: Spegnere questa operazione? Non girerà più finché non verrà riaccesa.
+  services-no-stop: 'Niente Ferma: questa pagina è servita da lui, quindi fermarlo toglierebbe il pulsante che lo riavvia.'
+  logs-title: Registri dei servizi
+  logs-service: Servizio
+  logs-lines: Righe
+  logs-show: Mostra
+  logs-empty: Niente da mostrare.
+  logs-unavailable: Il diario di sistema non è ancora leggibile, quindi non c'è niente da mostrare.
+  logs-unavailable-why: 'PHP gira come «%user%», e leggere il diario di sistema richiede di appartenere al gruppo del diario. Questo concede la lettura e nient''altro: non è la regola sudo di cui ha bisogno la pagina Servizi, e non permette a nessuno di riavviare niente:'
+  trainer-title: Pagine del Mobile Trainer
+  trainer-intro: Le pagine che un Game Boy vede attraverso il Mobile Trainer. Vengono servite così come sono all'adattatore, che disegna un piccolo sottoinsieme di HTML.
+  trainer-page: Pagina
+  trainer-size: Dimensione
+  trainer-changed: Modificata
+  trainer-edit: Modifica
+  trainer-save: Salva
+  trainer-saved: Salvata.
+  trainer-failed: 'Non è stato possibile salvare: %detail%'
+  trainer-none: Nessuna pagina trovata sotto web/htdocs/01.
+  trainer-back: Torna alle pagine
+  trainer-tags: Tag che l'adattatore disegna
+  trainer-new: Nuova pagina
+  trainer-new-intro: Una pagina è un file dentro la cartella di un gioco. Creala qui, poi collegala da un'altra pagina con &lt;a href="nome.html"&gt;.
+  trainer-dir: Cartella del gioco
+  trainer-file: Nome del file
+  trainer-file-hint: Minuscole, lettere, cifre, - e _. «.html» viene aggiunto.
+  trainer-entry: pagina iniziale
+  trainer-create: Crea
+  trainer-view: Vedi
+  trainer-open: Apri
+  trainer-delete: Elimina
+  trainer-delete-confirm: Eliminare questa pagina? Una console che la chiede non riceverà niente.
+  trainer-deleted: Pagina eliminata.
+  trainer-locked: sola lettura
+  trainer-preview: Come la vede la console
+  trainer-preview-note: '160x144 al doppio, con il carattere del Trainer stesso — così una riga va a capo qui più o meno dove va a capo là. Più o meno: l''adattatore usa il proprio disegnatore, non un browser.'
+  trainer-tags-note: 'Dalla documentazione dell''adattatore, e questa è la lista completa — <p>, <table> e <form> non ci sono. Niente viene rifiutato per essere assente, perché la documentazione non dice cosa fa l''adattatore con un tag che non conosce. Due sorprese: <b> rende il testo rosso invece che grassetto, e <center> funziona solo dentro <html>. Le immagini sono solo BMP a 1BPP, con ogni lato di 255 pixel al massimo.'
+  trainer-images: Immagini
+  trainer-img-empty: Questa pagina non ha ancora immagini.
+  trainer-img-name: File
+  trainer-img-write: Scrivi questo nella pagina
+  trainer-img-facts: Verificato
+  trainer-img-file: File BMP
+  trainer-img-rules: Solo BMP a 1BPP, ogni lato di %n% pixel al massimo, senza compressione. Verificato su ciò che sono davvero le immagini del sito in funzione, non sulla documentazione — quella rifiuterebbe 34 delle 37 già presenti.
+  trainer-img-rename: Dagli un nome (facoltativo)
+  trainer-img-rename-hint: Minuscole, lettere, cifre, - e _. «.bmp» viene aggiunto. Se lo lasci vuoto, viene usato il nome del file caricato.
+  trainer-img-upload: Carica
+  trainer-img-added: '%name% caricata.'
+  trainer-img-deleted: Immagine eliminata.
+  trainer-img-delete-confirm: Eliminare questa immagine? Una pagina che la indica ancora mostrerà l'icona di immagine rotta.
+  trainer-img-ok: ok
+  trainer-img-none: Non è stato ricevuto nessun file.
+  trainer-img-bad-name: In quel nome non c'è niente di utilizzabile.
+  trainer-img-not-a-bmp: Non è un BMP.
+  trainer-img-odd-header: Intestazione BMP in una forma che qui non si riesce a leggere.
+  trainer-img-not-1bpp: Deve essere a 1BPP. L'adattatore non disegna altro.
+  trainer-img-planes: Il numero di piani del BMP deve essere 1.
+  trainer-img-compressed: I BMP compressi non vengono accettati.
+  trainer-img-palette: Dichiara più colori di quanti possa averne una bitmap a 1BPP.
+  trainer-img-empty-image: L'immagine non ha pixel.
+  trainer-img-not-8-bit: Larghezza e altezza devono stare ciascuna in 8 bit (al massimo %n%).
+  trainer-img-offset-too-far: I dati dei pixel cominciano troppo avanti nel file per poter essere indirizzati.
+  trainer-img-too-large: Più grande di quanto il formato consenta.
+  trainer-img-too-big: Il file è troppo grande.
+  trainer-img-not-writable: Nella cartella delle immagini non si può scrivere.
+  trainer-img-mkdir-failed: Non è stato possibile creare la cartella delle immagini.
+  trainer-img-write-failed: Non è stato possibile scrivere il file.
+  trainer-img-replace-failed: Non è stato possibile mettere il file al suo posto.
+  trainer-img-no-such-page: Quella pagina non esiste.
+  trainer-readonly: Il server web non può scrivere questi file, quindi qui non si può ancora salvare niente.
+  trainer-readonly-why: 'PHP gira come «%user%», e le pagine appartengono all''account che le ha installate. Dare il permesso di scrittura a quell''utente è un solo comando:'
