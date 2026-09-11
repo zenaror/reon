@@ -249,6 +249,8 @@ admin:
   news-maker-template: "Baseada em"
   news-maker-template-hint: "A edição real de onde vêm os menus, scripts e layout."
   news-maker-minigame: "Minigame"
+  news-maker-publish-now-unbuilt: "Esta edição ainda não foi compilada. Abra, marque os idiomas e use Publicar primeiro."
+  news-maker-published-now: "No ar agora em %regions%."
   news-maker-prizes: "Prêmios"
   news-maker-prizes-hint: "O que o minijogo entrega quando o jogador ganha. A lista é lida do código do próprio minijogo, então trocar de minijogo troca a lista. A tabela de itens é oferecida inteira, itens-chave inclusive — o cartucho os conhece, mas o jogo não espera receber um deles pela notícia."
   news-maker-prize: "Prêmio %n%"

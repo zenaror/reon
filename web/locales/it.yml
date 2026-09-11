@@ -1122,6 +1122,8 @@ admin:
   news-maker-template: Basato su
   news-maker-template-hint: Il numero vero di cui questo prende menu, script e impaginazione.
   news-maker-minigame: Minigioco
+  news-maker-publish-now-unbuilt: Questo numero non è ancora stato compilato. Aprilo, seleziona le lingue e premi prima Pubblica.
+  news-maker-published-now: In onda ora in %regions%.
   news-maker-prizes: Premi
   news-maker-prizes-hint: "Ciò che il minigioco consegna a chi vince. L'elenco è letto dal codice del minigioco stesso, quindi cambiare minigioco cambia l'elenco. Viene offerta tutta la tabella degli oggetti, oggetti chiave compresi: la cartuccia li conosce, ma il gioco non si aspetta di riceverne uno dalle notizie."
   news-maker-prize: Premio %n%

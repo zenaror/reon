@@ -574,3 +574,16 @@
 .admin-form__label {
   font-weight: bold;
 }
+
+/* Célula de ações da lista: o link de editar e o formulário de "publicar
+   agora" na mesma linha, sem o formulário empurrar a linha para baixo. */
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.admin-row-actions__form {
+  margin: 0;
+}

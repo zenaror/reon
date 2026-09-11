@@ -1122,6 +1122,8 @@ admin:
   news-maker-template: Beruht auf
   news-maker-template-hint: Die echte Ausgabe, deren Menüs, Skripte und Aufbau diese übernimmt.
   news-maker-minigame: Minispiel
+  news-maker-publish-now-unbuilt: Diese Ausgabe wurde noch nicht gebaut. Öffnen Sie sie, wählen Sie die Sprachen und drücken Sie zuerst Veröffentlichen.
+  news-maker-published-now: Jetzt live in %regions%.
   news-maker-prizes: Preise
   news-maker-prizes-hint: Was das Minispiel bei einem Sieg aushändigt. Die Liste wird aus dem Code des Minispiels selbst gelesen, ein anderes Minispiel ergibt also eine andere Liste. Die gesamte Gegenstandstabelle steht zur Wahl, Schlüsselgegenstände eingeschlossen — das Modul kennt sie, doch das Spiel rechnet nicht damit, einen davon aus den Nachrichten zu erhalten.
   news-maker-prize: Preis %n%

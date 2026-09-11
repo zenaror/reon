@@ -58,25 +58,89 @@
 		return $issue;
 	}
 
+	// "Publicar agora" põe no ar hoje uma edição que já existe e já foi
+	// compilada. Mora na lista, e não no editor: no editor ela convidava a
+	// publicar um formulário em branco -- o aviso de confirmação aparecia
+	// antes de qualquer validação, avisando que a edição ficaria imutável,
+	// sobre uma edição que ainda não tinha nada dentro.
+	//
+	// Daqui vem só o slug. A definição sai do disco e as regiões saem do que
+	// já está compilado, e não de caixas marcadas num formulário que esta
+	// tela não tem.
+	//
+	// A data é reescrita para hoje, e não ignorada: o agendador escolhe pela
+	// data, e mandar ir ao ar sem mexer no calendário deixaria a linha
+	// dizendo uma data e o jogo servindo outra.
+	function publishNow($maker, $admin, $slug) {
+		$issue = $maker->issue($slug);
+		if ($issue === null) {
+			return [TemplateUtil::translate("admin.news-maker-failed",
+				["%detail%" => "no-issue"]), "bad"];
+		}
+		if ($maker->isPublished($slug)) {
+			return [TemplateUtil::translate("admin.news-maker-locked"), "bad"];
+		}
+
+		$regions = array_values(array_unique(array_merge(
+			$maker->builtRegions($slug), $maker->scheduledRegions($slug))));
+		if ($regions === []) {
+			return [TemplateUtil::translate("admin.news-maker-publish-now-unbuilt"), "bad"];
+		}
+
+		$issue["date"] = (string)NewsMakerUtil::composeDate(date("n"), date("j"));
+		[$saved, $detail] = $maker->saveIssue($slug, $issue);
+		if (!$saved) {
+			return [TemplateUtil::translate("admin.news-maker-failed",
+				["%detail%" => $detail]), "bad"];
+		}
+
+		[$results] = $maker->publish($issue, $regions);
+		$good = [];
+		foreach ((array)$results as $region => $one) {
+			if ($one[0]) $good[] = $region;
+		}
+		if ($good === []) {
+			return [TemplateUtil::translate("admin.news-maker-failed",
+				["%detail%" => "build"]), "bad"];
+		}
+
+		[$sched, $why] = $maker->setScheduled($slug, $issue["date"], $good, $issue["rankings"] ?? []);
+		if (!$sched) {
+			return [TemplateUtil::translate("admin.news-maker-failed",
+				["%detail%" => $why]), "bad"];
+		}
+
+		// O agendador roda pelo mesmo auxiliar que a página de serviços usa --
+		// nada de privilégio novo. Se ele não estiver autorizado, a edição
+		// fica compilada e agendada para hoje e a tela diz isso, em vez de
+		// fingir que foi ao ar.
+		[$ran, $ranWhy] = ServiceControlUtil::getInstance()->act("reon-auto-schedule", "run");
+		$admin->log("news.publish-now", $slug, $ranWhy);
+		if (!$ran) {
+			return [TemplateUtil::translate("admin.news-maker-run-failed",
+				["%detail%" => $ranWhy]), "bad"];
+		}
+		return [TemplateUtil::translate("admin.news-maker-published-now",
+			["%regions%" => strtoupper(implode(", ", $good))]), "ok"];
+	}
+
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
 		$action = (string)($_POST["action"] ?? "save");
-		$issue = readIssue($maker);
 
-		// "Publicar agora" é o mesmo publicar, com duas diferenças: a data
-		// passa a ser hoje e o agendador roda em seguida, em vez de esperar o
-		// timer de 15 minutos.
-		//
-		// A data é reescrita, e não ignorada. O agendador escolhe a edição cuja
-		// data já chegou; mandar ir ao ar sem mexer no calendário deixaria a
-		// linha dizendo uma data e o jogo servindo outra, e a próxima rodada
-		// decidiria pela data. Hoje é quando ela foi ao ar, então hoje é o que
-		// o calendário passa a dizer.
-		$runNow = ($action === "publish-now");
-		if ($runNow) {
-			$action = "publish";
-			$issue["date"] = (string)NewsMakerUtil::composeDate(date("n"), date("j"));
+		if ($action === "publish-now") {
+			[$notice, $noticeKind] = publishNow($maker, $admin,
+				(string)($_POST["slug"] ?? ""));
+			echo TemplateUtil::render("admin/news_maker", [
+				"notice" => $notice, "notice_kind" => $noticeKind,
+				"issues" => $maker->issues(),
+				"missing" => $maker->missing(),
+				"tool" => $maker->toolVersion(),
+			]);
+			return;
 		}
+
+		$issue = readIssue($maker);
 
 		// Sorteia o que ficou como aleatório e recusa repetição. Feito antes
 		// de salvar, para a definição guardar o que de fato saiu -- sortear
@@ -221,24 +285,11 @@
 							$issue["slug"], $issue["date"], $good, $issue["rankings"]);
 						if (!$sched) $log .= "\nschedule: " . $why;
 
-						// O agendador roda aqui mesmo, pelo mesmo helper que a
-						// página de serviços usa -- nada de privilégio novo.
-						// Ele é quem calcula os nomes decodificados das
-						// categorias e faz a gravação; reimplementar isso em
-						// PHP seria uma segunda versão da mesma regra, livre
-						// para divergir.
-						if ($sched && $runNow) {
-							[$ran, $ranWhy] = ServiceControlUtil::getInstance()
-								->act("reon-auto-schedule", "run");
-							$admin->log("news.publish-now", $issue["slug"], $ranWhy);
-							$log .= "\nrun: " . $ranWhy;
-							if (!$ran) {
-								$notice = TemplateUtil::translate(
-									"admin.news-maker-run-failed", ["%detail%" => $ranWhy]);
-								$noticeKind = "bad";
-								$runNow = false;
-							}
-						}
+						// Publicar compila e agenda pela data da edição. Quem
+						// roda o agendador é "publicar agora", na lista: aqui
+						// não se sabe se a data já chegou, e disparar a rodada
+						// para uma edição marcada para dezembro não adianta
+						// nada além de gastar um ciclo.
 					}
 					if (!is_array($results) || $results === []) {
 						$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => (string)$log]);
@@ -250,9 +301,6 @@
 						$admin->log("news.publish", $issue["slug"], $good . "/" . count($results));
 						$notice = TemplateUtil::translate("admin.news-maker-published",
 							["%good%" => $good, "%total%" => count($results)]);
-						if ($runNow) {
-							$notice .= " " . TemplateUtil::translate("admin.news-maker-ran");
-						}
 						$noticeKind = $good === count($results) ? "ok" : "bad";
 					}
 				}
@@ -315,7 +363,7 @@
 				"slug" => "", "name" => "", "message" => [], "date" => "",
 				"template" => $templates ? $templates[0] : "",
 				"minigame" => "", "rankings" => ["", "", ""], "prizes" => [],
-				"headline" => [], "body" => [],
+				"headline" => [], "body" => [], "exists" => false,
 			],
 			"results" => null, "log" => "",
 		] + makerOptions($maker));

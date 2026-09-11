@@ -1887,6 +1887,8 @@ admin:
   news-maker-template: "Based on"
   news-maker-template-hint: "The real issue whose menus, scripts and layout this one borrows."
   news-maker-minigame: "Minigame"
+  news-maker-publish-now-unbuilt: "This issue has not been built yet. Open it, tick the languages and press Publish first."
+  news-maker-published-now: "Live now in %regions%."
   news-maker-prizes: "Prizes"
   news-maker-prizes-hint: "What the minigame hands out when the player wins. The list is read from the minigame's own code, so choosing another minigame changes it. The whole item table is offered, key items included — the cartridge knows them, but the game never expects to receive one from the news."
   news-maker-prize: "Prize %n%"

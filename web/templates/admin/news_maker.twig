@@ -64,7 +64,23 @@
 								{% endif %}
 							</td>
 							<td>{{ issue.saved_at|date("Y.m.d H:i") }}</td>
-							<td><a href="/admin/news_maker.php?issue={{ issue.slug|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a></td>
+							<td class="admin-row-actions">
+								<a href="/admin/news_maker.php?issue={{ issue.slug|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a>
+								{# Pôr no ar hoje: só faz sentido para edição já compilada e
+								   ainda não publicada. Vive aqui, e não no editor, porque a
+								   edição precisa existir e estar compilada antes -- no editor
+								   o botão convidava a publicar um formulário em branco. As
+								   regiões são as que já estão compiladas; não há caixa para
+								   marcar nesta tela e não deve haver. #}
+								{% if issue.built|default([]) is not empty and not issue.locked|default(false) %}
+									<form method="post" class="admin-row-actions__form">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="slug" value="{{ issue.slug }}">
+										<button class="btn btn-sm btn-primary" type="submit" name="action" value="publish-now"
+										        onclick="return confirm('{{ 'admin.news-maker-publish-now-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-publish-now'|trans }}</button>
+									</form>
+								{% endif %}
+							</td>
 						</tr>
 					{% endfor %}
 				</tbody>

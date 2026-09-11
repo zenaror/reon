@@ -1186,6 +1186,8 @@ admin:
   news-maker-template: D'après
   news-maker-template-hint: Le vrai numéro dont celui-ci emprunte les menus, les scripts et la mise en page.
   news-maker-minigame: Mini-jeu
+  news-maker-publish-now-unbuilt: Ce numéro n'a pas encore été compilé. Ouvrez-le, cochez les langues et appuyez d'abord sur Publier.
+  news-maker-published-now: En ligne maintenant dans %regions%.
   news-maker-prizes: Prix
   news-maker-prizes-hint: "Ce que le mini-jeu remet en cas de victoire. La liste est lue dans le code du mini-jeu lui-même : en changer change la liste. Toute la table d'objets est proposée, objets clés compris — la cartouche les connaît, mais le jeu ne s'attend pas à en recevoir un par les actualités."
   news-maker-prize: Prix %n%

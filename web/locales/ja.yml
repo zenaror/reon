@@ -1163,6 +1163,8 @@ admin:
   news-maker-template: 元にする号
   news-maker-template-hint: メニュー、スクリプト、組み方を借りてくる本物の号です。
   news-maker-minigame: ミニゲーム
+  news-maker-publish-now-unbuilt: この号はまだビルドされていません。開いて言語を選び、先に「公開」を押してください。
+  news-maker-published-now: "%regions% で公開中です。"
   news-maker-prizes: 賞品
   news-maker-prizes-hint: ミニゲームに勝ったときに渡されるものです。一覧はミニゲーム自身のコードから読み取るため、ミニゲームを変えると一覧も変わります。だいじなものも含めてアイテム表をすべて表示します。カートリッジは認識しますが、ニュースから受け取ることをゲームは想定していません。
   news-maker-prize: 賞品 %n%
