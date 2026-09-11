@@ -75,7 +75,7 @@
 				$vars["notify_new"] = 0;
 			}
 
-			// The config.bin "passport" modal: shown once, on whichever page
+			// The mobile_config.bin "passport" modal: shown once, on whichever page
 			// a visitor happens to land on first, until dismissed. Checked
 			// globally for the same reason mail counts are -- a signed-in
 			// visitor can land on any page after logging in, not just one.

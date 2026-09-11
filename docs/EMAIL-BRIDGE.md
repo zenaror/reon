@@ -217,7 +217,7 @@ nas sessões seguintes, que é o mesmo dispositivo de sempre?
 
 A solução reaproveita uma chave que **já existia** por outro motivo — a
 mesma chave usada para autorizar o jogo a falar com a internet de verdade
-(a chave em si já existe e é gerada no download do `config.bin`). Em vez de
+(a chave em si já existe e é gerada no download do `mobile_config.bin`). Em vez de
 mandar `USER`/`PASS` de novo, o jogo manda um comando novo, `XAPOP`,
 provando que tem essa chave — sem nunca revelar a chave em si, só uma
 assinatura calculada com ela. Se essa prova falhar por qualquer motivo
@@ -612,7 +612,7 @@ renumeraria a caixa que o jogo vê. Agora é explícito.
 
 ## Um aparelho por vez — identidade e bloqueio
 
-A `config.bin` é baixada **uma vez** e é a mesma no PC, no 3DS, no Pico. Até
+A `mobile_config.bin` é baixada **uma vez** e é a mesma no PC, no 3DS, no Pico. Até
 09/09/2026 o device-auth tinha um contador por *conta*, e o primeiro
 aparelho a falar deixava o segundo para trás — o 3DS levava `403` até o lote
 dele ultrapassar o do PC. O dono decidiu: "são aparelhos diferentes, não é
@@ -624,7 +624,7 @@ uma):
   `sha256(nome_da_implementacao || 0x00 || identidade)[:8]`: no 3DS e no Vita
   a identidade é o MAC do rádio, no Pico o id da placa, no PC o
   machine-id (ou equivalente) com hostname e usuário como piso — calculado
-  ao iniciar e mantido só em memória. Nada disso vai para a `config.bin`,
+  ao iniciar e mantido só em memória. Nada disso vai para a `mobile_config.bin`,
   senão a cópia identificaria a bin, não o aparelho. O nome da implementação
   entra no hash para que mGBA e BGB no mesmo PC sejam dois aparelhos.
 - **Código de pareamento** são os 8 primeiros hex do id, `A4A2-90F8`: o
@@ -706,7 +706,7 @@ uma):
   nenhum** — o pool do PHP-FPM descartava a saída dos workers, então toda
   chamada de log no código era um no-op. Agora cai em
   `/var/log/reon/php-error.log`.
-- Device-auth **por aparelho**: a mesma `config.bin` em qualquer par de
+- Device-auth **por aparelho**: a mesma `mobile_config.bin` em qualquer par de
   aparelhos sem um atrapalhar o outro; página **Dispositivos conectados** com
   código de pareamento, apelido, último uso e bloqueio por aparelho;
   bloqueio cooperativo verificado no 3DS e estendido ao P2P pelo

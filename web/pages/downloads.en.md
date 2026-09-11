@@ -7,13 +7,13 @@
 Everything you need to get online, in one place. Not sure what to pick?
 Start with the [guide](/guide.php).
 
-## Your config.bin
+## Your mobile_config.bin
 
-Your personal `config.bin` is tied to your account. Download it once and
+Your personal `mobile_config.bin` is tied to your account. Download it once and
 keep it; the same file works on every device you own.
 
-<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="config.bin">Download your config.bin</a></p>
-<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fdownloads.php">Log in to download your config.bin</a></p>
+<p class="when-signed-in"><a class="reon-chrome-btn" href="/user/adapter_config.php" download="mobile_config.bin">Download your mobile_config.bin</a></p>
+<p class="when-signed-out"><a class="reon-chrome-btn" href="/login.php?next=%2Fdownloads.php">Log in to download your mobile_config.bin</a></p>
 
 It is also on [Your Account](/user/summary.php), and the
 [guide](/guide.php#setup) says where to put it.
@@ -86,7 +86,7 @@ Mobile Adapter. Find your board below, then pick the wiring you built.
 
 <div class="reon-note">To install: hold BOOTSEL while plugging the Pico in,
 then copy the <code>.uf2</code> onto the drive that appears. [To be written:
-first-time Wi-Fi setup and where to put <code>config.bin</code>.]</div>
+first-time Wi-Fi setup and where to put <code>mobile_config.bin</code>.]</div>
 
 ## Games and patches
 

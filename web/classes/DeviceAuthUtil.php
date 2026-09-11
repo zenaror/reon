@@ -4,7 +4,7 @@
 	// Outbound relay device authorization (game -> real internet).
 	//
 	// device_auth_key is generated once per account and handed to the device
-	// embedded in the config.bin download (see adapter_config.php) — there is
+	// embedded in the mobile_config.bin download (see adapter_config.php) — there is
 	// no separate provisioning call. The bin is meant to be downloaded once
 	// and copied to whichever devices the account owner uses, so the key is
 	// per account (sys_device_authorization) while the anti-replay counter and
@@ -30,7 +30,7 @@
 			return self::$instance;
 		}
 
-		// Called from adapter_config.php on every config.bin download. Returns
+		// Called from adapter_config.php on every mobile_config.bin download. Returns
 		// the raw 32-byte key to embed (creating it on first download). A
 		// redownload changes nothing else: devices already running keep their
 		// own counters, and a new device starts its own row from 0.
@@ -55,7 +55,7 @@
 
 		// The website's explicit "revoke all devices" action: rotates the key,
 		// so every device holding the old one (emulator and real hardware can
-		// share it) has to redownload config.bin before it can authorize
+		// share it) has to redownload mobile_config.bin before it can authorize
 		// again. The device rows stay: a device's id comes from its hardware,
 		// so it will present the same id under the new key, and keeping the
 		// row keeps its nickname, its block and its history. Open windows are

@@ -13,7 +13,7 @@
 	// mysql, or its database might just be unreachable. None of that is
 	// this class's caller's problem -- every public method here fails soft
 	// (returns null / does nothing) instead of throwing, so account
-	// creation, the config.bin download, and the account page all keep
+	// creation, the mobile_config.bin download, and the account page all keep
 	// working with the relay fields simply absent.
 	class RelayUtil {
 

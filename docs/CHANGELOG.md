@@ -471,6 +471,12 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### config.bin (dados do adaptador)
 
+* **O arquivo agora se chama `mobile_config.bin`**, que é o nome que o mGBA
+  usa — antes era `config.bin` e a pessoa tinha de renomear. O nome passou a
+  vir de um `Content-Disposition` no próprio download, e não só do atributo
+  `download` do link: quem abria a URL direto recebia um arquivo chamado
+  `adapter_config.php`. O conteúdo não mudou em um byte, então nada precisa
+  ser baixado de novo
 * Fix: o `config.bin` saía sem servidores DNS (tipo `NONE`), então todo
   frontend precisava ser apontado para o REON à mão, e um sem tela de
   configuração — um núcleo libretro, por exemplo — não tinha como ser
@@ -684,6 +690,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   resolvers próprios dos frontends viraram dispensáveis
 * Contador de device-auth reservado em lotes de 50 para poupar a flash;
   garantia é "estritamente crescente, nunca repetido", não continuidade
+* `b136972` **não resolve mais**: a limpeza do e-mail pessoal reescreveu a
+  `feature/full_server` da libmobile e esse commit virou `5e1526e`, com a
+  mesma árvore. O hash antigo fica registrado aqui porque era o que valia
+  quando isto foi escrito
 * `b136972`: handshake v1 do relay com o id do aparelho (buffer 0x20→0x30,
   static_assert derivado das constantes); TEL/WAIT_CALL recusam quando o
   estado já é "bloqueado"; falha na derivação da identidade não é mais

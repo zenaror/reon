@@ -6,7 +6,7 @@
 	session_start();
 
 	// Where to go after logging in: a page that sent the visitor here to
-	// do something signed-in (download config.bin from the guide, say).
+	// do something signed-in (download mobile_config.bin from the guide, say).
 	// Only a local path is honoured -- never a full URL, never "//host".
 	function login_next($raw) {
 		$raw = (string)$raw;
