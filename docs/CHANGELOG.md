@@ -176,6 +176,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   os serviços, uma para os timers) em vez de dois processos por linha, e a
   descrição ao lado de cada um é a que a própria unit declara, para não
   divergir do que o systemd tem de fato
+* **Uma página é um arquivo, não um código de jogo.** A primeira versão do
+  criador pedia um "código de jogo" e criava `<CÓDIGO>/index.html` — errado: o
+  `01` é o prefixo do próprio Mobile Trainer (cada título tem o seu — Game Boy
+  Wars 3 usa `18`, EX Monopoly `A7`), então tudo dentro de `01/CGB-B9AJ`
+  pertence a um jogo só, e um segundo `CGB-B9AJ` não quer dizer nada. Agora
+  pede o **nome do arquivo**, dentro do diretório do jogo, para o índice poder
+  linkar com `<a href="credits.html">`. A listagem passou a mostrar qualquer
+  `.html`, marca qual é a página inicial, e apagar não remove mais o diretório
+  — as outras páginas e o `img/` compartilhado moram nele
 * **Criador e editor das páginas do Mobile Trainer** (`web/htdocs/01/...`) —
   criar, escrever o HTML, ver renderizado, salvar e apagar. O preview é um
   iframe isolado (`sandbox`, sem script) de 160×144 em 2×, com a fonte do

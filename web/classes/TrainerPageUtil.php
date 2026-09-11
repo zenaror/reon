@@ -17,13 +17,19 @@
 
 		private static $instance;
 
-		// The file the adapter asks for inside a game's directory.
-		const PAGE_FILE = "index.html";
+		// The page the adapter asks for when it is given a directory.
+		const INDEX_FILE = "index.html";
 
-		// A game code as it appears on a cartridge: letters, digits and
-		// hyphens, e.g. "CGB-B9AJ". No dot, no slash, no space -- which
-		// rules out "..", any absolute path, and any second segment.
-		const CODE_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9-]{0,31}$/';
+		// A page is a **file**, not a directory.
+		//
+		// The first version of this modelled "new page" as "new game code",
+		// creating <CODE>/index.html. That was wrong: `01` is the Mobile
+		// Trainer's own prefix (each title has its own -- Game Boy Wars 3
+		// uses `18`, EX Monopoly `A7`), so everything under 01/CGB-B9AJ
+		// belongs to one game. A second CGB-B9AJ means nothing; what is
+		// actually wanted is another file beside the index, for it to link
+		// to.
+		const FILE_PATTERN = '/^[a-z0-9][a-z0-9_-]{0,39}$/';
 
 		// What the Mobile Trainer's browser draws, from dandocs-magb.md
 		// ("Mobile Trainer (GBC)" -> "Web Browser"). This is the whole list,
@@ -71,7 +77,7 @@
 			return realpath(dirname(__DIR__)."/htdocs/01");
 		}
 
-		// Every index.html under the trainer root, keyed by the path the
+		// Every HTML page under the trainer root, keyed by the path the
 		// adapter would ask for. Sorted, so the list does not reshuffle
 		// between visits.
 		public function pages() {
@@ -84,14 +90,19 @@
 			);
 			foreach ($it as $file) {
 				if (!$file->isFile()) continue;
-				if (strtolower($file->getFilename()) !== self::PAGE_FILE) continue;
+				// Any page, not only the index: an index that links to
+				// nothing is the only thing the old rule could describe.
+				if (!preg_match('/\.html?$/i', $file->getFilename())) continue;
 
 				$real = $file->getRealPath();
 				$relative = str_replace(DIRECTORY_SEPARATOR, "/", substr($real, strlen($root)));
 				$found["/01".$relative] = [
 					"url" => "/01".$relative,
 					"path" => $real,
-					"code" => trim(dirname($relative), "/"),
+					"name" => $file->getFilename(),
+					"dir" => trim(dirname($relative), "/"),
+					// The entry point the adapter lands on for this game.
+					"is_index" => strtolower($file->getFilename()) === self::INDEX_FILE,
 					"size" => $file->getSize(),
 					"changed" => $file->getMTime(),
 					"writable" => is_writable($real),
@@ -115,38 +126,56 @@
 			return $text === false ? null : $text;
 		}
 
+		// The game directories under the trainer root -- where a new page can
+		// go. Derived from what is there rather than typed in: a page in a
+		// directory no console asks for is a page nobody will ever see.
+		public function directories() {
+			$found = [];
+			foreach ($this->pages() as $page) {
+				if ($page["dir"] === "" || isset($found[$page["dir"]])) continue;
+				$found[$page["dir"]] = is_writable(dirname($page["path"]));
+			}
+			ksort($found);
+			return $found;
+		}
+
 		// Whether new pages can be made at all, which is a different question
 		// from whether an existing one can be changed: one needs the
 		// directory writable, the other the file.
 		public function canCreate() {
-			$root = $this->root();
-			return $root !== false && is_writable($root);
+			foreach ($this->directories() as $writable) {
+				if ($writable) return true;
+			}
+			return false;
 		}
 
 		// Returns [ok, detail]. On success the detail is the new page's URL.
-		public function create($code, $html) {
-			$code = trim((string)$code);
-			if (!preg_match(self::CODE_PATTERN, $code)) return [false, "bad-code"];
-
+		//
+		// $dir is one of the game directories that already exist, matched
+		// against that list rather than trusted; $name is the file, without
+		// its extension, matched against a pattern that cannot express a
+		// separator or a parent directory.
+		public function create($dir, $name, $html) {
 			$root = $this->root();
 			if ($root === false) return [false, "no-root"];
-			if (!is_writable($root)) return [false, "root-not-writable"];
 
-			$dir = $root . DIRECTORY_SEPARATOR . $code;
-			$path = $dir . DIRECTORY_SEPARATOR . self::PAGE_FILE;
+			$dirs = $this->directories();
+			$dir = trim((string)$dir, "/");
+			if (!isset($dirs[$dir])) return [false, "bad-directory"];
+			if (!$dirs[$dir]) return [false, "not-writable"];
+
+			$name = strtolower(trim((string)$name));
+			$name = preg_replace('/\.html?$/', "", $name);
+			if (!preg_match(self::FILE_PATTERN, (string)$name)) return [false, "bad-name"];
+
+			$path = $root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $name . ".html";
 			if (file_exists($path)) return [false, "already-exists"];
 
-			if (!is_dir($dir) && !@mkdir($dir, 0775, true)) return [false, "mkdir-failed"];
-
-			// A new page with nothing in it is a file the console will fetch
-			// and render as nothing. The starter belongs here rather than in
-			// whichever handler happened to call create(): every caller wants
-			// the same thing, and only one of them was doing it.
-			if (trim((string)$html) === "") $html = $this->starter($code);
+			if (trim((string)$html) === "") $html = $this->starter($name);
 
 			[$ok, $detail] = $this->put($path, $html);
 			if (!$ok) return [false, $detail];
-			return [true, "/01/" . $code . "/" . self::PAGE_FILE];
+			return [true, "/01/" . $dir . "/" . $name . ".html"];
 		}
 
 		public function write($url, $html) {
@@ -161,10 +190,9 @@
 			if ($page === null) return [false, "no-such-page"];
 			if (!is_writable(dirname($page["path"]))) return [false, "not-writable"];
 			if (!@unlink($page["path"])) return [false, "delete-failed"];
-			// The directory goes too when the page was all it held; a game
-			// code with an empty folder behind it is a page the adapter will
-			// ask for and not find.
-			@rmdir(dirname($page["path"]));
+			// The directory stays: other pages of the same game live in it,
+			// and so does their shared img/. Removing it used to be right
+			// when a directory held exactly one page.
 			return [true, "ok"];
 		}
 

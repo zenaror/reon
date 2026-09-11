@@ -20,8 +20,8 @@
 		$html = (string)($_POST["html"] ?? "");
 
 		if ($action === "create") {
-			$code = trim((string)($_POST["code"] ?? ""));
-			[$ok, $detail] = $trainer->create($code, $html);
+			[$ok, $detail] = $trainer->create(
+				(string)($_POST["dir"] ?? ""), (string)($_POST["name"] ?? ""), $html);
 			if ($ok) {
 				$admin->log("trainer.create", $detail);
 				header("Location: /admin/trainer.php?page=" . urlencode($detail) . "&saved=1");
@@ -109,6 +109,7 @@
 			"notice" => $notice,
 			"notice_kind" => $noticeKind,
 			"can_create" => $trainer->canCreate(),
+			"directories" => $trainer->directories(),
 			"root" => $trainer->root(),
 		]);
 		return;
