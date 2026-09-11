@@ -260,6 +260,7 @@ admin:
   news-maker-ranking: "Ranking %n%"
   news-maker-text: "Textos"
   news-maker-text-hint: "Três textos diferentes, cada um aparecendo num lugar. Idioma deixado em branco fica como estava no template."
+  news-maker-text-none: "Marque um idioma em “Compilar para” acima e os campos dele aparecem aqui."
   news-maker-headline: "Título"
   news-maker-body: "Artigo"
   news-maker-regions: "Compilar para"

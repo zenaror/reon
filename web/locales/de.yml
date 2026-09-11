@@ -1133,6 +1133,7 @@ admin:
   news-maker-ranking: Rangliste %n%
   news-maker-text: Texte
   news-maker-text-hint: Drei verschiedene Texte, jeder erscheint an anderer Stelle. Lassen Sie eine Sprache leer, behält diese Sprache, was die Vorlage hatte.
+  news-maker-text-none: "Wählen Sie oben unter „Bauen für“ eine Sprache, und ihre Felder erscheinen hier."
   news-maker-headline: Schlagzeile
   news-maker-body: Artikel
   news-maker-regions: Bauen für

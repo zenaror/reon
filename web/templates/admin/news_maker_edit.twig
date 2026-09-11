@@ -78,11 +78,11 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 				<input type="text" name="name" required maxlength="60" value="{{ issue.name|default('') }}">
 			</label>
 
-		{# Mês e dia separados, e não um calendário: a data é **sem ano** -- ela
-		   se repete todo ano, e um calendário obrigaria a escolher um ano que
-		   não significa nada aqui. Fevereiro vai até 28 pelo mesmo motivo:
-		   o dia 29 só existiria em ano bissexto, e a edição não sairia em
-		   três de cada quatro anos. #}
+		{# Mês e dia separados, e não um calendário: o ano não é escolha -- é
+		   sempre o corrente, acrescentado ao gravar o calendário, e um
+		   calendário completo obrigaria a escolher um ano que não significa
+		   nada aqui. Fevereiro vai até 28 porque o dia 29 só existe em ano
+		   bissexto, e a edição não sairia em três de cada quatro anos. #}
 		{% set picked_month = issue.date|default('') ? issue.date|slice(0, 2) : '' %}
 		{% set picked_day = issue.date|default('') ? issue.date|slice(3, 2) : '' %}
 			<label data-news-date>
@@ -140,8 +140,36 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 		</div>
 
 		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.news-maker-regions'|trans }}</h2>
+			<p class="admin-form__hint">{{ 'admin.news-maker-regions-hint'|trans }}</p>
+			{# Um destino por idioma, não por região. Inglês são três cartuchos
+			   -- Estados Unidos, Europa e Austrália -- que consomem o mesmo
+			   texto e compilam o mesmo binário, então pedir três cliques para
+			   escrever o mesmo arquivo em três pastas seria ruído. Os outros
+			   cinco ficam separados porque cada um carrega texto próprio. #}
+			<div class="news-regions">
+				{% for language, group in targets %}
+					<label class="news-region" data-news-region="{{ language }}"
+					       data-news-needs="{{ language }}"
+					       data-news-why="{{ 'admin.news-maker-region-needs'|trans({'%lang%': ('admin.news-maker-lang-' ~ language)|trans}) }}">
+						<input type="checkbox" name="regions[]" value="{{ language }}"
+						       {% if group|first in issue.scheduled|default(issue.built|default([])) %}checked{% endif %}>
+						<span>
+							{{ ('admin.news-maker-lang-' ~ language)|trans }}
+							{# Quais cartuchos recebem, dito onde não atrapalha:
+							   é a resposta para "e o P e o U, foram?". #}
+							{% if group|length > 1 %}
+								<span class="admin-form__hint">{% for r in group %}{{ ('region.language.' ~ r)|trans }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+							{% endif %}
+						</span>
+					</label>
+				{% endfor %}
+			</div>
+		</section>
+		<section class="admin-section">
 			<h2 class="admin-section__title">{{ 'admin.news-maker-text'|trans }}</h2>
 			<p class="admin-form__hint">{{ 'admin.news-maker-text-hint'|trans }}</p>
+			<p class="admin-form__hint" data-news-empty hidden>{{ 'admin.news-maker-text-none'|trans }}</p>
 			{% for key, letter in languages %}
 				<div class="admin-form news-lang" data-news-lang="{{ key }}">
 					<h3 style="margin:0 0 4px">{{ ('admin.news-maker-lang-' ~ key)|trans }}</h3>
@@ -171,33 +199,6 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			{% endfor %}
 		</section>
 
-		<section class="admin-section">
-			<h2 class="admin-section__title">{{ 'admin.news-maker-regions'|trans }}</h2>
-			<p class="admin-form__hint">{{ 'admin.news-maker-regions-hint'|trans }}</p>
-			{# Um destino por idioma, não por região. Inglês são três cartuchos
-			   -- Estados Unidos, Europa e Austrália -- que consomem o mesmo
-			   texto e compilam o mesmo binário, então pedir três cliques para
-			   escrever o mesmo arquivo em três pastas seria ruído. Os outros
-			   cinco ficam separados porque cada um carrega texto próprio. #}
-			<div class="news-regions">
-				{% for language, group in targets %}
-					<label class="news-region" data-news-region="{{ language }}"
-					       data-news-needs="{{ language }}"
-					       data-news-why="{{ 'admin.news-maker-region-needs'|trans({'%lang%': ('admin.news-maker-lang-' ~ language)|trans}) }}">
-						<input type="checkbox" name="regions[]" value="{{ language }}"
-						       {% if group|first in issue.scheduled|default(issue.built|default([])) %}checked{% endif %}>
-						<span>
-							{{ ('admin.news-maker-lang-' ~ language)|trans }}
-							{# Quais cartuchos recebem, dito onde não atrapalha:
-							   é a resposta para "e o P e o U, foram?". #}
-							{% if group|length > 1 %}
-								<span class="admin-form__hint">{% for r in group %}{{ ('region.language.' ~ r)|trans }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
-							{% endif %}
-						</span>
-					</label>
-				{% endfor %}
-			</div>
-		</section>
 
 		{% if issue.locked|default(false) %}</fieldset>{% endif %}
 

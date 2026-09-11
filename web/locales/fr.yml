@@ -1197,6 +1197,7 @@ admin:
   news-maker-ranking: Classement %n%
   news-maker-text: Textes
   news-maker-text-hint: Trois textes différents, chacun apparaissant ailleurs. Laissez une langue vide et cette langue garde ce qu'avait le modèle.
+  news-maker-text-none: "Cochez une langue sous « Compiler pour » ci-dessus et ses champs apparaissent ici."
   news-maker-headline: Titre
   news-maker-body: Article
   news-maker-regions: Compiler pour

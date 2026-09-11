@@ -131,6 +131,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   onde o `auto-schedule` já lê. Nada disso precisa de privilégio: o montador
   roda como o usuário web, em diretório temporário, e alcança a ferramenta só
   pelo caminho de includes
+* **A marcação do idioma é que abre os campos de texto.** Antes os seis
+  blocos apareciam sempre e a caixa de "compilar para" ficava *desabilitada*
+  até o idioma ter texto — confundia duas vezes: mostrava cinco blocos que
+  ninguém ia usar, e desabilitava justamente o controle que a pessoa estava
+  tentando usar. Agora a seção de destinos vem primeiro, marcar um idioma faz
+  os campos dele aparecerem, e marcado-mas-incompleto é aviso na própria
+  caixa, não um bloqueio. Bloco com texto dentro nunca é escondido, mesmo
+  desmarcado, e o campo escondido continua sendo enviado: desmarcar não apaga
+  nada. Sem JavaScript aparece tudo, como antes — quem recusa de verdade
+  continua sendo o servidor, antes de compilar
 * **Publicar agora**, em botão próprio, para não esperar o ciclo de 15
   minutos. Ele reescreve a data da edição para hoje em vez de ignorá-la: o
   agendador escolhe pela data, e mandar ir ao ar sem mexer no calendário
