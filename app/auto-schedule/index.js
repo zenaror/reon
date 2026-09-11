@@ -1823,6 +1823,32 @@ async function mirrorVanillaToCustom(conn, region, vanillaId, existingCustomId) 
   return res.insertId;
 }
 
+// Marca a definição da edição como publicada, no instante em que ela entra
+// no bxt_news.
+//
+// O painel não deixa editar uma edição que já foi ao ar -- para mexer, apaga
+// e republica. Quem sabe a verdade sobre isso é este processo, e não o painel:
+// é ele que aplica. A marca fica na própria definição, então sobrevive a
+// retirar do calendário e a substituição por uma edição mais nova.
+//
+// Best-effort de propósito: falhar em marcar não pode impedir a notícia de
+// sair. O painel tem sua própria regra por data, que erra para o lado de
+// travar, então uma marca perdida não libera edição do que já foi publicado.
+function stampIssuePublished(newsCfg, articleId) {
+  try {
+    const slug = String(articleId || "").replace(/\.bin$/i, "");
+    if (slug === "") return;
+    const file = path.join(newsCfg.articles_dir, "bxt_custom", "_issues", slug + ".json");
+    if (!fs.existsSync(file)) return;
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!data || typeof data !== "object" || data.published_at) return;
+    data.published_at = new Date().toISOString();
+    fs.writeFileSync(file, JSON.stringify(data, null, 4) + "\n");
+  } catch (err) {
+    console.warn(`[news] could not stamp published_at for ${articleId}: ${err.message}`);
+  }
+}
+
 async function clearRankingsForRegions(conn, regions, reason) {
   const uniqueRegions = Array.from(new Set((regions || []).filter(Boolean))).sort();
   for (const region of uniqueRegions) {
@@ -2086,6 +2112,7 @@ async function processPokemonNewsCycle(
         ]
       );
       updatedByRegion[region] = true;
+      if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
       console.log(
         `[news:${trackLabel}] Updated bxt_news for region=${region}, id=${existingId}, article=${chosenArticleId}`
       );
@@ -2112,6 +2139,7 @@ async function processPokemonNewsCycle(
         ]
       );
       updatedByRegion[region] = true;
+      if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
       console.log(
         `[news:${trackLabel}] Inserted bxt_news for region=${region}, id=${res.insertId}, article=${chosenArticleId}`
       );

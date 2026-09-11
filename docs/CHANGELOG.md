@@ -131,6 +131,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   onde o `auto-schedule` já lê. Nada disso precisa de privilégio: o montador
   roda como o usuário web, em diretório temporário, e alcança a ferramenta só
   pelo caminho de includes
+* **Edição publicada é imutável.** Enquanto não foi ao ar dá para mexer à
+  vontade, e salvar recompila. Depois que o agendador a colocou no
+  `bxt_news`, a tela passa a ser só de leitura: recompilar por cima trocaria
+  o conteúdo de uma edição que jogadores podem ter lido, com o mesmo nome e a
+  mesma data, sem que houvesse como perceber. Para mudar algo, apaga e
+  publica outra. Quem marca é o próprio agendador, no instante em que grava a
+  linha, então a trava sobrevive a tirar do ar e a ser substituída por uma
+  edição mais nova — e o painel ainda trava por data, de modo que uma marca
+  perdida não libera o que já saiu. A recusa é no servidor, não botão
+  escondido
 * **Entrar na rotina do agendador exigiu duas mudanças nele**, porque o
   seletor de datas foi escrito para a rotação anual das sete edições
   históricas e não para alguém publicando hoje. A data do calendário passou a
