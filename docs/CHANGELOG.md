@@ -727,10 +727,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   resolvers próprios dos frontends viraram dispensáveis
 * Contador de device-auth reservado em lotes de 50 para poupar a flash;
   garantia é "estritamente crescente, nunca repetido", não continuidade
-* `b136972` **não resolve mais**: a limpeza do e-mail pessoal reescreveu a
-  `feature/full_server` da libmobile e esse commit virou `5e1526e`, com a
-  mesma árvore. O hash antigo fica registrado aqui porque era o que valia
-  quando isto foi escrito
+* `b136972` **não resolve mais, e o sucessor dele também não**: a limpeza do
+  e-mail pessoal reescreveu a `feature/full_server` da libmobile e esse commit
+  virou `5e1526e`; depois o branch foi reorganizado (59 commits em 14) e
+  passou a `2b50f7d`, de modo que o `5e1526e` deixou de existir por sua vez.
+  Este trabalho hoje vive dentro de um dos commits agrupados. Nenhum dos dois
+  hashes antigos resolve, e ficam registrados porque eram o que valia quando
+  cada linha foi escrita — trocar o texto seria mentir sobre o passado, e
+  apontar para um commit agrupado esconderia que houve duas reescritas
 * `b136972`: handshake v1 do relay com o id do aparelho (buffer 0x20→0x30,
   static_assert derivado das constantes); TEL/WAIT_CALL recusam quando o
   estado já é "bloqueado"; falha na derivação da identidade não é mais
