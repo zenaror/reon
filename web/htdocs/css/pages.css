@@ -163,3 +163,62 @@
 /* Section gems for the two pages, alongside the ones home-v2.css sets. */
 [data-section="guide"] { --section-gem: var(--reon-pink); }
 [data-section="downloads"] { --section-gem: var(--reon-silver); }
+
+/* ------------------------------------------------------- modal de documento
+
+   Termos de uso e política de privacidade abertos por cima do cadastro. O
+   corpo é o mesmo HTML que as páginas /terms.php e /privacy.php mostram, e
+   herda os estilos de `.reon-note` daqui de cima -- por isso este bloco mora
+   neste arquivo, e não no do tema. */
+.legal-modal .modal-content {
+  border: 2px solid var(--reon-line, #1a1c26);
+  border-radius: 0;
+  background: var(--reon-paper, #fdfbf0);
+}
+
+.legal-modal .modal-header {
+  border-bottom: 2px solid var(--reon-line, #1a1c26);
+  background: var(--reon-blue-deep, #1272b0);
+  color: #fff;
+  border-radius: 0;
+}
+
+.legal-modal .modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.legal-modal .modal-footer {
+  border-top: 2px solid var(--reon-line, #1a1c26);
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.legal-modal__full {
+  font-size: .9rem;
+}
+
+/* O documento é longo; quem rola é o corpo, não a página atrás. Os títulos
+   começam em h1 no Markdown, e aqui o h1 já é a barra do modal -- então o
+   primeiro nível de dentro desce de tamanho para não competir com ela. */
+.legal-modal__body {
+  max-height: 70vh;
+}
+
+.legal-modal__body h1 {
+  font-size: 1.25rem;
+}
+
+.legal-modal__body h2 {
+  font-size: 1.05rem;
+  margin-top: 1.4em;
+}
+
+.legal-modal__body h3 {
+  font-size: .98rem;
+}
+
+.legal-modal__body > *:first-child {
+  margin-top: 0;
+}
