@@ -24,7 +24,10 @@
 			"template" => (string)($_POST["template"] ?? ""),
 			"minigame" => (string)($_POST["minigame"] ?? ""),
 			"message" => [],
-			"date" => trim((string)($_POST["date"] ?? "")),
+			// Mês e dia vêm separados; a data é remontada aqui, para o resto
+			// do sistema continuar vendo um "MM-DD" só.
+			"date" => (string)NewsMakerUtil::composeDate(
+				$_POST["date_month"] ?? "", $_POST["date_day"] ?? ""),
 			"rankings" => [],
 			"headline" => [],
 			"body" => [],
@@ -46,8 +49,31 @@
 		$action = (string)($_POST["action"] ?? "save");
 		$issue = readIssue($maker);
 
+		// Sorteia o que ficou como aleatório e recusa repetição. Feito antes
+		// de salvar, para a definição guardar o que de fato saiu -- sortear
+		// de novo a cada build daria edições diferentes com o mesmo nome.
+		[$resolved, $rankings] = $maker->resolveRankings($issue["rankings"]);
+		if ($resolved) {
+			$issue["rankings"] = $rankings;
+		}
+
 		if ($issue["slug"] === "") {
 			$notice = TemplateUtil::translate("admin.news-maker-need-name");
+			$noticeKind = "bad";
+		} elseif (($problems = ($action === "delete" || $action === "withdraw" ? [] : $maker->checkText($issue))) !== []) {
+			// Recusado, com o trecho culpado. O montador aceitaria calado e o
+			// texto sairia da caixa na tela do console.
+			$lines = [];
+			foreach (array_slice($problems, 0, 6) as $one) {
+				$lines[] = TemplateUtil::translate("admin.news-maker-lang-" . $one["language"])
+					. " · " . TemplateUtil::translate("admin.news-maker-" . $one["field"])
+					. (isset($one["line"]) ? " " . $one["line"] : "")
+					. ": " . $one["length"] . "/" . $one["limit"] . " — \"" . $one["text"] . "\"";
+			}
+			$notice = TemplateUtil::translate("admin.news-maker-too-long") . " " . implode(" · ", $lines);
+			$noticeKind = "bad";
+		} elseif (!$resolved && $action !== "delete" && $action !== "withdraw") {
+			$notice = TemplateUtil::translate("admin.news-maker-" . explode(":", $rankings)[0]);
 			$noticeKind = "bad";
 
 		} elseif ($action === "withdraw") {
@@ -78,12 +104,39 @@
 				$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => $detail]);
 				$noticeKind = "bad";
 			} elseif ($action === "publish") {
-				$regions = array_values(array_filter(
-					(array)($_POST["regions"] ?? []),
-					function ($r) { return isset(NewsMakerUtil::REGION_LANGUAGE[strtolower($r)]); }
-				));
+				// O formulário marca idiomas; cada um vira as regiões que o
+				// consomem. Inglês são três pastas, e escrever nas três é o
+				// que o agendador precisa -- o que não precisa é de três
+				// cliques para o mesmo arquivo.
+				$targets = $maker->buildTargets();
+				$regions = [];
+				foreach ((array)($_POST["regions"] ?? []) as $language) {
+					$language = strtolower((string)$language);
+					if (!isset($targets[$language])) continue;
+					foreach ($targets[$language] as $region) $regions[] = $region;
+				}
+				$regions = array_values(array_unique($regions));
+				$gaps = $maker->checkBuildable($issue, $regions);
+
 				if ($regions === []) {
 					$notice = TemplateUtil::translate("admin.news-maker-need-region");
+					$noticeKind = "bad";
+				} elseif ($gaps !== []) {
+					// Recusado antes de compilar: uma região sem o texto dela
+					// não sairia vazia, sairia com o texto de 2002 que veio no
+					// template.
+					$lines = [];
+					foreach ($gaps as $one) {
+						$fields = [];
+						foreach ($one["fields"] as $field) {
+							$fields[] = TemplateUtil::translate("admin.news-maker-" . $field);
+						}
+						$lines[] = strtoupper($one["region"]) . " ("
+							. TemplateUtil::translate("admin.news-maker-lang-" . $one["language"])
+							. "): " . implode(", ", $fields);
+					}
+					$notice = TemplateUtil::translate("admin.news-maker-region-empty")
+						. " " . implode(" · ", $lines);
 					$noticeKind = "bad";
 				} else {
 					[$results, $log] = $maker->publish($issue, $regions);
@@ -95,7 +148,8 @@
 						if ($one[0]) $good[] = $region;
 					}
 					if ($good !== []) {
-						[$sched, $why] = $maker->setScheduled($issue["slug"], $issue["date"], $good);
+						[$sched, $why] = $maker->setScheduled(
+							$issue["slug"], $issue["date"], $good, $issue["rankings"]);
 						if (!$sched) $log .= "\nschedule: " . $why;
 					}
 					if (!is_array($results) || $results === []) {
@@ -136,6 +190,12 @@
 			"categories" => $maker->rankingCategories(),
 			"missing" => $maker->missing(),
 			"tool" => $maker->toolVersion(),
+			"days_in_month" => NewsMakerUtil::DAYS_IN_MONTH,
+			"region_language" => NewsMakerUtil::REGION_LANGUAGE,
+			"targets" => $maker->buildTargets(),
+			"headline_max" => NewsMakerUtil::HEADLINE_MAX,
+			"message_max" => NewsMakerUtil::MESSAGE_MAX,
+			"body_line_max" => NewsMakerUtil::BODY_LINE_MAX,
 			"schedule_writable" => $maker->scheduleWritable(),
 			"schedule_path" => $maker->schedulePath(),
 		];

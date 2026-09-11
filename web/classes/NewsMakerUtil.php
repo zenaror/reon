@@ -648,6 +648,224 @@
 			return [$results, $log];
 		}
 
+		// O número que o agendador grava em ranking_category_N.
+		//
+		// A numeração autoritativa é a de bxt_encoding.json -- é a mesma
+		// tabela que decodeRankingCategory lê de volta para montar o rótulo,
+		// então casar por ela é casar com quem vai ler. O casamento é pelo
+		// nome, porque a posição em ranking_types.asm não serve: as três
+		// reservadas são filtradas da lista e deslocariam todos os índices
+		// seguintes.
+		//
+		// Devolve null quando não casa, e quem chama recusa em vez de gravar
+		// um número inventado -- categoria errada num artigo é ranking errado
+		// na tela do jogador.
+		public function rankingNumber($constant) {
+			$labels = $this->rankingCategories();
+			if (!isset($labels[$constant])) return null;
+
+			$path = dirname(__DIR__, 2) . "/web/scripts/bxt_encoding.json";
+			$raw = @file_get_contents($path);
+			$data = $raw === false ? [] : (json_decode($raw, true) ?: []);
+			// Os números não dependem de região; a tabela inglesa serve de
+			// referência para todas.
+			$table = $data["btxe_btxp_btxu_ranking_category"] ?? [];
+
+			foreach ($table as $number => $label) {
+				if ($this->readable($label) === $labels[$constant]) return (int)$number;
+			}
+			return null;
+		}
+
+		// Larguras, medidas nas sete edições reais e não deduzidas.
+		//
+		//   artigo   a caixa é declarada `nsc_textbox 1, 14, 18, 4` -- 18 de
+		//            largura -- e a mais longa das 245 linhas reais tem
+		//            exatamente 18. Declaração e dado concordam.
+		//   título   maior real: "NACHRICHTEN Nr. 12", "NOTICIA PKMN N.º12".
+		//   caixa    as oito mensagens reais têm de 14 a 17 caracteres.
+		//
+		// Não há teto de linhas no artigo: o texto rola com `cont`, então o
+		// que importa é a largura de cada uma.
+		const HEADLINE_MAX = 18;
+		const BODY_LINE_MAX = 18;
+		const MESSAGE_MAX = 17;
+
+		// Confere os textos contra essas larguras. Devolve uma lista de
+		// problemas, cada um já dizendo idioma, campo e o trecho culpado --
+		// "passou do limite" sem apontar qual linha manda alguém contar
+		// caractere à mão em seis idiomas.
+		public function checkText($issue) {
+			$problems = [];
+
+			foreach (self::LANGUAGES as $key => $letter) {
+				$headline = trim((string)(($issue["headline"] ?? [])[$key] ?? ""));
+				if (mb_strlen($headline, "UTF-8") > self::HEADLINE_MAX) {
+					$problems[] = [
+						"language" => $key, "field" => "headline",
+						"limit" => self::HEADLINE_MAX,
+						"length" => mb_strlen($headline, "UTF-8"), "text" => $headline,
+					];
+				}
+
+				$message = trim((string)(($issue["message"] ?? [])[$key] ?? ""));
+				if (mb_strlen($message, "UTF-8") > self::MESSAGE_MAX) {
+					$problems[] = [
+						"language" => $key, "field" => "message",
+						"limit" => self::MESSAGE_MAX,
+						"length" => mb_strlen($message, "UTF-8"), "text" => $message,
+					];
+				}
+
+				// Medido depois da quebra em macros, que é o que de fato vira
+				// linha na tela -- contar o texto cru diria outra coisa.
+				foreach ($this->textMacros((string)(($issue["body"] ?? [])[$key] ?? "")) as $i => [$macro, $line]) {
+					if (mb_strlen($line, "UTF-8") <= self::BODY_LINE_MAX) continue;
+					$problems[] = [
+						"language" => $key, "field" => "body", "line" => $i + 1,
+						"limit" => self::BODY_LINE_MAX,
+						"length" => mb_strlen($line, "UTF-8"), "text" => $line,
+					];
+				}
+			}
+
+			return $problems;
+		}
+
+		// Destinos de compilação, agrupados pelo texto que consomem.
+		//
+		// São oito regiões para seis idiomas: `e`, `p` e `u` -- Estados
+		// Unidos, Europa e Austrália -- consomem todos o texto inglês, e
+		// compilam binário byte a byte idêntico (mesmo md5, medido). Pedir
+		// três cliques para escrever o mesmo arquivo em três pastas é ruído.
+		//
+		// Os outros cinco NÃO se agrupam, por mais que a ROM os trate igual:
+		// a desmontagem tem só duas flags de região (_CRYSTAL_AU e
+		// _CRYSTAL_EU) e nenhuma diferença de lógica entre EU/FR/DE/IT/ES,
+		// mas isso é sobre o que o cartucho *executa*. Aqui a letra escolhe
+		// que **texto** o servidor entrega, e francês, alemão, italiano e
+		// espanhol são conteúdos diferentes -- juntá-los mandaria alemão para
+		// um cartucho francês.
+		public function buildTargets() {
+			$targets = [];
+			foreach (self::REGION_LANGUAGE as $region => $language) {
+				$targets[$language][] = $region;
+			}
+			return $targets;
+		}
+
+		// Confere se cada região marcada para compilar tem o texto do idioma
+		// dela escrito. Devolve a lista de regiões que não têm, com o campo
+		// que falta.
+		//
+		// Duas leituras da mesma regra: não se marca a Espanha sem escrever
+		// em espanhol, e não se deixa o espanhol vazio tendo marcado a
+		// Espanha. Várias regiões compartilham idioma (e, p e u usam o
+		// inglês), então a checagem é pelo idioma que a região consome.
+		//
+		// Título e artigo são exigidos; a linha da caixa não, porque ela tem
+		// queda documentada para o título -- exigir seria contradizer um
+		// comportamento que existe de propósito.
+		//
+		// O artigo é o que mais importa aqui: deixado em branco, o que sai
+		// não é uma página vazia, é o texto de 2002 que veio no template.
+		public function checkBuildable($issue, $regions) {
+			$missing = [];
+			foreach ($regions as $region) {
+				$region = strtolower((string)$region);
+				if (!isset(self::REGION_LANGUAGE[$region])) continue;
+
+				$language = self::REGION_LANGUAGE[$region];
+				$gaps = [];
+				if (trim((string)(($issue["headline"] ?? [])[$language] ?? "")) === "") $gaps[] = "headline";
+				if (trim((string)(($issue["body"] ?? [])[$language] ?? "")) === "") $gaps[] = "body";
+				if ($gaps === []) continue;
+
+				$missing[] = ["region" => $region, "language" => $language, "fields" => $gaps];
+			}
+			return $missing;
+		}
+
+		// Quais idiomas já têm texto suficiente para serem compilados. Usado
+		// pela tela para não oferecer uma região que ainda não daria certo.
+		public function filledLanguages($issue) {
+			$filled = [];
+			foreach (array_keys(self::LANGUAGES) as $language) {
+				if (trim((string)(($issue["headline"] ?? [])[$language] ?? "")) === "") continue;
+				if (trim((string)(($issue["body"] ?? [])[$language] ?? "")) === "") continue;
+				$filled[] = $language;
+			}
+			return $filled;
+		}
+
+		// Dias por mês, com fevereiro sempre em 28.
+		//
+		// A data é **sem ano**: ela se repete todo ano, e é por isso que o
+		// campo não é um calendário. 29 de fevereiro só existiria em ano
+		// bissexto, ou seja, a edição não sairia em três de cada quatro anos
+		// -- um agendamento que quase nunca acontece é pior que um recusado.
+		const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+		// Monta "MM-DD" a partir de mês e dia, ou null se não formar data.
+		public static function composeDate($month, $day) {
+			$month = (int)$month;
+			$day = (int)$day;
+			if ($month < 1 || $month > 12) return null;
+			if ($day < 1 || $day > self::DAYS_IN_MONTH[$month - 1]) return null;
+			return sprintf("%02d-%02d", $month, $day);
+		}
+
+		// O valor que o formulário manda quando a escolha é "sortear".
+		const RANKING_RANDOM = "__random__";
+
+		// Toda edição real da Pokémon News cabe nisto; é o aviso, não uma
+		// recusa, porque o limite de verdade é o da tela e não o da coluna
+		// (que é varbinary(100), folgada).
+		const MESSAGE_SOFT_LIMIT = 17;
+
+		// Resolve as três categorias: sorteia as marcadas como aleatórias e
+		// garante que as três sejam diferentes.
+		//
+		// As três precisam diferir porque a tela de rankings mostra as três
+		// lado a lado -- repetir uma é gastar um terço do espaço dizendo duas
+		// vezes a mesma coisa. Vale tanto para o que a pessoa escolheu quanto
+		// para o que foi sorteado, então o sorteio tira do que sobrou em vez
+		// de sortear e conferir depois.
+		//
+		// Devolve [ok, três-categorias-ou-motivo].
+		public function resolveRankings($chosen) {
+			$pool = array_keys($this->rankingCategories());
+			if (count($pool) < 3) return [false, "no-categories"];
+
+			$chosen = array_values((array)$chosen);
+			while (count($chosen) < 3) $chosen[] = self::RANKING_RANDOM;
+			$chosen = array_slice($chosen, 0, 3);
+
+			// Primeiro o que foi escolhido à mão, para o sorteio já saber do
+			// que precisa fugir.
+			$out = [null, null, null];
+			$taken = [];
+			foreach ($chosen as $slot => $value) {
+				$value = (string)$value;
+				if ($value === self::RANKING_RANDOM || $value === "") continue;
+				if (!in_array($value, $pool, true)) return [false, "unknown-ranking:" . $value];
+				if (in_array($value, $taken, true)) return [false, "duplicate-ranking"];
+				$out[$slot] = $value;
+				$taken[] = $value;
+			}
+
+			$available = array_values(array_diff($pool, $taken));
+			foreach ($out as $slot => $value) {
+				if ($value !== null) continue;
+				if ($available === []) return [false, "no-categories"];
+				$pick = random_int(0, count($available) - 1);
+				$out[$slot] = $available[$pick];
+				array_splice($available, $pick, 1);
+			}
+
+			return [true, $out];
+		}
+
 		// -------------------------------------------------------- scheduling
 
 		// The overlay auto-schedule merges over the custom cycle's schedule.
@@ -682,9 +900,25 @@
 			);
 			if ($body === false || json_decode($body, true) === null) return false;
 
-			$temp = $path . ".tmp";
-			if (@file_put_contents($temp, $body) === false) return false;
-			if (!@rename($temp, $path)) { @unlink($temp); return false; }
+			// Escrito no lugar, e não num vizinho renomeado por cima.
+			//
+			// A troca atômica precisaria de escrita no *diretório*, e o
+			// diretório é justamente o que não foi concedido -- ao lado mora
+			// o config que carrega o agendamento das notícias comuns. A
+			// permissão é de um arquivo só, então a gravação é de um arquivo
+			// só.
+			//
+			// O que se perde é a atomicidade: um processo morto no meio da
+			// escrita deixa JSON truncado. O que segura isso é o outro lado,
+			// que já foi testado -- o carregador do auto-schedule engole
+			// overlay ilegível com um aviso e segue com agendamento vazio,
+			// então o pior caso é a trilha custom não sair numa execução.
+			// Aqui o arquivo é relido depois de escrito, para que isso vire
+			// erro na tela em vez de silêncio.
+			if (@file_put_contents($path, $body) === false) return false;
+
+			$back = @file_get_contents($path);
+			if ($back === false || json_decode($back, true) === null) return false;
 			return true;
 		}
 
@@ -697,28 +931,59 @@
 		// them, and the binary is where they actually are -- they were
 		// compiled into it. Writing them here would create a second copy that
 		// can disagree with the first.
-		public function setScheduled($slug, $date, $regions) {
+		public function setScheduled($slug, $date, $regions, $rankings = []) {
 			$slug = $this->slug($slug);
 			if ($slug === "") return [false, "bad-name"];
-			if (!preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/', (string)$date)) {
+			// Conferida pelo mês de verdade, e não por um padrão que aceitaria
+			// 02-30 e 04-31 por terem a forma certa.
+			$parts = explode("-", (string)$date);
+			if (count($parts) !== 2 || self::composeDate($parts[0], $parts[1]) === null) {
 				return [false, "bad-date"];
 			}
+			$date = self::composeDate($parts[0], $parts[1]);
 			if (!$this->scheduleWritable()) return [false, "schedule-not-writable"];
 
 			$schedule = $this->schedule();
 			$id = $slug . ".bin";
+
+			// As categorias vão escritas, e não deixadas para o agendador
+			// deduzir do binário. O caminho de dedução dele grava o objeto
+			// inteiro devolvido por findRankingSlots numa coluna inteira e
+			// falha -- por isso toda entrada real que existe traz a lista.
+			$numbers = [];
+			foreach ($rankings as $constant) {
+				$n = $this->rankingNumber($constant);
+				if ($n === null) return [false, "unknown-ranking:" . $constant];
+				$numbers[] = $n;
+			}
 
 			foreach (array_keys(self::REGION_LANGUAGE) as $region) {
 				$entries = isset($schedule[$region]) && is_array($schedule[$region])
 					? $schedule[$region] : [];
 
 				if (in_array($region, $regions, true)) {
+					// Deliberately no `slot`.
+					//
+					// A slot puts the region into the scheduler's slot-based
+					// cycle, and every entry written here would carry the
+					// same one. That makes maxSlot 0, so cycleLength becomes
+					// 1, so `for (step = 1; step < 1)` never runs and the
+					// selector returns nothing -- the region is skipped. The
+					// first run would still publish (no lastSlot yet) and
+					// then record lastSlot 0, after which the custom track
+					// would never move again. It would have looked like it
+					// worked, once.
+					//
+					// Without a slot the region stays in the plain date mode,
+					// where the entry whose date most recently came round is
+					// the one that goes out -- which is what "goes live on
+					// this day" is supposed to mean.
 					$entries[$id] = [
 						"date" => (string)$date,
 						"file" => "bxt_custom/" . $region . "/" . $id,
 						"message_file" => "bxt_custom/" . $region . "/" . $id . ".message",
-						"slot" => 0,
 					];
+					if ($numbers !== []) $entries[$id]["ranking_categories"] = $numbers;
 				} else {
 					unset($entries[$id]);
 				}

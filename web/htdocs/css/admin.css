@@ -481,12 +481,22 @@
   line-height: 1.5;
 }
 
-/* The region checkboxes read as a row of stamps rather than a list. */
+/* Com o nome por extenso as oito não cabem mais numa fileira de selos; viram
+   uma grade de duas ou três colunas, que é onde "English (United States)" e
+   "English (Australia)" ficam alinhadas e comparáveis. */
+.news-regions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
 .news-region {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  display: flex;
+  /* No topo, não ao centro: o rótulo tem duas linhas quando o destino cobre
+     mais de um cartucho, e centralizar deixaria a caixa flutuando no meio. */
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
   border: 2px solid var(--reon-line);
   background: var(--reon-panel);
   font-variant-numeric: tabular-nums;
@@ -496,4 +506,23 @@
 .news-region:has(input:checked) {
   background: var(--reon-blue-deep);
   color: #fff;
+}
+
+/* A lista de cartuchos herda a cor do rótulo marcado, senão fica cinza sobre
+   azul e some. */
+.news-region:has(input:checked) .admin-form__hint {
+  color: inherit;
+  opacity: .8;
+}
+
+.news-region .admin-form__hint {
+  display: block;
+  font-size: .8em;
+}
+
+/* Região que ainda não pode ser compilada: continua visível, porque sumir
+   deixaria a pessoa procurando o que não está lá. */
+.news-region.is-off {
+  opacity: .45;
+  cursor: not-allowed;
 }
