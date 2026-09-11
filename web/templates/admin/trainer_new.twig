@@ -7,19 +7,33 @@
 {% endblock %}
 
 {% block admin_body %}
+	<p>{{ 'admin.trainer-new-intro'|trans }}</p>
+
 	<form class="admin-form" method="post">
 		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 		<input type="hidden" name="action" value="create">
+
+		{# The game's own directory. Listed rather than typed: a page in a
+		   directory no console asks for is a page nobody will ever see. With
+		   only one game installed this is a single option, and saying which
+		   one is still better than saying nothing. #}
 		<label>
-			{{ 'admin.trainer-code'|trans }}
-			<span class="admin-form__hint">{{ 'admin.trainer-code-hint'|trans }}</span>
-			{# The pattern the server enforces, repeated here so the browser
-			   says so first. The server does not trust this -- it is the one
-			   place a path is built from input, and it re-checks. #}
-			<input type="text" name="code" required maxlength="32"
-			       pattern="[A-Za-z0-9][A-Za-z0-9\-]*"
-			       placeholder="CGB-B9AJ" spellcheck="false">
+			{{ 'admin.trainer-dir'|trans }}
+			<select name="dir">
+				{% for dir, writable in directories %}
+					<option value="{{ dir }}"{% if not writable %} disabled{% endif %}>/01/{{ dir }}/</option>
+				{% endfor %}
+			</select>
 		</label>
+
+		<label>
+			{{ 'admin.trainer-file'|trans }}
+			<span class="admin-form__hint">{{ 'admin.trainer-file-hint'|trans }}</span>
+			<input type="text" name="name" required maxlength="40"
+			       pattern="[a-z0-9][a-z0-9_\-]*"
+			       placeholder="credits" spellcheck="false">
+		</label>
+
 		<div class="admin-form__row">
 			<button class="btn btn-primary" type="submit"{% if not can_create %} disabled{% endif %}>{{ 'admin.trainer-create'|trans }}</button>
 		</div>

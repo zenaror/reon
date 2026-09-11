@@ -16,7 +16,9 @@
 
 	var source = form.querySelector("[data-trainer-source]");
 	var frame = form.querySelector("[data-trainer-preview]");
-	var size = form.querySelector("[data-trainer-size]");
+	// Looked up on the page, not inside the form: the byte counter now sits
+	// with the Save button at the very end, outside it.
+	var size = document.querySelector("[data-trainer-size]");
 	if (!source || !frame) return;
 
 	// The directory the page lives in, so "img/x.bmp" means what it will mean

@@ -428,11 +428,28 @@
   transform-origin: top left;
 }
 
+/* The Save row is no longer a grid cell: it left the form so it could sit
+   after the images, and it reads as the page's footer now. Its own rule and
+   its own space, because wedged between the tag list and the IMAGES heading
+   it collided with both. */
 .trainer-edit__actions {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 2px solid var(--reon-line);
+}
+
+/* Clear of the editor above it: the heading is set in the display face,
+   which sits tight against whatever precedes it. */
+.trainer-images {
+  margin-top: 28px;
+}
+
+.trainer-images .admin-form {
+  margin-top: 14px;
+  margin-bottom: 0;
 }
 
 /* Below this the two columns stop both being readable, so the screen goes

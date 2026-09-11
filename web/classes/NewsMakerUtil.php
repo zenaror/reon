@@ -358,6 +358,216 @@
 			}
 		}
 
+		// ------------------------------------------------- the mailbox line
+
+		// Which character table a region reads. Copied from
+		// resolveMessageEncodingTableForRegion in app/auto-schedule, because
+		// the two have to agree: this writes the bytes that one decodes.
+		const MESSAGE_TABLE = [
+			"j" => "jp", "e" => "en", "p" => "en", "u" => "en",
+			"f" => "fr_de", "d" => "fr_de", "s" => "es_it", "i" => "es_it",
+		];
+
+		private $encoding = null;
+
+		private function encodingTable($region) {
+			if ($this->encoding === null) {
+				$path = dirname(__DIR__, 2) . "/web/scripts/bxt_encoding.json";
+				$raw = @file_get_contents($path);
+				$this->encoding = $raw === false ? [] : (json_decode($raw, true) ?: []);
+			}
+			$name = self::MESSAGE_TABLE[strtolower((string)$region)] ?? "en";
+			return $this->encoding[$name] ?? [];
+		}
+
+		// The one line the mailbox shows for an issue, in the game's own
+		// character bytes rather than ASCII: "POKéMON NEWS No.8" is fourteen
+		// bytes, not seventeen, because some of them stand for more than one
+		// character.
+		//
+		// Returns [ok, bytes-or-reason]. Longest match first, so a compound
+		// like "POKé" becomes its single byte instead of four separate ones.
+		public function encodeMessage($text, $region) {
+			$table = $this->encodingTable($region);
+			if ($table === []) return [false, "no-encoding-table"];
+
+			// Inverted once per call, longest first. Where two bytes decode
+			// to the same character the lower one wins, which is the one the
+			// real files use.
+			$reverse = [];
+			foreach ($table as $hex => $char) {
+				if ($char === "" || $char === null) continue;
+				if (!isset($reverse[$char]) || strcmp($hex, $reverse[$char]) < 0) {
+					$reverse[$char] = $hex;
+				}
+			}
+			$sequences = array_keys($reverse);
+			usort($sequences, function ($a, $b) {
+				return mb_strlen($b, "UTF-8") <=> mb_strlen($a, "UTF-8");
+			});
+
+			$text = trim((string)$text);
+			$bytes = "";
+			$position = 0;
+			$length = mb_strlen($text, "UTF-8");
+
+			while ($position < $length) {
+				$matched = null;
+				foreach ($sequences as $sequence) {
+					$width = mb_strlen($sequence, "UTF-8");
+					if ($width === 0 || $position + $width > $length) continue;
+					if (mb_substr($text, $position, $width, "UTF-8") === $sequence) {
+						$matched = [$sequence, $width];
+						break;
+					}
+				}
+				// A character the game cannot draw is refused rather than
+				// swapped for something else: silently turning it into "?"
+				// would put a mystery on a Game Boy screen.
+				if ($matched === null) {
+					return [false, "unencodable:" . mb_substr($text, $position, 1, "UTF-8")];
+				}
+				$bytes .= hex2bin($reverse[$matched[0]]);
+				$position += $matched[1];
+			}
+
+			if ($bytes === "") return [false, "empty-message"];
+			// 0x50 is the terminator the decoder stops at.
+			return [true, $bytes . chr(0x50)];
+		}
+
+		// ------------------------------------------------------- publishing
+
+		// Where an issue's own definition is kept, so it can be edited again.
+		// A leading underscore keeps it out of the way of auto-schedule,
+		// which only ever looks inside single-letter region folders.
+		public function issuesDir() {
+			$base = $this->articlesDir();
+			if ($base === false) return false;
+			$dir = $base . "/_issues";
+			if (!is_dir($dir) && !@mkdir($dir, 0775, true)) return false;
+			return $dir;
+		}
+
+		public function slug($name) {
+			$slug = strtolower(trim((string)$name));
+			$slug = iconv("UTF-8", "ASCII//TRANSLIT//IGNORE", $slug);
+			$slug = preg_replace("/[^a-z0-9]+/", "_", (string)$slug);
+			$slug = trim($slug, "_");
+			return substr($slug, 0, 40);
+		}
+
+		public function issues() {
+			$dir = $this->issuesDir();
+			if ($dir === false) return [];
+			$out = [];
+			foreach (glob($dir . "/*.json") as $path) {
+				$data = json_decode((string)@file_get_contents($path), true);
+				if (!is_array($data)) continue;
+				$data["slug"] = basename($path, ".json");
+				$data["saved_at"] = filemtime($path);
+				$data["built"] = $this->builtRegions($data["slug"]);
+				$out[] = $data;
+			}
+			usort($out, function ($a, $b) { return $b["saved_at"] <=> $a["saved_at"]; });
+			return $out;
+		}
+
+		public function issue($slug) {
+			$dir = $this->issuesDir();
+			$slug = $this->slug($slug);
+			if ($dir === false || $slug === "") return null;
+			$path = $dir . "/" . $slug . ".json";
+			if (!is_file($path)) return null;
+			$data = json_decode((string)@file_get_contents($path), true);
+			if (!is_array($data)) return null;
+			$data["slug"] = $slug;
+			$data["built"] = $this->builtRegions($slug);
+			return $data;
+		}
+
+		public function saveIssue($slug, $issue) {
+			$dir = $this->issuesDir();
+			$slug = $this->slug($slug);
+			if ($dir === false || $slug === "") return [false, "bad-name"];
+			$issue["slug"] = $slug;
+			$written = @file_put_contents($dir . "/" . $slug . ".json",
+				json_encode($issue, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+			return $written === false ? [false, "write-failed"] : [true, $slug];
+		}
+
+		// Which regions already carry a built copy of this issue.
+		public function builtRegions($slug) {
+			$base = $this->articlesDir();
+			$slug = $this->slug($slug);
+			if ($base === false || $slug === "") return [];
+			$found = [];
+			foreach (self::REGION_LANGUAGE as $region => $language) {
+				if (is_file($base . "/" . $region . "/" . $slug . ".bin")) $found[] = $region;
+			}
+			return $found;
+		}
+
+		// Builds every region asked for and writes the pair auto-schedule
+		// consumes: <slug>.bin and <slug>.bin.message. Returns
+		// [results-per-region, log].
+		//
+		// Each region is built and written on its own: one region failing to
+		// encode its mailbox line should not cost the others their issue.
+		public function publish($issue, $regions) {
+			$base = $this->articlesDir();
+			if ($base === false) return [[], "no-articles-dir"];
+
+			$slug = $this->slug($issue["slug"] ?? "");
+			if ($slug === "") return [[], "bad-name"];
+
+			[$ok, $source] = $this->render($issue);
+			if (!$ok) return [[], $source];
+
+			$rankings = array_values((array)($issue["rankings"] ?? []));
+			$minigame = (string)($issue["minigame"] ?? "");
+			$results = [];
+			$log = "";
+
+			foreach ($regions as $region) {
+				$region = strtolower((string)$region);
+				if (!isset(self::REGION_LANGUAGE[$region])) {
+					$results[$region] = [false, "bad-region"];
+					continue;
+				}
+
+				$language = self::REGION_LANGUAGE[$region];
+				$headline = (string)(($issue["headline"] ?? [])[$language] ?? "");
+				[$encoded, $message] = $this->encodeMessage(
+					(string)($issue["message"] ?? "") ?: $headline, $region);
+				if (!$encoded) {
+					$results[$region] = [false, $message];
+					continue;
+				}
+
+				[$built, $bytes, $buildLog] = $this->buildLanguage($source, $language, $rankings, $minigame);
+				$log .= $buildLog;
+				if (!$built) {
+					$results[$region] = [false, $bytes];
+					continue;
+				}
+
+				$dir = $base . "/" . $region;
+				if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
+					$results[$region] = [false, "mkdir-failed"];
+					continue;
+				}
+				if (@file_put_contents($dir . "/" . $slug . ".bin", $bytes) === false
+				 || @file_put_contents($dir . "/" . $slug . ".bin.message", $message) === false) {
+					$results[$region] = [false, "write-failed"];
+					continue;
+				}
+				$results[$region] = [true, strlen($bytes)];
+			}
+
+			return [$results, $log];
+		}
+
 		// Always an argument list, never a shell string.
 		private function run(array $cmd, $cwd = null) {
 			$spec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]];
