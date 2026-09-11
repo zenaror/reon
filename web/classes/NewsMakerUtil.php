@@ -815,6 +815,25 @@
 			return sprintf("%02d-%02d", $month, $day);
 		}
 
+		// "MM-DD" -> "YYYY-MM-DD", no ano corrente.
+		//
+		// O formulário só pede mês e dia (pedido do dono), então o ano sai
+		// daqui. Sempre o ano corrente: um dia que já passou significa "vai
+		// ao ar agora", e não "espera onze meses".
+		public static function withYear($date) {
+			$parts = explode("-", (string)$date);
+			if (count($parts) !== 2) return (string)$date;
+			return sprintf("%04d-%02d-%02d", (int)date("Y"), (int)$parts[0], (int)$parts[1]);
+		}
+
+		// A volta: o calendário guarda a data com ano, o formulário mostra
+		// mês e dia.
+		public static function withoutYear($date) {
+			$parts = explode("-", (string)$date);
+			if (count($parts) !== 3) return (string)$date;
+			return sprintf("%02d-%02d", (int)$parts[1], (int)$parts[2]);
+		}
+
 		// O valor que o formulário manda quando a escolha é "sortear".
 		const RANKING_RANDOM = "__random__";
 
@@ -979,7 +998,16 @@
 					// the one that goes out -- which is what "goes live on
 					// this day" is supposed to mean.
 					$entries[$id] = [
-						"date" => (string)$date,
+						// Com ano, e não só mês-dia.
+						//
+						// O agendador trata "MM-DD" como data que se repete
+						// todo ano, então resolve uma que ainda não chegou
+						// para a ocorrência do ano passado -- que já passou.
+						// Uma edição marcada para dezembro entraria no ar
+						// hoje. Com "YYYY-MM-DD" ele compara a data de
+						// verdade e espera, que é o que "goes live on"
+						// quer dizer.
+						"date" => self::withYear($date),
 						"file" => "bxt_custom/" . $region . "/" . $id,
 						"message_file" => "bxt_custom/" . $region . "/" . $id . ".message",
 					];
@@ -1013,7 +1041,9 @@
 		public function scheduledDate($slug) {
 			$id = $this->slug($slug) . ".bin";
 			foreach ($this->schedule() as $entries) {
-				if (is_array($entries) && isset($entries[$id]["date"])) return $entries[$id]["date"];
+				if (is_array($entries) && isset($entries[$id]["date"])) {
+					return self::withoutYear($entries[$id]["date"]);
+				}
 			}
 			return "";
 		}

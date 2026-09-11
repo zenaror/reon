@@ -128,10 +128,20 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   tem letra latina nenhuma, e o que o jogo não sabe desenhar é recusado **com
   o nome do caractere**, em vez de virar `?` na tela de um Game Boy
 * Sai o par `.bin` + `.bin.message` em `files/bxt_custom/<região>/`, que é de
-  onde o `auto-schedule` já lê — agendar continua funcionando sem alteração
-  nenhuma. Nada disso precisa de privilégio: o montador roda como o usuário
-  web, em diretório temporário, e alcança a ferramenta só pelo caminho de
-  includes
+  onde o `auto-schedule` já lê. Nada disso precisa de privilégio: o montador
+  roda como o usuário web, em diretório temporário, e alcança a ferramenta só
+  pelo caminho de includes
+* **Entrar na rotina do agendador exigiu duas mudanças nele**, porque o
+  seletor de datas foi escrito para a rotação anual das sete edições
+  históricas e não para alguém publicando hoje. A data do calendário passou a
+  levar o ano: sem ele, uma data que ainda não chegou é lida como a ocorrência
+  do ano passado, e uma edição marcada para dezembro ia ao ar no mesmo dia. E
+  o track custom deixou de se guiar pelo timestamp da linha — ele descarta o
+  que não for mais novo que a última atualização, e a linha custom é tocada
+  com a hora de agora sempre que o espelho é criado, então a edição de hoje
+  caía fora em silêncio. No lugar disso a comparação é com o conteúdo: se o
+  que está no ar já é aquilo, a linha não é regravada — o que também poupa os
+  rankings da região, que são limpos a cada regravação
 
 * **Um painel de verdade em `/admin`**, com o que era só a tela de notícias
   puxado para dentro dele: painel com os números do serviço, notícias,
