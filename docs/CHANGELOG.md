@@ -790,9 +790,20 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   não está. Os seis `.uf2` publicados carregam esse hash **dentro**, na string
   de versão, e por isso apontam para um commit que não existe mais. A
   verificação de então provou conteúdo idêntico (`diff --stat` vazio), que é
-  coisa diferente de alcançabilidade do hash citado — a lacuna foi achada
-  depois, e só é fechada quando os binários forem refeitos com o hash final.
-  O hash antigo fica registrado porque era o que valia quando isto foi escrito
+  coisa diferente de alcançabilidade do hash citado. O hash antigo fica
+  registrado porque era o que valia quando isto foi escrito
+* **Fechado em 11/09/2026: o conjunto vivo é `ac86891`.** O branch foi
+  reorganizado (20 commits em 7) e repinado na libmobile `2b50f7d`, e os seis
+  `.uf2` foram refeitos carregando o hash novo, verificado no `.elf` de cada
+  um — nunca pelo `strings` no `.uf2`, que dá falso negativo quando a string
+  cai numa fronteira de bloco do container. O squash e a reconstrução saíram
+  na **mesma passada**, de propósito: separados, haveria uma janela em que os
+  binários publicados citariam um hash que o squash acabara de matar, ou seja,
+  o dano aumentaria antes de diminuir. Não faz sentido comparar o conteúdo com
+  o conjunto antigo: estes binários são funcionalmente novos, com todo o
+  trabalho de device-auth desde o último release de verdade, e não o mesmo
+  conteúdo reetiquetado. **Verificados por build, não em hardware** — a rodada
+  não incluiu teste em placa
 * `30a1d42`: submódulo em b136972 (relay v1), nenhuma linha de firmware
   mudou; seis Release .uf2 regenerados e copiados para
   `_RELEASES/PicoAdapterGB` (sha256 conferido). Aviso do mantenedor: `strings`
