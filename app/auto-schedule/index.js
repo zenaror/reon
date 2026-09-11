@@ -1926,14 +1926,27 @@ async function processPokemonNewsCycle(
       }
     } else {
       // Pure date-based mode, no slots.
+      //
+      // O track custom não pode se guiar pelo timestamp da linha. Ele compara
+      // a data da edição com a última atualização da linha e descarta o que
+      // não for mais novo -- e a linha custom é tocada com a hora de agora
+      // sempre que o espelho é criado ou a vanilla muda. Resultado: uma
+      // edição marcada para hoje cai fora em silêncio, sem log nenhum, que é
+      // justamente o caso de quem acaba de escrever uma notícia no painel.
+      //
+      // Aqui a repetição é evitada mais abaixo, comparando o que está no ar
+      // com o que seria gravado -- não pela data.
       const selection = refresh
         ? selectCurrentScheduledEntry(regionEntries, todayDate)
-        : selectArticleForRegionDateOnly(regionEntries, lastTs, todayDate);
+        : selectArticleForRegionDateOnly(
+            regionEntries,
+            isCustom ? null : lastTs,
+            todayDate
+          );
       if (!selection) {
         continue;
       }
       chosenArticleId = selection.articleId;
-      // No cycle state to update in this mode.
     }
 
     if (!chosenArticleId) {
@@ -2019,6 +2032,39 @@ async function processPokemonNewsCycle(
     }
 
     // 3) Upsert into bxt_news
+    //
+    // Sem a data para servir de freio, o track custom regravaria a mesma
+    // edição a cada quinze minutos -- e cada regravação limpa os rankings da
+    // região, jogando fora o que os jogadores enviaram. Então a comparação é
+    // com o conteúdo: se o que está no ar já é isto, não há o que fazer.
+    if (isCustom && !refresh && existingId != null) {
+      const [currentRows] = await conn.execute(
+        "SELECT ranking_category_1, ranking_category_2, ranking_category_3, " +
+          "message, news_binary FROM bxt_news WHERE id = ? LIMIT 1",
+        [existingId]
+      );
+      if (currentRows.length > 0) {
+        const cur = currentRows[0];
+        const same =
+          (cur.ranking_category_1 ?? null) === (rankingNumbers[0] ?? null) &&
+          (cur.ranking_category_2 ?? null) === (rankingNumbers[1] ?? null) &&
+          (cur.ranking_category_3 ?? null) === (rankingNumbers[2] ?? null) &&
+          Buffer.compare(
+            Buffer.isBuffer(cur.message) ? cur.message : Buffer.from(cur.message || ""),
+            messageBuf
+          ) === 0 &&
+          Buffer.compare(
+            Buffer.isBuffer(cur.news_binary)
+              ? cur.news_binary
+              : Buffer.from(cur.news_binary || ""),
+            binData
+          ) === 0;
+        if (same) {
+          continue;
+        }
+      }
+    }
+
     if (existingId != null) {
       await conn.execute(
         "UPDATE bxt_news SET ranking_category_1 = ?, ranking_category_1_decode = ?, " +
