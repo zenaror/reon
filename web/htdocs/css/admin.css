@@ -463,3 +463,37 @@
     width: auto;
   }
 }
+
+/* --------------------------------------------------- Pokémon News composer
+   One block per language, stacked. Six languages is a long form however it
+   is arranged; what makes it readable is that each block is plainly its own
+   thing rather than a run of fields with a label somewhere above them. */
+
+.news-lang {
+  max-width: none;
+  margin-bottom: 12px;
+}
+
+.news-lang textarea {
+  min-height: 140px;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The region checkboxes read as a row of stamps rather than a list. */
+.news-region {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.news-region:has(input:checked) {
+  background: var(--reon-blue-deep);
+  color: #fff;
+}

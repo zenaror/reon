@@ -111,45 +111,108 @@
 			return $found;
 		}
 
-		// The minigames an issue can carry.
+		// The minigames an issue can carry, with the name each one calls
+		// itself.
+		//
+		// Every minigame declares its own title through a `minigame_name`
+		// macro, per language -- "#RAP IT UP!", "TALL OR SHORT?", "EASY #MON
+		// MAZE". Showing `game_cry_memory` instead was showing the file name
+		// to somebody writing a magazine.
 		public function minigames() {
 			$dir = $this->sourceDir();
 			if ($dir === false) return [];
+
 			$found = [];
 			foreach (glob($dir . "/minigame/*.asm") as $path) {
 				$name = basename($path);
 				// The debug builds are in the tree but are not something to
 				// put in front of a player.
 				if (strpos($name, "_debug") !== false) continue;
-				$found[] = "minigame/" . $name;
+
+				$found["minigame/" . $name] = $this->declaredName($path) ?: $name;
 			}
-			sort($found);
+
+			// Three of them call themselves "POKéMON QUIZ!". A list with the
+			// same label three times is a list you cannot choose from, so a
+			// repeated name gets its file's own word beside it.
+			$counts = array_count_values($found);
+			foreach ($found as $file => $label) {
+				if (($counts[$label] ?? 0) < 2) continue;
+				$stem = preg_replace('/^(minigame\/)?(game_|pkmnquiz_|event_)?/', "", $file);
+				$stem = str_replace(["_", ".asm"], [" ", ""], $stem);
+				$found[$file] = $label . " (" . trim($stem) . ")";
+			}
+
+			asort($found);
 			return $found;
 		}
 
-		// The ranking categories the game knows, read from the toolchain's
-		// own constants rather than copied into a list here -- a list here
-		// would be right until the day it was not.
+		// The English title a minigame declares for itself, or null.
+		private function declaredName($path) {
+			$text = (string)@file_get_contents($path);
+			$at = strpos($text, "MACRO minigame_name");
+			if ($at === false) return null;
+
+			// The first English line after the macro opens is the title.
+			$window = substr($text, $at, 800);
+			if (preg_match('/lang E,\s*(?:db|text)\s+"([^"]*)"/', $window, $m)) {
+				return $this->readable($m[1]);
+			}
+			return null;
+		}
+
+		// The categories the rankings can be about, with the name the game
+		// prints for each -- read from ranking_types.asm, where each carries
+		// a RANKING_<KEY>_NAME per language.
+		//
+		// Worth saying where this is *not*: the cartridge only ever tracked
+		// the raw numbers, and the pretty label was composed by the service
+		// when it made the article. So there is no name to dig out of a ROM;
+		// the toolchain is where it lives.
+		//
+		// A category whose name is "?" is one of the reserved slots
+		// (UNUSED_1/2/3) -- offered nowhere, because a form that lets someone
+		// pick one produces an issue with a question mark on the screen.
 		public function rankingCategories() {
 			$dir = $this->sourceDir();
 			if ($dir === false) return [];
 
+			$text = (string)@file_get_contents($dir . "/ranking_types.asm");
+			if ($text === "") return [];
+
 			$found = [];
-			$text = (string)@file_get_contents($dir . "/Makefile");
-			// The Makefile documents the accepted ids in a comment block,
-			// one per line, which is the only place they are enumerated.
-			if (preg_match('/accpeted ranking IDs include:(.*?)\n\n/s', $text, $m)
-			    || preg_match('/accepted ranking IDs include:(.*?)\n\n/s', $text, $m)) {
-				foreach (explode("\n", $m[1]) as $line) {
-					$line = trim(ltrim(trim($line), "#"));
-					if ($line === "" || !preg_match('/^[A-Z][A-Z0-9_]*$/', $line)) continue;
-					$found[] = $line;
+			$language = null;
+			foreach (explode("\n", $text) as $line) {
+				if (preg_match('/^\s*(?:IF|ELIF)\s+DEF\(_LANG_([A-Z])\)/', $line, $m)) {
+					$language = $m[1];
+					continue;
+				}
+				if (preg_match('/^\s*ENDC/', $line)) { $language = null; continue; }
+				if ($language !== null && $language !== "E") continue;
+
+				if (preg_match('/^\s*DEF\s+RANKING_([A-Z0-9_]+)_NAME\s+EQUS\s+"([^"]*)"/', $line, $m)) {
+					$label = trim($m[2]);
+					if ($label === "" || $label === "?") continue;
+					$found[$m[1]] = $this->readable($label);
 				}
 			}
+			asort($found);
 			return $found;
 		}
 
-		// ------------------------------------------------------------ text
+		// The game writes some things in its own shorthand. Expanded here so
+		// a form does not ask somebody to recognise "#MON".
+		private function readable($label) {
+			return strtr(trim((string)$label), [
+				"#MON" => "POKéMON",
+				"#RAP" => "RAP",
+				"#DEX" => "POKéDEX",
+				"#MANIA" => "POKéMANIA",
+				"<TRAINER>" => "TRAINER",
+			]);
+		}
+
+		// ------------------------------------------------------------ text		// ------------------------------------------------------------ text
 
 		// Plain text, as a person types it, into the macros a textbox wants.
 		// Blank lines separate paragraphs; within one, the first line opens
@@ -299,12 +362,12 @@
 			$dir = $this->sourceDir();
 			if ($dir === false) return [false, "no-source", ""];
 			if (!isset(self::LANGUAGES[$language])) return [false, "bad-language", ""];
-			if (!in_array($minigame, $this->minigames(), true)) return [false, "bad-minigame", ""];
+			if (!isset($this->minigames()[$minigame])) return [false, "bad-minigame", ""];
 
 			$known = $this->rankingCategories();
 			if (count($rankings) !== 3) return [false, "bad-ranking", ""];
 			foreach ($rankings as $category) {
-				if (!in_array($category, $known, true)) return [false, "bad-ranking", ""];
+				if (!isset($known[$category])) return [false, "bad-ranking", ""];
 			}
 
 			$work = sys_get_temp_dir() . "/reon-news-" . bin2hex(random_bytes(6));
@@ -401,7 +464,12 @@
 					$reverse[$char] = $hex;
 				}
 			}
-			$sequences = array_keys($reverse);
+			// Cast to string on the way out: PHP turns an array key that looks
+			// like a number into an integer, so the character "1" came back
+			// as int 1 and the strict comparison below never matched it --
+			// every digit was reported unencodable while sitting right there
+			// in the table.
+			$sequences = array_map("strval", array_keys($reverse));
 			usort($sequences, function ($a, $b) {
 				return mb_strlen($b, "UTF-8") <=> mb_strlen($a, "UTF-8");
 			});
@@ -467,6 +535,7 @@
 				$data["slug"] = basename($path, ".json");
 				$data["saved_at"] = filemtime($path);
 				$data["built"] = $this->builtRegions($data["slug"]);
+				$data["scheduled"] = $this->scheduledRegions($data["slug"]);
 				$out[] = $data;
 			}
 			usort($out, function ($a, $b) { return $b["saved_at"] <=> $a["saved_at"]; });
@@ -483,6 +552,10 @@
 			if (!is_array($data)) return null;
 			$data["slug"] = $slug;
 			$data["built"] = $this->builtRegions($slug);
+			$data["scheduled"] = $this->scheduledRegions($slug);
+			if (trim((string)($data["date"] ?? "")) === "") {
+				$data["date"] = $this->scheduledDate($slug);
+			}
 			return $data;
 		}
 
@@ -537,9 +610,16 @@
 				}
 
 				$language = self::REGION_LANGUAGE[$region];
-				$headline = (string)(($issue["headline"] ?? [])[$language] ?? "");
-				[$encoded, $message] = $this->encodeMessage(
-					(string)($issue["message"] ?? "") ?: $headline, $region);
+				// The mailbox line is per language, not one string for every
+				// region: the Japanese table has no Latin letters at all, so
+				// an English line handed to the Japanese build is refused
+				// character by character -- correctly. Falls back to that
+				// language's own headline when no separate line was written.
+				$line = (string)(($issue["message"] ?? [])[$language] ?? "");
+				if (trim($line) === "") {
+					$line = (string)(($issue["headline"] ?? [])[$language] ?? "");
+				}
+				[$encoded, $message] = $this->encodeMessage($line, $region);
 				if (!$encoded) {
 					$results[$region] = [false, $message];
 					continue;
@@ -566,6 +646,134 @@
 			}
 
 			return [$results, $log];
+		}
+
+		// -------------------------------------------------------- scheduling
+
+		// The overlay auto-schedule merges over the custom cycle's schedule.
+		// Its own file, not the shared config: that one also carries the
+		// vanilla schedule, and a web application must not be one bad save
+		// away from breaking the ordinary news.
+		public function schedulePath() {
+			return dirname(__DIR__, 2) . "/app/auto-schedule/bxt_news_custom.schedule.json";
+		}
+
+		public function scheduleWritable() {
+			$path = $this->schedulePath();
+			return is_file($path) ? is_writable($path) : is_writable(dirname($path));
+		}
+
+		public function schedule() {
+			$raw = @file_get_contents($this->schedulePath());
+			if ($raw === false) return [];
+			$data = json_decode($raw, true);
+			return is_array($data) && isset($data["schedule"]) && is_array($data["schedule"])
+				? $data["schedule"] : [];
+		}
+
+		// Written to a neighbour and moved into place, and only after the
+		// bytes have been read back as JSON: a half-written schedule is a
+		// news cycle that stops.
+		private function saveSchedule($schedule) {
+			$path = $this->schedulePath();
+			$body = json_encode(
+				["schedule" => $schedule],
+				JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+			);
+			if ($body === false || json_decode($body, true) === null) return false;
+
+			$temp = $path . ".tmp";
+			if (@file_put_contents($temp, $body) === false) return false;
+			if (!@rename($temp, $path)) { @unlink($temp); return false; }
+			return true;
+		}
+
+		// Puts an issue into the calendar for the regions given, and takes it
+		// out of every region not given -- so unticking a region is how you
+		// stop the game using it there.
+		//
+		// `ranking_categories` is deliberately not written: auto-schedule
+		// reads the categories out of the binary when the entry does not name
+		// them, and the binary is where they actually are -- they were
+		// compiled into it. Writing them here would create a second copy that
+		// can disagree with the first.
+		public function setScheduled($slug, $date, $regions) {
+			$slug = $this->slug($slug);
+			if ($slug === "") return [false, "bad-name"];
+			if (!preg_match('/^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/', (string)$date)) {
+				return [false, "bad-date"];
+			}
+			if (!$this->scheduleWritable()) return [false, "schedule-not-writable"];
+
+			$schedule = $this->schedule();
+			$id = $slug . ".bin";
+
+			foreach (array_keys(self::REGION_LANGUAGE) as $region) {
+				$entries = isset($schedule[$region]) && is_array($schedule[$region])
+					? $schedule[$region] : [];
+
+				if (in_array($region, $regions, true)) {
+					$entries[$id] = [
+						"date" => (string)$date,
+						"file" => "bxt_custom/" . $region . "/" . $id,
+						"message_file" => "bxt_custom/" . $region . "/" . $id . ".message",
+						"slot" => 0,
+					];
+				} else {
+					unset($entries[$id]);
+				}
+
+				if ($entries === []) {
+					unset($schedule[$region]);
+				} else {
+					$schedule[$region] = $entries;
+				}
+			}
+
+			return $this->saveSchedule($schedule) ? [true, "ok"] : [false, "write-failed"];
+		}
+
+		// Which regions currently have this issue in the calendar.
+		public function scheduledRegions($slug) {
+			$slug = $this->slug($slug);
+			$id = $slug . ".bin";
+			$found = [];
+			foreach ($this->schedule() as $region => $entries) {
+				if (is_array($entries) && isset($entries[$id])) $found[] = $region;
+			}
+			sort($found);
+			return $found;
+		}
+
+		public function scheduledDate($slug) {
+			$id = $this->slug($slug) . ".bin";
+			foreach ($this->schedule() as $entries) {
+				if (is_array($entries) && isset($entries[$id]["date"])) return $entries[$id]["date"];
+			}
+			return "";
+		}
+
+		// Takes an issue out of the game entirely: out of the calendar first,
+		// then the built files. That order matters -- a scheduled entry whose
+		// file is gone is a run that warns and skips, while a file nothing
+		// points at is simply unused.
+		public function withdraw($slug) {
+			$slug = $this->slug($slug);
+			if ($slug === "") return [false, "bad-name"];
+
+			$scheduleOk = true;
+			if ($this->scheduledRegions($slug) !== []) {
+				[$scheduleOk] = $this->setScheduled($slug, "01-01", []);
+			}
+
+			$base = $this->articlesDir();
+			if ($base !== false) {
+				foreach (array_keys(self::REGION_LANGUAGE) as $region) {
+					@unlink($base . "/" . $region . "/" . $slug . ".bin");
+					@unlink($base . "/" . $region . "/" . $slug . ".bin.message");
+				}
+			}
+			return [$scheduleOk, $scheduleOk ? "ok" : "schedule-not-writable"];
 		}
 
 		// Always an argument list, never a shell string.
