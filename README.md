@@ -26,11 +26,11 @@ sudo bash reon/setup-script/4-harden-bots.sh
 
 Re-running them is safe and is how the server is updated. The systemd
 units they install are described in [`examples/systemd/`](examples/systemd/README.md),
-the database migrations in the [database README](db/README.md), and the
-real-internet mail bridge (Postfix in front of the game's mail, per-device
-authorization, XAPOP) in [`docs/EMAIL-BRIDGE.md`](docs/EMAIL-BRIDGE.md).
+the database migrations in the [database README](db/README.md). The
+real-internet mail bridge — Postfix in front of the game's mail, per-device
+authorization, XAPOP — is covered in the changelog's `reon-mail` section.
 A per-project changelog is kept in [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
-(both documents are in Portuguese).
+(in Portuguese).
 
 # Docker Setup
 
