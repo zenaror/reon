@@ -235,5 +235,59 @@
 				"notifications" => $one("select count(*) from sys_notifications"),
 			];
 		}
+		// Devolve a edição oficial da região para a linha custom, copiando o
+		// conteúdo da linha vanilla para dentro dela.
+		//
+		// É isto, e não apagar a linha, porque `bxt_ranking.news_id` aponta para
+		// o id dela: apagar e deixar o agendador recriar daria um id novo e
+		// deixaria os rankings enviados pelos jogadores apontando para uma linha
+		// que não existe mais. Copiar por cima mantém o id e troca só o conteúdo.
+		public function restoreOfficialNews(array $regions) {
+			$regions = array_values(array_unique(array_filter($regions)));
+			if ($regions === []) return [0, "ok"];
+
+			$db = DBUtil::getInstance()->getDB();
+			$done = 0;
+			foreach ($regions as $region) {
+				$stmt = $db->prepare(
+					"select ranking_category_1, ranking_category_1_decode,
+					        ranking_category_2, ranking_category_2_decode,
+					        ranking_category_3, ranking_category_3_decode,
+					        message, message_decode, news_binary
+					   from bxt_news
+					  where game_region = ? and is_custom = 0
+					  order by timestamp desc limit 1");
+				if (!$stmt) return [$done, "prepare-failed"];
+				$stmt->bind_param("s", $region);
+				$stmt->execute();
+				$rows = DBUtil::fancy_get_result($stmt);
+				// Sem linha oficial não há o que devolver. Acontece numa região
+				// que a notícia vanilla ainda não alcançou, e não é erro.
+				if (!$rows || count($rows) === 0) continue;
+				$v = $rows[0];
+
+				$up = $db->prepare(
+					"update bxt_news
+					    set ranking_category_1 = ?, ranking_category_1_decode = ?,
+					        ranking_category_2 = ?, ranking_category_2_decode = ?,
+					        ranking_category_3 = ?, ranking_category_3_decode = ?,
+					        message = ?, message_decode = ?, news_binary = ?,
+					        timestamp = current_timestamp()
+					  where game_region = ? and is_custom = 1");
+				if (!$up) return [$done, "prepare-failed"];
+				// `message` e `news_binary` vão como string: a string do PHP é
+				// binária-segura e o mysqli manda o comprimento, então um byte
+				// nulo no meio do binário não termina o valor.
+				$up->bind_param("isisisssss",
+					$v["ranking_category_1"], $v["ranking_category_1_decode"],
+					$v["ranking_category_2"], $v["ranking_category_2_decode"],
+					$v["ranking_category_3"], $v["ranking_category_3_decode"],
+					$v["message"], $v["message_decode"], $v["news_binary"],
+					$region);
+				if ($up->execute()) $done++;
+			}
+			return [$done, "ok"];
+		}
+
 	}
 ?>

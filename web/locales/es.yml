@@ -1146,6 +1146,11 @@ admin:
   news-maker-failed-region: falló
   news-maker-failed: 'No se pudo: %detail%'
   news-maker-deleted: Número eliminado.
+  news-maker-publish-now: "Publicar ahora"
+  news-maker-publish-now-confirm: "¿Publicar esta edición ahora? Su fecha pasa a ser hoy, y el programador se ejecuta a continuación en vez de esperar el próximo ciclo. Una vez publicada ya no se puede modificar."
+  news-maker-ran: "El programador se ejecutó: ya está en el aire."
+  news-maker-run-failed: "Compilada y programada, pero el programador no pudo ejecutarse ahora (%detail%). Saldrá en el próximo ciclo, dentro de 15 minutos."
+  news-maker-restored: "La edición oficial volvió a su lugar en %count% región(es)."
   news-maker-locked: 'Esta edición ya fue publicada: no puede modificarse.'
   news-maker-locked-title: Edición publicada — solo lectura
   news-maker-locked-why: Ya salió al aire y los jugadores pueden haberla leído. Recompilar encima cambiaría el contenido sin que nadie lo notara, con el mismo nombre y la misma fecha. Para cambiar algo, borra esta edición y publica otra.

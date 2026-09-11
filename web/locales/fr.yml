@@ -1209,6 +1209,11 @@ admin:
   news-maker-failed-region: échec
   news-maker-failed: 'Impossible : %detail%'
   news-maker-deleted: Numéro supprimé.
+  news-maker-publish-now: "Publier maintenant"
+  news-maker-publish-now-confirm: "Publier ce numéro maintenant ? Sa date devient aujourd'hui, et le programmateur s'exécute ensuite au lieu d'attendre le prochain cycle. Une fois publié il ne peut plus être modifié."
+  news-maker-ran: "Le programmateur s'est exécuté : c'est en ligne."
+  news-maker-run-failed: "Compilé et programmé, mais le programmateur n'a pas pu être lancé maintenant (%detail%). Il paraîtra au prochain cycle, sous 15 minutes."
+  news-maker-restored: "Le numéro officiel est de retour pour %count% région(s)."
   news-maker-locked: 'Ce numéro a déjà été publié : il ne peut plus être modifié.'
   news-maker-locked-title: Numéro publié — lecture seule
   news-maker-locked-why: Il est déjà paru et des joueurs l'ont peut-être lu. Le recompiler par-dessus changerait le contenu sans que personne ne s'en aperçoive, sous le même nom et la même date. Pour changer quelque chose, supprimez ce numéro et publiez-en un autre.

@@ -1186,6 +1186,11 @@ admin:
   news-maker-failed-region: 失敗
   news-maker-failed: できませんでした：%detail%
   news-maker-deleted: 号を削除しました。
+  news-maker-publish-now: "今すぐ公開"
+  news-maker-publish-now-confirm: "この号を今すぐ公開しますか？日付は今日になり、次の周期を待たずにスケジューラーがそのまま実行されます。公開したあとは変更できません。"
+  news-maker-ran: "スケジューラーが実行されました。公開済みです。"
+  news-maker-run-failed: "ビルドと予定登録は済みましたが、スケジューラーを今すぐ実行できませんでした（%detail%）。次の周期、15分以内に配信されます。"
+  news-maker-restored: "%count% 地域で公式の号が元に戻りました。"
   news-maker-locked: この号はすでに公開されているため、変更できません。
   news-maker-locked-title: 公開済みの号 — 閲覧のみ
   news-maker-locked-why: すでに配信され、プレイヤーが読んでいる可能性があります。上書きして再ビルドすると、同じ名前と同じ日付のまま、誰も気づかないうちに内容が変わってしまいます。変更するには、この号を削除して別の号を公開してください。
