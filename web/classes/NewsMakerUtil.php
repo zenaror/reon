@@ -536,6 +536,7 @@
 				$data["saved_at"] = filemtime($path);
 				$data["built"] = $this->builtRegions($data["slug"]);
 				$data["scheduled"] = $this->scheduledRegions($data["slug"]);
+				$data["locked"] = $this->lockedFrom($data);
 				$out[] = $data;
 			}
 			usort($out, function ($a, $b) { return $b["saved_at"] <=> $a["saved_at"]; });
@@ -556,6 +557,7 @@
 			if (trim((string)($data["date"] ?? "")) === "") {
 				$data["date"] = $this->scheduledDate($slug);
 			}
+			$data["locked"] = $this->lockedFrom($data);
 			return $data;
 		}
 
@@ -813,6 +815,40 @@
 			if ($month < 1 || $month > 12) return null;
 			if ($day < 1 || $day > self::DAYS_IN_MONTH[$month - 1]) return null;
 			return sprintf("%02d-%02d", $month, $day);
+		}
+
+		// Edição que já foi ao ar não se edita: só se olha.
+		//
+		// Recompilar por cima do que o jogo já está servindo trocaria o
+		// conteúdo de uma edição que jogadores podem ter lido, com o mesmo
+		// nome e a mesma data -- não há como alguém perceber que mudou. Para
+		// mexer, apaga e publica outra.
+		//
+		// Duas fontes, e basta uma para travar:
+		//
+		//  - `published_at`, gravado pelo agendador no instante em que a
+		//    edição entrou no bxt_news. É a verdade, e sobrevive a retirar do
+		//    calendário ou a ser substituída por uma mais nova.
+		//  - a data agendada já ter chegado. Cobre a janela entre a data virar
+		//    e o agendador rodar, e cobre uma marca que não tenha sido
+		//    gravada. Erra para o lado de travar, que é o lado seguro.
+		public function isPublished($slug) {
+			$issue = $this->issue($slug);
+			return is_array($issue) ? $this->lockedFrom($issue) : false;
+		}
+
+		// Recebe a definição já carregada, para `issue()` poder marcar o campo
+		// sem chamar `isPublished()` e voltar a carregar a si mesma.
+		private function lockedFrom($data) {
+			if (!is_array($data)) return false;
+			if (trim((string)($data["published_at"] ?? "")) !== "") return true;
+
+			$date = $this->scheduledDate((string)($data["slug"] ?? ""));
+			if ($date === "") return false;
+			$parts = explode("-", $date);
+			if (count($parts) !== 2) return false;
+			$when = mktime(0, 0, 0, (int)$parts[0], (int)$parts[1], (int)date("Y"));
+			return $when !== false && $when <= mktime(0, 0, 0);
 		}
 
 		// "MM-DD" -> "YYYY-MM-DD", no ano corrente.

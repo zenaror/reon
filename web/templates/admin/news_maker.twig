@@ -56,6 +56,12 @@
 									{% for region in issue.built %}<span class="admin-pill admin-pill--off">{{ region|upper }}</span> {% endfor %}
 									<span class="admin-form__hint">{{ 'admin.news-maker-built-only'|trans }}</span>
 								{% endif %}
+								{# Fora do encadeamento acima de propósito: uma edição publicada
+								   e depois retirada continua travada, e nesse caso não há
+								   região agendada para cair no primeiro ramo. #}
+								{% if issue.locked|default(false) %}
+									<span class="admin-form__hint">{{ 'admin.news-maker-locked-title'|trans }}</span>
+								{% endif %}
 							</td>
 							<td>{{ issue.saved_at|date("Y.m.d H:i") }}</td>
 							<td><a href="/admin/news_maker.php?issue={{ issue.slug|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a></td>

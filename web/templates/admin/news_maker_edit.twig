@@ -54,9 +54,22 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 		</div>
 	{% endif %}
 
+	{# Publicada é imutável: a tela serve para conferir o que foi ao ar, não
+	   para mexer. O campo `locked` vem de `NewsMakerUtil`, e o controlador
+	   recusa gravar de novo mesmo que alguém poste à mão. #}
+	{% if issue.locked|default(false) %}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.news-maker-locked-title'|trans }}</strong></p>
+			<p class="mb-0">{{ 'admin.news-maker-locked-why'|trans }}</p>
+		</div>
+	{% endif %}
+
 	<form method="post" id="news-issue-form">
 		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 		<input type="hidden" name="slug" value="{{ issue.slug }}">
+		{# Um fieldset desabilitado deixa tudo legível e nada editável, sem
+		   precisar repetir a condição em cada campo. #}
+		{% if issue.locked|default(false) %}<fieldset disabled style="border:0;padding:0;margin:0;min-width:0">{% endif %}
 
 		<div class="admin-form">
 			<label>
@@ -186,9 +199,13 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			</div>
 		</section>
 
+		{% if issue.locked|default(false) %}</fieldset>{% endif %}
+
 		<div class="trainer-edit__actions">
-			<button class="btn btn-outline-primary" type="submit" name="action" value="save"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-save'|trans }}</button>
-			<button class="btn btn-primary" type="submit" name="action" value="publish"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-publish'|trans }}</button>
+			{% if not issue.locked|default(false) %}
+				<button class="btn btn-outline-primary" type="submit" name="action" value="save"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-save'|trans }}</button>
+				<button class="btn btn-primary" type="submit" name="action" value="publish"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-publish'|trans }}</button>
+			{% endif %}
 			{% if issue.slug and issue.built|default([]) is not empty %}
 				<button class="btn btn-outline-danger" type="submit" name="action" value="withdraw"
 				        formnovalidate

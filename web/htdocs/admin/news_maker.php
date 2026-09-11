@@ -60,6 +60,17 @@
 		if ($issue["slug"] === "") {
 			$notice = TemplateUtil::translate("admin.news-maker-need-name");
 			$noticeKind = "bad";
+		} elseif (
+			($action !== "delete" && $action !== "withdraw")
+			&& $maker->isPublished($issue["slug"])
+		) {
+			// Recusa no servidor, e não só botão escondido na tela. Uma edição
+			// que já foi ao ar é imutável: tirar do ar e apagar continuam
+			// valendo, gravar e publicar por cima não.
+			$notice = TemplateUtil::translate("admin.news-maker-locked");
+			$noticeKind = "bad";
+			$issue = $maker->issue($issue["slug"]) ?: $issue;
+
 		} elseif (($problems = ($action === "delete" || $action === "withdraw" ? [] : $maker->checkText($issue))) !== []) {
 			// Recusado, com o trecho culpado. O montador aceitaria calado e o
 			// texto sairia da caixa na tela do console.
