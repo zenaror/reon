@@ -751,6 +751,10 @@
 				$data["date"] = $this->scheduledDate($slug);
 			}
 			$data["locked"] = $this->lockedFrom($data);
+			// Veio do disco, logo existe. É o que separa uma edição gravada de
+			// um formulário que só tem nome digitado: sem isso, a tela oferecia
+			// "apagar" para algo que nunca foi salvo.
+			$data["exists"] = true;
 			return $data;
 		}
 

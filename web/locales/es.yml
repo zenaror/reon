@@ -1123,6 +1123,8 @@ admin:
   news-maker-template: Basado en
   news-maker-template-hint: El número real cuyos menús, guiones y disposición presta a este.
   news-maker-minigame: Minijuego
+  news-maker-publish-now-unbuilt: Esta edición aún no se ha compilado. Ábrela, marca los idiomas y pulsa Publicar primero.
+  news-maker-published-now: En el aire ahora en %regions%.
   news-maker-prizes: Premios
   news-maker-prizes-hint: "Lo que el minijuego entrega cuando se gana. La lista se lee del código del propio minijuego, así que cambiar de minijuego cambia la lista. Se ofrece la tabla de objetos entera, objetos clave incluidos: el cartucho los conoce, pero el juego no espera recibir uno de ellos por la noticia."
   news-maker-prize: Premio %n%

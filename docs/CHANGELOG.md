@@ -157,13 +157,22 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   feita — o build inclui o arquivo da ferramenta como sempre; o submódulo
   nunca é tocado, a cópia com o prêmio trocado nasce no diretório temporário
   do build
-* **Publicar agora**, em botão próprio, para não esperar o ciclo de 15
-  minutos. Ele reescreve a data da edição para hoje em vez de ignorá-la: o
-  agendador escolhe pela data, e mandar ir ao ar sem mexer no calendário
-  deixaria a linha dizendo uma data e o jogo servindo outra. Se o auxiliar de
-  serviços não estiver autorizado para o usuário que serve o PHP, a edição
-  fica compilada e agendada e a tela diz que ela sai no próximo ciclo — não
-  finge que foi
+* **Publicar agora**, para não esperar o ciclo de 15 minutos. Ele reescreve a
+  data da edição para hoje em vez de ignorá-la: o agendador escolhe pela
+  data, e mandar ir ao ar sem mexer no calendário deixaria a linha dizendo
+  uma data e o jogo servindo outra. Se o auxiliar de serviços não estiver
+  autorizado para o usuário que serve o PHP, a edição fica compilada e
+  agendada e a tela diz que ela sai no próximo ciclo — não finge que foi.
+  **Mora na lista, uma edição por linha, e não no editor**: no editor ele
+  aparecia numa edição em branco e o aviso de confirmação — "depois de
+  publicada não dá mais para editar" — saltava antes de qualquer validação,
+  sobre uma edição que ainda não tinha nada dentro. Da lista o botão só existe
+  para edição já compilada e ainda não publicada, e as regiões são as que já
+  estão compiladas: não há caixa para marcar nessa tela, e não deve haver
+* **Retirar e apagar dependem de a edição existir no disco**, e não de haver
+  um slug. O slug sai do nome digitado, então bastava um POST recusado num
+  formulário novo para a tela oferecer "apagar" uma edição que nunca chegou a
+  ser gravada
 * **Retirar ou apagar devolve a edição oficial na hora.** Antes, sair do
   calendário só impedia a próxima rodada de reaplicar: a linha custom
   continuava servindo a edição retirada até a notícia vanilla girar aquela

@@ -253,18 +253,17 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 			{% if not issue.locked|default(false) %}
 				<button class="btn btn-outline-primary" type="submit" name="action" value="save"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-save'|trans }}</button>
 				<button class="btn btn-primary" type="submit" name="action" value="publish"{% if missing is not empty %} disabled{% endif %}>{{ 'admin.news-maker-publish'|trans }}</button>
-				{# Publicar agora reescreve a data para hoje, então o aviso diz
-				   isso antes de acontecer, e não depois. #}
-				<button class="btn btn-primary" type="submit" name="action" value="publish-now"
-				        {% if missing is not empty %}disabled{% endif %}
-				        onclick="return confirm('{{ 'admin.news-maker-publish-now-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-publish-now'|trans }}</button>
 			{% endif %}
-			{% if issue.slug and issue.built|default([]) is not empty %}
+			{# Retirar e apagar dependem de a edição EXISTIR no disco, e não de
+			   haver um slug: o slug sai do nome digitado, então um POST
+			   recusado num formulário em branco fazia aparecer "apagar" para
+			   uma edição que nunca foi gravada. #}
+			{% if issue.exists|default(false) and issue.built|default([]) is not empty %}
 				<button class="btn btn-outline-danger" type="submit" name="action" value="withdraw"
 				        formnovalidate
 				        onclick="return confirm('{{ 'admin.news-maker-withdraw-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-withdraw'|trans }}</button>
 			{% endif %}
-			{% if issue.slug %}
+			{% if issue.exists|default(false) %}
 				<button class="btn btn-outline-danger" type="submit" name="action" value="delete"
 				        formnovalidate
 				        onclick="return confirm('{{ 'admin.news-maker-delete-confirm'|trans|e('js') }}');">{{ 'admin.trainer-delete'|trans }}</button>
