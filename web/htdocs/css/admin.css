@@ -357,3 +357,92 @@
   color: var(--reon-ink-soft);
   font-weight: normal;
 }
+
+/* ------------------------------------------------ Mobile Trainer page editor
+   Source on the left, the Game Boy screen on the right, at a width where
+   they can both be read; stacked once that stops being true. */
+
+/* The preview column is pinned to the width of the screen it contains.
+   It used to be `auto`, which sizes to the column's max-content -- and the
+   explanatory line under the screen is a long sentence, so `auto` claimed the
+   width of that whole sentence unwrapped and squeezed the code column, the
+   one thing on this page that actually needs room, down to its minimum. */
+.trainer-edit {
+  display: grid;
+  grid-template-columns: minmax(340px, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.trainer-edit__source {
+  min-width: 0;
+}
+
+.trainer-edit__preview {
+  width: 320px;
+}
+
+.trainer-edit__label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.trainer-edit textarea {
+  width: 100%;
+  /* Tall enough to hold a whole small page without scrolling, which is what
+     these pages are. */
+  min-height: 520px;
+  padding: 8px;
+  border: 2px solid var(--reon-line);
+  background: #fff;
+  border-radius: 0;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.trainer-edit textarea[readonly] {
+  background: var(--reon-paper);
+}
+
+/* Exactly the Game Boy's 160x144, drawn at 2x. The size is the point: it is
+   what tells the author their line does not fit, which no amount of
+   describing the limit does as well. */
+.trainer-screen {
+  width: 320px;
+  height: 288px;
+  overflow: hidden;
+  border: 3px solid var(--reon-ink);
+  background: #fdfbf0;
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.trainer-screen__frame {
+  width: 160px;
+  height: 144px;
+  border: 0;
+  transform: scale(2);
+  transform-origin: top left;
+}
+
+.trainer-edit__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Below this the two columns stop both being readable, so the screen goes
+   under the code rather than beside it. */
+@media (max-width: 760px) {
+  .trainer-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trainer-edit__preview {
+    width: auto;
+  }
+}

@@ -2,8 +2,27 @@
 
 {% block admin_title %}{{ 'admin.trainer-title'|trans }}{% endblock %}
 
+{% block admin_actions %}
+	{% if can_create %}
+		<a class="btn btn-sm btn-primary" href="/admin/trainer.php?new=1">{{ 'admin.trainer-new'|trans }}</a>
+	{% endif %}
+{% endblock %}
+
 {% block admin_body %}
 	<p>{{ 'admin.trainer-intro'|trans }}</p>
+
+	{# Said once, at the top, with the exact command: the web server runs as
+	   its own user and these files belong to whoever deployed them, so
+	   read-only is the ordinary state until somebody grants otherwise. A
+	   page that only says "read-only" sends the reader looking for a bug. #}
+	{% if stuck is not empty or not can_create %}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.trainer-readonly'|trans }}</strong></p>
+			<p class="mb-1">{{ 'admin.trainer-readonly-why'|trans({'%user%': web_user}) }}</p>
+			<pre class="admin-console mb-0">sudo chgrp -R {{ web_user }} {{ root }}
+sudo chmod -R g+w {{ root }}</pre>
+		</div>
+	{% endif %}
 
 	{% if pages is empty %}
 		<p>{{ 'admin.trainer-none'|trans }}</p>
@@ -21,19 +40,25 @@
 				<tbody>
 					{% for p in pages %}
 						<tr>
-							<td><code>{{ p.url }}</code></td>
+							<td>
+								<code>{{ p.url }}</code>
+								{% if not p.writable %} <span class="admin-pill admin-pill--off">{{ 'admin.trainer-locked'|trans }}</span>{% endif %}
+							</td>
 							<td class="admin-table__num">{{ p.size }}</td>
 							<td>{{ p.changed|date("Y.m.d H:i") }}</td>
 							<td>
-								{# A page the web server cannot write is shown, not hidden: the
-								   reason it is uneditable is a file permission somebody has to
-								   go and change, and it will not get changed if the page simply
-								   does not appear. #}
-								{% if p.writable %}
-									<a href="/admin/trainer.php?page={{ p.url|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a>
-								{% else %}
-									<span class="admin-pill admin-pill--off">read-only</span>
-								{% endif %}
+								<div class="admin-form__row">
+									<a class="btn btn-sm btn-outline-primary" href="/admin/trainer.php?page={{ p.url|url_encode }}">{{ p.writable ? 'admin.trainer-edit'|trans : 'admin.trainer-view'|trans }}</a>
+									<a class="btn btn-sm btn-outline-secondary" href="{{ p.url }}" target="_blank" rel="noopener">{{ 'admin.trainer-open'|trans }}</a>
+									{% if p.writable %}
+										<form method="post" onsubmit="return confirm('{{ 'admin.trainer-delete-confirm'|trans|e('js') }}');">
+											<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+											<input type="hidden" name="action" value="delete">
+											<input type="hidden" name="page" value="{{ p.url }}">
+											<button class="btn btn-sm btn-outline-danger" type="submit">{{ 'admin.trainer-delete'|trans }}</button>
+										</form>
+									{% endif %}
+								</div>
 							</td>
 						</tr>
 					{% endfor %}
