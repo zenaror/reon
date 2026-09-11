@@ -178,11 +178,15 @@
 			$counter = (int) $counterRaw;
 
 			$db = DBUtil::getInstance()->getDB();
+			// A banned account holds no authorization: both the authorize
+			// call and the counter query answer exactly as they would for an
+			// unknown PPP id, so a ban reaches the console and not only the
+			// website.
 			$stmt = $db->prepare("
 				select a.user_id, a.device_auth_key
 				from sys_device_authorization a
 				inner join sys_users u on u.id = a.user_id
-				where u.dion_ppp_id = ?
+				where u.dion_ppp_id = ? and u.banned_at is null
 			");
 			$stmt->bind_param("s", $pppId);
 			$stmt->execute();
@@ -322,11 +326,15 @@
 			if ($localRaw !== "" && !preg_match('/^(0|[1-9][0-9]*)$/', $localRaw)) return [400, ""];
 
 			$db = DBUtil::getInstance()->getDB();
+			// A banned account holds no authorization: both the authorize
+			// call and the counter query answer exactly as they would for an
+			// unknown PPP id, so a ban reaches the console and not only the
+			// website.
 			$stmt = $db->prepare("
 				select a.user_id, a.device_auth_key
 				from sys_device_authorization a
 				inner join sys_users u on u.id = a.user_id
-				where u.dion_ppp_id = ?
+				where u.dion_ppp_id = ? and u.banned_at is null
 			");
 			$stmt->bind_param("s", $pppId);
 			$stmt->execute();
@@ -397,7 +405,13 @@
 		// sender's account, see mail/relayPolicy.js).
 		public function isAuthorized($userId) {
 			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select 1 from sys_device_counter where user_id = ? and authorized = 1 and authorized_until > now() limit 1");
+			$stmt = $db->prepare(
+				"select 1 from sys_device_counter c
+				   inner join sys_users u on u.id = c.user_id
+				  where c.user_id = ? and c.authorized = 1 and c.authorized_until > now()
+				    and u.banned_at is null
+				  limit 1"
+			);
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
 			return count(DBUtil::fancy_get_result($stmt)) > 0;

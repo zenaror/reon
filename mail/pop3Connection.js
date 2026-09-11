@@ -129,7 +129,7 @@ class POP3Connection extends EventEmitter {
         if (this._state == POP3State.AUTHORIZATION) {
 			if (param != null && param != "") {
 				if (this._user != null) {
-					this._server.mysql.query("select id, log_in_password from sys_users where dion_email_local = ? limit 1", [this._user], function (error, results, fields) {
+					this._server.mysql.query("select id, log_in_password from sys_users where dion_email_local = ? and banned_at is null limit 1", [this._user], function (error, results, fields) {
 						if (error) {
 							this._onError(error);
 						} else {
@@ -174,7 +174,10 @@ class POP3Connection extends EventEmitter {
 				let pppId = params[0];
 				let sig = Buffer.from(params[1], "hex");
 				this._server.mysql.query(
-					"select u.id, a.device_auth_key from sys_users u inner join sys_device_authorization a on a.user_id = u.id where u.dion_ppp_id = ?",
+					// A banned account answers as an unknown one on both auth
+					// paths: a ban that leaves the mailbox reachable is not a
+					// ban, it is a locked front door with the window open.
+					"select u.id, a.device_auth_key from sys_users u inner join sys_device_authorization a on a.user_id = u.id where u.dion_ppp_id = ? and u.banned_at is null",
 					[pppId],
 					function (error, results, fields) {
 						if (error) {

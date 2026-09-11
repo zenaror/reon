@@ -103,9 +103,84 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   que já existia para os selos de e-mail. A lista do menu só é buscada
   quando alguém abre o sino — e é POST com token, porque abrir também marca
   como lido
+* A caixinha do sino mostra só o que ainda não foi lido; o que já foi vive na
+  página de histórico e em mais lugar nenhum. É uma bandeja do que é novo,
+  não uma segunda cópia do histórico
+
+### Painel de administração (`/admin`)
+
+* **Um painel de verdade em `/admin`**, com o que era só a tela de notícias
+  puxado para dentro dele: painel com os números do serviço, notícias,
+  notificações, contas, serviços, logs, páginas do Mobile Trainer e o
+  registro de atividade. Chega pelo menu da própria conta, para quem tem
+  acesso, em vez de ser uma URL que se precisa saber
+* **Uma porta só.** `AdminUtil::guard()` é chamado no topo de todo handler
+  sob `/admin`, antes de ler qualquer coisa do pedido, e responde 404 em vez
+  de 403 — um 403 confirma que a página existe. Painel em que cada página
+  decide sozinha é painel em que uma delas um dia decide diferente
+* **Nada que um administrador faz fica sem registro.** Banir, desbloquear um
+  console, reiniciar um serviço, escrever para todo mundo — tudo cai em
+  `sys_admin_log`, com quem, o quê, o alvo e de qual endereço. A tabela é só
+  de acréscimo: não há update nem delete para ela em lugar nenhum
+* **Notificação escrita à mão**, para todas as contas ou para as que você
+  escolher — o campo de destinatário filtra conforme se digita e aceita
+  vários, com um chip por conta escolhida. O `<select multiple>` continua
+  sendo o campo de verdade por baixo (escondido, alimentado pelo componente),
+  então a página posta a mesma coisa e sem JavaScript ainda é um seletor
+  múltiplo que funciona. O envio grava uma linha por conta em vez de uma
+  linha compartilhada, então estado de leitura, ordem e histórico são o mesmo
+  código venha a notificação de um cron, de um jogo ou de uma pessoa; um
+  `batch` amarra o envio de volta numa coisa só na listagem
+* **Banimento que alcança o console, não só o site.** A conta banida é
+  recusada no login (com a mesma resposta de senha errada — dizer "a senha
+  estava certa, mas..." é dizer a um atacante que a senha estava certa), no
+  device-auth, no POP3 e na política de relay externo. Banir um
+  administrador é recusado, e banir a própria conta em uso também
+* **Serviços e logs** passam por um auxiliar único que o servidor precisa
+  autorizar explicitamente (`setup-script/5-admin-control.sh`): uma entrada
+  de sudoers, um script, uma lista fixa de verbos e uma lista de units que
+  mora no servidor e não num campo de formulário. Sem ele instalado o painel
+  diz isso e não executa nada — controle que finge funcionar é pior que
+  controle que falta
+* **Os serviços contínuos ligam, desligam e reiniciam** pelo painel — menos o
+  nginx, que só reinicia: desligá-lo de uma página servida por ele tiraria o
+  botão que o liga de volta, e essa é uma porta de mão única. O auxiliar
+  recusa isso também, não só o botão
+* **As tarefas agendadas têm seção própria**, com rodar agora, ativar,
+  desativar e **trocar o horário**. O horário novo vai para um drop-in do
+  systemd, nunca para a unit: neste servidor os arquivos de unit são links
+  simbólicos para dentro do checkout, então editá-los seria editar o
+  repositório — o drop-in deixa a unit publicada intacta e o botão
+  "Restaurar" é apagar um arquivo. A expressão é validada pelo próprio
+  `systemd-analyze calendar` antes de qualquer escrita: um `OnCalendar`
+  inválido faria a tarefa nunca mais rodar, em silêncio
+* Job de timer aparece como "—", não como "fora do ar": ficar inativo entre
+  execuções é o estado saudável dele. E timer que não existe é dito como
+  "sem timer", não como "desativado" — senão manda-se alguém procurar um
+  interruptor que não está lá
+* A página lê o estado de tudo em duas chamadas ao `systemctl show` (uma para
+  os serviços, uma para os timers) em vez de dois processos por linha, e a
+  descrição ao lado de cada um é a que a própria unit declara, para não
+  divergir do que o systemd tem de fato
+* **Editor das páginas do Mobile Trainer** (`web/htdocs/01/...`). A lista de
+  arquivos editáveis é montada varrendo o diretório, e um caminho só é aceito
+  se já estiver nessa lista — nada vindo do pedido é concatenado a um caminho
+  base, então não há travessia a defender. Grava em arquivo temporário e
+  renomeia, para uma falha no meio não deixar truncada a página que um
+  console está buscando
 
 ### app/pokemon-exchange — Trade Corner
 
+* **Uma definição só para os grupos de região do Trade Corner.** Havia três e
+  elas não combinavam: o default da coluna dizia `efdsipuj`, o parâmetro do
+  `createUser` dizia `e,f,d,s,i,p,u,j`, e duas listas `in_array` separadas
+  decidiam o que era aceitável — enquanto o seeder grava um quarto valor
+  (`e,fdsipuj`) que os dois parsers entendem perfeitamente e as duas listas
+  recusariam. Ou seja: existia conta em produção com um ajuste que o próprio
+  formulário se recusaria a salvar de volta. O formato não é um trio de
+  strings mágicas, é uma lista de **grupos** separados por vírgula, e passou
+  a ser validado pelo formato. `null.split` no lado Node também deixou de
+  derrubar a rodada inteira por causa do ajuste ausente de uma conta
 * Fix: no cartão do Trade Corner o último caractere de um item longo saía
   cortado (BRIGHTPOWDER virava BRIGHTPOWDEF). A coluna do item tem largura
   fixa e os nomes de 12 caracteres a preenchiam sem folga nenhuma

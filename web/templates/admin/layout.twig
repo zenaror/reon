@@ -1,0 +1,54 @@
+{% extends "main.twig" %}
+
+{# The panel's shell: one sidebar, one working area, and a title the module
+   fills in. Every module extends this rather than main.twig directly, so a
+   new module cannot end up without the navigation -- or, worse, look like a
+   normal page of the site while it holds a Ban button. #}
+
+{% block title %}{{ 'admin.panel'|trans }} — {% block admin_title %}{% endblock %}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/admin.css') }}" rel="stylesheet">
+	{% block admin_head %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+	{% set path = current_path|default('/') %}
+	<div class="admin-shell">
+		<aside class="admin-nav">
+			<h2 class="admin-nav__title">{{ 'admin.panel'|trans }}</h2>
+			<nav>
+				<ul class="admin-nav__list">
+					{% set items = [
+						{ href: '/admin/index.php',         key: 'admin.nav-dashboard',     match: '/admin/index.php' },
+						{ href: '/admin/news.php',          key: 'admin.nav-news',          match: '/admin/news.php' },
+						{ href: '/admin/notifications.php', key: 'admin.nav-notifications', match: '/admin/notifications.php' },
+						{ href: '/admin/users.php',         key: 'admin.nav-users',         match: '/admin/users.php' },
+						{ href: '/admin/services.php',      key: 'admin.nav-services',      match: '/admin/services.php' },
+						{ href: '/admin/logs.php',          key: 'admin.nav-logs',          match: '/admin/logs.php' },
+						{ href: '/admin/trainer.php',       key: 'admin.nav-trainer',       match: '/admin/trainer.php' },
+						{ href: '/admin/log.php',           key: 'admin.nav-audit',         match: '/admin/log.php' }
+					] %}
+					{% for item in items %}
+						<li>
+							<a class="admin-nav__link{{ path == item.match ? ' is-here' : '' }}" href="{{ item.href }}">{{ item.key|trans }}</a>
+						</li>
+					{% endfor %}
+				</ul>
+			</nav>
+		</aside>
+
+		<div class="admin-main">
+			<header class="admin-main__head">
+				<h1 class="h4 mb-0">{{ block('admin_title') }}</h1>
+				{% block admin_actions %}{% endblock %}
+			</header>
+
+			{% if notice is defined and notice %}
+				<p class="admin-notice admin-notice--{{ notice_kind|default('ok') }}">{{ notice }}</p>
+			{% endif %}
+
+			{% block admin_body %}{% endblock %}
+		</div>
+	</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.nav-dashboard'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<div class="admin-tiles">
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.users }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-users'|trans }}</span>
+		</div>
+		{# A banned account is a fact worth seeing without going looking, so it
+		   is red when there is one and plain when there is none. #}
+		<div class="admin-tile{{ counts.users_banned > 0 ? ' admin-tile--warn' : '' }}">
+			<span class="admin-tile__n">{{ counts.users_banned }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-banned'|trans }}</span>
+		</div>
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.devices }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-devices'|trans }}</span>
+		</div>
+		<div class="admin-tile{{ counts.devices_blocked > 0 ? ' admin-tile--warn' : '' }}">
+			<span class="admin-tile__n">{{ counts.devices_blocked }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-devices-blocked'|trans }}</span>
+		</div>
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.mail_today }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-mail-today'|trans }}</span>
+		</div>
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.trades_waiting }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-trades'|trans }}</span>
+		</div>
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.news_posts }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-news'|trans }}</span>
+		</div>
+		<div class="admin-tile">
+			<span class="admin-tile__n">{{ counts.notifications }}</span>
+			<span class="admin-tile__label">{{ 'admin.count-notifications'|trans }}</span>
+		</div>
+	</div>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'status'|trans }}</h2>
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<tbody>
+					{% for name, service in services %}
+						<tr>
+							<td>{{ ('service-' ~ name|replace({'_': '-'}))|trans }}</td>
+							<td><span class="admin-pill admin-pill--{{ service.status }}">{{ ('service-status-' ~ service.status)|trans }}</span></td>
+							<td>{{ service.detail is not null ? service.detail : '—' }}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.nav-audit'|trans }}</h2>
+		{% if log is empty %}
+			<p>{{ 'admin.audit-empty'|trans }}</p>
+		{% else %}
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>{{ 'admin.audit-when'|trans }}</th>
+							<th>{{ 'admin.audit-who'|trans }}</th>
+							<th>{{ 'admin.audit-what'|trans }}</th>
+							<th>{{ 'admin.audit-target'|trans }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for row in log %}
+							<tr>
+								<td>{{ row.created_at|date("Y.m.d H:i") }}</td>
+								<td>{{ row.username|default('—') }}</td>
+								<td><code>{{ row.action }}</code></td>
+								<td>{{ row.target|default('—') }}{% if row.detail %} <span class="admin-form__hint">{{ row.detail }}</span>{% endif %}</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			<p><a href="/admin/log.php">{{ 'admin.audit-all'|trans }}</a></p>
+		{% endif %}
+	</section>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.services-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	{# Shown while the helper is missing, and only then: once it is installed
+	   the buttons do what they say and the warning would be a lie. #}
+	{% if not available %}
+		<p class="admin-notice admin-notice--bad">{{ 'admin.services-note'|trans }}</p>
+	{% endif %}
+
+	{% set daemons = units|filter(u => u.kind == 'daemon') %}
+	{% set jobs = units|filter(u => u.kind == 'job') %}
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.services-daemons'|trans }}</h2>
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.services-service'|trans }}</th>
+						<th>{{ 'admin.services-state'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for u in daemons %}
+						<tr>
+							<td>
+								{{ u.label }}<br>
+								<code class="admin-form__hint">{{ u.name }}</code>
+								{% if u.description %}<br><span class="admin-form__hint">{{ u.description }}</span>{% endif %}
+							</td>
+							<td>
+								{% if u.state == 'up' %}
+									<span class="admin-pill admin-pill--up">{{ 'service-status-up'|trans }}</span>
+								{% elseif u.state == 'down' %}
+									<span class="admin-pill admin-pill--down">{{ 'service-status-down'|trans }}</span>
+								{% else %}
+									<span class="admin-pill admin-pill--unknown">{{ 'service-status-unknown'|trans }}</span>
+								{% endif %}
+							</td>
+							<td>
+								<div class="admin-form__row">
+									{% if u.state != 'up' %}
+										{{ _self.act(u.name, 'start', 'admin.services-start', csrf_field, csrf_token, null, 'btn-outline-primary') }}
+									{% endif %}
+									{{ _self.act(u.name, 'restart', 'admin.services-restart', csrf_field, csrf_token, 'admin.services-restart-confirm', 'btn-outline-secondary') }}
+									{# nginx has no Stop: the page offering it is served by nginx,
+									   so stopping it would take away the button that starts it
+									   again. Restart is fine -- it comes back on its own. #}
+									{% if u.can_stop and u.state == 'up' %}
+										{{ _self.act(u.name, 'stop', 'admin.services-stop', csrf_field, csrf_token, 'admin.services-stop-confirm', 'btn-outline-danger') }}
+									{% endif %}
+								</div>
+								{% if not u.can_stop %}
+									<span class="admin-form__hint">{{ 'admin.services-no-stop'|trans }}</span>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.services-jobs'|trans }}</h2>
+		<p class="admin-form__hint">{{ 'admin.services-jobs-note'|trans }}</p>
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.services-service'|trans }}</th>
+						<th>{{ 'admin.services-schedule'|trans }}</th>
+						<th>{{ 'admin.services-next'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for u in jobs %}
+						<tr>
+							<td>
+								{{ u.label }}
+								{% if u.timer.enabled %}
+									<span class="admin-pill admin-pill--on">{{ 'admin.services-on'|trans }}</span>
+								{% elseif u.timer.present %}
+									<span class="admin-pill admin-pill--off">{{ 'admin.services-off'|trans }}</span>
+								{% else %}
+									{# No timer unit at all is a different thing from a timer that
+									   is switched off, and saying "off" would send someone looking
+									   for a switch that is not there. #}
+									<span class="admin-pill admin-pill--unknown">{{ 'admin.services-no-timer'|trans }}</span>
+								{% endif %}
+								{% if u.state == 'up' %} <span class="admin-pill admin-pill--up">{{ 'admin.services-running'|trans }}</span>{% endif %}
+								<br><code class="admin-form__hint">{{ u.name }}</code>
+								{% if u.description %}<br><span class="admin-form__hint">{{ u.description }}</span>{% endif %}
+							</td>
+							<td>
+								<form method="post" class="admin-form__row">
+									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+									<input type="hidden" name="unit" value="{{ u.name }}">
+									<input type="hidden" name="verb" value="timer-set">
+									<input type="text" name="schedule" value="{{ u.timer.schedule }}"
+									       size="20" spellcheck="false"
+									       aria-label="{{ 'admin.services-schedule'|trans }}">
+									<button class="btn btn-sm btn-outline-primary" type="submit">{{ 'admin.trainer-save'|trans }}</button>
+								</form>
+								<span class="admin-form__hint">{{ 'admin.services-schedule-hint'|trans }}</span>
+							</td>
+							<td>{{ u.timer.next ?: '—' }}</td>
+							<td>
+								<div class="admin-form__row">
+									{{ _self.act(u.name, 'run', 'admin.services-run', csrf_field, csrf_token, null, 'btn-outline-primary') }}
+									{% if u.timer.enabled %}
+										{{ _self.act(u.name, 'disable', 'admin.services-disable', csrf_field, csrf_token, 'admin.services-disable-confirm', 'btn-outline-danger') }}
+									{% else %}
+										{{ _self.act(u.name, 'enable', 'admin.services-enable', csrf_field, csrf_token, null, 'btn-outline-secondary') }}
+									{% endif %}
+									{{ _self.act(u.name, 'timer-reset', 'admin.services-schedule-reset', csrf_field, csrf_token, 'admin.services-schedule-reset-confirm', 'btn-outline-secondary') }}
+								</div>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+{% endblock %}
+
+{# One button, one form. Every one of these posts a verb and a unit and
+   nothing else, so there is no shape for a second kind of action to hide in. #}
+{% macro act(unit, verb, label, field, token, confirm, style) %}
+	<form method="post"{% if confirm %} onsubmit="return confirm('{{ confirm|trans|e('js') }}');"{% endif %}>
+		<input type="hidden" name="{{ field }}" value="{{ token }}">
+		<input type="hidden" name="unit" value="{{ unit }}">
+		<input type="hidden" name="verb" value="{{ verb }}">
+		<button class="btn btn-sm {{ style }}" type="submit">{{ label|trans }}</button>
+	</form>
+{% endmacro %}

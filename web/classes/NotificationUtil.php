@@ -142,12 +142,19 @@
 
 		// Newest first. Scoped by user in the query itself, so an id from
 		// somewhere else simply is not in the result.
-		public function listForUser($userId, $limit = self::PAGE_SIZE, $offset = 0) {
+		//
+		// $unreadOnly is what the bell's dropdown asks for. The dropdown is a
+		// tray of what is new, not a second copy of the history: once
+		// something has been read it belongs on the history page and nowhere
+		// else, so the menu empties as it is read rather than accumulating
+		// everything that ever happened.
+		public function listForUser($userId, $limit = self::PAGE_SIZE, $offset = 0, $unreadOnly = false) {
 			$db = DBUtil::getInstance()->getDB();
+			$onlyNew = $unreadOnly ? " and read_at is null" : "";
 			$stmt = $db->prepare(
 				"select id, category, game, message_key, params, title, body, link, created_at, read_at
 				   from sys_notifications
-				  where user_id = ?
+				  where user_id = ?$onlyNew
 				  order by id desc
 				  limit ? offset ?"
 			);

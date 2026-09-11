@@ -27,7 +27,12 @@
 		// on its own, but nothing stops one account's short form from equalling
 		// another account's username, and that would be ambiguous.
 		$identifier = trim($_POST["email"]);
-		$stmt = $db->prepare("select id, password, email from sys_users where email = ? or username = ? limit 1");
+		// A banned account is refused here, at the one door where a password
+		// is checked, rather than by hiding pages from it afterwards. It
+		// falls through to the same "wrong details" answer: telling someone
+		// their credentials were right but the account is banned is telling
+		// an attacker their credentials were right.
+		$stmt = $db->prepare("select id, password, email from sys_users where (email = ? or username = ?) and banned_at is null limit 1");
 		$stmt->bind_param("ss", $identifier, $identifier);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt);

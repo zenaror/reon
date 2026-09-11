@@ -1,0 +1,109 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.notify-title'|trans }}{% endblock %}
+
+{% block admin_head %}
+	<script src="{{ asset('/js/admin-picker.js') }}" defer></script>
+{% endblock %}
+
+{% block admin_body %}
+	{# Said before the form, not after sending: once it is out, it is out. #}
+	<p>{{ 'admin.notify-intro'|trans }}</p>
+
+	<form class="admin-form" method="post">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+
+		<label>
+			{{ 'admin.notify-to'|trans }}
+			<select name="to" data-to-select>
+				<option value="all"{% if form.to == 'all' %} selected{% endif %}>{{ 'admin.notify-to-all'|trans }}</option>
+				<option value="user"{% if form.to == 'user' %} selected{% endif %}>{{ 'admin.notify-to-user'|trans }}</option>
+			</select>
+		</label>
+
+		{# The select is the field; admin-picker.js hides it and puts a
+		   type-to-filter box with chips in front of it, writing straight back
+		   onto its options. With JavaScript off it is still a plain multiple
+		   select that posts the same thing. #}
+		{# Only when the announcement is going to particular people. With
+		   "Everybody" chosen the field has nothing to answer, and a picker
+		   sitting there implies the choice matters when it does not. What was
+		   already picked is kept, not cleared, so switching back and forth
+		   does not throw the selection away. #}
+		<label data-when-to="user"
+		       data-user-picker
+		       data-placeholder="{{ 'admin.notify-user-hint'|trans }}"
+		       data-none="{{ 'admin.users-none'|trans }}"
+		       data-remove="{{ 'admin.notify-user-remove'|trans }}">
+			{{ 'admin.notify-user'|trans }}
+			<select name="users[]" multiple size="6">
+				{% for u in users %}
+					<option value="{{ u.id }}"{% if u.id in form.users %} selected{% endif %}>{{ u.username }}</option>
+				{% endfor %}
+			</select>
+		</label>
+
+		<label>
+			{{ 'admin.notify-category'|trans }}
+			<select name="category">
+				{% for c in categories %}
+					<option value="{{ c }}"{% if form.category == c %} selected{% endif %}>{{ ('notify.cat-' ~ c)|trans }}</option>
+				{% endfor %}
+			</select>
+		</label>
+
+		<label>
+			{{ 'admin.notify-headline'|trans }}
+			<input type="text" name="title" maxlength="160" value="{{ form.title }}" required>
+		</label>
+
+		<label>
+			{{ 'admin.notify-body'|trans }}
+			<textarea name="body">{{ form.body }}</textarea>
+		</label>
+
+		<label>
+			{{ 'admin.notify-link'|trans }}
+			<input type="text" name="link" maxlength="255" value="{{ form.link }}" placeholder="/news.php">
+		</label>
+
+		<div class="admin-form__row">
+			<button class="btn btn-primary" type="submit">{{ 'admin.notify-send'|trans }}</button>
+		</div>
+	</form>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.notify-recent'|trans }}</h2>
+		{% if recent is empty %}
+			<p>{{ 'notify.none'|trans }}</p>
+		{% else %}
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>{{ 'admin.notify-when'|trans }}</th>
+							<th>{{ 'admin.notify-who'|trans }}</th>
+							<th>{{ 'admin.notify-category'|trans }}</th>
+							<th>{{ 'admin.notify-headline'|trans }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for n in recent %}
+							<tr>
+								<td>{{ n.created_at|date("Y.m.d H:i") }}</td>
+								{# A broadcast has one row per account; naming the account it
+								   happens to be would read as if only that person got it. #}
+								{# One recipient is named; more than one is counted. Naming
+								   whichever row happened to come back first would read as if
+								   only that person had been written to. #}
+								<td>{% if n.recipients > 1 %}<em>{{ 'admin.notify-to-many'|trans({'%count%': n.recipients}) }}</em>{% else %}{{ n.username|default('—') }}{% endif %}</td>
+								<td><span class="notify-tag notify-tag--{{ n.category }}">{{ ('notify.cat-' ~ n.category)|trans }}</span></td>
+								<td>{{ n.title }}{% if n.body %} <span class="admin-form__hint">{{ n.body }}</span>{% endif %}</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+	</section>
+{% endblock %}

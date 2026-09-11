@@ -424,14 +424,76 @@
 		// $username is the name the person picked (up to 20 characters). The
 		// 8-character in-game form is derived from it here rather than being
 		// chosen, so the person never has to think about the adapter's limit.
-		public function createUser($email, $username, $password, $passwordConfirm, $tradeRegions = "e,f,d,s,i,p,u,j", $customPokemonNewsOptIn = 0) {
+		// ------------------------------------------- Trade Corner region pools
+		//
+		// One definition of this setting, because there were three and they
+		// did not agree: the column default said "efdsipuj", createUser's
+		// parameter default said "e,f,d,s,i,p,u,j", and two separate
+		// hardcoded in_array() lists decided what was acceptable. The seeder
+		// writes a fourth value ("e,fdsipuj") that both parsers handle
+		// perfectly well and both of those lists would have rejected -- so an
+		// account could hold a setting that the form refused to save back.
+		//
+		// The format is not three magic strings. It is a list of **pools**
+		// separated by commas, each pool a set of region letters that trade
+		// with one another:
+		//
+		//   e,f,d,s,i,p,u,j   eight pools -- your own language only
+		//   efdsipu,j         the Latin languages together, Japanese apart
+		//   efdsipuj          one pool -- everybody trades with everybody
+		//
+		// The three above are what the menus offer; the format allows others,
+		// and validating the format rather than the list is what makes the
+		// seeder's value legal and keeps the parsers honest.
+		const TRADE_REGIONS = "efdsipuj";
+
+		// What a menu offers, in the order it offers it.
+		const TRADE_REGION_PRESETS = ["e,f,d,s,i,p,u,j", "efdsipu,j", "efdsipuj"];
+
+		// What an account gets when nobody chose: the same value the column
+		// default, the signup form's pre-selection and tradecorner.php's
+		// COALESCE all already used.
+		const TRADE_REGION_DEFAULT = "efdsipuj";
+
+		// Cleans a submitted value into a canonical one, or returns null when
+		// it cannot be one. Case and stray characters are forgiven; a letter
+		// that is not a region, a letter in two pools at once, or a value
+		// naming no region at all is not.
+		public static function normalizeTradeRegions($value) {
+			$value = strtolower(trim((string)$value));
+			if ($value === "") return null;
+
+			$seen = [];
+			$pools = [];
+			foreach (explode(",", $value) as $pool) {
+				$pool = preg_replace("/[^a-z]/", "", $pool);
+				if ($pool === "") continue;
+
+				$letters = [];
+				foreach (str_split($pool) as $letter) {
+					// An unknown region, or one already spoken for by another
+					// pool: either makes the whole value ambiguous, and a
+					// setting that means two things means nothing.
+					if (strpos(self::TRADE_REGIONS, $letter) === false) return null;
+					if (isset($seen[$letter])) return null;
+					$seen[$letter] = true;
+					$letters[] = $letter;
+				}
+				$pools[] = implode("", $letters);
+			}
+
+			if ($pools === []) return null;
+			return implode(",", $pools);
+		}
+
+		public function createUser($email, $username, $password, $passwordConfirm, $tradeRegions = self::TRADE_REGION_DEFAULT, $customPokemonNewsOptIn = 0) {
 			if (!isset($email)) return 1;
 			if (!self::$instance->isUsernameValidAndFree($username)) return 2;
 			if ($password != $passwordConfirm) return 3;
 			if (!self::$instance->validatePasswordConstraints($password)) return 4;
    
-            if (!in_array($tradeRegions,array("e,f,d,s,i,p,u,j","efdsipu,j","efdsipuj")))
-                $tradeRegions = "e,f,d,s,i,p,u,j";
+            $tradeRegions = self::normalizeTradeRegions($tradeRegions);
+            if ($tradeRegions === null) $tradeRegions = self::TRADE_REGION_DEFAULT;
 			
 			$opt_in = ($customPokemonNewsOptIn == 1) ? 1 : 0;
 

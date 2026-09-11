@@ -1,0 +1,23 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}<code>{{ page.url }}</code>{% endblock %}
+
+{% block admin_actions %}
+	<a class="btn btn-sm btn-outline-secondary" href="/admin/trainer.php">{{ 'admin.trainer-back'|trans }}</a>
+{% endblock %}
+
+{% block admin_body %}
+	<form class="admin-form" method="post" style="max-width: none;">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="page" value="{{ page.url }}">
+		<label>
+			HTML
+			<span class="admin-form__hint">{{ 'admin.trainer-tags'|trans }}: &lt;br&gt; &lt;hr&gt; &lt;p&gt; &lt;ul&gt; &lt;li&gt; &lt;a href&gt; &lt;img src&gt; &lt;title&gt;</span>
+			<textarea name="html" spellcheck="false" style="min-height: 420px; font-family: ui-monospace, 'Courier New', monospace;">{{ html }}</textarea>
+		</label>
+		<div class="admin-form__row">
+			<button class="btn btn-primary" type="submit">{{ 'admin.trainer-save'|trans }}</button>
+			<a class="btn btn-outline-secondary" href="{{ page.url }}" target="_blank" rel="noopener">{{ 'admin.trainer-page'|trans }} &rarr;</a>
+		</div>
+	</form>
+{% endblock %}

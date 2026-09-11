@@ -73,36 +73,6 @@
 							</ul>
 						</li>
 						{% if session_active %}
-							{# The bell sits before the account name, the way a person expects
-							   to find it: everything that happened to them that is not a
-							   letter -- a trade that resolved, a game whose content changed,
-							   an announcement someone wrote. It never speaks for the mailbox;
-							   a letter arriving lights the orange mail badge as it always
-							   did, and the bell only records that it arrived. #}
-							<li class="nav-item dropdown reon-bell">
-								<a href="#" class="nav-link reon-bell__toggle" id="notifyDropdown" role="button"
-								   data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
-								   aria-label="{{'notify.bell'|trans}}" title="{{'notify.title'|trans}}">
-									<svg class="reon-bell__icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false">
-										<path fill="currentColor" d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
-									</svg>
-									{#- Rebuilt by notify-bell.js on every poll, so a notification
-									    that lands while the page sits open still lights it. -#}
-									<span data-notify-badge>
-									{%- if notify_new|default(0) > 0 %}
-										<span class="notify-badge notify-badge--pulse"
-										      title="{{ 'notify.unread'|trans({'%count%': notify_new}) }}">{{ notify_new }}</span>
-										<span class="visually-hidden">{{ 'notify.unread'|trans({'%count%': notify_new}) }}</span>
-									{% endif -%}
-									</span>
-								</a>
-								<ul class="dropdown-menu dropdown-menu-end notify-menu" aria-labelledby="notifyDropdown">
-									<li class="notify-menu__head">{{'notify.title'|trans}}</li>
-									<li><div class="notify-menu__list" data-notify-list></div></li>
-									<li><hr class="dropdown-divider"></li>
-									<li><a class="dropdown-item notify-menu__all" href="/user/notifications.php">{{'notify.see-all'|trans}}</a></li>
-								</ul>
-							</li>
 							{# Grouped into one dropdown: as nav entries were added the two
 							   separate buttons pushed the bar into wrapping onto two lines. #}
 							<li class="nav-item dropdown">
@@ -138,8 +108,42 @@
 										{%- if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% endif -%}
 										</span>
 									</a></li>
+									{% if curr_is_admin|default(false) %}
+										<li><hr class="dropdown-divider"></li>
+										<li><a class="dropdown-item" href="/admin/index.php">{{'admin.panel'|trans}}</a></li>
+									{% endif %}
 									<li><hr class="dropdown-divider"></li>
 									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
+								</ul>
+							</li>
+							{# The bell sits just after the account name, where the owner asked
+							   for it: everything that happened to them that is not a
+							   letter -- a trade that resolved, a game whose content changed,
+							   an announcement someone wrote. It never speaks for the mailbox;
+							   a letter arriving lights the orange mail badge as it always
+							   did, and the bell only records that it arrived. #}
+							<li class="nav-item dropdown reon-bell">
+								<a href="#" class="nav-link reon-bell__toggle" id="notifyDropdown" role="button"
+								   data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+								   aria-label="{{'notify.bell'|trans}}" title="{{'notify.title'|trans}}">
+									<svg class="reon-bell__icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false">
+										<path fill="currentColor" d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
+									</svg>
+									{#- Rebuilt by notify-bell.js on every poll, so a notification
+									    that lands while the page sits open still lights it. -#}
+									<span data-notify-badge>
+									{%- if notify_new|default(0) > 0 %}
+										<span class="notify-badge notify-badge--pulse"
+										      title="{{ 'notify.unread'|trans({'%count%': notify_new}) }}">{{ notify_new }}</span>
+										<span class="visually-hidden">{{ 'notify.unread'|trans({'%count%': notify_new}) }}</span>
+									{% endif -%}
+									</span>
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end notify-menu" aria-labelledby="notifyDropdown">
+									<li class="notify-menu__head">{{'notify.title'|trans}}</li>
+									<li><div class="notify-menu__list" data-notify-list></div></li>
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item notify-menu__all" href="/user/notifications.php">{{'notify.see-all'|trans}}</a></li>
 								</ul>
 							</li>
 						{% else %}
