@@ -162,12 +162,45 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   os serviços, uma para os timers) em vez de dois processos por linha, e a
   descrição ao lado de cada um é a que a própria unit declara, para não
   divergir do que o systemd tem de fato
-* **Editor das páginas do Mobile Trainer** (`web/htdocs/01/...`). A lista de
-  arquivos editáveis é montada varrendo o diretório, e um caminho só é aceito
-  se já estiver nessa lista — nada vindo do pedido é concatenado a um caminho
-  base, então não há travessia a defender. Grava em arquivo temporário e
-  renomeia, para uma falha no meio não deixar truncada a página que um
-  console está buscando
+* **Criador e editor das páginas do Mobile Trainer** (`web/htdocs/01/...`) —
+  criar, escrever o HTML, ver renderizado, salvar e apagar. O preview é um
+  iframe isolado (`sandbox`, sem script) de 160×144 em 2×, com a fonte do
+  próprio Trainer no tamanho real e um `<base>` injetado para as imagens
+  relativas resolverem como vão resolver no console: uma linha quebra ali
+  mais ou menos onde vai quebrar lá. **Mais ou menos** é a palavra honesta, e
+  está escrita na tela — o adaptador roda o renderizador dele, não um
+  navegador
+* Para tudo que mexe em página existente, o caminho só é aceito se já estiver
+  na varredura do diretório — nada vindo do pedido é concatenado a um caminho
+  base, então não há travessia a defender. Criar é o único lugar onde um
+  caminho **é** construído a partir de entrada, e por isso o único que precisa
+  de regra em vez de consulta: o código do jogo casa com um padrão que não
+  consegue expressar separador nem diretório-pai, e o nome do arquivo é nosso.
+  Grava em temporário e renomeia, para uma falha no meio não deixar truncada a
+  página que um console está buscando
+* A lista de tags vem da documentação do adaptador (dandocs, "Mobile Trainer
+  (GBC)" → "Web Browser") e é fechada: `<p>`, `<table>`, `<form>` e entidades
+  HTML não estão nela. Duas das tags não querem dizer o que um navegador quer
+  dizer com elas, e o preview foi corrigido para não ensinar o contrário —
+  **`<b>` deixa o texto vermelho, não negrito**, e `<center>` só funciona
+  dentro de `<html>`. Imagem é BMP 1BPP, no máximo 144×96. Ainda assim nada é
+  recusado por estar fora da lista: a doc não diz o que o adaptador faz com
+  uma tag desconhecida, e recusar uma que funciona seria o erro pior
+* **Envio de imagem, com validação de verdade contra a dandocs** — não a
+  extensão do arquivo, o cabeçalho BMP: exatamente 1BPP, planos exatamente 1,
+  sem compressão, tabela de cores vazia, largura e altura cabendo em 8 bits
+  cada mesmo os campos do BMP sendo de 32, offset dos pixels cabendo em 16, e
+  no máximo 144×96. A recusa diz a regra **e os números do arquivo** ("precisa
+  ser 1BPP (16×16, 24BPP, 822 bytes)"), porque a regra sozinha não manda
+  ninguém consertar nada. Nada é gravado antes de passar, então upload
+  recusado não deixa rastro. A listagem reconfere o que já está lá — arquivo
+  que hoje seria recusado é sinalizado mesmo tendo entrado antes disso existir
+* Salvar normaliza para **LF, não CRLF**. A primeira versão usava CRLF por
+  analogia com o caminho de e-mail, onde as quebras fazem parte do protocolo
+  do cabo serial. Aqui não é isso: é uma resposta HTTP, e a página que já
+  existe — buscada com sucesso dezenas de vezes por um console real — é LF.
+  CRLF acrescentaria um byte por linha a um documento cujo tamanho máximo a
+  própria documentação do adaptador não informa
 
 ### app/pokemon-exchange — Trade Corner
 

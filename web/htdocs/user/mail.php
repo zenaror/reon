@@ -18,7 +18,13 @@
 	// The filter bar: free text plus one switch. Carried in the URL so a
 	// filtered list can be refreshed, bookmarked, or returned to.
 	$q = trim((string)($_GET["q"] ?? ""));
-	$only = in_array($_GET["only"] ?? "", MailUtil::FILTERS, true) ? $_GET["only"] : "";
+	// Read once, then tested. Written as `in_array($_GET["only"] ?? "", ...)
+	// ? $_GET["only"] : ""` this warned on every visit with no filter: "" is
+	// itself a valid filter, so the test passed and the branch went back to
+	// read a key that was never there. Thousands of lines of
+	// "Undefined array key" in the log, from the ordinary case.
+	$only = (string)($_GET["only"] ?? "");
+	if (!in_array($only, MailUtil::FILTERS, true)) $only = "";
 	$filter = ["q" => $q, "only" => $only, "active" => $q !== "" || $only !== ""];
 
 	// Rows per page. Kept in the session rather than only in the URL so the

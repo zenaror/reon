@@ -1,0 +1,30 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.trainer-new'|trans }}{% endblock %}
+
+{% block admin_actions %}
+	<a class="btn btn-sm btn-outline-secondary" href="/admin/trainer.php">{{ 'admin.trainer-back'|trans }}</a>
+{% endblock %}
+
+{% block admin_body %}
+	<form class="admin-form" method="post">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="action" value="create">
+		<label>
+			{{ 'admin.trainer-code'|trans }}
+			<span class="admin-form__hint">{{ 'admin.trainer-code-hint'|trans }}</span>
+			{# The pattern the server enforces, repeated here so the browser
+			   says so first. The server does not trust this -- it is the one
+			   place a path is built from input, and it re-checks. #}
+			<input type="text" name="code" required maxlength="32"
+			       pattern="[A-Za-z0-9][A-Za-z0-9\-]*"
+			       placeholder="CGB-B9AJ" spellcheck="false">
+		</label>
+		<div class="admin-form__row">
+			<button class="btn btn-primary" type="submit"{% if not can_create %} disabled{% endif %}>{{ 'admin.trainer-create'|trans }}</button>
+		</div>
+		{% if not can_create %}
+			<p class="admin-form__hint">{{ 'admin.trainer-readonly'|trans }}</p>
+		{% endif %}
+	</form>
+{% endblock %}
