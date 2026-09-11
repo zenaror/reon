@@ -1898,6 +1898,7 @@ admin:
   news-maker-ranking: "Ranking %n%"
   news-maker-text: "Words"
   news-maker-text-hint: "Three different texts, each showing up somewhere else. Leave a language empty and that language keeps whatever the template had."
+  news-maker-text-none: "Tick a language under “Build for” above and its fields appear here."
   news-maker-headline: "Headline"
   news-maker-body: "Article"
   news-maker-regions: "Build for"

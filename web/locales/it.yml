@@ -1133,6 +1133,7 @@ admin:
   news-maker-ranking: Classifica %n%
   news-maker-text: Testi
   news-maker-text-hint: Tre testi diversi, ognuno compare in un punto diverso. Se lasci vuota una lingua, quella lingua mantiene ciò che aveva il modello.
+  news-maker-text-none: "Seleziona una lingua in «Compila per» qui sopra e i suoi campi compaiono qui."
   news-maker-headline: Titolo
   news-maker-body: Articolo
   news-maker-regions: Compila per

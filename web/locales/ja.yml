@@ -1174,6 +1174,7 @@ admin:
   news-maker-ranking: ランキング %n%
   news-maker-text: 文章
   news-maker-text-hint: 3つの異なる文章で、それぞれ出る場所が違います。ある言語を空のままにすると、その言語はテンプレートの内容のままになります。
+  news-maker-text-none: "上の「ビルドする地域」で言語を選ぶと、その言語の入力欄がここに出ます。"
   news-maker-headline: 見出し
   news-maker-body: 記事
   news-maker-regions: ビルドする地域

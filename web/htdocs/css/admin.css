@@ -520,9 +520,25 @@
   font-size: .8em;
 }
 
-/* Região que ainda não pode ser compilada: continua visível, porque sumir
-   deixaria a pessoa procurando o que não está lá. */
-.news-region.is-off {
-  opacity: .45;
-  cursor: not-allowed;
+/* Marcada, mas sem a manchete ou sem o artigo: avisa onde foi causado, em vez
+   de desabilitar a caixa -- desabilitar o controle que a pessoa está tentando
+   usar é o que confundia antes. Ela continua marcável; o servidor é que recusa,
+   e a tela diz por quê antes de chegar lá. */
+.news-region.is-empty {
+  border-color: var(--reon-red);
+}
+
+.news-region.is-empty::after {
+  content: "!";
+  margin-left: auto;
+  font-family: var(--reon-font-display);
+  font-weight: 700;
+  color: var(--reon-red);
+  line-height: 1;
+}
+
+/* Marcada e incompleta ao mesmo tempo: o fundo é azul escuro, então o vermelho
+   da borda some. O aviso passa para o branco, que lê sobre o azul. */
+.news-region.is-empty:has(input:checked)::after {
+  color: #fff;
 }
