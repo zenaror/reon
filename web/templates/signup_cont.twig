@@ -40,7 +40,11 @@
 										<code><span id="reonNameExternalShort"></span>@{{ email_domain|e }}</code>
 									</span>
 								</div>
-								<div class="small text-muted mt-1">{{'auth.reon-username-mail-truncated'|trans}}</div>
+								{# Só quando o endereço do jogo realmente difere do nome: um
+								   nome de 8 caracteres passa inteiro, e explicar um corte que
+								   não houve confunde em vez de ajudar. Mesma condição do
+								   endereço alternativo acima, aplicada pelo mesmo lugar. #}
+								<div id="reonNameTruncated" class="small text-muted mt-1 d-none">{{'auth.reon-username-mail-truncated'|trans}}</div>
 							</div>
 						</div>
 						<div class="mb-3">
@@ -121,6 +125,7 @@
 	var external = document.getElementById('reonNameExternal');
 	var altWrap = document.getElementById('reonNameExternalAlt');
 	var altShort = document.getElementById('reonNameExternalShort');
+	var truncNote = document.getElementById('reonNameTruncated');
 	if (!field) return;
 
 	var MIN = 3, MAX = 20;
@@ -141,14 +146,20 @@
 		var name = field.value;
 		if (external) external.textContent = name;
 		if (internal) internal.textContent = dionLocal || name.slice(0, 8);
+		var differs = !!(dionLocal && dionLocal !== name);
+		// A nota fala de corte, então só vale para o nome que foi cortado.
+		// Completar um nome curto não perde nada, e um dígito no fim de um
+		// nome de 8 é colisão, não tamanho.
+		var truncated = name.length > 8;
 		if (altWrap && altShort) {
-			if (dionLocal && dionLocal !== name) {
+			if (differs) {
 				altShort.textContent = dionLocal;
 				altWrap.classList.remove('d-none');
 			} else {
 				altWrap.classList.add('d-none');
 			}
 		}
+		if (truncNote) truncNote.classList.toggle('d-none', !truncated);
 	}
 
 	var timer = null;

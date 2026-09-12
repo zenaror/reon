@@ -392,6 +392,51 @@ header.navbar .btn:active {
   padding: 4px 0;
 }
 
+/* --------------------------------------------------------- page footer */
+/* A mesma caixa do ticker, parada. Aqui o texto é para ser lido quando a
+   pessoa procurar, não quando passar -- e um <marquee> no rodapé seria
+   movimento competindo com o conteúdo pelo olho. */
+
+/* `reon-legalbar`, e não `reon-footer`: esse nome já é da assinatura
+   centralizada do portal (botão Top, meta, piada) em home-v2.css, e um
+   `display:flex` com borda caindo em cima dela quebraria três páginas. */
+.reon-legalbar {
+  display: flex;
+  align-items: stretch;
+  margin: 24px 0 12px;
+  border: 2px solid var(--reon-line);
+  border-radius: var(--reon-radius);
+  box-shadow: var(--reon-shadow-hard);
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Sem o chip de rótulo do ticker: os links se explicam sozinhos, e uma
+   etiqueta ali só acrescentava uma palavra para ler antes das duas que
+   importam. Sem ele, os links vão ao centro -- encostados à esquerda numa
+   barra vazia ficariam pendurados num canto. */
+.reon-legalbar__links {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 6px 12px;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+}
+
+.reon-legalbar__links a {
+  color: var(--reon-ink);
+  text-decoration: none;
+}
+
+.reon-legalbar__links a:hover,
+.reon-legalbar__links a:focus-visible {
+  text-decoration: underline;
+}
+
 /* ==========================================================================
    Decorative buttons — glossy / rounded, recreated from Nintendo's 2001-era
    graphical (GIF) buttons. Deliberately NOT square: those ornate nav/CTA

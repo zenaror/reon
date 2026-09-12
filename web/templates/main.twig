@@ -167,6 +167,21 @@
 		{% block body %}
 		{% endblock %}
 
+		{# Rodapé de toda página, com a mesma caixa do ticker de notícias lá em
+		   cima -- e parado, porque aqui o texto é para ser lido quando a
+		   pessoa procurar, não quando passar.
+
+		   No fluxo, e não grudado na tela: barra fixa come altura em celular,
+		   que é justamente onde o conteúdo tem menos espaço. #}
+		<footer class="container-xxl">
+			<div class="reon-legalbar">
+				<nav class="reon-legalbar__links">
+					<a href="/terms.php">{{'terms'|trans}}</a>
+					<a href="/privacy.php">{{'privacy'|trans}}</a>
+				</nav>
+			</div>
+		</footer>
+
 		{% if show_passport_modal %}
 			{% include "_passport_modal.twig" %}
 		{% endif %}
