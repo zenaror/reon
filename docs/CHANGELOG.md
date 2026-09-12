@@ -36,6 +36,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     * as tratativas (limpeza de cabeçalho, redução para o Mobile Trainer)
       foram do `RETR` para a ENTREGA, num filtro Sieve que chama o mesmo
       código de antes -- o jogo recebe os mesmos bytes, conferidos por soma
+    * moldar na entrega significa uma cópia só servindo dois leitores de
+      necessidades opostas: o cartucho, que precisa de pouco byte e título
+      curto, e o webmail, que quer a carta inteira. O que o webmail precisa
+      viaja em cabeçalho próprio -- o título antes do corte, e o
+      `In-Reply-To`, sem o qual não há como saber o que uma resposta
+      responde. Medido: troca do Trade Corner, carta entre jogadores e carta
+      de fora com título curto saem byte por byte iguais ao que saíam; só
+      carta de fora com título longo cresce, 38 bytes
     * o `DELE` continua sem destruir: virou `pop3_deleted_flag` nativo, e a
       mensagem segue recuperável pelo site
     * "lida no site" e "coletada pelo jogo" voltaram a ser marcas distintas,
@@ -45,10 +53,23 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * Cópia em Enviados e linha no sino voltaram como serviço. Moravam no
     agente de entrega, que saiu quando o Postfix passou a entregar pelo
     Dovecot -- e tinham ido junto, caladas: correspondência chegava e não
-    avisava ninguém
+    avisava ninguém. O serviço recebe a mensagem como ela chegou, e não
+    moldada, porque é num cabeçalho que a moldagem remove que está escrito
+    se o webmail já arquivou e já tocou o sino sozinho -- sem isso, toda
+    carta entre jogadores rendia duas cópias em Enviados e dois toques
   * O relay de saída deixou de conhecer fornecedor. Os cabeçalhos de controle
     vêm do config, então trocar Brevo por Mailjet, SMTP2GO ou outro é mudar
     configuração, não editar código. Ver `docs/RELAY-DE-SAIDA.md`
+
+* **O endereço externo da conta recebe nas duas formas.** O site anuncia
+  duas — a do nome de conta e a do nome da caixa — e o Postfix conhecia só a
+  segunda, de modo que a anunciada como principal devolvia "550 User unknown"
+  a quem respondesse. Passa a existir um apelido que traduz uma na outra
+  mantendo o domínio, para a carta cair na caixa que já existe em vez de
+  abrir uma segunda
+  * O que sai assinado também mudou: era o nome de conta, que ninguém sabia
+    receber. Passa a ser o da caixa, com o nome de conta como nome de
+    exibição
 
 * **POP3 do jogo passa a autenticar por APOP.** O XAPOP era nosso e não
   existe em servidor nenhum: só dava para servi-lo remendando o Dovecot ou
@@ -58,6 +79,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * O segredo é a chave de device-auth, 256 bits, e não a senha de oito
     caracteres. Quem faz a conta é o adaptador, não o cartucho: é o único
     ponto da autenticação do jogo onde cabe um segredo desse tamanho
+  * O nome de login é o gID do aparelho, o mesmo que o `mobile_config.bin`
+    leva e que o XAPOP já usava. A caixa tem outro nome, e são campos
+    distintos que nunca coincidem -- a consulta de autenticação aceita os
+    dois e devolve o nome da caixa, que é o que faz a entrega achar o lugar
+    certo em vez de abrir uma caixa vazia chamada `g000000002`
   * Sem porta dos fundos: `USER`/`PASS` está desligado no servidor. Adaptador
     que não sabe APOP não busca correio, do mesmo jeito que era com o XAPOP
   * O `XPROVISION` deixa de existir, e com ele a viagem de ida e volta que
@@ -103,17 +129,35 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 ### Webmail
 
 * **REON Mail** — webmail com leitura, envio (interno e para a internet real)
-  e lixeira de 30 dias; caixa de entrada em **conversas** (recebidos e
-  enviados agrupados por assunto e interlocutor — só no webmail, os jogos
-  não sabem de threads), **filtro** por texto e por não lidos / jogadores /
+  e lixeira de 30 dias; caixa de entrada em **conversas** (só no webmail:
+  os jogos não sabem de threads), **filtro** por texto e por não lidos /
+  jogadores /
   internet, não lidos em destaque na lista, resumo "N na caixa · M não
   lidos", selos de correio novo nos menus. Envio externo sai por
   submissão local, que não passa pela política de device-auth: o portão do
   jogo continua tão restrito quanto era, e o webmail é autorizado pela
   sessão web, com limite por hora e registro de auditoria
-* Assunto limitado a 10 caracteres na composição, e não mais cortado na
-  entrega: um jogo nunca escreve título maior, então o webmail é o único
-  caminho por onde um título grande chega
+* **Uma conversa é dita, não adivinhada.** Quem escreve sabe se está
+  respondendo algo ou abrindo assunto novo, e essa intenção é gravada no
+  envio. Agrupar por assunto + interlocutor, que era o único jeito possível
+  antes, cola mensagens que nada têm a ver: escrever uma carta nova cujo
+  título por acaso repete o de outra antiga juntava as duas. A dedução
+  antiga continua valendo em dois lugares onde ela é o certo — nas linhas
+  anteriores à coluna, para não desfazer conversa já formada, e no correio
+  que chega de um Game Boy, que não escreve cabeçalho nenhum e no qual o
+  assunto é o único fio existente
+  * De quem vem da internet, o fio é o `In-Reply-To`. Um cliente de verdade
+    escreve esse cabeçalho ao responder; se não escreveu, não é resposta, e
+    vira conversa própria. Errar separando é barato — errar juntando mistura
+    correspondência de assuntos diferentes
+  * Responder funciona a partir das duas telas, e destinatário e título vêm
+    preenchidos e travados. O servidor re-deriva os dois da mensagem
+    respondida: travar o campo é aparência, e um POST cru não passa por
+    atributo de HTML
+* Assunto limitado a 10 caracteres na composição. Na entrega, o corte
+  continua valendo para o cartucho — é exigência da tela do Game Boy — mas o
+  webmail mostra o título inteiro, que viaja num cabeçalho próprio ao lado
+  do curto
 * Mensagem limitada ao que cabe num Game Boy — 8 linhas de 12 caracteres,
   contadas depois da quebra. Uma linha de 96 caracteres passava nos dois
   totais e mesmo assim ocupava as 8 linhas da tela sozinha. A caixa de
@@ -144,10 +188,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   nada — o laranja continua querendo dizer uma coisa só, que há carta para
   ler. Abrir o sino mostra as últimas e marca como lidas; a página
   `/user/notifications.php` guarda o histórico inteiro, paginado
-* **O histórico não se apaga** — o dono da notificação não tem botão de
-  excluir, e não existe método de exclusão na classe: uma notificação é o
-  registro de que algo aconteceu, e registro que se apaga não é registro.
-  Marcar como lida é o único estado que o leitor controla
+* **O histórico fica até a pessoa limpar** — o sistema não apaga
+  notificação, e não há expurgo por idade: uma notificação é o registro de
+  que algo aconteceu. Quem pode apagar é o dono da linha, por um botão na
+  página, e limpar não desfaz nada — a carta ou a troca que o aviso apontava
+  continua onde estava. A página diz as duas coisas, nos sete idiomas
 * Texto guardado como chave de tradução mais parâmetros, não como frase
   pronta: o site fala sete idiomas e o cron que grava a linha não fala
   nenhum, então as palavras são escolhidas na hora de ler. Só o que uma
@@ -793,6 +838,17 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   que é igual para todo jogo e aponta para os hubs. BGB fora do guia e dos
   downloads por enquanto: no PC só o mGBA. Um script (`page-sections.js`)
   monta o menu dos hubs e o sumário das páginas Markdown a partir dos `##`
+* **Página de códigos de erro** (`/errors.php`): quando um jogo não
+  consegue entrar, ele mostra uma mensagem e, por trás dela, um código. A
+  página é consulta por código, e só por ele. Códigos que dizem exatamente a
+  mesma coisa viram uma entrada só, com vários números — repetir o mesmo
+  parágrafo cinco vezes é o contrário de consolidar. A explicação amigável é
+  escrita à mão, um arquivo por idioma, e cai para o inglês campo a campo,
+  de modo que uma tradução pela metade não derruba a entrada inteira. Nem
+  todo código tem explicação, e os que não têm dizem isso em vez de chutar.
+  O guia de início só aponta para a página: quem chega com um código na mão
+  está nela, não no guia
+
 * **Termos de uso e política de privacidade** (`/terms.php`, `/privacy.php`),
   em Markdown como as outras páginas. O cadastro exigia marcar "concordo com
   os termos de uso e a política de privacidade" em sete idiomas e nenhum dos

@@ -127,7 +127,7 @@ the same thing are listed together, under one answer.
 Only if you lost it. The same file works on all your devices, and a fresh
 copy is always available from [Your Account](/user/summary.php).
 
-**I use the same `mobile_config.bin` on my PC and my 3DS. Is that OK?**
+**Can I use the same `mobile_config.bin` on more than one device?**
 Yes. Each device gets its own **pairing code**, which you can see on the
 device and on your [Connected devices](/user/devices.php) page. You can
 give each one a name there, and block one you no longer use.
