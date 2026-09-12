@@ -35,8 +35,11 @@
 
 						<p class="err-count" id="err-count" data-template="{{ 'errors.count'|trans }}"></p>
 
+						{# Dito aqui, e não no guia de início: quem chega com um
+						   código na mão está nesta página, não lá. #}
+						<div class="reon-note">{{ 'errors.partial'|trans }}</div>
+
 						<div class="err-list" id="err-list"
-						     data-screen="{{ 'errors.show-screen'|trans }}"
 						     data-unknown="{{ 'errors.no-meaning'|trans }}"></div>
 					{% endif %}
 

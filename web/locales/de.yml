@@ -1370,7 +1370,7 @@ errors:
   title: "Fehlercodes des Adapters"
   intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Geben Sie diesen Code hier ein, um ihn nachzuschlagen. Codes mit gleicher Bedeutung teilen sich eine Antwort, und jeder Eintrag kann die Meldung zeigen, die das Spiel selbst ausgibt."
   filter-code: "Fehlercode"
-  show-screen: "Was das Spiel anzeigt"
+  partial: "※ Noch nicht jeder Code hat eine Erklärung."
   count: "%n% von %total% Codes werden angezeigt."
   no-meaning: "Noch keine Beschreibung"
   missing: "Die Fehlerdaten wurden noch nicht erzeugt. maint/build_adapter_errors.php ausführen."

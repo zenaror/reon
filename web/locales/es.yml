@@ -1371,7 +1371,7 @@ errors:
   title: "Códigos de error del adaptador"
   intro: "Cuando algo falla el juego muestra un mensaje y, detrás, un código. Escribe ese código aquí para buscarlo. Los códigos que significan lo mismo comparten una sola respuesta, y cada entrada puede mostrar el mensaje que el propio juego imprime."
   filter-code: "Código de error"
-  show-screen: "Lo que muestra el juego"
+  partial: "※ Todavía no todos los códigos tienen explicación."
   count: "Mostrando %n% de %total% códigos."
   no-meaning: "Aún sin descripción"
   missing: "Los datos de error aún no se han generado. Ejecuta maint/build_adapter_errors.php."

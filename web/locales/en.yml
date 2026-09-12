@@ -2278,7 +2278,7 @@ errors:
   title: "Adapter error codes"
   intro: "When something goes wrong the game shows a message and, behind it, a code. Type that code here to look it up. Codes that mean the same thing share one answer, and each entry can show the message the game itself prints."
   filter-code: "Error code"
-  show-screen: "What the game prints"
+  partial: "※ Not every code has an explanation yet."
   count: "Showing %n% of %total% codes."
   no-meaning: "No description yet"
   missing: "The error data has not been built yet. Run maint/build_adapter_errors.php."
