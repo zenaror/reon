@@ -6,7 +6,7 @@ const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
 const { notify } = require("../../lib/notifications");
 const { mailUser } = require("../../lib/usermail");
-const { sendRaw } = require("../../lib/rawmail");
+const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
 
 // ------------------------------
 // Config
@@ -21,6 +21,11 @@ program
 
 const options = program.opts();
 const config = JSON.parse(fs.readFileSync(options.config, "utf8"));
+
+// Escolhe o transporte: SMTP local quando `local_smtp_host` existir, senão o
+// binário de sendmail. Ver lib/rawmail.js -- e cuidado para não confundir com
+// `smtp_host`, que é o relay EXTERNO e tem significado oposto.
+configurarEnvio(config, config["local_smtp_host"] ? require("nodemailer") : null);
 
 const phpConfigPath = path.resolve(
   __dirname,
