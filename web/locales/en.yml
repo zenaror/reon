@@ -1819,6 +1819,29 @@ pokemon:
     US-WY: Wyoming
 
 admin:
+  nav-adapter: "Adapter config"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "What the generator writes into every mobile_config.bin. Only what is the same for everyone is here — the e-mail address, the gID, the device key and the relay token come from each account and have nothing to configure."
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "Port"
+  adapter-empty: "leave empty"
+  adapter-dns2-note: "Leave DNS 2 empty unless there really is a second server. Repeating the first address gives no redundancy — it would fail for the same reason at the same moment. Empty means the field is marked as unset, and the adapter keeps whatever the game already had."
+  adapter-relay: "Relay and P2P"
+  adapter-relay-host: "Relay server"
+  adapter-p2p: "P2P port"
+  adapter-device: "Adapter"
+  adapter-model: "Model"
+  adapter-unmetered: "Unmetered (no per-minute charge)"
+  adapter-current: "Current device:"
+  adapter-metered: "Metered"
+  adapter-unmetered-short: "Unmetered"
+  adapter-save: "Save"
+  adapter-footer: "A saved change applies to the next download. Nobody has to download again because of it: a file already in use keeps working, and these values only decide where a fresh one points."
+  adapter-saved: "Saved. New downloads use these values."
+  adapter-failed: "Could not save."
+  adapter-invalid: "Nothing was saved. Check the fields marked below — an address or port that does not make sense would produce a file the cartridge cannot read."
   news-title: News admin
   news-new: New post
   news-editing: Editing post

@@ -181,6 +181,29 @@ account:
   pokemon-news-custom-opt-in-on: Notícias Pokémon personalizadas quando disponíveis
 
 admin:
+  nav-adapter: "Config do adaptador"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "O que o gerador escreve em todo mobile_config.bin. Aqui fica só o que é igual para todo mundo — o endereço de e-mail, o gID, a chave do aparelho e o token de relay saem de cada conta e não têm o que configurar."
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "Porta"
+  adapter-empty: "deixe vazio"
+  adapter-dns2-note: "Deixe o DNS 2 vazio a não ser que exista mesmo um segundo servidor. Repetir o primeiro endereço não dá redundância — ele falharia pelo mesmo motivo, no mesmo instante. Vazio marca o campo como não definido, e o adaptador mantém o que o jogo já tinha."
+  adapter-relay: "Relay e P2P"
+  adapter-relay-host: "Servidor de relay"
+  adapter-p2p: "Porta P2P"
+  adapter-device: "Adaptador"
+  adapter-model: "Modelo"
+  adapter-unmetered: "Não tarifado (sem cobrança por minuto)"
+  adapter-current: "Dispositivo atual:"
+  adapter-metered: "Tarifado"
+  adapter-unmetered-short: "Não tarifado"
+  adapter-save: "Salvar"
+  adapter-footer: "Mudança salva vale para o próximo download. Ninguém precisa baixar de novo por causa dela: arquivo já em uso continua funcionando, e estes valores só decidem para onde um novo aponta."
+  adapter-saved: "Salvo. Downloads novos usam estes valores."
+  adapter-failed: "Não foi possível salvar."
+  adapter-invalid: "Nada foi salvo. Confira os campos marcados abaixo — endereço ou porta sem sentido produziria um arquivo que o cartucho não consegue ler."
   news-title: Administrar notícias
   news-new: Nova notícia
   news-editing: Editando notícia
