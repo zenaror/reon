@@ -12,6 +12,7 @@
   "dependencies": {
     "commander": "^12.1.0",
     "mysql": "^2.18.1",
-    "mysql2": "^3.5.2"
+    "mysql2": "^3.5.2",
+    "nodemailer": "^10.0.9"
   }
 }

@@ -21,6 +21,22 @@ No `config.json`:
 
 `smtp_headers` é o único que precisa de explicação.
 
+## Duas chaves parecidas, significados opostos
+
+    smtp_host         o relay EXTERNO. Por onde sai o que vai para a internet.
+    local_smtp_host   o servidor de submissão LOCAL. Por onde entra a
+                      correspondência INTERNA, de um jogador para outro.
+
+Não as troque. Mandar correspondência interna pelo `smtp_host` faria o relay
+externo tentar entregar `@reon.dion.ne.jp` à operadora japonesa de verdade --
+o endereço existe no mundo real e não é nosso. Foi um defeito real, e é por
+isso que `lib/rawmail.js` traz um aviso em maiúsculas no cabeçalho.
+
+`local_smtp_host` normalmente fica VAZIO: sem ele, a entrega interna usa o
+binário `sendmail` da própria máquina, que é o que existe num servidor de
+verdade. Ele serve para ambiente que não tem esse binário -- contêiner
+enxuto, por exemplo.
+
 ## Por que `smtp_headers` existe
 
 Relay que rastreia abertura precisa de uma imagem na mensagem. Imagem precisa
