@@ -45,6 +45,16 @@
 			}
 			unset($row);
 
+			// O texto que cada cartucho imprime sai daqui antes de ir para a
+			// página. Ele continua no arquivo gerado, que é a fonte, mas a
+			// página não o mostra mais -- e mandá-lo assim mesmo custava 190
+			// KB dos 206 KB da resposta, quase tudo dado que ninguém lê. O
+			// mesmo vale para a lista de jogos, que só existia para rotular
+			// esses textos.
+			foreach ($data["rows"] as &$row) unset($row["messages"]);
+			unset($row);
+			unset($data["games"]);
+
 			return $data;
 		}
 

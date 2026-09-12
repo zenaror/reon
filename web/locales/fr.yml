@@ -1434,7 +1434,7 @@ errors:
   title: "Codes d'erreur de l'adaptateur"
   intro: "En cas de problème, le jeu affiche un message et, derrière, un code. Saisissez ce code ici pour le rechercher. Les codes de même sens partagent une seule réponse, et chaque entrée peut afficher le message que le jeu lui-même affiche."
   filter-code: "Code d'erreur"
-  show-screen: "Ce que le jeu affiche"
+  partial: "※ Tous les codes n'ont pas encore d'explication."
   count: "%n% codes affichés sur %total%."
   no-meaning: "Pas encore de description"
   missing: "Les données d'erreur n'ont pas encore été générées. Lancez maint/build_adapter_errors.php."

@@ -1370,7 +1370,7 @@ errors:
   title: "Codici di errore dell'adattatore"
   intro: "Quando qualcosa non va il gioco mostra un messaggio e, dietro, un codice. Digita quel codice qui per cercarlo. I codici che significano la stessa cosa condividono un'unica risposta, e ogni voce può mostrare il messaggio che il gioco stesso stampa."
   filter-code: "Codice di errore"
-  show-screen: "Cosa mostra il gioco"
+  partial: "※ Non tutti i codici hanno ancora una spiegazione."
   count: "Mostrati %n% di %total% codici."
   no-meaning: "Ancora senza descrizione"
   missing: "I dati di errore non sono ancora stati generati. Esegui maint/build_adapter_errors.php."

@@ -17,24 +17,7 @@
 
 	var count = document.getElementById("err-count");
 	var codeIn = document.getElementById("err-code");
-	var SCREEN = list.dataset.screen || "What the game prints";
 
-	var names = {};
-	(data.games || []).forEach(function (g) { names[g.code] = g.name || g.code; });
-
-	// O texto de tela repete muito entre jogos -- a mesma frase aparece em
-	// até cinquenta células. Mostrar uma vez, dizendo quais cartuchos a
-	// usam, é a mesma informação sem vinte e duas repetições.
-	function groupMessages(messages) {
-		var byText = {};
-		Object.keys(messages).forEach(function (game) {
-			var t = messages[game];
-			(byText[t] = byText[t] || []).push(names[game] || game);
-		});
-		return Object.keys(byText).map(function (t) {
-			return { text: t, games: byText[t] };
-		});
-	}
 
 	function el(tag, cls, text) {
 		var n = document.createElement(tag);
@@ -108,25 +91,6 @@
 				var todo = el("p", "err-todo");
 				todo.innerHTML = row.todo;   // o texto é nosso, escrito à mão
 				item.appendChild(todo);
-			}
-
-			// As mensagens de todos os códigos da entrada, juntas: quem
-			// procurou pelo texto da tela precisa achá-lo aqui dentro.
-			var all = {};
-			entry.rows.forEach(function (r) {
-				Object.keys(r.messages).forEach(function (g) { all[g] = r.messages[g]; });
-			});
-			var groups = groupMessages(all);
-			if (groups.length) {
-				var det = el("details", "err-screen");
-				det.appendChild(el("summary", null, SCREEN));
-				groups.forEach(function (g) {
-					var block = el("div", "err-msg");
-					block.appendChild(el("span", "err-game", g.games.join(" · ")));
-					block.appendChild(el("pre", null, g.text));
-					det.appendChild(block);
-				});
-				item.appendChild(det);
 			}
 
 			list.appendChild(item);

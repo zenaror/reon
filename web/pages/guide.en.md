@@ -111,12 +111,6 @@ there is a code like `10-000`. Type that code into the
 **[adapter error codes](/errors.php)** page to look it up. Codes that mean
 the same thing are listed together, under one answer.
 
-<div class="reon-note">※ Not every code has an explanation yet. The ones
-that do not say so rather than guess. Each entry can also show the message
-the cartridge itself prints, line breaks and all, if you want to check that
-you found the right code — that text is in Japanese, because that is the
-language the cartridges were made to print.</div>
-
 ### Frequently asked questions
 
 <!-- Only mGBA on a PC gets step-by-step instructions here, and mGBA
