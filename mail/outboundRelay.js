@@ -3,9 +3,10 @@
 // Postfix pipe-transport delivery agent for the one case reoninbox doesn't
 // cover: a message reon-relay-policy already authorized to leave to a real
 // internet address (see relayPolicy.js, smtpd_relay_restrictions). Same
-// invocation shape as deliver.js (${sender}/${recipient} + raw message on
-// stdin), but instead of writing into sys_inbox, this submits the message
-// onward to Brevo itself -- replacing Postfix's own relayhost/smtp(8) path
+// invocation shape the old local delivery agent had (${sender}/${recipient}
+// + raw message on stdin), but instead of delivering into a mailbox, this
+// submits the message onward to the relay -- replacing Postfix's own
+// relayhost/smtp(8) path
 // for this one case, specifically so the BODY can be fixed too, not just
 // headers (smtp_generic_maps/smtp_header_checks can only touch headers).
 //
@@ -194,6 +195,38 @@ async function main() {
 	const origin = (getHeader(headers, "X-REON-Origin") || "game").toLowerCase() === "web" ? "web" : "game";
 	for (let i = headers.length - 1; i >= 0; i--) {
 		if (headers[i][0].toLowerCase() === "x-reon-origin") headers.splice(i, 1);
+	}
+
+	// Cabeçalhos de controle do relay, vindos do config.
+	//
+	// Cada provedor tem o seu dialeto para a mesma instrução, e nenhum deles
+	// pertence a este código: quem escolhe o relay é quem opera o servidor.
+	// Por isso a lista vem de fora, e não de um `if` por fornecedor aqui
+	// dentro -- trocar de relay passa a ser trocar config, não editar código.
+	//
+	// O caso que motivou isto: um relay que rastreia abertura precisa de uma
+	// imagem, imagem precisa de HTML, e então ele converte o nosso text/plain
+	// em HTML só para caber o pixel. Uma carta escrita num Game Boy chega
+	// embrulhada em `<html><body>`, com pixel e link de descadastro. Desligar
+	// o rastreamento é o que remove o motivo da conversão.
+	//
+	// Valores conhecidos, para quem for configurar:
+	//   Mailjet   "X-Mailjet-TrackOpen": "0", "X-Mailjet-TrackClick": "0"
+	//   Brevo     não tem -- rastreamento em transacional só sai em plano
+	//             Enterprise, mediante pedido
+	//   SMTP2GO   não precisa -- é por credencial no painel, e mensagem de
+	//             texto puro não é reescrita de qualquer forma
+	//
+	// Trocou de relay? Troque estes cabeçalhos junto. Um X-Mailjet-* enviado a
+	// outro provedor não desliga nada e ainda pode chegar visível a quem lê.
+	for (const [nome, valor] of Object.entries(config["smtp_headers"] || {})) {
+		// Nada com quebra de linha: um valor mal digitado no config viraria
+		// cabeçalho injetado no meio da mensagem.
+		if (/[\r\n]/.test(nome) || /[\r\n]/.test(String(valor))) {
+			process.stderr.write(`outboundRelay.js: smtp_headers["${nome}"] ignorado (contem quebra de linha)\n`);
+			continue;
+		}
+		setHeader(headers, nome, String(valor));
 	}
 
 	const envelopeFrom = rewriteDomain(opts.from, dionDomain, mailDomain);
