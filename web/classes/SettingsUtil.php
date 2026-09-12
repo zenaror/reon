@@ -14,9 +14,86 @@
 		// fechada é o que impede alguém de inventar nome e gravar linha solta.
 		const KNOWN = [
 			// Se o servidor ainda aceita USER/PASS com a senha de oito
-			// caracteres, ou se exige APOP/XAPOP. Ver examples/dovecot/.
+			// caracteres, ou se exige APOP. Ver examples/dovecot/.
 			"pop3_password_fallback" => "1",
+
+			// O que o gerador do mobile_config.bin escreve. Só entra aqui o
+			// que NÃO depende da conta: endereço do DNS, do relay, portas,
+			// modelo do adaptador e a marca de não-tarifado. Endereço de
+			// e-mail, gID, chave de aparelho e token de relay saem do
+			// cadastro de cada pessoa e não têm o que configurar.
+			//
+			// Os padrões abaixo são exatamente o que o gerador escrevia
+			// fixo no código antes de virem para cá, então uma tabela vazia
+			// produz a mesma bin de sempre.
+			"bin_dns1_host" => "152.67.55.127",
+			"bin_dns1_port" => "53",
+			// Vazio de propósito: o REON tem um servidor de DNS só, e
+			// repetir o endereço não dá redundância -- o segundo falharia
+			// pelo mesmo motivo que o primeiro. Vazio vira
+			// MOBILE_ADDRTYPE_NONE e o core nem lê o campo.
+			"bin_dns2_host" => "",
+			"bin_dns2_port" => "53",
+			"bin_relay_host" => "152.67.55.127",
+			// MOBILE_DEFAULT_RELAY_PORT da libmobile.
+			"bin_relay_port" => "31227",
+			"bin_p2p_port" => "1027",
+			// enum mobile_adapter_device: 8 azul, 9 amarelo, 10 verde,
+			// 11 vermelho. O byte guardado no arquivo é este OU 0x80
+			// quando não-tarifado.
+			"bin_adapter_device" => "8",
+			"bin_unmetered" => "0",
 		];
+
+		// O que cada chave aceita. Isto não é zelo: o valor vai para dentro
+		// de um arquivo binário que um cartucho de 2001 interpreta, e um
+		// endereço mal digitado no formulário quebraria o download de TODO
+		// mundo, sem mensagem de erro em lugar nenhum. Validado ao gravar e
+		// conferido de novo ao gerar.
+		const REGRAS = [
+			"pop3_password_fallback" => "bool",
+			"bin_dns1_host" => "ipv4",
+			"bin_dns2_host" => "ipv4_ou_vazio",
+			"bin_relay_host" => "ipv4",
+			"bin_dns1_port" => "porta",
+			"bin_dns2_port" => "porta",
+			"bin_relay_port" => "porta",
+			"bin_p2p_port" => "porta",
+			"bin_adapter_device" => "modelo",
+			"bin_unmetered" => "bool",
+		];
+
+		// Devolve true quando o valor serve para a chave.
+		public static function isValid($name, $value) {
+			$regra = self::REGRAS[(string)$name] ?? null;
+			if ($regra === null) return false;
+			$value = (string)$value;
+			switch ($regra) {
+				case "bool":
+					return $value === "0" || $value === "1";
+				case "ipv4":
+					return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
+				case "ipv4_ou_vazio":
+					return $value === "" ||
+						filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
+				case "porta":
+					// 0 não é porta válida para escutar, mas é o valor certo
+					// para um campo desligado, então entra.
+					return preg_match('/^\d{1,5}$/', $value) === 1 && (int)$value <= 65535;
+				case "modelo":
+					return in_array($value, ["8", "9", "10", "11"], true);
+			}
+			return false;
+		}
+
+		// O valor guardado, ou o padrão quando o que está no banco não passa
+		// na regra. É a segunda rede: se uma linha ruim entrar por outro
+		// caminho que não o painel, o gerador continua produzindo arquivo
+		// válido em vez de um que o cartucho não entende.
+		public function getValid($name) {
+			$v = $this->get($name);
+			return self::isValid($name, $v) ? $v : (self::KNOWN[$name] ?? null);
+		}
 
 		private static $instance = null;
 		public static function getInstance() {
@@ -51,6 +128,8 @@
 		public function set($name, $value) {
 			if (!self::isKnown($name)) return false;
 			$value = (string)$value;
+			// Recusa na porta de entrada. Ver REGRAS.
+			if (!self::isValid($name, $value)) return false;
 
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(

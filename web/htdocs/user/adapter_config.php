@@ -2,6 +2,7 @@
 	require_once("../../classes/TemplateUtil.php");
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/SettingsUtil.php");
 	require_once("../../classes/DeviceAuthUtil.php");
 	require_once("../../classes/RelayUtil.php");
 	session_start();
@@ -122,8 +123,19 @@
 
 		$lib_data = "";
 
-		// adapter model
-		$lib_data .= hex2bin("08"); // TODO: pull from user data
+		// Daqui para baixo, o que NÃO depende da conta vem do painel de
+		// administração (SettingsUtil), e não mais fixo no código. O
+		// `getValid` devolve o padrão quando o que está no banco não passa
+		// na regra, então uma linha ruim não produz arquivo que o cartucho
+		// não entende -- ela só é ignorada.
+		$cfgAdmin = SettingsUtil::getInstance();
+		$vAdmin = function ($k) use ($cfgAdmin) { return $cfgAdmin->getValid($k); };
+
+		// Modelo do adaptador, mais a marca de não-tarifado no bit 0x80
+		// (MOBILE_CONFIG_DEVICE_UNMETERED, config.h da libmobile).
+		$modelo = (int)$vAdmin("bin_adapter_device");
+		if ($vAdmin("bin_unmetered") === "1") $modelo |= 0x80;
+		$lib_data .= pack('C', $modelo);
 
 		// dns1/dns2 type. libmobile only overrides the game's DNS servers
 		// when the type isn't MOBILE_ADDRTYPE_NONE (config.c), so a
@@ -134,6 +146,7 @@
 		// out of the bin, pointed at the same server that answers the
 		// games' *.dion.ne.jp queries (see docs, "REON DNS is on port
 		// 53").
+		$dns2Host = $vAdmin("bin_dns2_host");
 		$lib_data .= hex2bin("01"); // DNS1 type = MOBILE_ADDRTYPE_IPV4
 		// DNS2 fica VAZIO: o REON tem um servidor de DNS só, e repetir o
 		// mesmo endereço nos dois campos não dá redundância nenhuma --
@@ -141,10 +154,10 @@
 		// falhar pelo mesmo motivo. Com o tipo em NONE o core nem lê o host
 		// e a porta (config_library_load_host só copia quando o tipo é IPV4
 		// ou IPV6), e o DNS2 do jogo fica como estava.
-		$lib_data .= hex2bin("00"); // DNS2 type = MOBILE_ADDRTYPE_NONE
+		$lib_data .= pack('C', $dns2Host === "" ? 0 : 1); // DNS2 type
 
 		// P2P port
-		$lib_data .= pack('v', 1027);
+		$lib_data .= pack('v', (int)$vAdmin("bin_p2p_port"));
 
 		// relay type (offset 0x0a). The relay's *address* is the same for
 		// every account (REON only runs the one), so it's written
@@ -169,18 +182,23 @@
 		// libmobile's own MOBILE_DEFAULT_RELAY_PORT (mobile.h), confirmed
 		// against what reon-mobile-relay.service actually listens on.
 		$lib_data = skip_to($lib_data, 0x1a - 5);
-		$lib_data .= pack('v', 53); // DNS1 port
-		$lib_data .= pack('v', 0); // DNS2 port -- sem DNS2, ver acima
-		$lib_data .= pack('v', 31227); // relay port
+		$lib_data .= pack('v', (int)$vAdmin("bin_dns1_port"));
+		$lib_data .= pack('v', $dns2Host === "" ? 0 : (int)$vAdmin("bin_dns2_port"));
+		$lib_data .= pack('v', (int)$vAdmin("bin_relay_port"));
 
 		// DNS1/relay host (offset 0x20/0x40) -- mesmo servidor nos dois, o
 		// REON só roda um. O host do DNS2 (0x30) fica zerado pelo skip_to:
 		// escrever endereço num campo anunciado como NONE deixaria a bin
 		// mostrando um segundo DNS que ninguém usa, para quem a inspecionar.
+		$emBytes = function ($ip) { return pack('C*', ...array_map('intval', explode('.', $ip))); };
 		$lib_data = skip_to($lib_data, 0x20 - 5);
-		$lib_data .= pack('C*', 152, 67, 55, 127); // DNS1 host
+		$lib_data .= $emBytes($vAdmin("bin_dns1_host"));
+		if ($dns2Host !== "") {
+			$lib_data = skip_to($lib_data, 0x30 - 5);
+			$lib_data .= $emBytes($dns2Host);
+		}
 		$lib_data = skip_to($lib_data, 0x40 - 5);
-		$lib_data .= pack('C*', 152, 67, 55, 127); // relay host
+		$lib_data .= $emBytes($vAdmin("bin_relay_host"));
 
 		if ($relay !== null) {
 			$lib_data = skip_to($lib_data, 0x50 - 5);

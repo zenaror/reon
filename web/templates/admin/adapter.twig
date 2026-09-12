@@ -1,0 +1,92 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.adapter-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint">{{ 'admin.adapter-intro'|trans }}</p>
+
+	<form method="post" action="/admin/adapter.php">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.adapter-dns'|trans }}</h2>
+
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-dns1'|trans }}</span>
+				<input type="text" name="bin_dns1_host" value="{{ v.bin_dns1_host }}"
+					inputmode="numeric" autocomplete="off" required
+					{% if 'bin_dns1_host' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-port'|trans }}</span>
+				<input type="text" name="bin_dns1_port" value="{{ v.bin_dns1_port }}"
+					inputmode="numeric" autocomplete="off" required
+					{% if 'bin_dns1_port' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-dns2'|trans }}</span>
+				<input type="text" name="bin_dns2_host" value="{{ v.bin_dns2_host }}"
+					inputmode="numeric" autocomplete="off"
+					placeholder="{{ 'admin.adapter-empty'|trans }}"
+					{% if 'bin_dns2_host' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-port'|trans }}</span>
+				<input type="text" name="bin_dns2_port" value="{{ v.bin_dns2_port }}"
+					inputmode="numeric" autocomplete="off"
+					{% if 'bin_dns2_port' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+			<p class="admin-form__hint">{{ 'admin.adapter-dns2-note'|trans }}</p>
+		</section>
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.adapter-relay'|trans }}</h2>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-relay-host'|trans }}</span>
+				<input type="text" name="bin_relay_host" value="{{ v.bin_relay_host }}"
+					inputmode="numeric" autocomplete="off" required
+					{% if 'bin_relay_host' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-port'|trans }}</span>
+				<input type="text" name="bin_relay_port" value="{{ v.bin_relay_port }}"
+					inputmode="numeric" autocomplete="off" required
+					{% if 'bin_relay_port' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-p2p'|trans }}</span>
+				<input type="text" name="bin_p2p_port" value="{{ v.bin_p2p_port }}"
+					inputmode="numeric" autocomplete="off" required
+					{% if 'bin_p2p_port' in invalidos %}class="admin-input--bad"{% endif %}>
+			</label>
+		</section>
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.adapter-device'|trans }}</h2>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-model'|trans }}</span>
+				<select name="bin_adapter_device">
+					{% for code, nome in modelos %}
+						<option value="{{ code }}"{{ v.bin_adapter_device == code ? ' selected' : '' }}>{{ nome }}</option>
+					{% endfor %}
+				</select>
+			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-unmetered'|trans }}</span>
+				<input type="checkbox" name="bin_unmetered" value="1"{{ v.bin_unmetered == '1' ? ' checked' : '' }}>
+			</label>
+			{# O que está gravado agora, em palavras. Não acompanha os
+			   controles de propósito: é o estado salvo, não uma prévia do
+			   que o formulário faria. #}
+			<p class="admin-form__hint">{{ 'admin.adapter-current'|trans }} {{ device_words }}</p>
+		</section>
+
+		<div class="admin-actions">
+			<button class="admin-btn" type="submit">{{ 'admin.adapter-save'|trans }}</button>
+		</div>
+	</form>
+
+	<p class="admin-form__hint">{{ 'admin.adapter-footer'|trans }}</p>
+
+{% endblock %}
