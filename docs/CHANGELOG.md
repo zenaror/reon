@@ -12,6 +12,61 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### reon-mail — SMTP, POP3 e relay de saída
 
+* **A correspondência saiu do MySQL e foi para o Dovecot.** O servidor do
+  REONTeam guarda e-mail em Postfix + Dovecot; o nosso guardava numa tabela,
+  e essa era a peça que impedia o nosso código de rodar lá. Agora é o mesmo
+  armazém: o Postfix entrega por LMTP, o Dovecot guarda em Maildir, e o
+  MySQL segue sendo o cadastro de contas — e só isso. O que era coluna virou
+  marca do IMAP (`read_at` → `\Seen`, coletada pelo jogo → `$Retrieved`,
+  lixeira → pasta `Trash`)
+  * Tudo o que fazemos de diferente continua valendo: a formatação para o
+    Mobile Trainer, a limpeza de cabeçalhos, a entrega byte a byte da
+    correspondência de jogo, o relay para o que sai para a internet. O que
+    mudou foi ONDE cada coisa acontece, não se acontece -- a única exceção é
+    o XAPOP, que virou APOP (abaixo), porque ele era o único que exigia um
+    servidor POP3 nosso para existir
+  * POP3 e webmail passaram a ler a MESMA caixa. Mandar para a lixeira no
+    site tira a mensagem do jogo, e restaurar devolve — conferido byte a
+    byte nos dois sentidos
+  * As doze mensagens que existiam foram migradas com remetente, data
+    original e estado (lida, coletada, apagada) preservados
+  * **A porta 110 passou a ser do Dovecot.** O nosso servidor POP3 saiu do
+    caminho; o que era dele e precisava sobreviver mudou de casa em vez de
+    sumir:
+    * as tratativas (limpeza de cabeçalho, redução para o Mobile Trainer)
+      foram do `RETR` para a ENTREGA, num filtro Sieve que chama o mesmo
+      código de antes -- o jogo recebe os mesmos bytes, conferidos por soma
+    * o `DELE` continua sem destruir: virou `pop3_deleted_flag` nativo, e a
+      mensagem segue recuperável pelo site
+    * "lida no site" e "coletada pelo jogo" voltaram a ser marcas distintas,
+      o que é o que faz a lixeira dizer se o cartucho chegou a baixar
+    * a correspondência que já estava guardada foi moldada numa passagem
+      única -- sem isso, tudo o que chegou antes do filtro iria cru ao jogo
+  * Cópia em Enviados e linha no sino voltaram como serviço. Moravam no
+    agente de entrega, que saiu quando o Postfix passou a entregar pelo
+    Dovecot -- e tinham ido junto, caladas: correspondência chegava e não
+    avisava ninguém
+  * O relay de saída deixou de conhecer fornecedor. Os cabeçalhos de controle
+    vêm do config, então trocar Brevo por Mailjet, SMTP2GO ou outro é mudar
+    configuração, não editar código. Ver `docs/RELAY-DE-SAIDA.md`
+
+* **POP3 do jogo passa a autenticar por APOP.** O XAPOP era nosso e não
+  existe em servidor nenhum: só dava para servi-lo remendando o Dovecot ou
+  mantendo um POP3 próprio na frente dele para sempre. O APOP é padrão, o
+  Dovecot já sabe fazer, e guarda a mesma propriedade — o segredo nunca cruza
+  o fio
+  * O segredo é a chave de device-auth, 256 bits, e não a senha de oito
+    caracteres. Quem faz a conta é o adaptador, não o cartucho: é o único
+    ponto da autenticação do jogo onde cabe um segredo desse tamanho
+  * Sem porta dos fundos: `USER`/`PASS` está desligado no servidor. Adaptador
+    que não sabe APOP não busca correio, do mesmo jeito que era com o XAPOP
+  * O `XPROVISION` deixa de existir, e com ele a viagem de ida e volta que
+    disparava em toda sessão
+  * A senha de oito caracteres vira um interruptor no painel, e não uma
+    decisão presa no código: quem administra fecha esse degrau na hora em que
+    as versões novas dos adaptadores chegarem em campo. Vale para os dois
+    servidores de POP3 ao mesmo tempo
+
 * Lixeira de e-mail — o `DELE` do POP3 passou a marcar em vez de apagar. O
   Mobile Trainer não tem modo "deixar no servidor": todos os caminhos dele
   apagam, e um deles apaga sem nem baixar
@@ -32,8 +87,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   (incluindo japonês) reescritos/decodificados só na saída
 * Fix: vulnerabilidade real numa biblioteca de envio de e-mail (permitia
   leitura de arquivo local / acesso a endereço arbitrário) — corrigida
-* Fix: e-mail interno (mail-bottle, troca de Pokémon) parou de passar por
-  SMTP — grava direto na caixa de entrada, sem processar nada
+* Fix: e-mail interno (mail-bottle, troca de Pokémon) parou de passar pelo
+  relay externo — é entregue localmente e chega ao destinatário exatamente
+  como foi gravado, sem nenhum tratamento pelo caminho
 * Fix: destinatário de e-mail de troca de Pokémon resolvido com segurança
   (busca no banco antes de usar)
 * Fix: numeração do POP3 sem `ORDER BY` — a ordem das linhas vira o número
@@ -149,14 +205,41 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   O som vai junto: cada prêmio é seguido de um `nsc_playsound` escolhido para
   o item que estava lá, e trocar só o item faria o jogo tocar a fanfarra de TM
   para uma `BERRY` — a regra aplicada é a do próprio upstream, que decide pelo
-  prefixo `TM_`. Prêmio que o minijogo monta sozinho (o `game_personality`
-  passa por parâmetro de macro, o `game_cry_memory` nomeia constantes da
-  tabela dele) aparece na lista marcado como fixo, e não escondido: o jogador
-  vai receber, e mostrar menos do que o jogo entrega seria mentira. Quem não
+  prefixo `TM_`. **Nem todo prêmio está escrito no `nsc_giveitem`**: o
+  `game_personality` entrega dentro de `MACRO quizresult`, invocada seis vezes
+  — uma por resultado do quiz —, e o `game_cry_memory` nomeia constantes que
+  `MACRO def_cryset` preenche. Ler só a linha do `nsc_giveitem` mostrava o
+  token cru da macro (`\4`) e, pior, contava UM prêmio onde o jogo entrega
+  seis. Então o que se procura é onde o nome do item está escrito de verdade,
+  que pode ser um argumento de uma invocação de macro em outra parte do
+  arquivo; a troca é feita lá, por recorte de posição, para não estragar o
+  alinhamento das colunas. Quem não
   escolhe nada continua com o prêmio original, e nesse caso nenhuma cópia é
   feita — o build inclui o arquivo da ferramenta como sempre; o submódulo
   nunca é tocado, a cópia com o prêmio trocado nasce no diretório temporário
   do build
+* **Dois minijogos não compilavam, em nenhum idioma** — logo, nenhuma edição
+  podia sair com eles. Três erros de digitação no fonte da ferramenta:
+  `event_timeless_gift_2.asm` tinha DUAS aspas de fechamento faltando
+  (linhas 673 e 791) e `game_personality.asm` (o TRAINER CHECKUP!) tinha uma
+  linha solta `JA____NEIN__ZUR___` entre um `db "@"` e o `.page3`, que o
+  montador lia como nome de macro. A linha é resto de colagem: o menu
+  JA/NEIN/ZURÜCK que ela imita está íntegro nas linhas 220-231, então
+  remover não perde texto nenhum. Corrigidos no nosso fork
+  (`zenaror/pokecrystal-news-maker`, `feature/full_server`), que passou a ser
+  o submódulo. Conferido montando os dez minijogos nos seis idiomas: 60 de 60
+  passam, contra 48 antes. Com isso os dez abrem inteiros — **24 prêmios
+  editáveis, nenhum fixo**
+* **A tela avisa quando um minijogo não monta**, em vez de deixar preencher a
+  edição inteira para receber o despejo do montador: nele não há prêmio para
+  escolher, e publicar é recusado antes de compilar. A tabela está vazia hoje
+  — os três erros foram corrigidos —, mas o mecanismo fica, porque a
+  ferramenta é de fora e a próxima atualização dela pode trazer outro. Ele
+  guarda a **linha inteira** que causa o erro, não um trecho: o primeiro
+  marcador que escrevi era `lang I, next "PARCO NAZIONALE?`, sem a aspa
+  final, e a correção só acrescenta a aspa no fim — o marcador continuava
+  casando com a linha corrigida, e a detecção nunca teria expirado, que é o
+  contrário do que ela existe para fazer
 * **Publicar agora**, para não esperar o ciclo de 15 minutos. Ele reescreve a
   data da edição para hoje em vez de ignorá-la: o agendador escolhe pela
   data, e mandar ir ao ar sem mexer no calendário deixaria a linha dizendo
@@ -817,6 +900,18 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   caminho: o relay falso do test.py lia o handshake com tamanho fixo e
   derrubava o cliente v1 — corrigido para aceitar v0 e v1 e ecoar a versão.
   `_RELEASES/libmobile-bgb` regenerada e conferida por sha256
+* **Nota: os hashes do libmobile-bgb citados acima não existem mais.** Em
+  11/09 o e-mail pessoal do dono foi retirado de todo o histórico das duas
+  branches, o que reescreveu a linha inteira em cascata. O conjunto vivo
+  passou a ser `feature/full_server` em **2eec307** e
+  `feature/alt_mail_parameter` em **9eab62d**; as duas árvores finais são
+  idênticas às de antes, verificado por tree hash e pela sequência
+  commit a commit. Os antigos que este documento citava mapeiam assim:
+  `3fe18d9` → `fa48ba2` e `a56c3ec` → `862d147`. Conferido aqui, e não
+  aceito de recado: nenhum dos antigos é alcançável a partir de qualquer
+  branch publicada. A única assinatura perdida é a do próprio dono
+  (`5db419f` → `9eab62d`); a de terceiro (`12a30c5`, Andrew Cook) ficou
+  fora do range e intacta
 
 ## PicoAdapterGB
 
