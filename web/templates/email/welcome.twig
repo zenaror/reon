@@ -15,9 +15,11 @@
 		{% endif %}
 		From the Game Boy: <code>{{ dion_email }}</code><br>
 		<br>
-		The games can only hold 8 characters, which is why the in-game address is the
-		shortened form.<br>
+		{% if mail_truncated %}
+		The Game Boy only holds 8 characters, which is why the in-game address is
+		your username shortened &mdash; both reach the same inbox.<br>
 		<br>
+		{% endif %}
 		Your DION ID is <code>{{ dion_id }}</code>. You will need it, along with your
 		Log-In Password, when setting up the Mobile Adapter &mdash; both are on your
 		account page at
