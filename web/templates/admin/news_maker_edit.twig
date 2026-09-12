@@ -137,7 +137,12 @@ sudo chown reon:reon {{ schedule_path }}</pre>
 				{% for file, slots in prizes_by_minigame %}
 					<fieldset class="news-prizes__set" data-news-prize-set="{{ file }}"
 					          {% if file != issue.minigame|default('') %}hidden disabled{% endif %}>
-						{% if slots is empty %}
+						{% if broken_minigames[file] is defined %}
+							{# Não monta com a ferramenta de hoje, por erro no fonte dela.
+							   Não fazemos fork, então aqui só se diz a verdade: não há
+							   prêmio para escolher, e a edição não sai com este minijogo. #}
+							<p class="admin-form__hint mb-0">{{ 'admin.news-maker-minigame-broken'|trans }}</p>
+						{% elseif slots is empty %}
 							<p class="admin-form__hint mb-0">{{ 'admin.news-maker-prize-none'|trans }}</p>
 						{% endif %}
 						{% for i, slot in slots %}

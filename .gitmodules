@@ -1,3 +1,4 @@
 [submodule "third_party/pokecrystal-news-maker"]
 	path = third_party/pokecrystal-news-maker
-	url = https://github.com/gb-mobile/pokecrystal-news-maker.git
+	url = https://github.com/zenaror/pokecrystal-news-maker.git
+	branch = feature/full_server
