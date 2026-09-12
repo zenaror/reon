@@ -135,7 +135,13 @@
 		// games' *.dion.ne.jp queries (see docs, "REON DNS is on port
 		// 53").
 		$lib_data .= hex2bin("01"); // DNS1 type = MOBILE_ADDRTYPE_IPV4
-		$lib_data .= hex2bin("01"); // DNS2 type = MOBILE_ADDRTYPE_IPV4
+		// DNS2 fica VAZIO: o REON tem um servidor de DNS só, e repetir o
+		// mesmo endereço nos dois campos não dá redundância nenhuma --
+		// anuncia um segundo servidor que, quando o primeiro falhar, vai
+		// falhar pelo mesmo motivo. Com o tipo em NONE o core nem lê o host
+		// e a porta (config_library_load_host só copia quando o tipo é IPV4
+		// ou IPV6), e o DNS2 do jogo fica como estava.
+		$lib_data .= hex2bin("00"); // DNS2 type = MOBILE_ADDRTYPE_NONE
 
 		// P2P port
 		$lib_data .= pack('v', 1027);
@@ -164,15 +170,15 @@
 		// against what reon-mobile-relay.service actually listens on.
 		$lib_data = skip_to($lib_data, 0x1a - 5);
 		$lib_data .= pack('v', 53); // DNS1 port
-		$lib_data .= pack('v', 53); // DNS2 port
+		$lib_data .= pack('v', 0); // DNS2 port -- sem DNS2, ver acima
 		$lib_data .= pack('v', 31227); // relay port
 
-		// DNS1/DNS2/relay host (offset 0x20/0x30/0x40) -- same server for
-		// all three, REON only runs the one.
+		// DNS1/relay host (offset 0x20/0x40) -- mesmo servidor nos dois, o
+		// REON só roda um. O host do DNS2 (0x30) fica zerado pelo skip_to:
+		// escrever endereço num campo anunciado como NONE deixaria a bin
+		// mostrando um segundo DNS que ninguém usa, para quem a inspecionar.
 		$lib_data = skip_to($lib_data, 0x20 - 5);
 		$lib_data .= pack('C*', 152, 67, 55, 127); // DNS1 host
-		$lib_data = skip_to($lib_data, 0x30 - 5);
-		$lib_data .= pack('C*', 152, 67, 55, 127); // DNS2 host
 		$lib_data = skip_to($lib_data, 0x40 - 5);
 		$lib_data .= pack('C*', 152, 67, 55, 127); // relay host
 
