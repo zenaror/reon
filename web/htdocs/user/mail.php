@@ -72,24 +72,29 @@
 			$subject = trim($_POST["subject"] ?? "");
 			$body = (string)($_POST["body"] ?? "");
 			$replyId = $_POST["reply"] ?? null;
+			$replySentId = $_POST["reply_sent"] ?? null;
+			$threadKey = null;
 
-			// A reply's destination is never taken from the form: it's
-			// re-derived server-side from the message being replied to,
-			// the same way the compose screen prefilled it, so the field
-			// being edited client-side (dev tools, a raw POST) can't
-			// silently detach the message onto a different recipient's
-			// thread while still looking like a reply.
-			if ($replyId !== null) {
-				$original = $mail->getForUser($userId, $replyId);
-				if ($original !== null) {
-					$to = $original["sender"];
-				}
+			// Nem o destino nem o título de uma resposta saem do formulário:
+			// os dois são re-derivados aqui da mensagem respondida, do mesmo
+			// jeito que a tela os preencheu. Os campos aparecem travados, mas
+			// travar é aparência -- a garantia é esta linha, porque um POST
+			// cru não passa por atributo nenhum de HTML.
+			//
+			// Junto vem a conversa que a resposta continua, e é ela que faz a
+			// mensagem entrar na thread certa em vez de ser adivinhada pelo
+			// título depois.
+			$ctx = $mail->replyContext($userId, $replyId, $replySentId);
+			if ($ctx !== null) {
+				$to = $ctx["to"];
+				$subject = $ctx["subject"];
+				$threadKey = $ctx["thread_key"];
 			}
 
 			if ($to === "" || $body === "") {
 				$error = "empty";
 			} else {
-				[$ok, $reason] = $mail->send($userId, $to, $subject, $body);
+				[$ok, $reason] = $mail->send($userId, $to, $subject, $body, $threadKey);
 				$error = $ok ? null : $reason;
 			}
 
@@ -100,7 +105,8 @@
 				echo TemplateUtil::render("/user/mail", [
 					"message" => null,
 					"messages" => null,
-					"compose" => ["to" => $to, "subject" => $subject, "body" => $body, "reply_id" => $replyId],
+					"compose" => ["to" => $to, "subject" => $subject, "body" => $body,
+						"reply_id" => $replyId, "reply_sent_id" => $replySentId],
 					"compose_error" => $error,
 					"folder" => "inbox",
 					"trash_count" => $mail->countTrashForUser($userId),
@@ -127,21 +133,26 @@
 	// Compose is its own view rather than a panel on the list, so a long
 	// message has the whole width to be written in.
 	if (isset($_GET["compose"])) {
-		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => "", "reply_id" => null];
+		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => "",
+			"reply_id" => null, "reply_sent_id" => null];
 
-		// Replying is addressed by message id, not by handing the address and
-		// subject over in the URL: getForUser is scoped by recipient, so this
-		// can only ever pre-fill from a message that belongs to the caller.
-		// reply_id rides along to the template (locks the "to" field) and
-		// back on submit (mail.php re-derives "to" from it server-side).
-		if (isset($_GET["reply"])) {
-			$original = $mail->getForUser($userId, $_GET["reply"]);
-			if ($original !== null) {
-				$subject = trim((string)$original["subject"]);
-				$prefill["to"] = $original["sender"];
-				$prefill["subject"] = preg_match('/^re:\s/i', $subject) ? $subject : ("Re: " . $subject);
-				$prefill["reply_id"] = $_GET["reply"];
-			}
+		// Responder é endereçado por id de mensagem, e nunca pela URL trazendo
+		// endereço e título prontos: as duas buscas são limitadas ao dono, de
+		// modo que só se pode responder a algo que é dele.
+		//
+		// São DOIS parâmetros porque são dois espaços de nomes diferentes --
+		// "reply" é id na caixa do Dovecot, "reply_sent" é id de linha em
+		// sys_sent. Antes havia só um, e o botão da tela de Enviados mandava
+		// o id dele pelo parâmetro da entrada: a busca não achava nada, o
+		// formulário abria com destinatário e título em branco, e os dois
+		// campos ainda por cima destravados.
+		$prefillCtx = $mail->replyContext(
+			$userId, $_GET["reply"] ?? null, $_GET["reply_sent"] ?? null);
+		if ($prefillCtx !== null) {
+			$prefill["to"] = $prefillCtx["to"];
+			$prefill["subject"] = $prefillCtx["subject"];
+			$prefill["reply_id"] = $_GET["reply"] ?? null;
+			$prefill["reply_sent_id"] = $_GET["reply_sent"] ?? null;
 		}
 
 		echo TemplateUtil::render("/user/mail", [

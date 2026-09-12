@@ -197,6 +197,17 @@ async function main() {
 		if (headers[i][0].toLowerCase() === "x-reon-origin") headers.splice(i, 1);
 	}
 
+	// Idem para a conversa. O webmail sabe se o que está saindo responde a
+	// algo ou abre assunto novo; aqui, do outro lado do Postfix, não há como
+	// saber -- então a resposta vem escrita na própria mensagem. Sai daqui
+	// pelo mesmo motivo que o de origem: é cabeçalho de serviço nosso, não
+	// tem por que chegar a quem recebe.
+	const rawThread = getHeader(headers, "X-REON-Thread") || "";
+	const threadKey = /^[0-9a-f]{32}$/.test(rawThread.trim()) ? rawThread.trim() : null;
+	for (let i = headers.length - 1; i >= 0; i--) {
+		if (headers[i][0].toLowerCase() === "x-reon-thread") headers.splice(i, 1);
+	}
+
 	// Cabeçalhos de controle do relay, vindos do config.
 	//
 	// Cada provedor tem o seu dialeto para a mesma instrução, e nenhum deles
@@ -253,13 +264,13 @@ async function main() {
 	// Everything leaving the server passes through here -- the game's mail and
 	// the webmail's external sends alike -- so this is the single place either
 	// gets recorded, and neither is filed twice.
-	await recordSent(config, opts.from, recipientArg, rawMessage, origin);
+	await recordSent(config, opts.from, recipientArg, rawMessage, origin, threadKey);
 }
 
 // Files a copy under the sending account. The envelope sender is always one of
 // ours on this path, but the lookup still guards: a name we cannot resolve
 // gets no row rather than a wrong one.
-async function recordSent(config, fromAddress, toAddress, rawMessage, origin) {
+async function recordSent(config, fromAddress, toAddress, rawMessage, origin, threadKey) {
 	const local = String(fromAddress || "").split("@")[0];
 	if (!local) return;
 
@@ -276,8 +287,8 @@ async function recordSent(config, fromAddress, toAddress, rawMessage, origin) {
 		);
 		if (who.length === 0) return;
 		await conn.execute(
-			"insert into sys_sent (user_id, recipient, origin, message) values (?, ?, ?, ?)",
-			[who[0]["id"], String(toAddress).slice(0, 254), origin, rawMessage]
+			"insert into sys_sent (user_id, recipient, origin, thread_key, message) values (?, ?, ?, ?, ?)",
+			[who[0]["id"], String(toAddress).slice(0, 254), origin, threadKey || null, rawMessage]
 		);
 	} catch (error) {
 		// The message did go out; failing to file a copy must not report the
