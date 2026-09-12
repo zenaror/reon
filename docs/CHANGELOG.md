@@ -22,9 +22,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * Tudo o que fazemos de diferente continua valendo: a formatação para o
     Mobile Trainer, a limpeza de cabeçalhos, a entrega byte a byte da
     correspondência de jogo, o relay para o que sai para a internet. O que
-    mudou foi ONDE cada coisa acontece, não se acontece -- a única exceção é
-    o XAPOP, que virou APOP (abaixo), porque ele era o único que exigia um
-    servidor POP3 nosso para existir
+    mudou foi ONDE cada coisa acontece, não se acontece
   * POP3 e webmail passaram a ler a MESMA caixa. Mandar para a lixeira no
     site tira a mensagem do jogo, e restaurar devolve — conferido byte a
     byte nos dois sentidos
@@ -71,23 +69,20 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     receber. Passa a ser o da caixa, com o nome de conta como nome de
     exibição
 
-* **POP3 do jogo passa a autenticar por APOP.** O XAPOP era nosso e não
-  existe em servidor nenhum: só dava para servi-lo remendando o Dovecot ou
-  mantendo um POP3 próprio na frente dele para sempre. O APOP é padrão, o
-  Dovecot já sabe fazer, e guarda a mesma propriedade — o segredo nunca cruza
-  o fio
+* **O POP3 do jogo autentica por APOP.** É padrão (RFC 1939), o Dovecot já
+  o serve sem remendo, e o segredo nunca cruza o fio. É o que permitiu
+  desligar o nosso servidor POP3 em vez de mantê-lo na frente do Dovecot
+  para sempre
   * O segredo é a chave de device-auth, 256 bits, e não a senha de oito
     caracteres. Quem faz a conta é o adaptador, não o cartucho: é o único
     ponto da autenticação do jogo onde cabe um segredo desse tamanho
   * O nome de login é o gID do aparelho, o mesmo que o `mobile_config.bin`
-    leva e que o XAPOP já usava. A caixa tem outro nome, e são campos
+    leva e que o PPP já usava. A caixa tem outro nome, e são campos
     distintos que nunca coincidem -- a consulta de autenticação aceita os
     dois e devolve o nome da caixa, que é o que faz a entrega achar o lugar
     certo em vez de abrir uma caixa vazia chamada `g000000002`
   * Sem porta dos fundos: `USER`/`PASS` está desligado no servidor. Adaptador
-    que não sabe APOP não busca correio, do mesmo jeito que era com o XAPOP
-  * O `XPROVISION` deixa de existir, e com ele a viagem de ida e volta que
-    disparava em toda sessão
+    que não sabe APOP não busca correio
   * A senha de oito caracteres vira um interruptor no painel, e não uma
     decisão presa no código: quem administra fecha esse degrau na hora em que
     as versões novas dos adaptadores chegarem em campo. Vale para os dois
@@ -103,15 +98,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   o jogo recebia a mensagem sem o único campo que importava e a descartava
   calado. Correspondência interna passou a ser entregue exatamente como está
   gravada; só a externa é tratada
-* Fix: corrida no POP3 nos dois caminhos de autenticação — o `+OK` saía
-  antes do maildrop existir, então cliente rápido via caixa vazia numa caixa
-  cheia. Valia para o nosso servidor POP3, que nesta mesma leva saiu do
-  caminho quando o Dovecot assumiu a porta
-* Login POP3 sem repetir senha, reaproveitando a chave de device-auth.
-  Nasceu como `XAPOP`/`XPROVISION`, comando nosso, e **virou APOP padrão
-  ainda nesta leva** (acima), quando a porta 110 passou a ser do Dovecot --
-  um comando que só o nosso servidor entendia não sobrevive a um servidor
-  que não é nosso. O `XPROVISION` não existe mais
+* Fix: corrida no POP3 em todos os caminhos de login — o `+OK` saía antes
+  do maildrop existir, então cliente rápido via caixa vazia numa caixa cheia
+* **Login POP3 sem repetir senha**, por APOP padrão, reaproveitando a chave
+  de device-auth de 256 bits. O segredo nunca cruza o fio, e quem atende é o
+  Dovecot, sem remendo
 * Envio de e-mail do jogo pra internet real (outbound relay via Postfix +
   Brevo), com autorização por dispositivo — domínio, cabeçalho e corpo
   (incluindo japonês) reescritos/decodificados só na saída
@@ -605,7 +596,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Device-auth e dispositivos conectados
 
-* **Device-auth com contador por aparelho.** A mesma `config.bin` roda no PC
+* **Device-auth com contador por aparelho.** O mesmo `mobile_config.bin` roda no PC
   e no 3DS, e o contador anti-replay era um só por conta: quem rodava por
   último avançava o servidor e o outro levava 403 (e 30-554 no jogo) até o
   lote de 50 ultrapassar. Agora a chave segue por conta e o contador + a
@@ -664,7 +655,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   reiniciado no meio de um lote cai exatamente nisso. Visto em produção.
   Revogação é fail-safe e passou a ser honrada com contador igual
 
-### config.bin (dados do adaptador)
+### mobile_config.bin (dados do adaptador)
 
 * **O arquivo agora se chama `mobile_config.bin`**, que é o nome que o mGBA
   usa — antes era `config.bin` e a pessoa tinha de renomear. O nome passou a
@@ -672,7 +663,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   `download` do link: quem abria a URL direto recebia um arquivo chamado
   `adapter_config.php`. O conteúdo não mudou em um byte, então nada precisa
   ser baixado de novo
-* Fix: o `config.bin` saía sem servidores DNS (tipo `NONE`), então todo
+* Fix: o `mobile_config.bin` saía sem servidores DNS (tipo `NONE`), então todo
   frontend precisava ser apontado para o REON à mão, e um sem tela de
   configuração — um núcleo libretro, por exemplo — não tinha como ser
   apontado. Agora sai com DNS e relay preenchidos, e um frontend que tenha a
@@ -881,7 +872,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   numa caixa só com três seletores — placa, rede, pinout — que casam com
   um dos seis `.uf2` e desabilitam o botão na combinação que não existe) e
   trazem um botão de
-  `config.bin` — logado baixa, deslogado vira "Log in to download" e o login
+  `mobile_config.bin` — logado baixa, deslogado vira "Log in to download" e o login
   volta para o mesmo lugar (`login.php?next=`, só caminho local; acesso
   deslogado ao `adapter_config.php` vai para o login com a conta como
   destino, não mais para a home)
@@ -915,11 +906,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 * Device-auth: autorizar/desautorizar agora por sessão PPP, não por conexão
   TCP individual
-* Autenticação de POP3 sem repetir senha, do lado do core: primeiro
-  `XAPOP`/`XPROVISION`, depois **APOP padrão** (`72fac61`), quando o servidor
-  passou a ser o Dovecot. O segredo continua sendo a chave de device-auth, em
-  64 caracteres hex; o nome de login é o gID que a `mobile_config.bin` leva.
-  O `XPROVISION` foi embora junto
+* **APOP** do lado do core (`72fac61`): o segredo é a chave de device-auth
+  em 64 caracteres hex, e o nome de login é o gID que a `mobile_config.bin`
+  leva
 * API pública exposta pra guardar/ler a chave de device-auth
 * Fix real de bug: envio parcial de socket (TCP/DNS) sendo tratado como
   sucesso/erro errado por truncamento de tipo
@@ -958,7 +947,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   grande
 * Corrigido: resposta da conexão não sendo drenada antes de fechar
 * Puxadas as correções do core (device-auth, autenticação de POP3, envio
-  parcial de socket); builds republicadas em `72fac61`, já com APOP
+  parcial de socket); builds em `72fac61`
 * No topo do ramo (`bb2d9b4`): `77b09e9` e `159d299` integrados e testados;
   reversão dos timestamps temporários de log (`08a2320`)
 * Builds Linux e Windows produzidas para empacotamento
@@ -981,9 +970,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ## PicoAdapterGB
 
-* Implementação completa de device-auth, autenticação de POP3 e relay
-  (backends Pico W e ESP). O POP3 nasceu com `XAPOP` e acompanha o core na
-  troca para APOP
+* Implementação completa de device-auth, autenticação de POP3 por APOP e
+  relay (backends Pico W e ESP)
 * Confirmado: sem auto-negociação de relay token (repasse direto)
 * Confirmado (via engenharia reversa do binário fechado do ESP-AT): strings
   de evento Wi-Fi/socket batem com o parser
