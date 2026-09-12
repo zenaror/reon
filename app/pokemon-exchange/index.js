@@ -6,6 +6,7 @@ const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
 const { notify } = require("../../lib/notifications");
 const { mailUser } = require("../../lib/usermail");
+const { sendRaw } = require("../../lib/rawmail");
 
 // ------------------------------
 // Config
@@ -53,9 +54,9 @@ const dbConfig = {
 // It's still resolved through the same dion_email_local lookup deliver.js
 // uses (sendExchangeSuccessEmail below) rather than trusted as a literal
 // delivery target, so a malformed/hacked payload just fails to resolve
-// instead of routing anywhere unexpected. This writes straight into
-// sys_inbox (same table/shape deliver.js writes into) instead of going
-// through an SMTP transport -- Pokémon Crystal's own trade mail mechanic
+// instead of routing anywhere unexpected. The message is handed to the local
+// mail system as-is, rather than composed through an SMTP library --
+// Pokémon Crystal's own trade mail mechanic
 // genuinely needs this exact binary payload untouched (trainer name +
 // Pokémon data + attached mail, all real game content, per the owner), and
 // there's no reason to route it through SMTP/MIME processing at all for a
@@ -3501,7 +3502,7 @@ async function sendExchangeSuccessEmail(
   // resolve to any account instead of routing anywhere unexpected.
   const localPart = String(emailAddress || "").split("@")[0];
   const [rows] = await connection.execute(
-    "select id from sys_users where dion_email_local = ? limit 1",
+    "select id, dion_email_local from sys_users where dion_email_local = ? limit 1",
     [localPart]
   );
   if (rows.length === 0) {
@@ -3509,10 +3510,17 @@ async function sendExchangeSuccessEmail(
     return;
   }
 
-  await connection.execute(
-    "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
-    ["system@" + config["email_domain_dion"], rows[0]["id"], raw]
-  );
+  // Entregue FALANDO SMTP, e não gravando na caixa. Gravar direto só
+  // funciona num servidor que use a nossa tabela: no do REONTeam, que é
+  // Postfix entregando ao Dovecot, o insert dava certo e nenhum jogador
+  // recebia nada -- sem erro em log nenhum. A submissão local funciona nos
+  // dois, e é literalmente o que eles pediram.
+  //
+  // O endereço vem da linha que acabou de ser validada, nunca do texto que
+  // o cartucho mandou: a checagem acima existe para o payload malformado
+  // não virar destino de entrega, e reaproveitar o valor cru desfaria isso.
+  const to = rows[0]["dion_email_local"] + "@" + config["email_domain_dion"];
+  await sendRaw("system@" + config["email_domain_dion"], to, raw);
 }
 
 

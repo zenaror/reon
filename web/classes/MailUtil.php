@@ -1,8 +1,9 @@
 <?php
 	require_once("DBUtil.php");
+	require_once("MailStoreUtil.php");
 	require_once("ConfigUtil.php");
 
-	// Web client's view over sys_inbox.
+	// Web client's view over the mail store.
 	//
 	// Deletion here and over POP3 is a move to the trash (deleted_at), not a
 	// removal: the Mobile Trainer has no "leave on server" mode and can delete
@@ -146,18 +147,6 @@
 			return !empty($parsed["is_game"]) || $this->isServiceSender($sender);
 		}
 
-		// The same rule in SQL: the counters run over the whole mailbox on
-		// every page render, so they must not read and parse every blob.
-		private function gameMailSql() {
-			$sql = "(message like '%X-Game-code:%' and message like '%X-GBmail-type: exclusive%')";
-			$senders = $this->serviceSenders();
-			if (!empty($senders)) {
-				$list = implode(",", array_map(function ($a) { return "'".$a."'"; }, $senders));
-				$sql = "($sql or lower(sender) in ($list))";
-			}
-			return $sql;
-		}
-
 		// Returns an error code, or null when the subject fits.
 		public function checkSubjectFits($subject) {
 			if (mb_strlen(trim((string)$subject)) > self::SUBJECT_MAX_CHARS) return "subject-too-long";
@@ -191,25 +180,71 @@
 		// a game is still waiting for. It stays backstage; what a game did
 		// reaches the player through a notification instead.
 		public function listForUser($userId, $folder = "inbox") {
+			return $this->folder($userId, $folder);
+		}
+
+		// O Dovecot endereça a caixa pelo nome da conta, não pelo id dela. É
+		// a mesma coluna que o Postfix consulta para saber se o destinatário
+		// existe.
+		private function mailboxOf($userId) {
 			$db = DBUtil::getInstance()->getDB();
-			$where = $folder === "trash" ? "deleted_at is not null" : "deleted_at is null";
-			$stmt = $db->prepare("
-				select id, sender, timestamp, message, deleted_at, deleted_by, retrieved_at, read_at
-				from sys_inbox
-				where recipient = ? and $where
-				order by timestamp desc, id desc
-			");
+			$stmt = $db->prepare("select dion_email_local from sys_users where id = ? limit 1");
 			$userId = (int)$userId;
 			$stmt->bind_param("i", $userId);
 			$stmt->execute();
-			$result = $stmt->get_result();
+			$row = $stmt->get_result()->fetch_assoc();
+			return $row && $row["dion_email_local"] !== "" ? $row["dion_email_local"] : null;
+		}
+
+		// Uma pasta inteira, já lida e já sem a correspondência dos jogos.
+		//
+		// Guardada pelo tempo da requisição porque a mesma pasta é pedida
+		// várias vezes numa página só -- a lista, o contador do sino, o da
+		// lixeira -- e cada pedido é um processo falando com o Dovecot. As
+		// linhas chegam no mesmo formato que a consulta devolvia, de
+		// propósito: montar conversas, filtrar e paginar continua sendo feito
+		// aqui em cima, sem uma linha alterada.
+		private $cacheCaixa = [];
+		private function folder($userId, $folder) {
+			$chave = ((int)$userId) . "|" . $folder;
+			if (isset($this->cacheCaixa[$chave])) return $this->cacheCaixa[$chave];
+
+			$caixa = $this->mailboxOf($userId);
+			// A INBOX guarda as duas coisas desde que o DELE do jogo virou
+			// marca em vez de remocao: as vivas e as que o jogo apagou. A
+			// pasta Trash guarda as que o site apagou. Entao a lixeira do site
+			// e a uniao das duas, e a entrada e a INBOX sem as marcadas.
+			$rows = [];
+			if ($caixa !== null) {
+				foreach (MailStoreUtil::rows($caixa, "INBOX", true) as $r) {
+					$apagada = $r["deleted_at"] !== null;
+					if ($apagada === ($folder === "trash")) $rows[] = $r;
+				}
+				if ($folder === "trash") {
+					$rows = array_merge($rows,
+						MailStoreUtil::rows($caixa, MailStoreUtil::TRASH, true));
+				}
+			}
+			// Mais recente primeiro, exatamente como a consulta ordenava
+			// (timestamp desc, id desc). E pela DATA, não pelo uid: mudar de
+			// pasta dá um uid novo à mensagem, então a de 3 de setembro que
+			// voltou da lixeira hoje tem o maior uid da caixa e apareceria no
+			// topo.
+			usort($rows, function ($a, $b) {
+				$c = strcmp((string)$b["timestamp"], (string)$a["timestamp"]);
+				return $c !== 0 ? $c : ($b["uid"] - $a["uid"]);
+			});
 
 			$out = [];
-			while ($row = $result->fetch_assoc()) {
+			foreach ($rows as $row) {
+				if ($row["message"] === null) continue;
 				$parsed = $this->parse($row["message"]);
 				if ($this->isGameMail($parsed, $row["sender"])) continue;
 				$out[] = [
 					"id" => $row["id"],
+					// Só para mostrar. O id inteiro é "INBOX:8", e "#INBOX:8"
+					// no topo de uma mensagem não diz nada a ninguém.
+					"num" => $row["uid"],
 					"sender" => $row["sender"],
 					"timestamp" => $row["timestamp"],
 					"subject" => $parsed["subject"],
@@ -224,21 +259,31 @@
 					"unread" => $row["read_at"] === null,
 				];
 			}
-			return $out;
+			return $this->cacheCaixa[$chave] = $out;
+		}
+
+		// Os ids que este usuário pode mexer: existem numa das pastas dele e
+		// não são correspondência de jogo. A regra é conferida aqui, e não
+		// apenas escondendo o botão: mandar um resultado de troca para a
+		// lixeira o tira do POP3, e o cartucho que está esperando por ele não
+		// tem como pedir de volta.
+		private function ownedIds($userId, $ids, $folders) {
+			$meus = [];
+			foreach ((array)$folders as $f) {
+				foreach ($this->folder($userId, $f) as $m) $meus[$m["id"]] = true;
+			}
+			$out = [];
+			foreach ((array)$ids as $id) {
+				$id = trim((string)$id);
+				if (isset($meus[$id])) $out[] = $id;
+			}
+			return array_values(array_unique($out));
 		}
 
 		// Moving to the trash hides the message from POP3, so the game stops
 		// offering it, but nothing is destroyed until the purge runs.
 		public function moveToTrash($userId, $id) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("
-				update sys_inbox set deleted_at = now(), deleted_by = 'web'
-				where id = ? and recipient = ? and deleted_at is null
-			");
-			$id = (int)$id; $userId = (int)$userId;
-			$stmt->bind_param("ii", $id, $userId);
-			$stmt->execute();
-			return $stmt->affected_rows > 0;
+			return $this->moveToTrashMany($userId, [$id]) > 0;
 		}
 
 		// Resolves an address to a REON account id, or null if it belongs to
@@ -353,10 +398,17 @@
 				trim((string)$subject), (string)$body
 			);
 
-			$stmt = $db->prepare("insert into sys_inbox (sender, recipient, message) values (?, ?, ?)");
-			$stmt->bind_param("sis", $fromAddress, $recipientId, $message);
-			$stmt->execute();
-			$ok = $stmt->affected_rows > 0;
+			// Entregue FALANDO SMTP, pelo mesmo submitLocally() que o envio
+			// externo já usava. Gravar direto na caixa só funciona num
+			// servidor que use a nossa tabela; o do REONTeam entrega pelo
+			// Dovecot, e lá o insert dava certo sem ninguém receber nada.
+			//
+			// A cópia em Enviados e o sino continuam sendo feitos AQUI, e
+			// não no deliver.js: aqui se sabe que a origem é "web" e quem é
+			// o remetente de verdade. O deliver.js reconhece o
+			// X-REON-Origin que submitLocally() carimba e não repete nenhum
+			// dos dois.
+			$ok = $this->submitLocally($fromAddress, $toAddress, $message);
 			if ($ok) {
 				$this->recordSent($fromUserId, $toAddress, $message);
 				// A line in the recipient's bell beside the mail badge. The
@@ -468,53 +520,39 @@
 			$stmt->execute();
 		}
 
-		// Bulk variants of the three actions. Each runs as one statement rather
-		// than a loop, so a selection either applies whole or not at all, and
-		// each carries the same recipient scoping and same-folder guard as its
-		// single-message counterpart -- ids belonging to someone else, or in
-		// the wrong folder, simply match nothing.
-		//
-		// $ids is cast to int per element and the placeholder list is built
-		// from the count, so nothing from the request reaches the SQL text.
-		private function bulk($userId, $ids, $sqlHead, $guard) {
-			$ids = array_values(array_filter(array_map("intval", (array)$ids)));
-			if (empty($ids)) return 0;
-
-			$db = DBUtil::getInstance()->getDB();
-			$placeholders = implode(",", array_fill(0, count($ids), "?"));
-			// A game's own mail is read-only in the webmail, and that is
-			// enforced here rather than only by hiding the buttons: trashing a
-			// trade result would take it away from the cartridge waiting to
-			// collect it. An id that names one simply matches nothing.
-			$notGame = "not ".$this->gameMailSql();
-			$stmt = $db->prepare("$sqlHead where recipient = ? and $guard and $notGame and id in ($placeholders)");
-
-			$params = array_merge([(int)$userId], $ids);
-			$stmt->bind_param(str_repeat("i", count($params)), ...$params);
-			$stmt->execute();
-			return $stmt->affected_rows;
-		}
-
 		public function moveToTrashMany($userId, $ids) {
-			return $this->bulk($userId, $ids,
-				"update sys_inbox set deleted_at = now(), deleted_by = 'web'", "deleted_at is null");
+			return $this->aplica($userId, $ids, "inbox", "moveToTrash");
 		}
+
+		// Restaurar e apagar de vez valem para as duas formas de estar na
+		// lixeira, e ownedIds ja resolve os ids pela pasta "trash" -- que
+		// desde o DELE marcado inclui as marcadas dentro da propria INBOX.
 
 		public function restoreMany($userId, $ids) {
-			return $this->bulk($userId, $ids,
-				"update sys_inbox set deleted_at = null, deleted_by = null", "deleted_at is not null");
+			return $this->aplica($userId, $ids, "trash", "restore");
 		}
 
 		public function deleteForeverMany($userId, $ids) {
-			return $this->bulk($userId, $ids,
-				"delete from sys_inbox", "deleted_at is not null");
+			return $this->aplica($userId, $ids, "trash", "purge");
+		}
+
+		// Filtra o que é do usuário, manda para o armazém e esquece o que
+		// tinha em mãos -- a pasta acabou de mudar debaixo dela.
+		private function aplica($userId, $ids, $folder, $metodo) {
+			$ids = $this->ownedIds($userId, $ids, [$folder]);
+			if (empty($ids)) return 0;
+			$caixa = $this->mailboxOf($userId);
+			if ($caixa === null) return 0;
+			$n = MailStoreUtil::$metodo($caixa, $ids);
+			$this->cacheCaixa = [];
+			return $n;
 		}
 
 		// Sent copies have no trash of their own: sys_sent has no deleted_at,
 		// and a copy of something already delivered has nowhere to be
 		// restored to. So removing one is final, and the button asks first.
 		// Scoped by user_id (sys_sent's owner column) rather than by
-		// recipient, which is why it cannot reuse bulk().
+		// recipient, which is why it cannot reuse the store path.
 		public function deleteSentMany($userId, $ids) {
 			$ids = array_values(array_filter(array_map("intval", (array)$ids)));
 			if (empty($ids)) return 0;
@@ -532,56 +570,28 @@
 		// Restoring puts the message back in POP3's maildrop, so the game will
 		// download it again on the next sync -- which is the point.
 		public function restore($userId, $id) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("
-				update sys_inbox set deleted_at = null, deleted_by = null
-				where id = ? and recipient = ? and deleted_at is not null
-			");
-			$id = (int)$id; $userId = (int)$userId;
-			$stmt->bind_param("ii", $id, $userId);
-			$stmt->execute();
-			return $stmt->affected_rows > 0;
+			return $this->restoreMany($userId, [$id]) > 0;
 		}
 
 		// Only ever applies to something already in the trash, so a single
 		// mistaken click can never destroy a message outright.
 		public function deleteForever($userId, $id) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("delete from sys_inbox where id = ? and recipient = ? and deleted_at is not null");
-			$id = (int)$id; $userId = (int)$userId;
-			$stmt->bind_param("ii", $id, $userId);
-			$stmt->execute();
-			return $stmt->affected_rows > 0;
+			return $this->deleteForeverMany($userId, [$id]) > 0;
 		}
 
 		// Messages sitting unread in the inbox. Counted per message, so the
 		// badge falls by one each time something is opened rather than
 		// clearing all at once when the list is viewed.
 		public function countNewForUser($userId) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare(
-				"select count(*) as c from sys_inbox
-				 where recipient = ? and deleted_at is null and read_at is null
-				   and not " . $this->gameMailSql()
-			);
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
-			$stmt->execute();
-			return (int)$stmt->get_result()->fetch_assoc()["c"];
+			$n = 0;
+			foreach ($this->folder($userId, "inbox") as $m) if (!empty($m["unread"])) $n++;
+			return $n;
 		}
 
 		// Set when a message is opened in the webmail, once. Scoped by
 		// recipient, so an id belonging to someone else marks nothing.
 		public function markRead($userId, $id) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare(
-				"update sys_inbox set read_at = now()
-				 where id = ? and recipient = ? and read_at is null"
-			);
-			$id = (int)$id; $userId = (int)$userId;
-			$stmt->bind_param("ii", $id, $userId);
-			$stmt->execute();
-			return $stmt->affected_rows > 0;
+			return $this->markReadMany($userId, [$id]) > 0;
 		}
 
 		// Sent copies, from the webmail and from the game. Parsed the same way
@@ -667,30 +677,20 @@
 		}
 
 		public function countTrashForUser($userId) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is not null and not " . $this->gameMailSql());
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
-			$stmt->execute();
-			return (int)$stmt->get_result()->fetch_assoc()["c"];
+			return count($this->folder($userId, "trash"));
 		}
 
 		// Scoped by recipient as well as id: the message id alone must never be
 		// enough to read someone else's mail.
 		public function getForUser($userId, $id) {
-			$db = DBUtil::getInstance()->getDB();
-			// Deliberately not filtered on deleted_at: a trashed message still
-			// has to be readable, that being the point of keeping it.
-			$stmt = $db->prepare("
-				select id, sender, timestamp, message, deleted_at from sys_inbox
-				where id = ? and recipient = ? limit 1
-			");
-			$id = (int)$id;
-			$userId = (int)$userId;
-			$stmt->bind_param("ii", $id, $userId);
-			$stmt->execute();
-			$row = $stmt->get_result()->fetch_assoc();
-			if (!$row) return null;
+			// Uma da lixeira continua legível -- é o ponto de guardá-la -- e
+			// a do jogo também: ela volta com is_game e a tela a mostra sem
+			// os botões. Por isso vai direto ao armazém, sem passar pelo
+			// folder(), que é justamente quem esconde a do jogo da LISTA.
+			$caixa = $this->mailboxOf($userId);
+			if ($caixa === null) return null;
+			$row = MailStoreUtil::row($caixa, $id);
+			if (!$row || $row["message"] === null) return null;
 
 			$parsed = $this->parse($row["message"]);
 			return [
@@ -710,12 +710,7 @@
 		}
 
 		public function countForUser($userId) {
-			$db = DBUtil::getInstance()->getDB();
-			$stmt = $db->prepare("select count(*) as c from sys_inbox where recipient = ? and deleted_at is null and not " . $this->gameMailSql());
-			$userId = (int)$userId;
-			$stmt->bind_param("i", $userId);
-			$stmt->execute();
-			return (int)$stmt->get_result()->fetch_assoc()["c"];
+			return count($this->folder($userId, "inbox"));
 		}
 
 		// ------------------------------------------------------------------
@@ -829,8 +824,16 @@
 			return null;
 		}
 
+		// Vale nas duas pastas: uma mensagem pode ser aberta na lixeira.
 		public function markReadMany($userId, $ids) {
-			return $this->bulk($userId, $ids, "update sys_inbox set read_at = now()", "read_at is null");
+			$ids = $this->ownedIds($userId, $ids, ["inbox", "trash"]);
+			if (empty($ids)) return 0;
+			$caixa = $this->mailboxOf($userId);
+			if ($caixa === null) return 0;
+			$n = 0;
+			foreach ($ids as $id) if (MailStoreUtil::markRead($caixa, $id)) $n++;
+			$this->cacheCaixa = [];
+			return $n;
 		}
 
 		// ------------------------------------------------------------------
