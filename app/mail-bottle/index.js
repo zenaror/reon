@@ -3,6 +3,7 @@ const path = require("path");
 const mysql = require("mysql2/promise");
 
 const { Command } = require("commander");
+const { sendRaw } = require("../../lib/rawmail");
 
 // ------------------------------
 // Config
@@ -33,8 +34,8 @@ const dbConfig = {
 // Both trade partners are always the game's own internal accounts (email is
 // always dion_email_local@email_domain_dion, set server-side in
 // 20.bottlemail.php -- never a real address a player typed in), so this
-// writes straight into sys_inbox (same table/shape deliver.js writes into)
-// instead of routing through an SMTP transport. Two reasons, not just one:
+// hands the message to the local mail system as-is, rather than composing
+// it through an SMTP library. Two reasons, not just one:
 // it keeps the player's original message bytes completely untouched (no
 // MIME/SMTP-layer reinterpretation of content that was never meant to leave
 // the game in the first place), and it avoids a real class of vulnerability
@@ -67,14 +68,15 @@ async function doExchange() {
         const a = list[i - 1];
         const b = list[i];
 
-        await connection.execute(
-          "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
-          [a["email"], b["acc_id"], "To: " + b["email"] + "\r\n" + a["message"]]
-        );
-        await connection.execute(
-          "insert into sys_inbox (sender, recipient, message) values (?, ?, ?)",
-          [b["email"], a["acc_id"], "To: " + a["email"] + "\r\n" + b["message"]]
-        );
+        // Entregues FALANDO SMTP, e não gravando na caixa: gravar direto só
+        // chega a alguém num servidor que use a nossa tabela, e o do REONTeam
+        // entrega pelo Dovecot. A submissão local serve aos dois.
+        //
+        // O endereço de cada lado é o que a própria garrafa trazia, e é o
+        // mesmo valor que ia para a coluna `sender` -- então quem é interno
+        // segue decidido pelo domínio, como sempre foi.
+        await sendRaw(a["email"], b["email"], "To: " + b["email"] + "\r\n" + a["message"]);
+        await sendRaw(b["email"], a["email"], "To: " + a["email"] + "\r\n" + b["message"]);
 
         // Clean up processed rows
         await connection.execute("DELETE FROM " + table + " WHERE id = ?", [a["id"]]);

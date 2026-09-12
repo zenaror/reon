@@ -626,7 +626,7 @@
 								{%- endif -%}
 							</span>
 							<span class="mt-thread__when">{{ m.timestamp|date("Y.m.d H:i") }}{% if m.game %} &middot; {{ m.game }}{% endif %}{% if m.kind == 'out' %} &middot; {{ m.origin == 'game' ? 'mail.via-game'|trans : 'mail.via-web'|trans }}{% endif %}</span>
-							{% if m.kind == 'in' %}<a class="mt-thread__open" href="/user/mail.php?id={{ m.id }}">#{{ m.id }}</a>{% endif %}
+							{% if m.kind == 'in' %}<a class="mt-thread__open" href="/user/mail.php?id={{ m.id }}">#{{ m.num ?? m.id }}</a>{% endif %}
 						</div>
 						<pre class="mt-body">{{ m.body }}</pre>
 					</li>

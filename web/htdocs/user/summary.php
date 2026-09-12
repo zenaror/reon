@@ -2,6 +2,7 @@
 	require_once("../../classes/TemplateUtil.php");
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/MailUtil.php");
 	require_once("../../classes/RelayUtil.php");
 	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/UserUtil.php");
@@ -64,11 +65,9 @@
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
 		
-		$db = $db_util->getDB();
-		$stmt = $db->prepare("select count(*) from sys_inbox where recipient = ? and deleted_at is null");
-		$stmt->bind_param("i", $_SESSION["user_id"]);
-		$stmt->execute();
-		$inbox_size = DBUtil::fancy_get_result($stmt)[0]["count(*)"];
+		// A mesma contagem que o webmail mostra -- vinda do Dovecot, e já sem
+		// a correspondência dos jogos, que não aparece em lista nenhuma.
+		$inbox_size = MailUtil::getInstance()->countForUser($_SESSION["user_id"]);
 
 		$relay = RelayUtil::getInstance()->getForUser($_SESSION["user_id"]);
 

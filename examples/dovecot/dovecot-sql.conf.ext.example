@@ -1,0 +1,16 @@
+# Credenciais do Dovecot. Instalar em /etc/dovecot/dovecot-sql.conf.ext,
+# dono root:dovecot, modo 0640 -- o arquivo guarda senha em claro, e o
+# 99-reon.conf o inclui com !include.
+#
+# Só as credenciais moram aqui. A consulta de autenticação está no
+# 99-reon.conf, junto do resto, para poder ser lida sem abrir este arquivo.
+
+mysql /var/run/mysqld/mysqld.sock {
+  user = TROQUE_ME
+  password = TROQUE_ME
+  dbname = reon_db
+}
+
+# Senha do doveadm-server, usada pelo nosso POP3 e pelo webmail para pedir
+# caixas que eles não têm privilégio de ler direto.
+doveadm_password = TROQUE_ME

@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once("MailStoreUtil.php");
 	require_once("SessionUtil.php");
 
 	// The administration panel's own layer: who may be here, what was done,
@@ -228,13 +229,54 @@
 				"admins" => $one("select count(*) from sys_users where is_admin = 1"),
 				"devices" => $one("select count(*) from sys_device_counter"),
 				"devices_blocked" => $one("select count(*) from sys_device_counter where blocked = 1"),
-				"mail_today" => $one("select count(*) from sys_inbox where timestamp > date_sub(now(), interval 1 day)"),
-				"mail_total" => $one("select count(*) from sys_inbox where deleted_at is null"),
+				// Vem do Dovecot, nao mais da sys_inbox: desde a migracao aquela
+				// tabela nao recebe mensagem nenhuma, e estes dois numeros
+				// mostravam o retrato parado do dia do corte -- errados sem
+				// nunca dar erro, que e o pior jeito de estar errado.
+				"mail_today" => $this->mailStats()["recentes"],
+				"mail_total" => $this->mailStats()["total"],
 				"trades_waiting" => $one("select count(*) from bxt_exchange"),
 				"news_posts" => $one("select count(*) from sys_news"),
 				"notifications" => $one("select count(*) from sys_notifications"),
 			];
 		}
+		// Soma das caixas de todo mundo. Uma chamada ao Dovecot por conta --
+		// nao ha como perguntar por todas de uma vez, porque o nosso userdb e
+		// estatico e nao sabe listar usuarios. Guardado pelo tempo da
+		// requisicao porque o painel pede os dois numeros separadamente.
+		private $cacheMail = null;
+		private function mailStats() {
+			if ($this->cacheMail !== null) return $this->cacheMail;
+
+			// Em disco, por cinco minutos. Sem isto sao 13 processos doveadm
+			// por carregamento do painel -- 2,5 segundos hoje, e o custo cresce
+			// junto com o numero de contas. Numero de painel nao precisa ser do
+			// segundo; precisa ser rapido e estar mais ou menos certo.
+			$arquivo = dirname(__DIR__) . "/cache/mail-stats.json";
+			if (is_file($arquivo) && (time() - filemtime($arquivo)) < 300) {
+				$guardado = json_decode((string)@file_get_contents($arquivo), true);
+				if (is_array($guardado) && isset($guardado["total"], $guardado["recentes"])) {
+					return $this->cacheMail = $guardado;
+				}
+			}
+
+			$db = DBUtil::getInstance()->getDB();
+			$r = $db->query("select dion_email_local from sys_users
+			                 where dion_email_local is not null and dion_email_local <> ''");
+			$total = 0; $recentes = 0;
+			while ($u = $r->fetch_assoc()) {
+				$s = MailStoreUtil::stats($u["dion_email_local"]);
+				$total += $s["total"];
+				$recentes += $s["recentes"];
+			}
+			$this->cacheMail = ["total" => $total, "recentes" => $recentes];
+			// Falha em gravar o cache nao pode derrubar o painel: perde-se a
+			// economia, nao a pagina.
+			@mkdir(dirname($arquivo), 0775, true);
+			@file_put_contents($arquivo, json_encode($this->cacheMail));
+			return $this->cacheMail;
+		}
+
 		// Devolve a edição oficial da região para a linha custom, copiando o
 		// conteúdo da linha vanilla para dentro dela.
 		//
