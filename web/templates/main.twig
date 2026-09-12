@@ -17,10 +17,17 @@
 		<link href="{{ asset('/css/mobile-trainer.css') }}" rel="stylesheet">
 		<link href="{{ asset('/css/main.css') }}" rel="stylesheet">
 		<link href="{{ asset('/css/reon-theme.css') }}" rel="stylesheet">
+		{# For scripts that post on their own (fetch) rather than through a
+		   form: they read the token here and send it under the same field. #}
+		<meta name="csrf-token" content="{{ csrf_token }}">
+		<meta name="csrf-field" content="{{ csrf_field }}">
 		{% block head %}
 		{% endblock %}
 	</head>
-	<body{% if body_class is defined and body_class %} class="{{ body_class|e('html_attr') }}"{% endif %}>
+	{# data-section names the portal area this page belongs to. The CSS turns it
+	   into --section-gem, so the header dot picks up the same colour as the
+	   section's gem in the side menu instead of always being blue. #}
+	<body{% if body_class is defined and body_class %} class="{{ body_class|e('html_attr') }}"{% endif %}{% if nav_item is defined and nav_item %} data-section="{{ nav_item|e('html_attr') }}"{% endif %}>
 		<header class="navbar navbar-expand-lg bg-body-tertiary cgb-gradient-border container-xxl">
 			<nav class="container-xxl">
 				<a href="/index.php" class="navbar-brand">
@@ -34,6 +41,7 @@
 				<div class="collapse navbar-collapse" id="reonNavbar">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 					<li class="nav-item"><a href="/index.php" class="nav-link{% if nav_item == 'index' %}{{ ' active' }}{% endif %}" aria-current="page">{{'home'|trans}}</a></li>
+					<li class="nav-item"><a href="/news.php" class="nav-link{% if nav_item == 'news' %}{{ ' active' }}{% endif %}">{{'news'|trans}}</a></li>
 					<li class="nav-item dropdown">
 						<a href="#" class="nav-link dropdown-toggle{% if nav_item == 'games' %}{{ ' active' }}{% endif %}" id="gamesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							{{'games'|trans}}
@@ -44,6 +52,8 @@
 							<li><a class="dropdown-item" href="/gbwars/">{{'gameboy-wars'|trans}}</a></li>
 						</ul>
 					</li>
+					<li class="nav-item"><a href="/guide.php" class="nav-link{% if nav_item == 'guide' %}{{ ' active' }}{% endif %}">{{'guide'|trans}}</a></li>
+					<li class="nav-item"><a href="/downloads.php" class="nav-link{% if nav_item == 'downloads' %}{{ ' active' }}{% endif %}">{{'downloads'|trans}}</a></li>
 					<li class="nav-item"><a href="#" class="nav-link" onclick="openGbcModal(); return false;">{{'mobile-home'|trans}}</a></li>
 				</ul>
 				
@@ -59,11 +69,83 @@
 								<li><a class="dropdown-item" href="?lang=es" data-locale-code="es">{{'locale.es'|trans}}</a></li>
 								<li><a class="dropdown-item" href="?lang=it" data-locale-code="it">{{'locale.it'|trans}}</a></li>
 								<li><a class="dropdown-item" href="?lang=fr" data-locale-code="fr">{{'locale.fr'|trans}}</a></li>
+								<li><a class="dropdown-item" href="?lang=pt-br" data-locale-code="pt-br">{{'locale.pt-br'|trans}}</a></li>
 							</ul>
 						</li>
 						{% if session_active %}
-							<li class="nav-item"><a href="/user/summary.php" class="btn btn-primary me-2">{{'your-account'|trans}}</a></li>
-							<li class="nav-item"><a href="/logout.php" class="btn btn-outline-primary">{{'logout'|trans}}</a></li>
+							{# Grouped into one dropdown: as nav entries were added the two
+							   separate buttons pushed the bar into wrapping onto two lines. #}
+							<li class="nav-item dropdown">
+								<a href="#" class="nav-link dropdown-toggle" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									{{ curr_username|default('your-account'|trans) }}
+									{#- The count also sits on the Mail item inside, but the menu is
+									    closed by default, so nothing there is visible until you go
+									    looking. This is the one that has to catch the eye. -#}
+									{#- Only unread mail earns a badge: the count of new messages,
+									    in the accent colour. The whole-mailbox total used to show in
+									    grey once nothing was unread; the owner had it removed. -#}
+									{#- A game's own mail is not counted here, or anywhere else the
+									    web can see. It is still a real message in the mailbox and
+									    still served over POP3 -- the cartridge needs that to work --
+									    but on the web it stays backstage: the player learns that a
+									    trade resolved from the bell, not from a mail counter for
+									    letters they can never open. -#}
+									{#- The wrapper is always present, even with nothing to show:
+									    mail-indicator.js rewrites its contents every minute, and
+									    needs somewhere to put a badge that did not exist at load. -#}
+									<span data-mail-badge>
+									{%- if mail_new > 0 %}
+										<span class="mail-badge mail-badge--new"
+										      title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>
+										<span class="visually-hidden">{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}</span>
+									{% endif -%}
+									</span>
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+									<li><a class="dropdown-item" href="/user/summary.php">{{'your-account'|trans}}</a></li>
+									<li><a class="dropdown-item" href="/user/mail.php">
+										{{'mail.title'|trans}}<span data-mail-badge>
+										{%- if mail_new > 0 %} <span class="mail-badge mail-badge--new">{{ mail_new }}</span>{% endif -%}
+										</span>
+									</a></li>
+									{% if curr_is_admin|default(false) %}
+										<li><hr class="dropdown-divider"></li>
+										<li><a class="dropdown-item" href="/admin/index.php">{{'admin.panel'|trans}}</a></li>
+									{% endif %}
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item" href="/logout.php">{{'logout'|trans}}</a></li>
+								</ul>
+							</li>
+							{# The bell sits just after the account name, where the owner asked
+							   for it: everything that happened to them that is not a
+							   letter -- a trade that resolved, a game whose content changed,
+							   an announcement someone wrote. It never speaks for the mailbox;
+							   a letter arriving lights the orange mail badge as it always
+							   did, and the bell only records that it arrived. #}
+							<li class="nav-item dropdown reon-bell">
+								<a href="#" class="nav-link reon-bell__toggle" id="notifyDropdown" role="button"
+								   data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+								   aria-label="{{'notify.bell'|trans}}" title="{{'notify.title'|trans}}">
+									<svg class="reon-bell__icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false">
+										<path fill="currentColor" d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
+									</svg>
+									{#- Rebuilt by notify-bell.js on every poll, so a notification
+									    that lands while the page sits open still lights it. -#}
+									<span data-notify-badge>
+									{%- if notify_new|default(0) > 0 %}
+										<span class="notify-badge notify-badge--pulse"
+										      title="{{ 'notify.unread'|trans({'%count%': notify_new}) }}">{{ notify_new }}</span>
+										<span class="visually-hidden">{{ 'notify.unread'|trans({'%count%': notify_new}) }}</span>
+									{% endif -%}
+									</span>
+								</a>
+								<ul class="dropdown-menu dropdown-menu-end notify-menu" aria-labelledby="notifyDropdown">
+									<li class="notify-menu__head">{{'notify.title'|trans}}</li>
+									<li><div class="notify-menu__list" data-notify-list></div></li>
+									<li><hr class="dropdown-divider"></li>
+									<li><a class="dropdown-item notify-menu__all" href="/user/notifications.php">{{'notify.see-all'|trans}}</a></li>
+								</ul>
+							</li>
 						{% else %}
 							<li class="nav-item"><a href="/login.php" class="btn btn-outline-primary me-2">{{'login'|trans}}</a></li>
 							<li class="nav-item"><a href="/signup.php" class="btn btn-primary">{{'signup'|trans}}</a></li>
@@ -84,6 +166,25 @@
 		
 		{% block body %}
 		{% endblock %}
+
+		{# Rodapé de toda página, com a mesma caixa do ticker de notícias lá em
+		   cima -- e parado, porque aqui o texto é para ser lido quando a
+		   pessoa procurar, não quando passar.
+
+		   No fluxo, e não grudado na tela: barra fixa come altura em celular,
+		   que é justamente onde o conteúdo tem menos espaço. #}
+		<footer class="container-xxl">
+			<div class="reon-legalbar">
+				<nav class="reon-legalbar__links">
+					<a href="/terms.php">{{'terms'|trans}}</a>
+					<a href="/privacy.php">{{'privacy'|trans}}</a>
+				</nav>
+			</div>
+		</footer>
+
+		{% if show_passport_modal %}
+			{% include "_passport_modal.twig" %}
+		{% endif %}
 
 		<!-- GBC Mobile Trainer Modal -->
 		<div id="gbc-modal" class="gbc-modal-overlay" onclick="closeGbcModal(event)">
@@ -247,6 +348,49 @@
 			})();
 
 		</script>
+
+		{# Strings are handed to the script rather than hardcoded in it, so
+		   the toggle and the Caps Lock warning follow the site's language. #}
+		<script>
+			window.REON_PASSWORD_STRINGS = {
+				show: {{ 'password-show'|trans|json_encode|raw }},
+				hide: {{ 'password-hide'|trans|json_encode|raw }},
+				caps: {{ 'password-caps-on'|trans|json_encode|raw }},
+				rulesLabel: {{ 'password-rules-label'|trans|json_encode|raw }}
+			};
+			{# The numbers come from UserUtil, so the checklist can't promise
+			   something different from what the validator enforces. #}
+			window.REON_PASSWORD_RULES = [
+				{ kind: "min", value: {{ password_min }}, label: {{ 'password-rule-min'|trans({'%count%': password_min})|json_encode|raw }} },
+				{ kind: "max", value: {{ password_max }}, label: {{ 'password-rule-max'|trans({'%count%': password_max})|json_encode|raw }} }
+			];
+		</script>
+		<script src="{{ asset('/js/password-field.js') }}"></script>
+
+		{% if session_active %}
+		{# Same idea for the mail badges: the strings the script needs to
+		   rebuild a badge, in the site's language. Signed-in only -- there is
+		   no mailbox to watch otherwise, and the endpoint answers 401. #}
+		<script>
+			window.REON_MAIL_STRINGS = {
+				newArrived: {{ 'mail.new-arrived'|trans|json_encode|raw }},
+				inInbox: {{ 'account.emails-in-inbox'|trans|json_encode|raw }}
+			};
+			window.REON_NOTIFY_STRINGS = {
+				unread: {{ 'notify.unread'|trans|json_encode|raw }},
+				none: {{ 'notify.none'|trans|json_encode|raw }},
+				categories: {
+					mail: {{ 'notify.cat-mail'|trans|json_encode|raw }},
+					trade: {{ 'notify.cat-trade'|trans|json_encode|raw }},
+					game: {{ 'notify.cat-game'|trans|json_encode|raw }},
+					system: {{ 'notify.cat-system'|trans|json_encode|raw }},
+					admin: {{ 'notify.cat-admin'|trans|json_encode|raw }}
+				}
+			};
+		</script>
+		<script src="{{ asset('/js/mail-indicator.js') }}"></script>
+		<script src="{{ asset('/js/notify-bell.js') }}"></script>
+		{% endif %}
 
 	</body>
 </html>

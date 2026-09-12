@@ -1,0 +1,10 @@
+[Unit]
+Description=REON cron job: Trade Corner trades
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/app/pokemon-exchange
+ExecStart=/opt/node/bin/node /opt/reon/app/pokemon-exchange/index.js -c /opt/reon/config.json

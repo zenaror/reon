@@ -1,0 +1,736 @@
+{% extends "main.twig" %}
+{% set nav_item = "mail" %}
+{# "home" keeps the portal background; the sidebar wrapper is deliberately
+   absent so the mailbox runs the full width, like the per-game pages. #}
+{% set body_class = "home home-v2 reon-mail" %}
+
+{% block title %}{{'mail.title'|trans}}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	{# Are we looking at a folder listing? The inbox lists conversations
+	   ("threads") and the other folders list single messages, so either one
+	   being set means a list is on screen. Both the toolbar and the "sent"
+	   notice below key off this: testing "messages" alone hid them on the
+	   inbox, which is the one folder that never sets it. #}
+	{% set showing_list = messages is not null or (threads is defined and threads is not null) %}
+
+	<div class="reon-pickup">{{'mail.title'|trans}}<span class="bar"></span></div>
+
+	{# Folder tabs, styled after the Mobile Trainer's menu buttons: the
+	   selected one is the pale plate, the rest are the dark plates. #}
+	{# A tab badge means "this wants you", not "this holds things": only unread
+	   mail qualifies. Plain totals live on the panel bar of the folder you are
+	   actually looking at, where they describe what is on screen. #}
+	{# "Message sent." sits above the whole toolbar: on a phone the buttons
+	   wrap above the tabs, and a notice wedged between tabs and list read as
+	   part of the list. #}
+	{% if showing_list and sent|default(false) %}
+		<p class="mt-sent">{{'mail.sent-ok'|trans}}</p>
+	{% endif %}
+
+	<nav class="mt-tabs">
+		<a class="mt-tab{{ folder == 'inbox' ? ' mt-tab--on' : '' }}" href="/user/mail.php">
+			{{'mail.inbox'|trans}}{% if mail_new > 0 %} <span class="mt-tab__count mt-tab__count--new" title="{{ 'mail.new-arrived'|trans({'%count%': mail_new}) }}">{{ mail_new }}</span>{% endif %}
+		</a>
+		<a class="mt-tab{{ folder == 'sent' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=sent">{{'mail.sent'|trans}}</a>
+		<a class="mt-tab{{ folder == 'trash' ? ' mt-tab--on' : '' }}" href="/user/mail.php?folder=trash">{{'mail.trash'|trans}}</a>
+
+		{# Only on the list: re-requests the folder being shown. Mail arrives
+		   over SMTP whenever it arrives, so the page has no way to know on its
+		   own that something landed. #}
+		{% if showing_list %}
+			<span class="mt-tabs__actions">
+				<a class="mt-btn" href="/user/mail.php?compose=1">{{'mail.compose'|trans}}</a>
+				<a class="mt-btn" href="/user/mail.php{{ folder == 'trash' ? '?folder=trash' : '' }}" title="{{'mail.refresh'|trans}}">
+					<span aria-hidden="true">&#8635;</span> {{'mail.refresh-short'|trans}}<span class="visually-hidden"> {{'mail.refresh'|trans}}</span>
+				</a>
+			</span>
+		{% endif %}
+	</nav>
+
+	{% if compose is not null %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{'mail.compose'|trans}}</h2>
+
+			{% if compose_error %}
+				<p class="mt-error">
+					{% if compose_error == 'empty' %}{{'mail.err-empty'|trans}}
+					{% elseif compose_error == 'bad-address' %}{{'mail.err-bad-address'|trans}}
+					{% elseif compose_error == 'rate-limited' %}{{'mail.err-rate-limited'|trans}}
+					{% elseif compose_error == 'too-many-lines' %}{{'mail.err-too-many-lines'|trans({'%lines%': body_max_lines})}}
+					{% elseif compose_error == 'too-many-chars' %}{{'mail.err-too-many-chars'|trans({'%chars%': body_max_chars})}}
+					{% elseif compose_error == 'subject-too-long' %}{{'mail.err-subject-too-long'|trans({'%chars%': subject_max_chars})}}
+					{% elseif compose_error == 'relay-failed' %}{{'mail.err-relay-failed'|trans}}
+					{% else %}{{'mail.err-failed'|trans}}{% endif %}
+				</p>
+			{% endif %}
+
+			<form class="mt-compose" method="post" action="/user/mail.php" data-internal-domains="{{ internal_domains|default([])|join(',') }}">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="action" value="send">
+				{% if compose.reply_id %}
+					<input type="hidden" name="reply" value="{{ compose.reply_id }}">
+				{% endif %}
+				{% if compose.reply_sent_id %}
+					<input type="hidden" name="reply_sent" value="{{ compose.reply_sent_id }}">
+				{% endif %}
+				{% set is_reply = compose.reply_id or compose.reply_sent_id %}
+				<label>
+					<span>{{'mail.to'|trans}}</span>
+					{# Locked when replying: the server re-derives "to" from
+					   reply_id regardless of what's posted, so this readonly
+					   attribute is UX, not the actual guarantee -- editing it
+					   client-side wouldn't retarget the reply anyway. #}
+					<input type="text" name="to" value="{{ compose.to }}" autocomplete="off" required{% if is_reply %} readonly class="mt-input--locked"{% endif %}>
+				</label>
+				<label>
+					<span>{{'mail.subject'|trans}}</span>
+					{# Capped to what a game's mailbox shows, but only for a player:
+					   mail leaving for the internet keeps a normal title. No
+					   maxlength attribute, since which limit applies depends on
+					   the recipient. #}
+					{# Travado ao responder pelo mesmo motivo que o destinatário:
+					   uma resposta pertence a uma conversa, e o título é parte
+					   de como ela é reconhecida. O servidor re-deriva os dois
+					   de qualquer forma. #}
+					<input type="text" name="subject" id="mt-subject" value="{{ compose.subject }}" autocomplete="off" data-max-chars="{{ subject_max_chars }}"{% if is_reply %} readonly class="mt-input--locked"{% endif %}>
+				</label>
+				<label>
+					<span>{{'mail.body'|trans}}</span>
+					<textarea name="body" id="mt-body" rows="9" required
+						data-max-lines="{{ body_max_lines }}" data-max-chars="{{ body_max_chars }}"
+						data-max-line-chars="{{ body_max_line_chars }}"
+						data-reformat-prompt="{{ 'mail.reformat-confirm'|trans({'%width%': body_max_line_chars, '%lines%': body_max_lines, '%subject%': subject_max_chars}) }}">{{ compose.body }}</textarea>
+				</label>
+				{# The Game Boy budget only matters for mail another player reads
+				   in a game, so the counter and the note show once the "To"
+				   field names one of ours (a username, or an address at one of
+				   our domains); the server applies the same rule. The counter
+				   mirrors it exactly, so nobody writes a whole message only to
+				   have it refused on submit. #}
+				<div id="mt-limits" hidden>
+					<p class="mt-count" id="mt-body-count" aria-live="polite"></p>
+					<p class="mt-note">{{'mail.size-note'|trans({'%lines%': body_max_lines, '%chars%': body_max_chars, '%width%': body_max_line_chars})}} {{'mail.compose-note-subject'|trans({'%subject%': subject_max_chars})}}</p>
+				</div>
+				<p class="mt-note">{{'mail.compose-note'|trans}}</p>
+				<div class="mt-statusbar mt-statusbar--inline">
+					<span class="mt-statusbar__hint">{{'mail.hint-compose'|trans}}</span>
+					<span class="mt-statusbar__acts">
+						<a class="mt-btn" href="/user/mail.php">{{'mail.back'|trans}}</a>
+						<button class="mt-btn" type="submit">{{'mail.send'|trans}}</button>
+					</span>
+				</div>
+			</form>
+
+			<script>
+			(function () {
+				var box = document.getElementById("mt-body");
+				var out = document.getElementById("mt-body-count");
+				if (!box || !out) return;
+
+				var form = box.closest("form");
+				var to = form ? form.querySelector("input[name=to]") : null;
+				var limits = document.getElementById("mt-limits");
+				var domains = (form && form.dataset.internalDomains ? form.dataset.internalDomains : "")
+					.split(",").filter(Boolean);
+
+				// Same test as MailUtil::resolveLocalRecipient, minus the lookup:
+				// a bare name, or an address at one of our domains, is a player.
+				function isInternal(address) {
+					var v = address.trim().toLowerCase();
+					if (!v) return false;
+					var at = v.indexOf("@");
+					if (at < 0) return true;
+					return domains.indexOf(v.slice(at + 1)) >= 0;
+				}
+
+				function toggleLimits() {
+					if (limits && to) limits.hidden = !isInternal(to.value);
+				}
+
+				var subject = form ? form.querySelector("input[name=subject]") : null;
+				var maxSubject = subject ? parseInt(subject.dataset.maxChars, 10) : 0;
+				var maxLines = parseInt(box.dataset.maxLines, 10);
+				var maxChars = parseInt(box.dataset.maxChars, 10);
+				var maxLineChars = parseInt(box.dataset.maxLineChars, 10);
+				var template = {{ 'mail.size-count'|trans|json_encode|raw }};
+
+				// Same rule as MailUtil::checkBodyFits: line breaks are not
+				// counted against the character budget.
+				function measure(text) {
+					var t = text.replace(/\r\n|\r/g, "\n");
+					return {lines: t.split("\n").length, chars: Array.from(t.replace(/\n/g, "")).length};
+				}
+
+				function over(m) {
+					return m.lines > maxLines || m.chars > maxChars;
+				}
+
+				// The twin of MailUtil::wrapOneLine. Breaks at spaces; cuts a
+				// word that has no space to break at, which is what the screen
+				// does to it anyway.
+				function wrapOneLine(line) {
+					if (Array.from(line).length <= maxLineChars) return [line];
+					var out = [];
+					var current = "";
+					line.split(" ").forEach(function (word) {
+						var w = Array.from(word);
+						while (w.length > maxLineChars) {
+							if (current !== "") { out.push(current); current = ""; }
+							out.push(w.slice(0, maxLineChars).join(""));
+							w = w.slice(maxLineChars);
+						}
+						word = w.join("");
+						if (current === "") current = word;
+						else if (Array.from(current).length + 1 + w.length <= maxLineChars) current += " " + word;
+						else { out.push(current); current = word; }
+					});
+					out.push(current);
+					return out;
+				}
+
+				function wrapBody(text) {
+					var out = [];
+					text.replace(/\r\n|\r/g, "\n").split("\n").forEach(function (line) {
+						out = out.concat(wrapOneLine(line));
+					});
+					return out.join("\n");
+				}
+
+				// What actually fits on the screen: the wrapped text with
+				// everything past the last row dropped. Cropping to the row
+				// count is enough on its own -- 8 rows of 12 is exactly the
+				// 96-character budget, so it cannot come out over that either.
+				function fitBody(text) {
+					return wrapBody(text).split("\n").slice(0, maxLines).join("\n");
+				}
+
+				// Wrapping only moves whitespace around, so the caret is kept by
+				// counting the non-whitespace characters ahead of it: that count
+				// is the one thing the reflow cannot change.
+				function inkBefore(text, pos) {
+					var n = 0;
+					for (var i = 0; i < pos && i < text.length; i++) if (!/\s/.test(text[i])) n++;
+					return n;
+				}
+
+				function posAfterInk(text, n) {
+					if (n === 0) return 0;
+					var c = 0;
+					for (var i = 0; i < text.length; i++) {
+						if (!/\s/.test(text[i]) && ++c === n) return i + 1;
+					}
+					return text.length;
+				}
+
+				function update() {
+					var m = measure(box.value);
+					out.textContent = template
+						.replace("%lines%", m.lines).replace("%maxlines%", maxLines)
+						.replace("%chars%", m.chars).replace("%maxchars%", maxChars);
+					out.classList.toggle("mt-count--over", over(m));
+				}
+
+				// A blink so trying to keep typing past the cap (the keys visibly
+				// do nothing) reads as "you hit the limit", not as the page being
+				// broken.
+				function flash() {
+					out.classList.remove("mt-count--flash");
+					void out.offsetWidth; // restart the animation
+					out.classList.add("mt-count--flash");
+				}
+
+				// All of this applies only while the Game Boy budget does (an
+				// internal recipient); external mail keeps free typing, per
+				// MailUtil::checkBodyFits.
+				function budgetApplies() {
+					return !(limits && limits.hidden);
+				}
+
+				var lastValid = box.value;
+
+				box.addEventListener("input", function () {
+					if (!budgetApplies()) {
+						lastValid = box.value;
+						update();
+						return;
+					}
+
+					var caret = box.selectionStart;
+					var text = box.value;
+					var wrapped = wrapBody(text);
+
+					// Refuse the keystroke only when it is what pushes the
+					// message over. Arriving over the limit from the other
+					// direction (the recipient changed under a long message)
+					// must stay editable, or there would be no way to cut it
+					// back down.
+					if (over(measure(wrapped)) && !over(measure(lastValid))) {
+						box.value = lastValid;
+						var back = Math.min(caret, lastValid.length);
+						box.setSelectionRange(back, back);
+						flash();
+						update();
+						return;
+					}
+
+					if (wrapped !== text) {
+						var ink = inkBefore(text, caret);
+						box.value = wrapped;
+						var pos = posAfterInk(wrapped, ink);
+						box.setSelectionRange(pos, pos);
+					}
+					lastValid = box.value;
+					update();
+				});
+
+				// The title is capped the same way the body is: typing past the
+				// end simply does nothing, and the counter blinks to say why.
+				if (subject && maxSubject > 0) {
+					var lastSubject = subject.value;
+					subject.addEventListener("input", function () {
+						if (!budgetApplies()) { lastSubject = subject.value; return; }
+						if (Array.from(subject.value).length <= maxSubject) { lastSubject = subject.value; return; }
+						var caret = subject.selectionStart;
+						subject.value = lastSubject;
+						var back = Math.min(caret, lastSubject.length);
+						subject.setSelectionRange(back, back);
+						flash();
+					});
+				}
+
+				// Switching to a player after writing freely: the message was
+				// composed under no width at all, so reflowing it is a visible
+				// rewrite of what was typed and gets asked about first. Asked on
+				// "change" rather than every keystroke, so it fires once the
+				// address has actually been entered.
+				var declined = false;
+				if (to) {
+					to.addEventListener("input", function () {
+						toggleLimits();
+						if (!budgetApplies()) declined = false;
+					});
+					to.addEventListener("change", function () {
+						if (!budgetApplies() || declined) return;
+						var text = box.value;
+						var fitted = fitBody(text);
+						var title = subject ? subject.value : "";
+						var titleChars = Array.from(title);
+						var cutTitle = (subject && maxSubject > 0 && titleChars.length > maxSubject)
+							? titleChars.slice(0, maxSubject).join("") : title;
+						var bodyChanged = text !== "" && fitted !== text;
+						var titleChanged = cutTitle !== title;
+						if (!bodyChanged && !titleChanged) return;
+						if (!window.confirm(box.dataset.reformatPrompt)) { declined = true; return; }
+						if (titleChanged) { subject.value = cutTitle; lastSubject = cutTitle; }
+						if (bodyChanged) {
+							box.value = fitted;
+							lastValid = fitted;
+							box.focus();
+							box.setSelectionRange(fitted.length, fitted.length);
+						}
+						update();
+					});
+				}
+
+				update();
+				toggleLimits();
+			})();
+			</script>
+		</section>
+
+	{% elseif showing_list %}
+		{% set listing_threads = threads is defined and threads is not null %}
+		{# Filled in by the background check below. A banner rather than a
+		   reload: reloading would discard a half-written message, and would
+		   also run markInboxSeen every minute, clearing the "new" marker for
+		   mail nobody had looked at. #}
+		<p class="mt-newmail" id="mt-newmail" hidden>
+			<span id="mt-newmail-text"></span>
+			<a class="mt-btn" href="{{ folder == 'trash' ? '/user/mail.php?folder=trash' : '/user/mail.php' }}">{{'mail.show-new'|trans}}</a>
+		</p>
+		{# Sent used to fall through to "Inbox" here, so the panel disagreed with
+		   the tab you had just clicked. #}
+		{% set folder_total = folder == 'sent' ? sent_count : (folder == 'trash' ? trash_count : mail_count) %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">
+				{%- if folder == 'trash' %}{{'mail.trash'|trans}}
+				{%- elseif folder == 'sent' %}{{'mail.sent'|trans}}
+				{%- else %}{{'mail.inbox'|trans}}{% endif %}
+			</h2>
+			{# Total (and, for the inbox, unread) in words under the bar; the
+			   inbox line is kept current by the same poll that feeds the
+			   badges. The number that used to sit on the bar itself is gone. #}
+			{% if folder == 'inbox' %}
+				<p class="mt-summary" id="mt-summary" data-template="{{ 'mail.inbox-summary'|trans({'%total%': '%total%', '%unread%': '%unread%'}) }}">{{ 'mail.inbox-summary'|trans({'%total%': mail_count|default(0), '%unread%': mail_new|default(0)}) }}</p>
+			{% elseif folder == 'sent' %}
+				<p class="mt-summary">{{ 'mail.sent-summary'|trans({'%total%': folder_total}) }}</p>
+			{% else %}
+				<p class="mt-summary">{{ 'mail.trash-summary'|trans({'%total%': folder_total}) }}</p>
+			{% endif %}
+
+			{# The filter: free text plus one switch, as a GET form so the
+			   filtered list has a URL. "Players"/"Internet" is who the other
+			   side is, whichever folder. #}
+			<form class="mt-filter" method="get" action="/user/mail.php" role="search">
+				{% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+				<input class="mt-filter__q" type="search" name="q" value="{{ filter.q|default('') }}" placeholder="{{'mail.filter-placeholder'|trans}}" aria-label="{{'mail.filter-placeholder'|trans}}">
+				<select class="mt-filter__only" name="only" aria-label="{{'mail.filter-apply'|trans}}">
+					<option value=""{% if filter.only|default('') == '' %} selected{% endif %}>{{'mail.filter-all'|trans}}</option>
+					{% if folder == 'inbox' %}<option value="unread"{% if filter.only|default('') == 'unread' %} selected{% endif %}>{{'mail.filter-unread'|trans}}</option>{% endif %}
+					<option value="players"{% if filter.only|default('') == 'players' %} selected{% endif %}>{{'mail.filter-players'|trans}}</option>
+					<option value="internet"{% if filter.only|default('') == 'internet' %} selected{% endif %}>{{'mail.filter-internet'|trans}}</option>
+				</select>
+				<button class="mt-btn" type="submit">{{'mail.filter-apply'|trans}}</button>
+				{% if filter.active|default(false) %}<a class="mt-btn" href="/user/mail.php{% if folder != 'inbox' %}?folder={{ folder }}{% endif %}">{{'mail.filter-clear'|trans}}</a>{% endif %}
+			</form>
+
+			{% set rows_empty = listing_threads ? (threads is empty) : (messages is empty) %}
+			{% if rows_empty %}
+				<p class="mt-empty">{% if filter.active|default(false) %}{{'mail.filter-none'|trans}}{% elseif folder == 'trash' %}{{'mail.trash-empty'|trans}}{% elseif folder == 'sent' %}{{'mail.sent-empty'|trans}}{% else %}{{'mail.empty'|trans}}{% endif %}</p>
+			{% else %}
+				{# One form around the whole list: the checkboxes post as ids[],
+				   and the buttons in the bar below act on the selection. Per-row
+				   forms aren't possible here -- nesting forms is invalid.
+
+				   Sent gets no form at all. There is nothing to do to a sent
+				   copy -- no trash, no restore -- so a checkbox there offered a
+				   selection that no button could act on. #}
+				{# Every folder can be picked from: the inbox and trash act on
+				   sys_inbox, Sent deletes its own copies (sys_sent), which have
+				   no trash to fall into. #}
+				{% set pickable = true %}
+				{% if pickable %}
+				<form method="post" action="/user/mail.php" id="mt-listform">
+					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					<div class="mt-selectall">
+						<label>
+							<input type="checkbox" id="mt-all">
+							{{'mail.select-all'|trans}}
+						</label>
+						<span class="mt-selectall__count" id="mt-count" aria-live="polite"></span>
+					</div>
+				{% endif %}
+
+					<ol class="mt-list{{ pickable ? '' : ' mt-list--nopick' }}">
+						{% if listing_threads %}
+						{# One row per conversation: the subject of its first message,
+						   who the other side is, how many messages, and the last date.
+						   The checkbox carries every received message of it. #}
+						{% for t in threads %}
+							<li class="mt-list__row{{ t.unread > 0 ? ' is-unread' : '' }}">
+								<label class="mt-list__pick">
+									<input type="checkbox" class="mt-pick" name="ids[]" value="{{ t.inbox_ids|join(',') }}">
+									<span class="visually-hidden">{{ t.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
+								</label>
+								<span class="mt-list__num">{{ pagination.offset + loop.index }}</span>
+								<span class="mt-list__main">
+									{% set subj = t.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' %}
+									<a class="mt-list__subject" href="/user/mail.php?thread={{ t.key }}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}{% if t.count > 1 %} <span class="mt-list__count" title="{{ 'mail.thread-count'|trans({'%count%': t.count}) }}">{{ t.count }}</span>{% endif %}</a>
+									<span class="mt-list__meta">
+										{{ t.party_name ?: t.party }}{% if t.last.kind == 'out' %} &middot; {{'mail.thread-you-wrote'|trans}}{% endif %} &middot; {{ t.last.timestamp|date("Y.m.d H:i") }}
+										{%- if t.unread > 0 %} &middot; {{ 'mail.thread-unread'|trans({'%count%': t.unread}) }}{% endif %}
+									</span>
+								</span>
+							</li>
+						{% endfor %}
+						{% else %}
+						{% for m in messages %}
+							<li class="mt-list__row{{ folder != 'trash' and m.unread ? ' is-unread' : '' }}">
+								{% if pickable %}
+									<label class="mt-list__pick">
+										<input type="checkbox" class="mt-pick" name="ids[]" value="{{ m.id }}">
+										<span class="visually-hidden">{{ m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</span>
+									</label>
+								{% endif %}
+								{# The numbered gutter is the Mobile Trainer's mailbox slot number, counted
+								   across the whole folder rather than restarting on each page. #}
+								<span class="mt-list__num">{{ pagination.offset + loop.index }}</span>
+								<span class="mt-list__main">
+									{# The game gets a 10-character subject; the list has room for
+									   far more, and the whole thing is on the message page. #}
+									{% set subj = m.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' %}
+									<a class="mt-list__subject" href="/user/mail.php?id={{ m.id }}{% if folder != 'inbox' %}&amp;folder={{ folder }}{% endif %}" title="{{ subj }}">{{ subj|length > 60 ? subj|slice(0, 57) ~ '...' : subj }}</a>
+									<span class="mt-list__meta">
+										{% if folder == 'sent' %}{{'mail.to'|trans}}: {% endif %}{{ m.from_name ?: m.sender }} &middot; {{ m.timestamp|date("Y.m.d H:i") }}
+									{%- if folder == 'sent' %} &middot; {{ m.origin == 'game' ? 'mail.via-game'|trans : 'mail.via-web'|trans }}{% endif %}
+										{% if folder == 'trash' %}
+											&middot; {{ m.deleted_by == 'game' ? 'mail.by-game'|trans : 'mail.by-web'|trans }}
+											{# Whether the game took a copy before deleting is the one thing
+											   that distinguishes a normal sync from a discard-unread. #}
+											&middot; {{ m.retrieved ? 'mail.was-downloaded'|trans : 'mail.never-downloaded'|trans }}
+										{% endif %}
+									</span>
+								</span>
+							</li>
+						{% endfor %}
+						{% endif %}
+					</ol>
+
+					{% if pickable %}
+					<div class="mt-statusbar mt-statusbar--inline">
+						<span class="mt-statusbar__hint">{{ folder == 'trash' ? 'mail.hint-trash'|trans : 'mail.hint-list'|trans }}</span>
+						<span class="mt-statusbar__acts">
+							{% if folder == 'trash' %}
+								<button class="mt-btn mt-needs-pick" type="submit" name="action" value="restore" disabled>{{'mail.restore-selected'|trans}}</button>
+								<button class="mt-btn mt-btn--danger mt-needs-pick" type="submit" name="action" value="delete" disabled
+									data-confirm="{{'mail.confirm-delete'|trans}}">{{'mail.delete-selected-forever'|trans}}</button>
+							{% elseif folder == 'sent' %}
+								{# Sent copies have no trash to fall into, so this one is final. #}
+								<button class="mt-btn mt-btn--danger mt-needs-pick" type="submit" name="action" value="delete-sent" disabled
+									data-confirm="{{'mail.confirm-delete-sent'|trans}}">{{'mail.delete-selected'|trans}}</button>
+							{% else %}
+								<button class="mt-btn mt-needs-pick" type="submit" name="action" value="trash" disabled>{{'mail.delete-selected'|trans}}</button>
+							{% endif %}
+						</span>
+					</div>
+				</form>
+					{% endif %}
+
+				{# Outside the form above: a form cannot be nested in another,
+				   and this one is a GET so a page has a URL of its own. The
+				   filter travels with it, or paging would silently drop it. #}
+				<nav class="mt-pager">
+					<form class="mt-pager__size" method="get" action="/user/mail.php">
+						{% if folder != 'inbox' %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
+						{% if filter.q|default('') %}<input type="hidden" name="q" value="{{ filter.q }}">{% endif %}
+						{% if filter.only|default('') %}<input type="hidden" name="only" value="{{ filter.only }}">{% endif %}
+						<label>
+							<span>{{'mail.per-page'|trans}}</span>
+							<select name="per" onchange="this.form.submit()">
+								{% for size in pagination.sizes %}
+									<option value="{{ size }}"{% if size == pagination.per %} selected{% endif %}>{{ size }}</option>
+								{% endfor %}
+							</select>
+						</label>
+						<noscript><button class="mt-btn" type="submit">{{'mail.filter-apply'|trans}}</button></noscript>
+					</form>
+
+					{% if pagination.pages > 1 %}
+						{% set base = '/user/mail.php?' ~ (folder != 'inbox' ? 'folder=' ~ folder ~ '&' : '') ~ (filter.q|default('') ? 'q=' ~ filter.q|url_encode ~ '&' : '') ~ (filter.only|default('') ? 'only=' ~ filter.only ~ '&' : '') %}
+						<span class="mt-pager__nav">
+							{% if pagination.page > 1 %}
+								<a class="mt-btn" href="{{ base }}page={{ pagination.page - 1 }}">{{'mail.page-prev'|trans}}</a>
+							{% else %}
+								<span class="mt-btn is-disabled" aria-disabled="true">{{'mail.page-prev'|trans}}</span>
+							{% endif %}
+							<span class="mt-pager__at">{{ 'mail.page-of'|trans({'%page%': pagination.page, '%pages%': pagination.pages}) }}</span>
+							{% if pagination.page < pagination.pages %}
+								<a class="mt-btn" href="{{ base }}page={{ pagination.page + 1 }}">{{'mail.page-next'|trans}}</a>
+							{% else %}
+								<span class="mt-btn is-disabled" aria-disabled="true">{{'mail.page-next'|trans}}</span>
+							{% endif %}
+						</span>
+					{% endif %}
+				</nav>
+			{% endif %}
+		</section>
+
+		{% if folder == 'trash' %}
+			<p class="mt-note">{{'mail.trash-note'|trans({'%days%': retention_days})}}</p>
+		{% endif %}
+
+		<script>
+		(function () {
+			var banner = document.getElementById("mt-newmail");
+			var text = document.getElementById("mt-newmail-text");
+			if (!banner || !text) return;
+
+			var template = {{ 'mail.new-arrived'|trans|json_encode|raw }};
+			// What the page was rendered with. Anything beyond this is news.
+			var known = {{ mail_count|default(0) }};
+
+			// The poll itself lives in mail-indicator.js, which every page
+			// runs for a signed-in visitor and which updates the badges. This
+			// only listens, so the mailbox never asks the server twice.
+			var summary = document.getElementById("mt-summary");
+			document.addEventListener("reon:mailstatus", function (e) {
+				var extra = e.detail.count - known;
+				if (extra > 0) {
+					text.textContent = template.replace("%count%", extra);
+					banner.hidden = false;
+				}
+				if (summary && summary.dataset.template) {
+					summary.textContent = summary.dataset.template
+						.replace("%total%", e.detail.count)
+						.replace("%unread%", e.detail["new"]);
+				}
+			});
+		})();
+		</script>
+
+		<script>
+		(function () {
+			var form = document.getElementById("mt-listform");
+			if (!form) return;
+
+			var all = document.getElementById("mt-all");
+			var count = document.getElementById("mt-count");
+			var picks = [].slice.call(form.querySelectorAll(".mt-pick"));
+			var acts = [].slice.call(form.querySelectorAll(".mt-needs-pick"));
+			var template = {{ 'mail.n-selected'|trans|json_encode|raw }};
+
+			function sync() {
+				var n = picks.filter(function (p) { return p.checked; }).length;
+				// The actions are disabled with nothing picked, so the buttons
+				// can never post an empty selection.
+				acts.forEach(function (b) { b.disabled = n === 0; });
+				if (count) count.textContent = n === 0 ? "" : template.replace("%count%", n);
+				if (all) {
+					all.checked = n > 0 && n === picks.length;
+					all.indeterminate = n > 0 && n < picks.length;
+				}
+			}
+
+			if (all) {
+				all.addEventListener("change", function () {
+					picks.forEach(function (p) { p.checked = all.checked; });
+					sync();
+				});
+			}
+			picks.forEach(function (p) { p.addEventListener("change", sync); });
+
+			// Tracked on click rather than read from e.submitter alone: where
+			// submitter is unsupported it is undefined, and the destructive
+			// button would then submit with no confirmation at all.
+			var clicked = null;
+			acts.forEach(function (b) {
+				b.addEventListener("click", function () { clicked = b; });
+			});
+
+			form.addEventListener("submit", function (e) {
+				var btn = e.submitter || clicked;
+				clicked = null;
+				if (btn && btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
+					e.preventDefault();
+				}
+			});
+
+			sync();
+		})();
+		</script>
+
+	{% elseif thread is defined and thread is not null %}
+		{# A conversation: every message of it, oldest first, received ones on
+		   the left plate and sent ones marked as yours. Unread flags are
+		   from before this page marked them read. #}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{ thread.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</h2>
+			<p class="mt-summary">{{ 'mail.thread-with'|trans({'%count%': thread.count, '%party%': thread.party_name ? thread.party_name ~ ' <' ~ thread.party ~ '>' : thread.party}) }}</p>
+			<ol class="mt-thread">
+				{% for m in thread.messages %}
+					<li class="mt-thread__msg{{ m.kind == 'out' ? ' mt-thread__msg--out' : '' }}{{ m.unread ? ' is-new' : '' }}">
+						<div class="mt-thread__head">
+							<span class="mt-thread__who">
+								{%- if m.kind == 'out' -%}
+									{{'mail.thread-you'|trans}}
+								{%- else -%}
+									{{ m.from_name ? m.from_name ~ ' <' ~ m.sender ~ '>' : m.sender }}
+								{%- endif -%}
+							</span>
+							<span class="mt-thread__when">{{ m.timestamp|date("Y.m.d H:i") }}{% if m.game %} &middot; {{ m.game }}{% endif %}{% if m.kind == 'out' %} &middot; {{ m.origin == 'game' ? 'mail.via-game'|trans : 'mail.via-web'|trans }}{% endif %}</span>
+							{% if m.kind == 'in' %}<a class="mt-thread__open" href="/user/mail.php?id={{ m.id }}">#{{ m.num ?? m.id }}</a>{% endif %}
+						</div>
+						<pre class="mt-body">{{ m.body }}</pre>
+					</li>
+				{% endfor %}
+			</ol>
+		</section>
+
+		<div class="mt-statusbar">
+			<span class="mt-statusbar__hint">{{'mail.thread-hint'|trans}}</span>
+			<span class="mt-statusbar__acts">
+				<a class="mt-btn" href="/user/mail.php">{{'mail.back'|trans}}</a>
+				{% if thread.inbox_ids is not empty %}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ thread.inbox_ids|last }}">{{'mail.reply'|trans}}</a>
+					<form method="post" action="/user/mail.php" onsubmit="return confirm('{{'mail.thread-delete'|trans|e('js')}}?');">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="ids[]" value="{{ thread.inbox_ids|join(',') }}">
+						<input type="hidden" name="action" value="trash">
+						<button class="mt-btn" type="submit">{{'mail.thread-delete'|trans}}</button>
+					</form>
+				{% elseif thread.sent_ids is not empty %}
+					{# Conversa só de mensagens enviadas (ninguém respondeu ainda).
+					   Continua tendo de onde tirar destinatário e título: a
+					   última que saiu. Antes este ramo mandava só o endereço na
+					   URL, e o título abria em branco. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply_sent={{ thread.sent_ids|last }}">{{'mail.reply'|trans}}</a>
+				{% else %}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;to={{ thread.party|url_encode }}">{{'mail.reply'|trans}}</a>
+				{% endif %}
+			</span>
+		</div>
+
+	{% elseif message is null %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{'mail.message'|trans}}</h2>
+			<p class="mt-empty">{{'mail.not-found'|trans}}</p>
+		</section>
+		<p><a class="reon-chrome-btn" href="/user/mail.php">{{'mail.back'|trans}}</a></p>
+
+	{% else %}
+		<section class="mt-panel">
+			<h2 class="mt-panel__bar">{{ message.subject ?: '(' ~ 'mail.no-subject'|trans ~ ')' }}</h2>
+
+			{# Label/value table lifted from the Mobile Trainer's message screen:
+			   mint label cell on the left, white value cell on the right. #}
+			<dl class="mt-fields">
+				<div><dt>{{'mail.from'|trans}}</dt><dd>{{ message.from_name ? message.from_name ~ ' <' ~ message.sender ~ '>' : message.sender }}</dd></div>
+				<div><dt>{{'mail.date'|trans}}</dt><dd>{{ message.timestamp|date("Y.m.d H:i") }}</dd></div>
+				{% if message.game %}
+					<div><dt>{{'mail.game'|trans}}</dt><dd>{{ message.game }}</dd></div>
+				{% endif %}
+			</dl>
+
+			{# Decoded from ISO-2022-JP by MailUtil; escaped by Twig, then
+			   rendered pre-wrapped because game mail is fixed-line text. #}
+			<pre class="mt-body">{{ message.body }}</pre>
+		</section>
+
+		{# The black hint bar is the Mobile Trainer's bottom status line, and it
+		   names the action the buttons beside it perform. #}
+		<div class="mt-statusbar">
+			<span class="mt-statusbar__hint">{{ message.deleted_at ? 'mail.hint-trash'|trans : 'mail.hint-read'|trans }}</span>
+			<span class="mt-statusbar__acts">
+				{% set back_to = folder != 'inbox' ? '/user/mail.php?folder=' ~ folder : (message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php') %}
+				<a class="mt-btn" href="{{ back_to }}">{{'mail.back'|trans}}</a>
+				{% if message.deleted_at %}
+					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
+					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
+					   acha nada -- e, pior, poderia achar uma mensagem alheia que
+					   por acaso tivesse aquele número. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
+					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="restore">
+						<button class="mt-btn" type="submit">{{'mail.restore'|trans}}</button>
+					</form>
+					<form method="post" action="/user/mail.php" onsubmit="return confirm('{{'mail.confirm-delete'|trans|e('js')}}');">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="delete">
+						<button class="mt-btn mt-btn--danger" type="submit">{{'mail.delete-forever'|trans}}</button>
+					</form>
+				{% else %}
+					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
+					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
+					   acha nada -- e, pior, poderia achar uma mensagem alheia que
+					   por acaso tivesse aquele número. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
+					<form method="post" action="/user/mail.php">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="id" value="{{ message.id }}">
+						<input type="hidden" name="action" value="trash">
+						<button class="mt-btn" type="submit">{{'mail.delete'|trans}}</button>
+					</form>
+				{% endif %}
+			</span>
+		</div>
+	{% endif %}
+{% endblock %}

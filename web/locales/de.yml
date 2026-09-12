@@ -5,20 +5,117 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 home: Start
 games: Spiele
 mobile-home: Mobile Startseite
 news: Aktuelles
+guide: "Erste Schritte"
+downloads: "Downloads"
+terms: "Nutzungsbedingungen"
+privacy: "Datenschutzerklärung"
+close: "Schließen"
+open-full-page: "Ganze Seite öffnen"
+page-not-found: "Diese Seite gibt es noch nicht."
+page-contents: "Inhalt"
+game-page:
+  on-this-page: "Auf dieser Seite"
+  services: "Online-Dienste"
+  map-gallery: "Kartengalerie"
+  get-started: "Erste Schritte"
+news-empty: "Noch keine Meldungen."
+news-see-more: "Weiterlesen"
+news-newer: "Neuere"
+news-older: "Ältere"
+news-not-found: "Dieser Beitrag existiert nicht (oder ist nicht veröffentlicht)."
+news-back-to-list: "Zurück zu Aktuelles"
 status: Status
-players-online: Spieler online
-in-service-since: In Betrieb seit
+service-web: Web
+service-mail: E-Mail
+service-mobile-relay: Relay
+service-relay-policy: Externe E-Mail
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Unbekannt
+service-devices-connected: "%count% verbunden"
 welcome-alpha: Willkommen zum Alphatest!
 login: Anmelden
 logout: Abmelden
 signup: Registrieren
+forgot-password: Passwort vergessen
+email-addr: E-Mail-Adresse
+email-or-username: E-Mail oder Benutzername
+password: Passwort
+password-show: Passwort anzeigen
+password-hide: Passwort verbergen
+password-caps-on: Feststelltaste ist aktiviert
+current-password: Aktuelles Passwort
+new-password: Neues Passwort
+confirm-password: Passwort bestätigen
+confirm-new-password: Neues Passwort bestätigen
+new-email: Neue E-Mail
+invalid-email: Ungültige E-Mail
+password-invalid: "Das Passwort muss zwischen 8 und 71 Zeichen lang sein."
+password-hint: "8 bis 71 Zeichen."
+password-rules-label: "Passwortanforderungen"
+password-rule-min: "Mindestens %count% Zeichen"
+password-rule-max: "Höchstens %count% Zeichen"
+passwords-dont-match: Die Passwörter stimmen nicht überein
+wrong-password: Falsches Passwort
+link-invalid-expired: Dieser Link ist ungültig oder abgelaufen.
+csrf-invalid: Dieses Formular ist abgelaufen oder stammt nicht von dieser Seite. Gehen Sie zurück und versuchen Sie es erneut.
+email-send-failed: Die E-Mail konnte gerade nicht gesendet werden. Bitte versuchen Sie es in ein paar Minuten erneut.
+invalid-trade-setting: Keine gültige Regionsauswahl.
+default-time-zone: Standard (Japan, +0900)
+invalid-time-zone-setting: Keine gültige Zeitzone.
+continue: Weiter
+reset: Zurücksetzen
+reset-password: Passwort zurücksetzen
+send: Senden
+reveal: Anzeigen
+what-is-this: Was ist das?
+
+auth:
+  login-to-reon: Bei deinem REON-Konto anmelden
+  invalid-email-pass: Falsche E-Mail-Adresse oder falsches Passwort
+  signup-to-reon: Bei REON registrieren
+  i-agree-terms: Ich stimme den Nutzungsbedingungen und der Datenschutzerklärung zu
+  you-must-agree: Du musst zustimmen
+  registration-email-sent: Falls noch nicht registriert, wurde eine E-Mail mit einem Link zur Fortsetzung deiner Registrierung an die angegebene Adresse gesendet.
+  registration-complete: Deine Registrierung ist abgeschlossen.
+  reon-username: "REON-Benutzername"
+  reon-username-hint: "3 bis 20 Zeichen, nur Kleinbuchstaben und Zahlen."
+  reon-username-invalid: "Benutzername ungültig oder bereits vergeben"
+  reon-username-mail-note: "Dieser Name wird auch deine REON-E-Mail-Adresse, die von den Spielen genutzt wird:"
+  reon-username-mail-internal: "Vom Game Boy"
+  reon-username-mail-external: "Aus dem Internet"
+  reon-username-taken: "Dieser Name ist bereits vergeben — bitte wähle einen anderen."
+  reon-username-free: "Dieser Name ist verfügbar."
+  reon-username-mail-or: "oder"
+  reon-username-mail-truncated: "Der Game Boy fasst nur 8 Zeichen, deshalb ist die Adresse im Spiel Ihr gekürzter Benutzername — beide erreichen dasselbe Postfach."
+  region-explanation-para1: REON ermöglicht internationalen Tausch für Pokémon-Kristall-Spieler über die Spielfunktion namens Trade Corner. Das schließt Tausche zwischen japanischen und nicht-japanischen Spielen ein, die normalerweise wegen unterschiedlicher Zeichensätze inkompatibel sind. Um solche Tausche zu ermöglichen, ändert der Dienst Pokémon-Spitznamen, Trainernamen und auf Post geschriebene Nachrichten beim Zusammenführen von Pokémon zwischen japanischen und nicht-japanischen Spielen (zum Beispiel wird "A" zu "ア" geändert, und umgekehrt). Diese Änderungen sind unumkehrbar, versuchen aber, die Schreibweise der Originalsprache so originalgetreu wie möglich nachzuahmen.
+  region-explanation-para2: Wähle die Region-Gruppe, mit der du tauschen möchtest. Diese Einstellung kann auch nach der Registrierung geändert werden.
+
+password-reset:
+  title: Setze dein Passwort zurück
+  this-email-not-registered: Diese E-Mail ist nicht registriert
+  email-sent-recently: Vor weniger als 5 Minuten wurde bereits eine E-Mail gesendet
+  email-sent: Falls registriert, wurde eine E-Mail mit einem Link zum Zurücksetzen deines Passworts an die angegebene Adresse gesendet.
+  success: Dein Passwort wurde erfolgreich zurückgesetzt.
 your-account: Mein Konto
 pokemon-crystal: Pokémon Kristall
+pokemon-stadium: "Pokémon Stadium"
+rankings: Rangliste
+trade-corner: Trade Corner
+battle-tower: Kampfturm
+bxt-save-converter: BXT-Speicherstand-Konverter
+pokemon-pages:
+  index-description: Niedliche kleine Kreaturen und so
+  rankings-description: Wie groß hast du gesagt, war dieser Karpador?
+  trade-corner-description: Schau dir all die Raupy und Hornliu an!
+  battle-tower-description: Zeigt die Bestenliste des Kampfturms nach Level und Raum.
+  bxt-save-converter-description: Wandle Crystal-BYT-Spielstände lokal in deinem Browser ins BXT-Format um.
 gameboy-wars: Game Boy Wars 3
 
 mario-kart:
@@ -820,6 +917,42 @@ pokemon:
   - WHIRLPOOL
   - PRÜGLER
 account:
+  your-reon-account: Dein REON-Konto
+  account-details: Kontodetails
+  reon-identity: "REON-Identität"
+  external-email: "Externe E-Mail-Adresse"
+  external-email-alias: "Auch erreichbar unter"
+  change-email: E-Mail ändern
+  change-password: Passwort ändern
+  download-config-data: Konfigurationsdaten herunterladen
+  reroll-success: Dein Anmeldepasswort wurde neu generiert.
+  stats: Statistiken
+  emails-in-inbox: E-Mails im Posteingang
+  money-spent: Ausgegebenes Geld
+  dion-account-details: DION-Kontodetails
+  dion-id: DION-ID
+  log-in-password: DION-Passwort
+  relay-number: REON-Nummer
+  relay-token: Relay-Token
+  reroll-log-in-password: DION-Passwort neu generieren
+  reroll-confirm-message: Bist du sicher, dass du das tun willst?
+  reroll-warning: Du musst dein Passwort in allen Spielen ändern.
+  revoke-devices: Alle Geräte widerrufen
+  revoke-devices-confirm-message: Bist du sicher, dass du das tun willst?
+  revoke-devices-warning: Jedes Gerät, das dieses Konto verwendet, muss eine neue Konfigurationsdatei herunterladen, bevor es wieder Mail an das echte Internet senden kann.
+  revoke-devices-success: Alle Geräte dieses Kontos wurden widerrufen. Lade auf jedem Gerät, das du weiter verwenden möchtest, eine neue Konfigurationsdatei herunter.
+  change-email-address: Ändere deine E-Mail-Adresse
+  email-changed-success: Deine E-Mail wurde erfolgreich geändert.
+  email-confirm-sent: Falls noch nicht registriert, wurde eine E-Mail mit einem Link zur Bestätigung dieser Änderung an die angegebene Adresse gesendet.
+  change-your-password: Ändere dein Passwort
+  password-changed-success: Dein Passwort wurde erfolgreich geändert.
+  trade-corner-region-allowlist: "Trade Corner: Handelspräferenzen"
+  trade-option-1: Nur national (nur die Region deines Spiels)
+  trade-option-2: Alle Regionen mit kompatiblen Sprachen
+  trade-option-3: Alle Regionen, einschließlich Lateinisch-Japanisch-Umwandlung
+  time-zone: Zeitzone
+  time-zone-blurb: Wähle die Zeitzone, in der Datumsangaben und Uhrzeiten auf der Seite angezeigt werden. Lass die Standardeinstellung, um alles in der ursprünglichen Zeitzone des Spiels (Japan, +0900) zu sehen.
+  update-settings: Einstellungen aktualisieren
   pokemon-news-custom-opt-in: 'Pokémon-Nachrichten: Nachrichteneinstellungen'
   pokemon-news-custom-opt-in-blurb: Wenn aktiviert, können Pokémon-Nachrichten-Downloads – sofern verfügbar –
     benutzerdefinierte Nachrichteninhalte des REON-Teams verwenden. Wenn keine
@@ -829,3 +962,438 @@ account:
   pokemon-news-custom-opt-in-on: Benutzerdefinierte Pokémon-Nachrichten, wenn verfügbar
 
 invalid-pokemon-news-setting: Ungültige Pokémon-Nachrichten-Einstellung.
+
+mail:
+  title: "REON Mail"
+  inbox: "Posteingang"
+  inbox-summary: "%total% im Posteingang · %unread% ungelesen"
+  filter-placeholder: "Betreff, Absender oder Text suchen"
+  filter-all: "Alles"
+  filter-unread: "Nur ungelesene"
+  filter-players: "Nur Spieler"
+  filter-internet: "Nur Internet"
+  filter-apply: "Filtern"
+  filter-clear: "Zurücksetzen"
+  filter-none: "Nichts passt zum Filter."
+  thread-with: "%count% Nachrichten mit %party%"
+  thread-unread: "%count% ungelesen"
+  thread-you: "Du"
+  thread-delete: "Unterhaltung löschen"
+  thread-hint: "Unterhaltung lesen"
+  thread-count: "%count% Nachrichten"
+  thread-you-wrote: "du schriebst"
+  sent-summary: "%total% gesendet"
+  trash-summary: "%total% im Papierkorb"
+  empty: "Keine Nachrichten."
+  message: "Nachricht"
+  from: "Von"
+  date: "Datum"
+  game: "Spiel"
+  no-subject: "kein Betreff"
+  back: "Zurück zum Posteingang"
+  not-found: "Diese Nachricht existiert nicht."
+  read-only-note: "Vorerst nur lesen: Nachrichten, die das Spiel herunterlädt und vom Server löscht, verschwinden auch hier."
+
+passport:
+  title: "Dein Pass für REON."
+  download-hint: "Hier klicken zum Herunterladen"
+  intro: "Diese Datei ist dein Pass für den Zugang zu den Diensten von REON."
+  body-1: "Egal, ob du per Emulation mit mGBA oder mit echter Hardware verbindest — diese kleine Konfigurationsdatei enthält die Informationen, die dein Spiel braucht, um REON zu finden und sich damit zu verbinden."
+  body-2: "Stell sie dir als Verbindungsglied zwischen deinem Spiel und dem REON-Netzwerk vor. Sobald mobile_config.bin am richtigen Ort installiert ist, können unterstützte Spiele und Software damit eine Verbindung zu den Servern von REON herstellen und die Online-Funktionen nutzen."
+  mgba-heading: "Du spielst mit mGBA?"
+  mgba-body: "Der Einstieg ist einfach! Lade mobile_config.bin herunter und schau dir dann die mGBA-Einrichtungsanleitung an. Wir führen dich Schritt für Schritt durch den Vorgang."
+  hardware-heading: "Du spielst auf echter Hardware?"
+  hardware-body: "Du kannst dich auch mit dem echten Gerät mit REON verbinden! Schau dir die Einrichtungsanleitung für echte Hardware an, um zu erfahren, was du brauchst und wie du dich verbindest."
+  keep-heading: "Verlier deinen Pass nicht!"
+  keep-body: "Bewahre eine Kopie von mobile_config.bin an einem sicheren Ort auf. Du brauchst sie eventuell erneut, wenn du REON auf einem anderen Gerät einrichtest oder deinen Emulator neu installierst."
+  redownload-note: "Solltest du sie verlieren, kannst du dir auf deiner Seite %link_open%Mein Konto%link_close% jederzeit eine neue Kopie herunterladen."
+devices:
+  title: "Verbundene Geräte"
+  intro: "Jedes Gerät, das über dieses Konto Mail ins echte Internet geschickt hat, erscheint hier, das neueste zuerst. Gib einem Gerät einen Namen, sobald du es erkannt hast, und sperre eines, dem du nicht mehr vertraust."
+  code-help: "Der Kopplungscode ist derselbe, den das Gerät auf seinem eigenen Bildschirm, in der Konsole oder auf der seriellen Ausgabe zeigt, damit du die Zeile dem Gerät in deiner Hand zuordnen kannst."
+  none: "Noch hat sich kein Gerät verbunden."
+  code: "Kopplungscode"
+  nickname: "Name"
+  nickname-placeholder: "z. B. blauer 3DS"
+  status: "Status"
+  status-authorized: "Jetzt autorisiert"
+  status-blocked: "Gesperrt"
+  status-idle: "Inaktiv"
+  last-seen: "Zuletzt gesehen"
+  first-seen: "Zuerst gesehen"
+  actions: "Aktionen"
+  save: "Speichern"
+  block: "Sperren"
+  unblock: "Entsperren"
+  block-confirm: "Dieses Gerät sperren? Es kann keine Mail mehr ins echte Internet schicken, bis du es hier entsperrst."
+  block-help: "Sperren behält den Eintrag des Geräts, damit nichts, was es früher geschickt hat, wiederholt werden kann; du kannst es jederzeit entsperren."
+  limit: "Bis zu %n% Geräte pro Konto."
+  legacy: "Ohne Kennung"
+  ago-now: "gerade eben"
+  ago-minutes: "vor %n% Min."
+  ago-hours: "vor %n% Std."
+  ago-days: "vor %n% Tagen"
+
+notify:
+  title: "Benachrichtigungen"
+  bell: "Benachrichtigungen"
+  none: "Hier ist noch nichts."
+  see-all: "Alle Benachrichtigungen ansehen"
+  unread: "%count% neu"
+  mark-read: "Alle als gelesen markieren"
+  all-read: "Alles erledigt"
+  history-note: "Jede Benachrichtigung bleibt erhalten, bis du sie selbst löschst. Löschen entfernt nur die Liste: Die Nachricht oder der Tausch, auf den sie verweist, bleibt bestehen."
+  clear: "Benachrichtigungen löschen"
+  clear-hint: "Löschen entfernt nur die Liste. Nichts, worauf sie verweist, geht verloren."
+  clear-confirm: "Alle Benachrichtigungen löschen? Das lässt sich nicht rückgängig machen."
+  newer: "Neuere"
+  older: "Ältere"
+  cat-mail: "Post"
+  cat-trade: "Tausch"
+  cat-game: "Spiel"
+  cat-system: "System"
+  cat-admin: "Ankündigung"
+  new-mail: "Neue Post von %from%"
+  trade-done: "Tausch abgeschlossen"
+  trade-none: "Noch kein Tausch"
+admin:
+  nav-adapter: "Adapter-Konfig"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "Was der Generator in jede mobile_config.bin schreibt. Hier steht nur, was für alle gleich ist — E-Mail-Adresse, gID, Geräteschlüssel und Relay-Token stammen aus dem jeweiligen Konto und lassen sich nicht einstellen."
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "Port"
+  adapter-empty: "leer lassen"
+  adapter-dns2-note: "DNS 2 leer lassen, sofern es nicht wirklich einen zweiten Server gibt. Dieselbe Adresse zu wiederholen bringt keine Redundanz — sie würde aus demselben Grund im selben Moment ausfallen. Leer bedeutet: Feld nicht gesetzt, und der Adapter behält, was das Spiel schon hatte."
+  adapter-relay: "Relay und P2P"
+  adapter-relay-host: "Relay-Server"
+  adapter-p2p: "P2P-Port"
+  adapter-device: "Adapter"
+  adapter-model: "Modell"
+  adapter-unmetered: "Ohne Minutenabrechnung"
+  adapter-current: "Aktuelles Gerät:"
+  adapter-metered: "Abgerechnet"
+  adapter-unmetered-short: "Ohne Abrechnung"
+  adapter-save: "Speichern"
+  adapter-footer: "Eine gespeicherte Änderung gilt ab dem nächsten Download. Niemand muss deshalb neu herunterladen: eine bereits genutzte Datei funktioniert weiter, und diese Werte bestimmen nur, wohin eine neue zeigt."
+  adapter-saved: "Gespeichert. Neue Downloads verwenden diese Werte."
+  adapter-failed: "Speichern nicht möglich."
+  adapter-invalid: "Es wurde nichts gespeichert. Prüfen Sie die unten markierten Felder — eine unsinnige Adresse oder ein unsinniger Port ergäbe eine Datei, die das Modul nicht lesen kann."
+  news-title: Nachrichtenverwaltung
+  news-new: Neuer Beitrag
+  news-editing: Beitrag bearbeiten
+  news-date: Datum
+  news-post-title: Titel
+  news-state: Status
+  news-published: Veröffentlicht
+  news-draft: Entwurf
+  news-view: Ansehen
+  news-edit: Bearbeiten
+  news-delete: Löschen
+  news-delete-confirm: Diesen Beitrag löschen?
+  news-title-required: Ein Titel ist erforderlich.
+  news-body: Text
+  news-markdown-hint: 'Markdown: **fett**, _kursiv_, ## Überschrift, [Link](url), ![](Bild).'
+  news-publish: Veröffentlicht (auf der Seite sichtbar)
+  news-save: Speichern
+  news-cancel: Abbrechen
+  news-preview: Vorschau
+  news-md-link: Link
+  news-md-list: Liste
+  news-md-image: Bild
+  news-upload-failed: Das Hochladen ist fehlgeschlagen.
+  panel: Verwaltung
+  nav-dashboard: Übersicht
+  nav-news: Nachrichten
+  nav-news-maker: Pokémon News
+  news-maker-title: Pokémon News
+  news-maker-intro: Eine Ausgabe ist ein kleines Programm, das das Spiel ausführt, gebaut mit der echten Werkzeugkette. Sie wählen die Worte, die Ranglisten und das Minispiel; alles andere kommt aus einer Ausgabe, von der bekannt ist, dass sie funktioniert.
+  news-maker-unavailable: 'Bauen noch nicht möglich — es fehlt:'
+  news-maker-new: Neue Ausgabe
+  news-maker-back: Zurück zu den Ausgaben
+  news-maker-none: Es wurde noch keine Ausgabe erstellt.
+  news-maker-issue: Ausgabe
+  news-maker-rankings: Ranglisten
+  news-maker-built: Gebaut für
+  news-maker-not-built: nicht gebaut
+  news-maker-name: Name
+  news-maker-name-hint: Für Sie und für den Dateinamen. Wird im Spiel nicht angezeigt.
+  news-maker-message: Zeile im Briefkasten
+  news-maker-message-hint: Die einzige Zeile, die der Briefkasten des Spiels zu dieser Ausgabe zeigt, bevor sie jemand öffnet. Bleibt sie leer, wird die Schlagzeile dieser Sprache verwendet. Höchstens %n% Zeichen, und in den eigenen Zeichen des Spiels geschrieben — was es nicht zeichnen kann, wird mit Namen abgelehnt.
+  news-maker-schedule-locked: Ausgaben lassen sich bauen, aber noch nicht einplanen.
+  news-maker-schedule-why: 'Der Kalender für eigene Ausgaben ist eine Datei für sich, und der Webserver kann sie nicht schreiben. Absichtlich ist es nicht die Konfiguration daneben: die trägt auch den Plan der gewöhnlichen Nachrichten, und den zu ändern ist nicht die Sache dieses Bereichs:'
+  news-maker-built-only: gebaut, aber nicht im Kalender — kein Spieler sieht es
+  month-1: Januar
+  month-2: Februar
+  month-3: März
+  month-4: April
+  month-5: Mai
+  month-6: Juni
+  month-7: Juli
+  month-8: August
+  month-9: September
+  month-10: Oktober
+  month-11: November
+  month-12: Dezember
+  news-maker-date: Erscheint am
+  news-maker-date-hint: Der Tag, an dem diese Ausgabe übernimmt; sie erscheint weiter, bis der Tag einer anderen kommt. Sie wählen Monat und Tag; das Jahr ist das laufende, ein noch kommender Tag wartet also, statt sofort zu erscheinen. Der Februar endet am 28., weil ein 29. nur in einem Schaltjahr vorkäme.
+  news-maker-withdraw: Zurückziehen
+  news-maker-withdrawn: Zurückgezogen. Das Spiel verwendet sie nicht mehr.
+  news-maker-withdraw-confirm: Diese Ausgabe aus dem Kalender nehmen und das Gebaute löschen? Sie erscheint nicht mehr — die Nachrichtenzeile behält ihren Inhalt aber, bis die gewöhnlichen Nachrichten diese Region das nächste Mal wechseln, denn dann spiegelt der Planer sie neu.
+  news-maker-lang-j: Japanisch
+  news-maker-lang-e: Englisch
+  news-maker-lang-d: Deutsch
+  news-maker-lang-f: Französisch
+  news-maker-lang-i: Italienisch
+  news-maker-lang-s: Spanisch
+  news-maker-scheduled: Im Kalender
+  news-maker-template: Beruht auf
+  news-maker-template-hint: Die echte Ausgabe, deren Menüs, Skripte und Aufbau diese übernimmt.
+  news-maker-minigame: Minispiel
+  news-maker-minigame-broken: "Dieses Minispiel lässt sich mit der aktuellen Toolchain nicht bauen — im Quelltext des Minispiels selbst steckt ein Fehler, upstream. Es gibt keinen Preis zur Auswahl, und eine Ausgabe kann damit nicht veröffentlicht werden. Bitte ein anderes wählen."
+  news-maker-publish-now-unbuilt: Diese Ausgabe wurde noch nicht gebaut. Öffnen Sie sie, wählen Sie die Sprachen und drücken Sie zuerst Veröffentlichen.
+  news-maker-published-now: Jetzt live in %regions%.
+  news-maker-prizes: Preise
+  news-maker-prizes-hint: Was das Minispiel bei einem Sieg aushändigt. Die Liste wird aus dem Code des Minispiels selbst gelesen, ein anderes Minispiel ergibt also eine andere Liste. Die gesamte Gegenstandstabelle steht zur Wahl, Schlüsselgegenstände eingeschlossen — das Modul kennt sie, doch das Spiel rechnet nicht damit, einen davon aus den Nachrichten zu erhalten.
+  news-maker-prize: Preis %n%
+  news-maker-prize-default: "wie vorgesehen: %item%"
+  news-maker-prize-fixed: Das wählt das Minispiel.
+  news-maker-prize-none: Dieses Minispiel händigt keinen Preis aus.
+  news-maker-bad-prize: "Diesen Gegenstand gibt es nicht:"
+  news-maker-headline-hint: Der Name der Ausgabe auf dem Nachrichtenbildschirm selbst — auf dem Banner, während die Konsole sie lädt, und als Titel oben auf der Seite. Höchstens %n% Zeichen, so viel wie die breiteste echte Ausgabe nutzt.
+  news-maker-body-hint: 'Der Text hinter „Nachrichtenführer“ — der Artikel, den der Spieler liest. Eine leere Zeile beginnt einen Absatz; die erste Zeile öffnet das Textfeld, die zweite steht darunter, der Rest läuft durch. **%n% Zeichen pro Zeile**, weil das Textfeld %n% Kacheln breit ist. Keine Grenze für die Anzahl der Zeilen: der Text läuft durch.'
+  news-maker-random: ZUFÄLLIGE RANGLISTE
+  news-maker-ranking-hint: 'Die drei Ranglisten, um die es in dieser Ausgabe geht. „ZUFÄLLIGE RANGLISTE“ zieht beim Speichern eine Kategorie, und das Gezogene bleibt: dieselbe Ausgabe wechselt zwischen zwei Bauläufen nicht die Ranglisten. Die drei müssen sich unterscheiden, denn sie stehen auf einem Bildschirm nebeneinander.'
+  news-maker-duplicate-ranking: Die drei Ranglisten müssen sich voneinander unterscheiden.
+  news-maker-no-categories: Es gibt nicht genug Ranglistenkategorien für die drei Plätze.
+  news-maker-unknown-ranking: Das ist keine Ranglistenkategorie, die diese Werkzeugkette kennt.
+  news-maker-too-long: 'Zu lang für den Bildschirm:'
+  news-maker-region-empty: 'Eine Region, deren Sprache keinen Text hat, lässt sich nicht bauen — sie käme nicht leer heraus, sondern mit dem Artikel der Vorlage von 2002:'
+  news-maker-region-needs: Schreiben Sie zuerst die Schlagzeile und den Artikel auf %lang%.
+  news-maker-ranking: Rangliste %n%
+  news-maker-text: Texte
+  news-maker-text-hint: Drei verschiedene Texte, jeder erscheint an anderer Stelle. Lassen Sie eine Sprache leer, behält diese Sprache, was die Vorlage hatte.
+  news-maker-text-none: "Wählen Sie oben unter „Bauen für“ eine Sprache, und ihre Felder erscheinen hier."
+  news-maker-headline: Schlagzeile
+  news-maker-body: Artikel
+  news-maker-regions: Bauen für
+  news-maker-regions-hint: Ein Baulauf pro Region. Eine Region lässt sich erst wählen, wenn ihre Sprache Schlagzeile und Artikel hat — E, P und U nehmen alle drei den englischen Text; F und D, S und I teilen eine Zeichentabelle.
+  news-maker-save: Speichern
+  news-maker-publish: Speichern und bauen
+  news-maker-saved: Gespeichert.
+  news-maker-published: '%good% von %total% Regionen gebaut.'
+  news-maker-result: Ergebnis
+  news-maker-failed-region: fehlgeschlagen
+  news-maker-failed: 'Nicht möglich: %detail%'
+  news-maker-deleted: Ausgabe gelöscht.
+  news-maker-publish-now: "Jetzt veröffentlichen"
+  news-maker-publish-now-confirm: "Diese Ausgabe jetzt veröffentlichen? Ihr Datum wird heute, und der Planer läuft direkt danach, statt auf den nächsten Durchlauf zu warten. Nach der Veröffentlichung ist sie nicht mehr änderbar."
+  news-maker-ran: "Der Planer ist gelaufen: sie ist online."
+  news-maker-run-failed: "Gebaut und eingeplant, aber der Planer konnte jetzt nicht ausgeführt werden (%detail%). Sie erscheint im nächsten Durchlauf, innerhalb von 15 Minuten."
+  news-maker-restored: "Die offizielle Ausgabe steht in %count% Region(en) wieder an ihrer Stelle."
+  news-maker-locked: Diese Ausgabe wurde bereits veröffentlicht und kann nicht mehr geändert werden.
+  news-maker-locked-title: Veröffentlichte Ausgabe — nur lesen
+  news-maker-locked-why: Sie ist bereits erschienen, und Spieler haben sie möglicherweise gelesen. Ein erneutes Übersetzen darüber würde den Inhalt unbemerkt ändern, unter demselben Namen und demselben Datum. Um etwas zu ändern, löschen Sie diese Ausgabe und veröffentlichen Sie eine neue.
+  news-maker-delete-confirm: Diese Ausgabe löschen? Was dafür schon gebaut wurde, bleibt, wo es ist.
+  news-maker-need-name: Geben Sie ihr zuerst einen Namen.
+  news-maker-need-region: Wählen Sie mindestens eine Region zum Bauen.
+  nav-notifications: Benachrichtigungen
+  nav-users: Konten
+  nav-services: Dienste
+  nav-logs: Protokolle
+  nav-trainer: Mobile Trainer
+  nav-audit: Aktivität
+  count-users: Konten
+  count-banned: Gesperrt
+  count-devices: Konsolen
+  count-devices-blocked: Konsolen blockiert
+  count-mail-today: Post, letzte 24 h
+  count-trades: Wartende Tauschangebote
+  count-news: Nachrichtenbeiträge
+  count-notifications: Gesendete Benachrichtigungen
+  audit-title: Verwaltungsaktivität
+  audit-empty: Hier wurde noch nichts getan.
+  audit-when: Wann
+  audit-who: Wer
+  audit-what: Was
+  audit-target: Ziel
+  audit-all: Gesamte Aktivität ansehen
+  notify-title: Benachrichtigung senden
+  notify-intro: Benachrichtigungen erscheinen unter der Glocke in der Kopfzeile und bleiben im Verlauf des Empfängers. Danach lassen sie sich nicht mehr löschen, weder von Ihnen noch von ihm.
+  notify-to: An
+  notify-to-all: Alle
+  notify-to-user: Ausgewählte Konten
+  notify-to-many: '%count% Konten'
+  notify-user-hint: Namen eingeben …
+  notify-user-remove: Entfernen
+  notify-sent-many: An %count% Konten gesendet.
+  notify-user: Konto
+  notify-category: Art
+  notify-headline: Schlagzeile
+  notify-body: Einzelheiten (optional)
+  notify-link: Link (optional)
+  notify-send: Senden
+  notify-sent: An %who% gesendet.
+  notify-sent-all: An %count% Konten gesendet.
+  notify-need-title: Eine Schlagzeile ist erforderlich.
+  notify-no-user: Wählen Sie ein Konto als Empfänger.
+  notify-recent: Kürzlich gesendet
+  notify-when: Wann
+  notify-who: An
+  users-title: Konten
+  users-search: Nach Name oder Adresse suchen
+  users-search-go: Suchen
+  users-id: ID
+  users-name: Name
+  users-email: Adresse
+  users-dion: DION
+  users-devices: Konsolen
+  users-state: Status
+  users-actions: ''
+  users-open: Öffnen
+  users-none: Kein Konto passt.
+  users-active: Aktiv
+  users-banned: Gesperrt
+  users-admin: Verwaltung
+  user-title: Konto
+  user-back: Zurück zu den Konten
+  user-ban: Sperren
+  user-unban: Sperre aufheben
+  user-ban-reason: Grund (erscheint im Aktivitätsprotokoll)
+  user-ban-confirm: Dieses Konto sperren? Es verliert die Seite, den Briefkasten und den Adapter.
+  user-make-admin: Verwaltung gewähren
+  user-drop-admin: Verwaltung entziehen
+  user-admin-confirm: Diesem Konto den Verwaltungsbereich geben?
+  user-banned-since: Gesperrt seit %when%
+  user-devices: Konsolen
+  user-device-code: Code
+  user-device-nick: Name
+  user-device-state: Status
+  user-device-seen: Zuletzt gesehen
+  user-device-block: Blockieren
+  user-device-unblock: Freigeben
+  user-blocked: Blockiert
+  user-allowed: Erlaubt
+  user-no-devices: Mit diesem Konto hat sich noch keine Konsole verbunden.
+  err-no-such-user: Dieses Konto gibt es nicht.
+  err-not-yourself: Nicht beim Konto, mit dem Sie angemeldet sind.
+  err-not-an-admin: Ein Verwalter kann nicht gesperrt werden. Entziehen Sie ihm zuerst die Verwaltung.
+  mailauth-title: "Anmeldung am Postfach"
+  mailauth-explain: "Der Adapter weist sich mit dem 256-Bit-Geräteschlüssel aus (APOP); das Passwort geht nie über die Leitung. Das achtstellige Passwort ist der alte Weg und bleibt nur für Adapter, die noch kein APOP sprechen. Schließen Sie ihn, sobald die neuen Versionen bei den Spielern sind: acht Zeichen lassen sich raten, und wer die schwache Tür neben der starken offen lässt, sorgt dafür, dass Angreifer die schwache nehmen."
+  mailauth-on: "Anmeldung mit Passwort erlaubt"
+  mailauth-off: "Nur mit Geräteschlüssel"
+  mailauth-turn-off: "Geräteschlüssel verlangen"
+  mailauth-turn-on: "Passwörter wieder erlauben"
+  mailauth-off-confirm: "Jeder Adapter ohne APOP holt keine Post mehr ab. Fortfahren?"
+  mailauth-on-confirm: "Das achtstellige Passwort wird wieder akzeptiert. Fortfahren?"
+  setting-saved: "Einstellung gespeichert."
+  setting-failed: "Die Einstellung konnte nicht gespeichert werden."
+  services-title: Dienste
+  services-note: Das Neustarten läuft über ein Hilfsprogramm, das der Server ausdrücklich erlauben muss. Solange es nicht eingerichtet ist, melden die Schaltflächen nur, was sie ausgeführt hätten, und ändern nichts.
+  services-service: Dienst
+  services-state: Status
+  services-restart: Neu starten
+  services-restart-confirm: Diesen Dienst neu starten? Wer verbunden ist, wird getrennt.
+  services-done: '%service%: %detail%'
+  services-failed: '%service% konnte nicht neu gestartet werden: %detail%'
+  services-unavailable: Auf diesem Server ist das Neustarten noch nicht freigeschaltet. Es wurde nichts ausgeführt.
+  services-daemons: Laufen immer
+  services-jobs: Geplante Aufgaben
+  services-jobs-note: Sie laufen über einen systemd-Timer. Führen Sie eine jetzt aus, schalten Sie ihren Timer ab oder geben Sie ihr einen anderen Plan — der Plan wird als Ergänzung geschrieben, die vom Projekt gelieferte Unit wird also nie angetastet, und „Zurücksetzen“ stellt sie wieder her.
+  services-start: Starten
+  services-stop: Anhalten
+  services-run: Jetzt ausführen
+  services-refresh-confirm: Dies löscht die Ranglisten ALLER eingerichteten Regionen, nicht nur derer, deren Nachrichten heute gewechselt haben, und lässt sich nicht rückgängig machen. Nachrichten erneut anwenden und alle Ranglisten löschen?
+  services-enable: Einschalten
+  services-disable: Ausschalten
+  services-on: ein
+  services-off: aus
+  services-running: läuft
+  services-no-timer: kein Timer
+  services-schedule: Zeitplan
+  services-schedule-hint: systemd-Kalender, z. B. *-*-* *:0/15:00
+  services-schedule-reset: Zurücksetzen
+  services-schedule-reset-confirm: Zurück zu dem Zeitplan, mit dem diese Aufgabe ausgeliefert wird?
+  services-next: Nächster Lauf
+  services-stop-confirm: Diesen Dienst anhalten? Er bleibt aus, bis ihn jemand wieder startet.
+  services-disable-confirm: Diese Aufgabe ausschalten? Sie läuft erst wieder, wenn sie erneut eingeschaltet wird.
+  services-no-stop: 'Kein Anhalten: diese Seite wird von ihm ausgeliefert, ihn anzuhalten würde also die Schaltfläche wegnehmen, die ihn wieder startet.'
+  logs-title: Dienstprotokolle
+  logs-service: Dienst
+  logs-lines: Zeilen
+  logs-show: Anzeigen
+  logs-empty: Nichts anzuzeigen.
+  logs-unavailable: Das Systemprotokoll lässt sich noch nicht lesen, es gibt also nichts anzuzeigen.
+  logs-unavailable-why: 'PHP läuft als „%user%“, und das Systemprotokoll zu lesen setzt die Mitgliedschaft in der Protokollgruppe voraus. Das gewährt Lesen und sonst nichts — es ist nicht die sudo-Regel, die die Seite „Dienste“ braucht, und es erlaubt niemandem, etwas neu zu starten:'
+  trainer-title: Mobile-Trainer-Seiten
+  trainer-intro: Die Seiten, die ein Game Boy über den Mobile Trainer sieht. Sie gehen unverändert an den Adapter, der eine kleine Teilmenge von HTML zeichnet.
+  trainer-page: Seite
+  trainer-size: Größe
+  trainer-changed: Geändert
+  trainer-edit: Bearbeiten
+  trainer-save: Speichern
+  trainer-saved: Gespeichert.
+  trainer-failed: 'Konnte nicht gespeichert werden: %detail%'
+  trainer-none: Unter web/htdocs/01 wurde keine Seite gefunden.
+  trainer-back: Zurück zu den Seiten
+  trainer-tags: Tags, die der Adapter zeichnet
+  trainer-new: Neue Seite
+  trainer-new-intro: Eine Seite ist eine Datei im Verzeichnis eines Spiels. Legen Sie sie hier an und verweisen Sie dann von einer anderen Seite mit &lt;a href="name.html"&gt; darauf.
+  trainer-dir: Spielverzeichnis
+  trainer-file: Dateiname
+  trainer-file-hint: Kleinbuchstaben, Buchstaben, Ziffern, - und _. „.html“ wird angefügt.
+  trainer-entry: Startseite
+  trainer-create: Anlegen
+  trainer-view: Ansehen
+  trainer-open: Öffnen
+  trainer-delete: Löschen
+  trainer-delete-confirm: Diese Seite löschen? Eine Konsole, die sie anfordert, bekommt nichts.
+  trainer-deleted: Seite gelöscht.
+  trainer-locked: nur lesen
+  trainer-preview: So sieht sie die Konsole
+  trainer-preview-note: '160x144 in doppelter Größe, mit der Schrift des Trainers selbst — eine Zeile bricht hier also etwa dort, wo sie dort bricht. Etwa: der Adapter benutzt seinen eigenen Zeichner, keinen Browser.'
+  trainer-tags-note: 'Aus der Dokumentation des Adapters, und das ist die vollständige Liste — <p>, <table> und <form> stehen nicht darauf. Nichts wird abgelehnt, weil es fehlt, denn die Dokumentation sagt nicht, was der Adapter mit einem Tag macht, das er nicht kennt. Zwei Überraschungen: <b> färbt den Text rot statt ihn fett zu setzen, und <center> wirkt nur innerhalb von <html>. Bilder sind ausschließlich 1BPP-BMP, jede Seite höchstens 255 Pixel.'
+  trainer-images: Bilder
+  trainer-img-empty: Diese Seite hat noch keine Bilder.
+  trainer-img-name: Datei
+  trainer-img-write: Schreiben Sie das in die Seite
+  trainer-img-facts: Geprüft
+  trainer-img-file: BMP-Datei
+  trainer-img-rules: Nur 1BPP-BMP, jede Seite höchstens %n% Pixel, ohne Komprimierung. Geprüft an dem, was die Bilder der laufenden Seite tatsächlich sind, nicht an der Dokumentation — die würde 34 der 37 bereits vorhandenen ablehnen.
+  trainer-img-rename: Benennen (optional)
+  trainer-img-rename-hint: Kleinbuchstaben, Buchstaben, Ziffern, - und _. „.bmp“ wird angefügt. Bleibt es leer, wird der Name der hochgeladenen Datei verwendet.
+  trainer-img-upload: Hochladen
+  trainer-img-added: '%name% hochgeladen.'
+  trainer-img-deleted: Bild gelöscht.
+  trainer-img-delete-confirm: Dieses Bild löschen? Eine Seite, die noch darauf zeigt, bekommt ein Symbol für ein fehlendes Bild.
+  trainer-img-ok: ok
+  trainer-img-none: Es wurde keine Datei empfangen.
+  trainer-img-bad-name: In diesem Namen ist nichts Verwendbares.
+  trainer-img-not-a-bmp: Kein BMP.
+  trainer-img-odd-header: BMP-Kopf in einer Form, die hier nicht gelesen werden kann.
+  trainer-img-not-1bpp: Muss 1BPP sein. Der Adapter zeichnet nichts anderes.
+  trainer-img-planes: Die Zahl der BMP-Ebenen muss 1 sein.
+  trainer-img-compressed: Komprimierte BMP werden nicht angenommen.
+  trainer-img-palette: Mehr Farben angegeben, als ein 1BPP-Bild haben kann.
+  trainer-img-empty-image: Das Bild hat keine Pixel.
+  trainer-img-not-8-bit: Breite und Höhe müssen jeweils in 8 Bit passen (höchstens %n%).
+  trainer-img-offset-too-far: Die Pixeldaten beginnen zu weit in der Datei, um angesprochen werden zu können.
+  trainer-img-too-large: Größer, als das Format zulässt.
+  trainer-img-too-big: Die Datei ist zu groß.
+  trainer-img-not-writable: In das Bildverzeichnis kann nicht geschrieben werden.
+  trainer-img-mkdir-failed: Das Bildverzeichnis konnte nicht angelegt werden.
+  trainer-img-write-failed: Die Datei konnte nicht geschrieben werden.
+  trainer-img-replace-failed: Die Datei konnte nicht an ihren Platz gebracht werden.
+  trainer-img-no-such-page: Diese Seite gibt es nicht.
+  trainer-readonly: Der Webserver kann diese Dateien nicht schreiben, hier lässt sich also noch nichts speichern.
+  trainer-readonly-why: 'PHP läuft als „%user%“, und die Seiten gehören dem Konto, das sie ausgerollt hat. Diesem Benutzer Schreibrecht zu geben ist ein einziger Befehl:'
+
+errors:
+  title: "Fehlercodes des Adapters"
+  intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Geben Sie diesen Code hier ein, um ihn nachzuschlagen. Codes mit gleicher Bedeutung teilen sich eine Antwort, und jeder Eintrag kann die Meldung zeigen, die das Spiel selbst ausgibt."
+  filter-code: "Fehlercode"
+  partial: "※ Noch nicht jeder Code hat eine Erklärung."
+  count: "%n% von %total% Codes werden angezeigt."
+  no-meaning: "Noch keine Beschreibung"
+  missing: "Die Fehlerdaten wurden noch nicht erzeugt. maint/build_adapter_errors.php ausführen."

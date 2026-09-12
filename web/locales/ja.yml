@@ -5,20 +5,117 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 home: ホーム
 games: ゲーム
 mobile-home: モバイルホームページ
 news: ニュース
+guide: "はじめに"
+downloads: "ダウンロード"
+terms: "利用規約"
+privacy: "プライバシーポリシー"
+close: "閉じる"
+open-full-page: "ページ全体を開く"
+page-not-found: "このページはまだありません。"
+page-contents: "目次"
+game-page:
+  on-this-page: "このページの内容"
+  services: "オンラインサービス"
+  map-gallery: "マップギャラリー"
+  get-started: "はじめに"
+news-empty: "まだニュースはありません。"
+news-see-more: "続きを読む"
+news-newer: "新しい"
+news-older: "古い"
+news-not-found: "その記事は存在しません（または未公開です）。"
+news-back-to-list: "ニュース一覧へ戻る"
 status: ステータス
-players-online: オンラインのプレイヤー
-in-service-since: 稼働開始
+service-web: ウェブ
+service-mail: メール
+service-mobile-relay: リレー
+service-relay-policy: 外部メール
+service-status-up: オンライン
+service-status-down: オフライン
+service-status-unknown: 不明
+service-devices-connected: "%count%台接続中"
 welcome-alpha: アルファテストへようこそ！
 login: ログイン
 logout: ログアウト
 signup: 新規登録
+forgot-password: パスワードを忘れた場合
+email-addr: メールアドレス
+email-or-username: メールアドレスまたはユーザー名
+password: パスワード
+password-show: パスワードを表示
+password-hide: パスワードを隠す
+password-caps-on: Caps Lock がオンになっています
+current-password: 現在のパスワード
+new-password: 新しいパスワード
+confirm-password: パスワードの確認
+confirm-new-password: 新しいパスワードの確認
+new-email: 新しいメールアドレス
+invalid-email: 無効なメールアドレス
+password-invalid: "パスワードは8〜71文字にしてください。"
+password-hint: "8〜71文字。"
+password-rules-label: "パスワードの条件"
+password-rule-min: "%count%文字以上"
+password-rule-max: "%count%文字以下"
+passwords-dont-match: パスワードが一致しません
+wrong-password: パスワードが間違っています
+link-invalid-expired: このリンクは無効か、期限切れです。
+csrf-invalid: このフォームは期限切れか、このサイトから送信されたものではありません。戻ってやり直してください。
+email-send-failed: ただいまメールを送信できませんでした。数分後にもう一度お試しください。
+invalid-trade-setting: 有効な地域選択ではありません。
+default-time-zone: デフォルト(日本、+0900)
+invalid-time-zone-setting: 有効なタイムゾーンではありません。
+continue: 続ける
+reset: リセット
+reset-password: パスワードをリセット
+send: 送信
+reveal: 表示
+what-is-this: これは何ですか?
+
+auth:
+  login-to-reon: REONアカウントにログイン
+  invalid-email-pass: メールアドレスまたはパスワードが正しくありません
+  signup-to-reon: REONに登録
+  i-agree-terms: 利用規約とプライバシーポリシーに同意します
+  you-must-agree: 同意する必要があります
+  registration-email-sent: まだ登録されていない場合、登録を続けるためのリンクを含むメールが指定されたアドレスに送信されました。
+  registration-complete: 登録が完了しました。
+  reon-username: "REONユーザー名"
+  reon-username-hint: "3〜20文字、英小文字と数字のみ。"
+  reon-username-invalid: "ユーザー名が無効か、すでに使われています"
+  reon-username-mail-note: "この名前はゲームが使うREONのメールアドレスにもなります："
+  reon-username-mail-internal: "ゲームボーイから"
+  reon-username-mail-external: "インターネットから"
+  reon-username-taken: "その名前は既に使われています。別の名前を選んでください。"
+  reon-username-free: "その名前は使えます。"
+  reon-username-mail-or: "または"
+  reon-username-mail-truncated: "ゲームボーイ側は8文字までのため、ゲーム内のアドレスはユーザー名を短くしたものです。どちらも同じ受信箱に届きます。"
+  region-explanation-para1: REONは、ゲーム内のトレードコーナー機能を通じて、ポケモンクリスタルのプレイヤー同士の国際交換を可能にします。これには、通常は文字セットが異なるため互換性のない日本版と海外版の間の交換も含まれます。このような交換を可能にするため、本サービスは日本版と海外版のポケモンをマッチングする際に、ポケモンのニックネーム、トレーナー名、メールに書かれたメッセージを変更します(例:「A」を「ア」に変更、およびその逆)。これらの変更は元に戻せませんが、元の言語の表記をできるだけ忠実に再現することを目指しています。
+  region-explanation-para2: 交換してもよい地域のプールを選んでください。この設定は登録後にも変更できます。
+
+password-reset:
+  title: パスワードをリセット
+  this-email-not-registered: このメールアドレスは登録されていません
+  email-sent-recently: 5分以内にメールが送信されています
+  email-sent: 登録されている場合、パスワードをリセットするためのリンクを含むメールが指定されたアドレスに送信されました。
+  success: パスワードが正常にリセットされました。
 your-account: マイページ
 pokemon-crystal: ポケットモンスター クリスタル
+pokemon-stadium: "ポケモンスタジアム"
+rankings: ランキング
+trade-corner: トレードコーナー
+battle-tower: バトルタワー
+bxt-save-converter: BXTセーブコンバーター
+pokemon-pages:
+  index-description: 可愛い生き物たちとその他いろいろ
+  rankings-description: そのコイキング、どれくらい大きいって言った?
+  trade-corner-description: あのキャタピーとビードルたちを見てよ!
+  battle-tower-description: レベルと部屋別にバトルタワーの殿堂を見る。
+  bxt-save-converter-description: クリスタルのBYTセーブデータをブラウザ上でBXT形式に変換。
 gameboy-wars: ゲームボーイウォーズ3
 
 mario-kart:
@@ -864,9 +961,480 @@ pokemon:
     JP-46: かごしまけん
     JP-47: おきなわけん
 account:
+  your-reon-account: あなたのREONアカウント
+  account-details: アカウント詳細
+  reon-identity: "REONアカウント名"
+  external-email: "外部メールアドレス"
+  external-email-alias: "こちらでも受信できます"
+  change-email: メールアドレスを変更
+  change-password: パスワードを変更
+  download-config-data: 設定データをダウンロード
+  reroll-success: ログインパスワードが再生成されました。
+  stats: 統計
+  emails-in-inbox: 受信ボックス内のメール
+  money-spent: 使用した金額
+  dion-account-details: DIONアカウント詳細
+  dion-id: DION ID
+  log-in-password: DIONパスワード
+  relay-number: REON番号
+  relay-token: リレートークン
+  reroll-log-in-password: DIONパスワードを再生成
+  reroll-confirm-message: 本当によろしいですか?
+  reroll-warning: 全てのゲームでパスワードを変更する必要があります。
+  revoke-devices: 全てのデバイスを無効化
+  revoke-devices-confirm-message: 本当によろしいですか?
+  revoke-devices-warning: このアカウントを使用している各デバイスは、再びインターネットにメールを送信できるようになる前に、新しい設定ファイルをダウンロードする必要があります。
+  revoke-devices-success: このアカウントの全てのデバイスが無効化されました。引き続き使用したい各デバイスで新しい設定ファイルをダウンロードしてください。
+  change-email-address: メールアドレスを変更する
+  email-changed-success: メールアドレスが正常に変更されました。
+  email-confirm-sent: まだ登録されていない場合、この変更を確認するためのリンクを含むメールが指定されたアドレスに送信されました。
+  change-your-password: パスワードを変更する
+  password-changed-success: パスワードが正常に変更されました。
+  trade-corner-region-allowlist: "トレードコーナー: 交換設定"
+  trade-option-1: 自国のみ (自分のゲームの地域のみ)
+  trade-option-2: 互換性のある言語の全地域
+  trade-option-3: 日本語⇔ラテン語変換を含む全地域
+  time-zone: タイムゾーン
+  time-zone-blurb: サイト全体で日時を表示するタイムゾーンを選んでください。デフォルトのままにすると、ゲーム本来のタイムゾーン(日本、+0900)で全て表示されます。
+  update-settings: 設定を更新
   pokemon-news-custom-opt-in: 'ポケモンニュース：ニュース設定'
   pokemon-news-custom-opt-in-blurb: '有効にすると、ポケモンニュースのダウンロードで、利用可能な場合はREONチームが作成したカスタムニュースを使用します。カスタムニュースがない場合は、公式ニュースを使用します。'
   pokemon-news-custom-opt-in-off: 公式ポケモンニュースのみ
   pokemon-news-custom-opt-in-on: 利用可能な場合はカスタムポケモンニュース
 
 invalid-pokemon-news-setting: 無効なポケモンニュース設定です。
+
+mail:
+  title: "REON Mail"
+  inbox: "受信箱"
+  inbox-summary: "受信箱 %total% 通 · 未読 %unread% 通"
+  filter-placeholder: "件名・差出人・本文を検索"
+  filter-all: "すべて"
+  filter-unread: "未読のみ"
+  filter-players: "プレイヤーのみ"
+  filter-internet: "インターネットのみ"
+  filter-apply: "絞り込む"
+  filter-clear: "クリア"
+  filter-none: "条件に合うメールはありません。"
+  thread-with: "%party% との %count% 通"
+  thread-unread: "未読 %count% 通"
+  thread-you: "あなた"
+  thread-delete: "会話を削除"
+  thread-hint: "会話を表示中"
+  thread-count: "%count% 通"
+  thread-you-wrote: "あなたの返信"
+  sent-summary: "送信済み %total% 通"
+  trash-summary: "ゴミ箱 %total% 通"
+  empty: "メッセージはありません。"
+  message: "メッセージ"
+  from: "差出人"
+  date: "日付"
+  game: "ゲーム"
+  no-subject: "件名なし"
+  back: "受信箱に戻る"
+  not-found: "そのメッセージは存在しません。"
+  read-only-note: "現在は閲覧のみ：ゲームが受信してサーバーから削除したメッセージは、ここからも消えます。"
+
+passport:
+  title: "あなたのREONパスポート"
+  download-hint: "クリックしてダウンロード"
+  intro: "このファイルはREONのサービスを利用するためのパスポートです。"
+  body-1: "mGBAでのエミュレーションで接続する場合でも、実機のハードウェアを使う場合でも、この小さな設定ファイルにはゲームがREONを見つけて接続するために必要な情報が含まれています。"
+  body-2: "ゲームとREONネットワークをつなぐリンクだと考えてください。mobile_config.binを正しい場所にインストールすれば、対応するゲームやソフトウェアがそれを使ってREONのサーバーに接続し、オンライン機能を利用できるようになります。"
+  mgba-heading: "mGBAでプレイしますか?"
+  mgba-body: "始めるのは簡単です! mobile_config.binをダウンロードしたら、mGBAセットアップガイドをご覧ください。手順を一つずつご案内します。"
+  hardware-heading: "実機ハードウェアでプレイしますか?"
+  hardware-body: "実機からもREONに接続できます! 実機ハードウェアセットアップガイドで、必要なものと接続方法を確認してください。"
+  keep-heading: "パスポートをなくさないように!"
+  keep-body: "mobile_config.binのコピーを安全な場所に保管してください。別の端末でREONを設定したり、エミュレーターを再インストールしたりする際に、再び必要になることがあります。"
+  redownload-note: "なくしてしまった場合は、%link_open%マイアカウント%link_close%ページから新しいコピーをダウンロードできます。"
+devices:
+  title: "接続済みのデバイス"
+  intro: "このアカウントで実際のインターネットへメールを送信したデバイスが、新しい順にここに表示されます。どのデバイスか分かったら名前を付け、信頼できなくなったデバイスはブロックしてください。"
+  code-help: "ペアリングコードは、デバイス自身の画面・コンソール・シリアル出力に表示されるものと同じです。手元のデバイスと行を照合できます。"
+  none: "まだ接続したデバイスはありません。"
+  code: "ペアリングコード"
+  nickname: "名前"
+  nickname-placeholder: "例: 青い3DS"
+  status: "状態"
+  status-authorized: "現在許可中"
+  status-blocked: "ブロック中"
+  status-idle: "待機中"
+  last-seen: "最終使用"
+  first-seen: "初回使用"
+  actions: "操作"
+  save: "保存"
+  block: "ブロック"
+  unblock: "ブロック解除"
+  block-confirm: "このデバイスをブロックしますか? ここで解除するまで、実際のインターネットへメールを送信できなくなります。"
+  block-help: "ブロックしてもデバイスの記録は残るため、以前に送信されたものが再利用されることはありません。いつでも解除できます。"
+  limit: "1アカウントあたり最大 %n% 台。"
+  legacy: "識別情報なし"
+  ago-now: "たった今"
+  ago-minutes: "%n% 分前"
+  ago-hours: "%n% 時間前"
+  ago-days: "%n% 日前"
+
+notify:
+  title: "おしらせ"
+  bell: "おしらせ"
+  none: "まだなにもありません。"
+  see-all: "すべてのおしらせを見る"
+  unread: "新着 %count% 件"
+  mark-read: "すべて既読にする"
+  all-read: "未読はありません"
+  history-note: "おしらせは自分で消すまで残ります。消えるのは一覧だけで、そこから開くメールやこうかんの内容はそのまま残ります。"
+  clear: "おしらせを消す"
+  clear-hint: "消えるのは一覧だけです。おしらせが指す内容はそのまま残ります。"
+  clear-confirm: "すべてのおしらせを消しますか？ もとには戻せません。"
+  newer: "新しい"
+  older: "古い"
+  cat-mail: "メール"
+  cat-trade: "こうかん"
+  cat-game: "ゲーム"
+  cat-system: "システム"
+  cat-admin: "おしらせ"
+  new-mail: "%from% さんから新しいメール"
+  trade-done: "こうかんが成立しました"
+  trade-none: "まだこうかんできていません"
+admin:
+  nav-adapter: "アダプタ設定"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "生成される mobile_config.bin に書き込まれる内容です。ここにあるのは全員共通の項目だけで、メールアドレス・gID・端末キー・リレートークンは各アカウントから決まるため設定できません。"
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "ポート"
+  adapter-empty: "空のままに"
+  adapter-dns2-note: "2台目のサーバーが実際にない限り、DNS 2 は空のままにしてください。同じアドレスを繰り返しても冗長化にはならず、同じ理由で同時に落ちます。空欄は「未設定」を意味し、アダプタはゲーム側の設定をそのまま残します。"
+  adapter-relay: "リレーと P2P"
+  adapter-relay-host: "リレーサーバー"
+  adapter-p2p: "P2P ポート"
+  adapter-device: "アダプタ"
+  adapter-model: "モデル"
+  adapter-unmetered: "従量課金なし"
+  adapter-current: "現在の端末："
+  adapter-metered: "従量課金あり"
+  adapter-unmetered-short: "従量課金なし"
+  adapter-save: "保存"
+  adapter-footer: "保存した変更は次のダウンロードから有効です。そのために再ダウンロードする必要はありません。すでに使っているファイルはそのまま動き、この値は新しいファイルの向き先だけを決めます。"
+  adapter-saved: "保存しました。新しいダウンロードにこの値が使われます。"
+  adapter-failed: "保存できませんでした。"
+  adapter-invalid: "何も保存されていません。下に印の付いた項目を確認してください。意味をなさないアドレスやポートは、カートリッジが読めないファイルを作ってしまいます。"
+  news-title: ニュース管理
+  news-new: 新しい記事
+  news-editing: 記事を編集
+  news-date: 日付
+  news-post-title: タイトル
+  news-state: 状態
+  news-published: 公開済み
+  news-draft: 下書き
+  news-view: 表示
+  news-edit: 編集
+  news-delete: 削除
+  news-delete-confirm: この記事を削除しますか？
+  news-title-required: タイトルは必須です。
+  news-body: 本文
+  news-markdown-hint: Markdown：**太字**、_斜体_、## 見出し、[リンク](url)、![](画像)。
+  news-publish: 公開（サイトに表示）
+  news-save: 保存
+  news-cancel: 取消
+  news-preview: プレビュー
+  news-md-link: リンク
+  news-md-list: 箇条書き
+  news-md-image: 画像
+  news-upload-failed: アップロードに失敗しました。
+  panel: 管理
+  nav-dashboard: ダッシュボード
+  nav-news: ニュース
+  nav-news-maker: ポケモンニュース
+  news-maker-title: ポケモンニュース
+  news-maker-intro: ニュースの号は、ゲームが実行する小さなプログラムで、本物のツールチェーンで組み立てられます。言葉、ランキング、ミニゲームを選ぶのはあなたで、それ以外はすべて動作が確認されている号から受け継ぎます。
+  news-maker-unavailable: まだビルドできません — 不足しているもの：
+  news-maker-new: 新しい号
+  news-maker-back: 号の一覧に戻る
+  news-maker-none: まだ号が作られていません。
+  news-maker-issue: 号
+  news-maker-rankings: ランキング
+  news-maker-built: ビルド済みの地域
+  news-maker-not-built: 未ビルド
+  news-maker-name: 名前
+  news-maker-name-hint: あなたのためと、ファイル名のためです。ゲーム内には表示されません。
+  news-maker-message: メールボックスの一行
+  news-maker-message-hint: 誰かが開く前に、ゲームのメールボックスがこの号について表示するたった一行です。空のままにすると、この言語の見出しが使われます。最大 %n% 文字で、ゲーム自身の文字で書かれるため、描けない文字はその名を示して拒否されます。
+  news-maker-schedule-locked: 号はビルドできますが、まだ予定に入れられません。
+  news-maker-schedule-why: 独自の号のカレンダーは専用のファイルで、ウェブサーバーは書き込めません。隣にある設定ではないのは意図的です。あちらには通常のニュースの予定も入っていて、この画面が変更してよいものではありません：
+  news-maker-built-only: ビルド済みだがカレンダーに無い — 誰の目にも触れません
+  month-1: 1月
+  month-2: 2月
+  month-3: 3月
+  month-4: 4月
+  month-5: 5月
+  month-6: 6月
+  month-7: 7月
+  month-8: 8月
+  month-9: 9月
+  month-10: 10月
+  month-11: 11月
+  month-12: 12月
+  news-maker-date: 公開日
+  news-maker-date-hint: この号が引き継ぐ日です。別の号の日が来るまで、そのまま配信され続けます。月と日を選び、年は今年になります。まだ来ていない日はすぐには出ず、その日を待ちます。2月が28日までなのは、29日はうるう年にしか存在しないからです。
+  news-maker-withdraw: 取り下げる
+  news-maker-withdrawn: 取り下げました。ゲームはもう使いません。
+  news-maker-withdraw-confirm: この号をカレンダーから外し、ビルドしたものを削除しますか？配信は止まりますが、ニュースの行はこの号の内容を保ちます。通常のニュースがその地域で次に入れ替わるときに、スケジューラーが改めて写すためです。
+  news-maker-lang-j: 日本語
+  news-maker-lang-e: 英語
+  news-maker-lang-d: ドイツ語
+  news-maker-lang-f: フランス語
+  news-maker-lang-i: イタリア語
+  news-maker-lang-s: スペイン語
+  news-maker-scheduled: カレンダーに有り
+  news-maker-template: 元にする号
+  news-maker-template-hint: メニュー、スクリプト、組み方を借りてくる本物の号です。
+  news-maker-minigame: ミニゲーム
+  news-maker-minigame-broken: "このミニゲームは現在のツールチェーンではビルドできません。上流のソース自体に誤りがあります。選べる賞品はなく、この号を公開することもできません。別のミニゲームを選んでください。"
+  news-maker-publish-now-unbuilt: この号はまだビルドされていません。開いて言語を選び、先に「公開」を押してください。
+  news-maker-published-now: "%regions% で公開中です。"
+  news-maker-prizes: 賞品
+  news-maker-prizes-hint: ミニゲームに勝ったときに渡されるものです。一覧はミニゲーム自身のコードから読み取るため、ミニゲームを変えると一覧も変わります。だいじなものも含めてアイテム表をすべて表示します。カートリッジは認識しますが、ニュースから受け取ることをゲームは想定していません。
+  news-maker-prize: 賞品 %n%
+  news-maker-prize-default: そのまま：%item%
+  news-maker-prize-fixed: ミニゲームが決めます。
+  news-maker-prize-none: このミニゲームは賞品を渡しません。
+  news-maker-bad-prize: 存在しないアイテムです：
+  news-maker-headline-hint: ニュース画面そのものに出る号の名前です。本体が受信している間の見出し部分と、ページ上部のタイトルに使われます。最大 %n% 文字で、これは実在する号のうち最も幅の広いものに合わせた数です。
+  news-maker-body-hint: 「ニュースガイド」の項目の中身、つまりプレイヤーが読む記事です。空行で段落が始まり、1行目が文章枠を開き、2行目はその下に並び、残りはスクロールします。**1行 %n% 文字**で、これは枠の幅が %n% マスだからです。行数に制限はありません。文章はスクロールします。
+  news-maker-random: ランキングをランダムに
+  news-maker-ranking-hint: この号が扱う3つのランキングです。「ランキングをランダムに」は保存時にカテゴリを抽選し、出た結果はそのまま残ります。同じ号がビルドごとにランキングを変えることはありません。3つは互いに異なる必要があります。ひとつの画面に並んで表示されるからです。
+  news-maker-duplicate-ranking: 3つのランキングは互いに異なるものにしてください。
+  news-maker-no-categories: 3つの枠を埋めるだけのランキングのカテゴリがありません。
+  news-maker-unknown-ranking: これはこのツールチェーンが知っているランキングのカテゴリではありません。
+  news-maker-too-long: 画面に収まりません：
+  news-maker-region-empty: その言語の文章が無い地域はビルドできません。空になるのではなく、テンプレートの2002年の記事が出てしまいます：
+  news-maker-region-needs: まず %lang% で見出しと記事を書いてください。
+  news-maker-ranking: ランキング %n%
+  news-maker-text: 文章
+  news-maker-text-hint: 3つの異なる文章で、それぞれ出る場所が違います。ある言語を空のままにすると、その言語はテンプレートの内容のままになります。
+  news-maker-text-none: "上の「ビルドする地域」で言語を選ぶと、その言語の入力欄がここに出ます。"
+  news-maker-headline: 見出し
+  news-maker-body: 記事
+  news-maker-regions: ビルドする地域
+  news-maker-regions-hint: 地域ごとに1回ビルドします。地域を選べるのは、その言語に見出しと記事がそろってからです。E、P、U の3つはいずれも英語の文章を使い、F と D、S と I はそれぞれ文字表を共有します。
+  news-maker-save: 保存
+  news-maker-publish: 保存してビルド
+  news-maker-saved: 保存しました。
+  news-maker-published: '%total% 地域のうち %good% 地域をビルドしました。'
+  news-maker-result: 結果
+  news-maker-failed-region: 失敗
+  news-maker-failed: できませんでした：%detail%
+  news-maker-deleted: 号を削除しました。
+  news-maker-publish-now: "今すぐ公開"
+  news-maker-publish-now-confirm: "この号を今すぐ公開しますか？日付は今日になり、次の周期を待たずにスケジューラーがそのまま実行されます。公開したあとは変更できません。"
+  news-maker-ran: "スケジューラーが実行されました。公開済みです。"
+  news-maker-run-failed: "ビルドと予定登録は済みましたが、スケジューラーを今すぐ実行できませんでした（%detail%）。次の周期、15分以内に配信されます。"
+  news-maker-restored: "%count% 地域で公式の号が元に戻りました。"
+  news-maker-locked: この号はすでに公開されているため、変更できません。
+  news-maker-locked-title: 公開済みの号 — 閲覧のみ
+  news-maker-locked-why: すでに配信され、プレイヤーが読んでいる可能性があります。上書きして再ビルドすると、同じ名前と同じ日付のまま、誰も気づかないうちに内容が変わってしまいます。変更するには、この号を削除して別の号を公開してください。
+  news-maker-delete-confirm: この号を削除しますか？すでにビルドされたものはそのまま残ります。
+  news-maker-need-name: まず名前を付けてください。
+  news-maker-need-region: ビルドする地域を少なくとも1つ選んでください。
+  nav-notifications: お知らせ
+  nav-users: アカウント
+  nav-services: サービス
+  nav-logs: ログ
+  nav-trainer: モバイルトレーナー
+  nav-audit: 操作履歴
+  count-users: アカウント
+  count-banned: 利用停止
+  count-devices: 本体
+  count-devices-blocked: 遮断した本体
+  count-mail-today: メール（24時間）
+  count-trades: 待機中の交換
+  count-news: ニュース記事
+  count-notifications: 送信したお知らせ
+  audit-title: 管理操作の履歴
+  audit-empty: ここではまだ何も行われていません。
+  audit-when: 日時
+  audit-who: 実行者
+  audit-what: 内容
+  audit-target: 対象
+  audit-all: すべての履歴を見る
+  notify-title: お知らせを送る
+  notify-intro: お知らせはヘッダーのベルの下に表示され、受け取った人の履歴に残ります。あとから削除することはできません。あなたにも、相手にもできません。
+  notify-to: 宛先
+  notify-to-all: 全員
+  notify-to-user: 選んだアカウント
+  notify-to-many: '%count% 件のアカウント'
+  notify-user-hint: 名前を入力…
+  notify-user-remove: 外す
+  notify-sent-many: '%count% 件のアカウントに送信しました。'
+  notify-user: アカウント
+  notify-category: 種類
+  notify-headline: 見出し
+  notify-body: 詳細（任意）
+  notify-link: リンク（任意）
+  notify-send: 送信
+  notify-sent: '%who% に送信しました。'
+  notify-sent-all: '%count% 件のアカウントに送信しました。'
+  notify-need-title: 見出しは必須です。
+  notify-no-user: 送る相手のアカウントを選んでください。
+  notify-recent: 最近送ったもの
+  notify-when: 日時
+  notify-who: 宛先
+  users-title: アカウント
+  users-search: 名前かアドレスで検索
+  users-search-go: 検索
+  users-id: ID
+  users-name: 名前
+  users-email: アドレス
+  users-dion: DION
+  users-devices: 本体
+  users-state: 状態
+  users-actions: ''
+  users-open: 開く
+  users-none: 一致するアカウントがありません。
+  users-active: 有効
+  users-banned: 利用停止
+  users-admin: 管理者
+  user-title: アカウント
+  user-back: アカウント一覧に戻る
+  user-ban: 利用停止にする
+  user-unban: 利用停止を解除
+  user-ban-reason: 理由（操作履歴に表示されます）
+  user-ban-confirm: このアカウントを利用停止にしますか？サイト、メールボックス、アダプタのすべてが使えなくなります。
+  user-make-admin: 管理権限を与える
+  user-drop-admin: 管理権限を外す
+  user-admin-confirm: このアカウントに管理画面を与えますか？
+  user-banned-since: '%when% から利用停止'
+  user-devices: 本体
+  user-device-code: コード
+  user-device-nick: 名前
+  user-device-state: 状態
+  user-device-seen: 最後の接続
+  user-device-block: 遮断
+  user-device-unblock: 遮断を解除
+  user-blocked: 遮断中
+  user-allowed: 許可
+  user-no-devices: このアカウントで接続した本体はありません。
+  err-no-such-user: そのアカウントはありません。
+  err-not-yourself: 今ログインしているアカウントには行えません。
+  err-not-an-admin: 管理者を利用停止にはできません。先に管理権限を外してください。
+  mailauth-title: "メールの認証"
+  mailauth-explain: "アダプタは256ビットの端末鍵（APOP）で本人であることを示し、パスワードが通信路に流れることはありません。8文字のパスワードは古い入口で、まだAPOPに対応していないアダプタのためだけに残してあります。新しいビルドがプレイヤーの手に渡ったら閉じてください。8文字は推測され得ますし、強い扉の横に弱い扉を開けたままにすれば、攻撃者は弱いほうを使います。"
+  mailauth-on: "パスワードでのログインを受け付け中"
+  mailauth-off: "端末鍵のみ"
+  mailauth-turn-off: "端末鍵を必須にする"
+  mailauth-turn-on: "パスワードを再び受け付ける"
+  mailauth-off-confirm: "APOPに対応していないアダプタはメールを受信できなくなります。続けますか？"
+  mailauth-on-confirm: "8文字のパスワードが再び受け付けられます。続けますか？"
+  setting-saved: "設定を保存しました。"
+  setting-failed: "設定を保存できませんでした。"
+  services-title: サービス
+  services-note: 再起動は、サーバー側で明示的に許可する必要がある補助プログラムを通して行います。それが入るまで、ボタンは実行するはずだった内容を表示するだけで、何も変えません。
+  services-service: サービス
+  services-state: 状態
+  services-restart: 再起動
+  services-restart-confirm: このサービスを再起動しますか？接続中の人は切断されます。
+  services-done: '%service%：%detail%'
+  services-failed: '%service% を再起動できませんでした：%detail%'
+  services-unavailable: このサーバーでは再起動がまだ有効になっていません。何も実行されていません。
+  services-daemons: 常時動作
+  services-jobs: 定期実行の処理
+  services-jobs-note: これらは systemd のタイマーで動きます。今すぐ実行する、タイマーを切る、別の時刻を与える、のいずれもできます。時刻は追加設定として書かれるので、リポジトリが配布するユニットには一切触れず、「戻す」で元に戻ります。
+  services-start: 開始
+  services-stop: 停止
+  services-run: 今すぐ実行
+  services-refresh-confirm: これは設定されているすべての地域のランキングを消します。今日ニュースが入れ替わった地域だけではありません。元に戻すことはできません。ニュースを再適用し、すべてのランキングを消しますか？
+  services-enable: 有効にする
+  services-disable: 無効にする
+  services-on: 有効
+  services-off: 無効
+  services-running: 動作中
+  services-no-timer: タイマー無し
+  services-schedule: 実行時刻
+  services-schedule-hint: systemd のカレンダー書式。例：*-*-* *:0/15:00
+  services-schedule-reset: 戻す
+  services-schedule-reset-confirm: この処理に元から付いている実行時刻に戻しますか？
+  services-next: 次回の実行
+  services-stop-confirm: このサービスを停止しますか？誰かが起動するまで止まったままです。
+  services-disable-confirm: この処理を無効にしますか？もう一度有効にするまで実行されません。
+  services-no-stop: 停止はありません。このページを配信しているのがそれ自身なので、止めると再開のボタンごと無くなります。
+  logs-title: サービスのログ
+  logs-service: サービス
+  logs-lines: 行数
+  logs-show: 表示
+  logs-empty: 表示するものがありません。
+  logs-unavailable: システムのジャーナルをまだ読めないため、表示するものがありません。
+  logs-unavailable-why: PHP は「%user%」として動いており、システムのジャーナルを読むにはジャーナルのグループに属している必要があります。これは読み取りだけを与えるもので、サービスのページが必要とする sudo の設定ではなく、誰かが何かを再起動できるようになるわけでもありません：
+  trainer-title: モバイルトレーナーのページ
+  trainer-intro: モバイルトレーナーを通してゲームボーイが見るページです。アダプタにはそのまま渡され、アダプタは HTML のごく一部だけを描きます。
+  trainer-page: ページ
+  trainer-size: サイズ
+  trainer-changed: 更新
+  trainer-edit: 編集
+  trainer-save: 保存
+  trainer-saved: 保存しました。
+  trainer-failed: 保存できませんでした：%detail%
+  trainer-none: web/htdocs/01 にページが見つかりません。
+  trainer-back: ページ一覧に戻る
+  trainer-tags: アダプタが描くタグ
+  trainer-new: 新しいページ
+  trainer-new-intro: ページとは、ゲームのディレクトリの中にあるファイルです。ここで作り、別のページから &lt;a href="name.html"&gt; で参照してください。
+  trainer-dir: ゲームのディレクトリ
+  trainer-file: ファイル名
+  trainer-file-hint: 小文字、英字、数字、- と _。「.html」は自動で付きます。
+  trainer-entry: 入口のページ
+  trainer-create: 作成
+  trainer-view: 表示
+  trainer-open: 開く
+  trainer-delete: 削除
+  trainer-delete-confirm: このページを削除しますか？これを要求した本体には何も返りません。
+  trainer-deleted: ページを削除しました。
+  trainer-locked: 閲覧のみ
+  trainer-preview: 本体から見た状態
+  trainer-preview-note: 160x144 の2倍、トレーナー自身のフォントで表示しています。ですから行の折り返しは、実機とおおよそ同じ位置になります。あくまでおおよそで、アダプタはブラウザではなく独自の描画を使います。
+  trainer-tags-note: アダプタの説明書によるもので、これが全部です。<p>、<table>、<form> は入っていません。無いからといって拒否はしません。説明書は、知らないタグをアダプタがどう扱うのか書いていないからです。意外な点が2つあります。<b> は太字ではなく文字を赤にし、<center> は <html> の内側でしか効きません。画像は 1BPP の BMP だけで、縦横それぞれ最大 255 ピクセルです。
+  trainer-images: 画像
+  trainer-img-empty: このページにはまだ画像がありません。
+  trainer-img-name: ファイル
+  trainer-img-write: ページにはこう書きます
+  trainer-img-facts: 確認結果
+  trainer-img-file: BMP ファイル
+  trainer-img-rules: 1BPP の BMP だけ、縦横それぞれ最大 %n% ピクセル、圧縮なし。説明書ではなく、稼働中のサイトの画像が実際にどうなっているかに合わせて確認します。説明書どおりだと、すでにある37枚のうち34枚を拒否してしまいます。
+  trainer-img-rename: 名前を付ける（任意）
+  trainer-img-rename-hint: 小文字、英字、数字、- と _。「.bmp」は自動で付きます。空のままなら、アップロードしたファイルの名前を使います。
+  trainer-img-upload: アップロード
+  trainer-img-added: '%name% をアップロードしました。'
+  trainer-img-deleted: 画像を削除しました。
+  trainer-img-delete-confirm: この画像を削除しますか？まだ参照しているページには、画像が壊れた印が出ます。
+  trainer-img-ok: 問題なし
+  trainer-img-none: ファイルが届いていません。
+  trainer-img-bad-name: その名前には使える文字がありません。
+  trainer-img-not-a-bmp: BMP ではありません。
+  trainer-img-odd-header: BMP のヘッダーが、ここでは読めない形です。
+  trainer-img-not-1bpp: 1BPP でなければなりません。アダプタはそれ以外を描きません。
+  trainer-img-planes: BMP のプレーン数は 1 でなければなりません。
+  trainer-img-compressed: 圧縮された BMP は受け付けません。
+  trainer-img-palette: 1BPP のビットマップが持てる色数を超えています。
+  trainer-img-empty-image: 画像にピクセルがありません。
+  trainer-img-not-8-bit: 幅と高さは、それぞれ 8 ビットに収まらなければなりません（最大 %n%）。
+  trainer-img-offset-too-far: ピクセルデータの位置がファイルの奥すぎて、指し示せません。
+  trainer-img-too-large: この形式で許される大きさを超えています。
+  trainer-img-too-big: ファイルが大きすぎます。
+  trainer-img-not-writable: 画像のディレクトリに書き込めません。
+  trainer-img-mkdir-failed: 画像のディレクトリを作成できませんでした。
+  trainer-img-write-failed: ファイルを書き込めませんでした。
+  trainer-img-replace-failed: ファイルを所定の場所に置けませんでした。
+  trainer-img-no-such-page: そのページはありません。
+  trainer-readonly: ウェブサーバーがこれらのファイルに書き込めないため、ここではまだ何も保存できません。
+  trainer-readonly-why: PHP は「%user%」として動いており、ページはそれを配置したアカウントのものです。そのユーザーに書き込み権限を与えるのは、コマンド1つです：
+
+errors:
+  title: "アダプタのエラーコード"
+  intro: "不具合が起きるとゲームはメッセージを表示し、その裏にコードがあります。そのコードを入力して調べてください。同じ意味のコードは一つの説明にまとめてあり、各項目ではゲームが実際に表示する文面も開けます。"
+  filter-code: "エラーコード"
+  partial: "※ すべてのコードに説明があるわけではありません。"
+  count: "%total% 件中 %n% 件を表示。"
+  no-meaning: "説明はまだありません"
+  missing: "エラーデータがまだ生成されていません。maint/build_adapter_errors.php を実行してください。"

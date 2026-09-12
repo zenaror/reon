@@ -1,0 +1,90 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.news-maker-title'|trans }}{% endblock %}
+
+{% block admin_actions %}
+	{% if missing is empty %}
+		<a class="btn btn-sm btn-primary" href="/admin/news_maker.php?new=1">{{ 'admin.news-maker-new'|trans }}</a>
+	{% endif %}
+{% endblock %}
+
+{% block admin_body %}
+	<p>{{ 'admin.news-maker-intro'|trans }}</p>
+
+	{# What is missing, by name. "Not available" sends somebody hunting;
+	   "rgbasm" sends them to apt. #}
+	{% if missing is not empty %}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.news-maker-unavailable'|trans }}</strong></p>
+			<p class="mb-0">{{ missing|join(', ') }}</p>
+		</div>
+	{% else %}
+		<p class="admin-form__hint">{{ tool }}</p>
+	{% endif %}
+
+	{% if issues is empty %}
+		<p>{{ 'admin.news-maker-none'|trans }}</p>
+	{% else %}
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.news-maker-issue'|trans }}</th>
+						<th>{{ 'admin.news-maker-rankings'|trans }}</th>
+						<th>{{ 'admin.news-maker-built'|trans }}</th>
+						<th>{{ 'admin.trainer-changed'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for issue in issues %}
+						<tr>
+							<td>
+								{{ issue.name|default(issue.slug) }}<br>
+								<code class="admin-form__hint">{{ issue.slug }}</code>
+							</td>
+							<td class="admin-form__hint">{{ issue.rankings|default([])|join(', ') }}</td>
+							<td>
+								{# Two different facts, and the second is the one that decides
+								   whether a player ever sees it: a built file that is not in
+								   the calendar is a file nothing reads. #}
+								{% if issue.scheduled|default([]) is not empty %}
+									{% for region in issue.scheduled %}<span class="admin-pill admin-pill--up">{{ region|upper }}</span> {% endfor %}
+								{% elseif issue.built is empty %}
+									<span class="admin-pill admin-pill--off">{{ 'admin.news-maker-not-built'|trans }}</span>
+								{% else %}
+									{% for region in issue.built %}<span class="admin-pill admin-pill--off">{{ region|upper }}</span> {% endfor %}
+									<span class="admin-form__hint">{{ 'admin.news-maker-built-only'|trans }}</span>
+								{% endif %}
+								{# Fora do encadeamento acima de propósito: uma edição publicada
+								   e depois retirada continua travada, e nesse caso não há
+								   região agendada para cair no primeiro ramo. #}
+								{% if issue.locked|default(false) %}
+									<span class="admin-form__hint">{{ 'admin.news-maker-locked-title'|trans }}</span>
+								{% endif %}
+							</td>
+							<td>{{ issue.saved_at|date("Y.m.d H:i") }}</td>
+							<td class="admin-row-actions">
+								<a href="/admin/news_maker.php?issue={{ issue.slug|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a>
+								{# Pôr no ar hoje: só faz sentido para edição já compilada e
+								   ainda não publicada. Vive aqui, e não no editor, porque a
+								   edição precisa existir e estar compilada antes -- no editor
+								   o botão convidava a publicar um formulário em branco. As
+								   regiões são as que já estão compiladas; não há caixa para
+								   marcar nesta tela e não deve haver. #}
+								{% if issue.built|default([]) is not empty and not issue.locked|default(false) %}
+									<form method="post" class="admin-row-actions__form">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="slug" value="{{ issue.slug }}">
+										<button class="btn btn-sm btn-primary" type="submit" name="action" value="publish-now"
+										        onclick="return confirm('{{ 'admin.news-maker-publish-now-confirm'|trans|e('js') }}');">{{ 'admin.news-maker-publish-now'|trans }}</button>
+									</form>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% endif %}
+{% endblock %}

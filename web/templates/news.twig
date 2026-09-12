@@ -1,0 +1,64 @@
+{% extends "main.twig" %}
+{% set nav_item = "news" %}
+{% set body_class = "home home-v2" %}
+
+{% block title %}{{'news'|trans}}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	{# same portal furniture as the homepage: ticker, sidebar, and the beige
+	   page box -- only the right column's contents differ. #}
+	<div class="reon-ticker">
+		<span class="reon-ticker__label">{{'news'|trans}}</span>
+		<marquee class="reon-ticker__scroll">{{'welcome-alpha'|trans}}</marquee>
+	</div>
+
+	<div class="home-layout">
+		{% include "_portal_sidebar.twig" %}
+
+		<div class="home-main">
+			<div class="reon-pickup">{{'news'|trans}}<span class="bar"></span></div>
+
+			{% if posts is empty %}
+				<div class="home-prose"><p>{{'news-empty'|trans}}</p></div>
+			{% else %}
+				<div class="reon-inforow">
+					<section class="reon-box">
+						<h2 class="reon-box__bar">{{'news'|trans}}</h2>
+						<ul class="reon-news">
+							{% for post in posts %}
+								<li>
+									<span class="reon-news__date">{{ post.published_at|date("Y.m.d") }}</span>
+									<a href="/news.php?slug={{ post.slug|url_encode }}">{{ post.title }}</a>
+									{%- if post.published_at|date("U") > "-7 days"|date("U") %}<em class="reon-blink">NEW!</em>{% endif %}
+								</li>
+							{% endfor %}
+						</ul>
+					</section>
+				</div>
+
+				{% if pages > 1 %}
+					<nav class="reon-pager">
+						{% if page > 1 %}
+							<a class="reon-chrome-btn" href="/news.php?page={{ page - 1 }}">{{'news-newer'|trans}}</a>
+						{% endif %}
+						<span class="reon-pager__count">{{ page }} / {{ pages }}</span>
+						{% if page < pages %}
+							<a class="reon-chrome-btn" href="/news.php?page={{ page + 1 }}">{{'news-older'|trans}}</a>
+						{% endif %}
+					</nav>
+				{% endif %}
+			{% endif %}
+		</div>
+	</div>
+
+	<footer class="reon-footer">
+		<div class="reon-footer__nav">
+			<a class="reon-chrome-btn" href="#top">{{'homepage.top'|trans}}</a>
+		</div>
+	</footer>
+{% endblock %}

@@ -1,0 +1,185 @@
+/* Game hub pages (/pokemon/, /gbwars/, /mariokart/) as one-page sites: a
+   section menu under the title, then the sections in order -- the text
+   from web/pages/games/<game>.<locale>.md first, the live part (services,
+   map gallery, rankings) last. Colours and fonts come from each game's
+   own theme; this file only lays things out. Per-theme tweaks sit at the
+   end under the theme's body class. */
+
+/* Title row: the game's logo beside the h1 and a one-line tagline, the
+   way a 2000s game site opened. */
+.game-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.game-head__logo {
+  height: 56px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.game-head h1 { margin: 0; }
+
+.game-head__tagline { margin: 4px 0 0; }
+
+.game-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 18px;
+  padding: 6px 0;
+  background: inherit;
+}
+
+.game-nav ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-nav a {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--reon-line);
+  background: var(--reon-panel);
+  color: var(--reon-ink);
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--reon-ink);
+}
+
+.game-nav a:hover,
+.game-nav a.is-active {
+  background: var(--game-accent, var(--reon-blue));
+  color: #fff;
+}
+
+.game-section { margin: 0 0 32px; }
+
+.game-section > h2 { scroll-margin-top: 56px; }
+
+/* Rendered Markdown: comfortable reading width, whole-pixel rhythm. */
+.game-doc { max-width: 72ch; line-height: 1.6; }
+
+.game-doc h3 { margin-top: 1.2em; }
+
+.game-doc img { max-width: 100%; height: auto; }
+
+.game-doc ol > li,
+.game-doc ul > li { margin-bottom: 6px; }
+
+.game-doc .reon-note {
+  margin: 1em 0;
+  padding: 8px 12px;
+  border: 1px solid var(--reon-line);
+  border-left: 6px solid var(--game-accent, var(--reon-teal));
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Links to the game's online pages, as a card row. */
+.game-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.game-services a {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid var(--reon-line);
+  background: var(--reon-panel);
+  box-shadow: var(--reon-shadow-hard);
+  color: var(--reon-ink);
+  text-decoration: none;
+}
+
+.game-services a:hover { background: #fff8dc; }
+
+.game-services strong { display: block; margin-bottom: 4px; }
+
+/* ---- Pokémon Crystal: crystal blue on cream ---- */
+body.pokecrystal-index { --game-accent: #1e4a93; }
+
+body.pokecrystal-index .game-nav { background: #faf6e2; }
+
+body.pokecrystal-index .game-services strong { color: var(--game-accent); }
+
+/* ---- Game Boy Wars 3: everything is 16px pixel font already; keep the
+   nav pills on that grid. ---- */
+body.gbwars-theme { --game-accent: #2f7d3c; }
+
+body.gbwars-theme .game-nav { background: #faf6e2; }
+
+body.gbwars-theme .game-nav a { padding: 8px 12px; }
+
+body.gbwars-theme .game-doc { max-width: none; }
+
+body.gbwars-theme .game-doc p,
+body.gbwars-theme .game-doc li { margin-bottom: 8px; }
+
+/* ---- Mario Kart: the table keeps its neon look; the prose reads in the
+   same font, plain dark on the cream box. ---- */
+body.mariokart-theme { --game-accent: #6b0094; }
+
+body.mariokart-theme .game-nav { background: #faf6e2; }
+
+body.mariokart-theme .game-nav a { font-size: 16px !important; line-height: 16px !important; }
+
+body.mariokart-theme .game-doc,
+body.mariokart-theme .game-doc * { font-size: 16px !important; line-height: 20px !important; color: #17264f; }
+
+body.mariokart-theme .game-doc h2 { font-size: 32px !important; line-height: 32px !important; color: #ff9408; text-shadow: 2px 0 0 #6b0094, -2px 0 0 #6b0094, 0 2px 0 #6b0094, 0 -2px 0 #6b0094; }
+
+body.mariokart-theme .game-section > h2 { font-size: 32px !important; line-height: 32px !important; color: #ff9408; text-shadow: 2px 0 0 #6b0094, -2px 0 0 #6b0094, 0 2px 0 #6b0094, 0 -2px 0 #6b0094; }
+
+@media (max-width: 575.98px) {
+  .game-nav { position: static; }
+}
+
+/* ------------------------------------------------------------------ abas
+
+   Um nível acima do menu de seções: o menu diz onde se está dentro de um
+   jogo, as abas dizem de qual jogo se trata. Por isso ficam maiores e com
+   a borda inferior aberta -- a aba escolhida encosta no conteúdo, que é o
+   que uma aba significa. */
+.game-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 14px;
+  border-bottom: 2px solid var(--reon-line);
+}
+
+.game-tab {
+  padding: 8px 18px;
+  border: 2px solid var(--reon-line);
+  border-bottom: 0;
+  background: var(--reon-panel);
+  color: var(--reon-ink);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  /* Encosta na linha de baixo para a aba ativa poder cobri-la. */
+  margin-bottom: -2px;
+}
+
+.game-tab[aria-selected="true"] {
+  background: var(--reon-blue-deep);
+  color: #fff;
+  border-color: var(--reon-blue-deep);
+}
+
+.game-tab:focus-visible {
+  outline: 2px solid var(--reon-blue-deep);
+  outline-offset: 2px;
+}
+
+/* O menu de seções gruda no topo; com a barra de abas acima dele, é ela que
+   precisa dar o espaço, senão os dois disputam a mesma faixa ao rolar. */
+.game-tabs + .game-nav {
+  top: 0;
+}

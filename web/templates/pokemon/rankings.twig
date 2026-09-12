@@ -85,9 +85,26 @@
         </div>
     </div>
 
+    {# One category at a time when the tables would otherwise stack (2x, or
+       a narrow viewport); the strip stays hidden while the three sit side by
+       side. #}
+    <div class="trainer-rankings-tabs" role="tablist" aria-label="Ranking categories">
+        {% for cat in categories %}
+            <button
+                class="trainer-rankings-tab"
+                type="button"
+                role="tab"
+                id="ranking-tab-{{ loop.index0 }}"
+                aria-controls="ranking-panel-{{ loop.index0 }}"
+                aria-selected="false"
+                data-ranking-tab="{{ loop.index0 }}"
+            >{{ cat.name }}<span class="trainer-rankings-tab-count" data-ranking-tab-count hidden></span></button>
+        {% endfor %}
+    </div>
+
     <div class="trainer-rankings-grid">
         {% for cat in categories %}
-            <section class="trainer-ranking-panel" data-ranking-panel>
+            <section class="trainer-ranking-panel" id="ranking-panel-{{ loop.index0 }}" data-ranking-panel="{{ loop.index0 }}">
                 <table class="trainer-ranking-table">
                     <colgroup>
                         <col class="ranking-colgroup-rank" style="width:40px;">
@@ -154,7 +171,10 @@ initReonSideBackgrounds("trade-corner", {
         var SIDE_EDGE_WIDTH = 320;
         var TOP_EDGE_HEIGHT = 150;
         var header = document.querySelector("header.navbar.container-xxl, header.navbar");
-        var topEdgeTop = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom)) : 0;
+        // Page coordinates, not viewport: the banner scrolls with the page,
+        // and a reload that restores a scrolled position would otherwise
+        // measure a negative bottom and pin the banner to the top.
+        var topEdgeTop = header ? Math.max(0, Math.round(header.getBoundingClientRect().bottom + window.scrollY)) : 0;
         var topEdgeLeft = sideLeft - SIDE_EDGE_WIDTH;
         var topEdgeRight = window.innerWidth - sideRight + SIDE_EDGE_WIDTH;
         var topEdgeWidth = Math.max(0, Math.round(topEdgeRight - topEdgeLeft));
@@ -462,7 +482,11 @@ initReonSideBackgrounds("trade-corner", {
         return;
     }
 
+    // Phones always open at 1x; 2x is a choice for this visit only (the
+    // table then scrolls sideways inside the box). Larger screens remember.
+    const phone = window.matchMedia("(max-width: 575.98px)");
     const clamp = (value) => String(value) === "2" ? "2" : "1";
+    const remembered = () => phone.matches ? "1" : (localStorage.getItem(STORAGE_KEY) || "1");
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {
@@ -476,14 +500,16 @@ initReonSideBackgrounds("trade-corner", {
         const zoom = clamp(rawZoom);
         page.setAttribute("data-rankings-zoom", zoom);
         setActive(zoom);
+        page.dispatchEvent(new CustomEvent("rankingsZoomChange", { detail: zoom }));
         window.setTimeout(() => {
             window.dispatchEvent(new Event("resize"));
         }, 0);
         return zoom;
     };
 
-    const initialZoom = applyZoom(localStorage.getItem(STORAGE_KEY) || "1");
-    localStorage.setItem(STORAGE_KEY, initialZoom);
+    applyZoom(remembered());
+    // Rotating past the breakpoint restores whatever the user chose.
+    phone.addEventListener("change", () => applyZoom(remembered()));
 
     buttons.forEach((button) => {
         button.addEventListener("click", () => {
@@ -491,6 +517,90 @@ initReonSideBackgrounds("trade-corner", {
             localStorage.setItem(STORAGE_KEY, zoom);
         });
     });
+})();
+</script>
+<script>
+(() => {
+    // Category tabs: whenever the tables stack -- 2x, or a viewport up to
+    // 1080px where the grid is a single column (tablets, phones). Runs after
+    // the filter and zoom scripts above, so their listeners fire first.
+    const STORAGE_KEY = "reon_rankings_tab";
+    const page = document.querySelector(".trainer-rankings-page");
+    const tabs = Array.from(document.querySelectorAll(".trainer-rankings-tab[data-ranking-tab]"));
+    const panels = Array.from(document.querySelectorAll("[data-ranking-panel]"));
+    const searchInput = document.getElementById("ranking-search-input");
+    if (!page || tabs.length === 0 || tabs.length !== panels.length) {
+        return;
+    }
+
+    const stacked = window.matchMedia("(max-width: 1080px)");
+    const tabsActive = () => stacked.matches || page.getAttribute("data-rankings-zoom") === "2";
+    const visibleRows = (panel) => Array.from(panel.querySelectorAll("[data-ranking-row]"))
+        .filter((row) => row.style.display !== "none").length;
+
+    let current = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+    if (!Number.isFinite(current) || current < 0 || current >= tabs.length) {
+        current = 0;
+    }
+
+    const render = () => {
+        const active = tabsActive();
+        const searching = searchInput ? searchInput.value.trim() !== "" : false;
+        page.setAttribute("data-rankings-tabs", active ? "1" : "0");
+        tabs.forEach((tab, index) => {
+            const selected = active && index === current;
+            tab.classList.toggle("is-active", selected);
+            tab.setAttribute("aria-selected", selected ? "true" : "false");
+            tab.tabIndex = selected ? 0 : -1;
+            const count = tab.querySelector("[data-ranking-tab-count]");
+            if (count) {
+                count.textContent = searching ? " (" + visibleRows(panels[index]) + ")" : "";
+                count.hidden = !searching;
+            }
+        });
+        panels.forEach((panel, index) => {
+            panel.classList.toggle("is-tab-hidden", active && index !== current);
+        });
+    };
+
+    const select = (index, persist) => {
+        current = index;
+        if (persist) {
+            localStorage.setItem(STORAGE_KEY, String(index));
+        }
+        render();
+    };
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => select(index, true));
+        tab.addEventListener("keydown", (event) => {
+            if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+                return;
+            }
+            event.preventDefault();
+            const next = (index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length;
+            select(next, true);
+            tabs[next].focus();
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            // The filter has already run. If the open tab has no hits but
+            // another does, show that one (without remembering the jump).
+            if (tabsActive() && searchInput.value.trim() !== "" && visibleRows(panels[current]) === 0) {
+                const hit = panels.findIndex((panel) => visibleRows(panel) > 0);
+                if (hit !== -1) {
+                    current = hit;
+                }
+            }
+            render();
+        });
+    }
+
+    page.addEventListener("rankingsZoomChange", render);
+    stacked.addEventListener("change", render);
+    render();
 })();
 </script>
 {% endblock %}

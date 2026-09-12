@@ -3,6 +3,7 @@
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/MarioKartUtil.php");
+	require_once("../../classes/PageUtil.php");
 	session_start();
 
 	function mk_normalize_player_name($text) {
@@ -248,7 +249,9 @@
 		error_log("Mario Kart page load failed: " . $e->getMessage());
 	}
 
+	// Text sections live in web/pages/games/mariokart.<locale>.md.
 	echo TemplateUtil::render("mariokart/index", [
         'ghosts' => $tracks,
 		'track_icon_by_course' => $track_icon_by_course,
+		'doc_html' => PageUtil::html("games/mariokart"),
 	]);

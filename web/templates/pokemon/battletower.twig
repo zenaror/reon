@@ -1,6 +1,21 @@
 {% extends "main.twig" %}
 {% set nav_item = "games" %}
 
+{% macro pager(page, total_pages, base) %}
+    <nav class="battle-pager-nav" aria-label="Pages">
+        <a class="trade-size-btn battle-pager-btn{% if page <= 1 %} is-disabled{% endif %}" href="{{ base }}&page={{ page - 1 }}"{% if page <= 1 %} aria-disabled="true" tabindex="-1"{% endif %}>&lt; PREV</a>
+        {% set first = max(1, page - 2) %}
+        {% set last = min(total_pages, page + 2) %}
+        {% if first > 1 %}<a class="trade-size-btn battle-pager-btn" href="{{ base }}&page=1">1</a>{% if first > 2 %}<span class="battle-pager-gap">..</span>{% endif %}{% endif %}
+        {% for p in first..last %}
+            <a class="trade-size-btn battle-pager-btn{% if p == page %} is-active{% endif %}" href="{{ base }}&page={{ p }}"{% if p == page %} aria-current="page"{% endif %}>{{ p }}</a>
+        {% endfor %}
+        {% if last < total_pages %}{% if last < total_pages - 1 %}<span class="battle-pager-gap">..</span>{% endif %}<a class="trade-size-btn battle-pager-btn" href="{{ base }}&page={{ total_pages }}">{{ total_pages }}</a>{% endif %}
+        <a class="trade-size-btn battle-pager-btn{% if page >= total_pages %} is-disabled{% endif %}" href="{{ base }}&page={{ page + 1 }}"{% if page >= total_pages %} aria-disabled="true" tabindex="-1"{% endif %}>NEXT &gt;</a>
+    </nav>
+{% endmacro %}
+{% import _self as ui %}
+
 {% block title %}Pok&eacute;mon - Battle Tower{% endblock %}
 
 {% block head %}
@@ -9,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="battle-tower-page">
+<div class="battle-tower-page" data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
     <div class="battle-table-shell">
     <div class="battle-table-inner">
     <h1 class="trade-corner-title">&#xFF22;&#xFF21;&#xFF34;&#xFF34;&#xFF2C;&#xFF25;&#x3000;&#xFF34;&#xFF2F;&#xFF37;&#xFF25;&#xFF32;</h1>
@@ -17,6 +32,7 @@
     <form class="battle-tower-controls" method="get">
         <div class="battle-control-level">
             <select name="level" class="trade-region-filter" aria-label="Select level" onchange="this.form.submit()">
+                <option value="all"{% if selected_level == 'all' %} selected{% endif %}>L:ALL</option>
                 {% for level_value in level_options %}
                     <option value="{{ level_value }}"{% if level_value == selected_level %} selected{% endif %}>L:{{ "%d"|format(level_value) }}</option>
                 {% endfor %}
@@ -25,6 +41,7 @@
 
         <div class="battle-control-room">
             <select name="room" class="trade-region-filter" aria-label="Select room" onchange="this.form.submit()">
+                <option value="all"{% if selected_room == 'all' %} selected{% endif %}>ROOM:ALL</option>
                 {% for room_value in room_options %}
                     <option value="{{ room_value }}"{% if room_value == selected_room %} selected{% endif %}>ROOM:{{ "%03d"|format(room_value) }}</option>
                 {% endfor %}
@@ -40,21 +57,34 @@
         </div>
 
         <div class="battle-honor-roll-label">HONOR ROLL</div>
+
     </form>
 
-        <div class="battle-table-grid" data-bt-table-wrap>
+        <div class="battle-table-grid" data-bt-table-wrap data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
+            {# data-bt-extra: how many of the LV/ROOM columns are present. With one
+               the CSS compacts the leader cell; with both (the overview) the
+               panel widens and stays a single column. #}
+            {% set extra_cols = (show_level ? 1 : 0) + (show_room ? 1 : 0) %}
             <div class="battle-table-panel" data-bt-primary>
-                <table class="battle-honor-table">
+                <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
-                            <th>ROOM LEADER</th>
-                            <th>POK&eacute;MON</th>
-                            <th>MESSAGE</th>
+                            {# Shown only when the matching filter is open: a filtered
+                               column would repeat one value down every row. #}
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
+                            {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
+                            <th class="bt-col-leader">ROOM LEADER</th>
+                            <th class="bt-col-pokemon">POK&eacute;MON</th>
+                            <th class="bt-col-message">MESSAGE</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for leader in leaders %}
-                            <tr class="bt-row">
+                            {# The top three get a medal tint, but only where the rows
+                               are a ranking of one room -- see the CSS gate. #}
+                            <tr class="bt-row{% if leader.rank <= 3 %} bt-rank-{{ leader.rank }}{% endif %}">
+                                {% if show_level %}<td class="bt-col-level">{{ leader.level }}</td>{% endif %}
+                                {% if show_room %}<td class="bt-col-room">{{ "%03d"|format(leader.room) }}</td>{% endif %}
                                 <td class="bt-leader-cell">
                                     <div class="bt-leader-subcols">
                                         <div class="bt-leader-sprite-col">
@@ -81,7 +111,7 @@
 
                         {% if leaders is empty %}
                             <tr class="bt-empty-row">
-                                <td colspan="3" class="crystal-empty-message">No Trainers found.</td>
+                                <td colspan="{{ 3 + extra_cols }}" class="crystal-empty-message">No Trainers found.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -89,17 +119,34 @@
             </div>
 
             <div class="battle-table-panel" data-bt-secondary hidden>
-                <table class="battle-honor-table">
+                <table class="battle-honor-table" data-bt-extra="{{ extra_cols }}">
                     <thead>
                         <tr>
-                            <th>ROOM LEADER</th>
-                            <th>POK&eacute;MON</th>
-                            <th>MESSAGE</th>
+                            {% if show_level %}<th class="bt-col-level">LV</th>{% endif %}
+                            {% if show_room %}<th class="bt-col-room">ROOM</th>{% endif %}
+                            <th class="bt-col-leader">ROOM LEADER</th>
+                            <th class="bt-col-pokemon">POK&eacute;MON</th>
+                            <th class="bt-col-message">MESSAGE</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
+        </div>
+        {% set per_page_value = per_page == 0 ? 'all' : per_page %}
+        {% set page_base = 'battletower.php?level=' ~ selected_level ~ '&room=' ~ selected_room ~ '&per_page=' ~ per_page_value %}
+        <div class="battle-pager">
+            <div class="battle-pager-size">
+                <span class="battle-pager-label">PER PAGE:</span>
+                <div class="trade-size-buttons battle-pager-sizes" role="group" aria-label="Leaders per page">
+                    {% for n in per_page_options %}
+                        <a class="trade-size-btn battle-pager-btn{% if per_page == n %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page={{ n }}&page=1"{% if per_page == n %} aria-current="true"{% endif %}>{{ n }}</a>
+                    {% endfor %}
+                    <a class="trade-size-btn battle-pager-btn{% if per_page == 0 %} is-active{% endif %}" href="battletower.php?level={{ selected_level }}&room={{ selected_room }}&per_page=all&page=1"{% if per_page == 0 %} aria-current="true"{% endif %}>ALL</a>
+                </div>
+            </div>
+            <div class="battle-pager-status">{% if total > 0 %}{{ first_index }}-{{ last_index }} OF {{ total }}{% else %}0 LEADERS{% endif %}</div>
+            {% if total_pages > 1 %}{{ ui.pager(page, total_pages, page_base) }}{% endif %}
         </div>
     </div>
     </div>
@@ -139,8 +186,8 @@
 
     const makeRow = (markup) => {
         const template = document.createElement("template");
-        template.innerHTML = markup.trim();
-        return template.content.firstElementChild;
+        template.innerHTML = "<table><tbody>" + markup.trim() + "</tbody></table>";
+        return template.content.querySelector("tbody");
     };
 
     const clearBodies = () => {
@@ -148,12 +195,16 @@
         secondaryBody.innerHTML = "";
     };
 
+    const appendRows = (tbody, markup) => {
+        const rows = makeRow(markup);
+        while (rows && rows.firstElementChild) {
+            tbody.appendChild(rows.firstElementChild);
+        }
+    };
+
     const appendRange = (tbody, start, end) => {
         for (let i = start; i < end; i += 1) {
-            const rowNode = makeRow(rowMarkup[i]);
-            if (rowNode) {
-                tbody.appendChild(rowNode);
-            }
+            appendRows(tbody, rowMarkup[i]);
         }
     };
 
@@ -164,7 +215,12 @@
         tableWrap.classList.remove("is-split");
 
         const zoomMode = pageNode ? String(pageNode.getAttribute("data-battle-zoom") || "1") : "1";
-        if (zoomMode !== "1") {
+        // Below the two-column layout the panels stack, so splitting only
+        // repeats the header halfway down; the wide overview panel (LV and
+        // ROOM both shown) is a single column by design.
+        // Any LV/ROOM column makes the panel wider than half the frame, so
+        // those are single-column too.
+        if (zoomMode !== "1" || window.innerWidth < 992 || tableWrap.getAttribute("data-bt-extra") !== "0") {
             return;
         }
 
@@ -180,19 +236,21 @@
         clearBodies();
         let splitIndex = rowMarkup.length;
         for (let i = 0; i < rowMarkup.length; i += 1) {
-            const rowNode = makeRow(rowMarkup[i]);
-            if (!rowNode) {
-                continue;
-            }
-            primaryBody.appendChild(rowNode);
+            const before = primaryBody.children.length;
+            appendRows(primaryBody, rowMarkup[i]);
             if (primaryPanel.offsetHeight > availableHeight) {
-                primaryBody.removeChild(primaryBody.lastElementChild);
+                while (primaryBody.children.length > before) {
+                    primaryBody.removeChild(primaryBody.lastElementChild);
+                }
                 splitIndex = i;
                 break;
             }
         }
 
-        if (splitIndex <= 0 || splitIndex >= rowMarkup.length) {
+        // When the rest would not fit the second panel either (the overview
+        // has a couple of hundred rows), deal the rows evenly instead of
+        // leaving one panel short and the other a mile long.
+        if (splitIndex <= 0 || splitIndex >= rowMarkup.length || rowMarkup.length - splitIndex > splitIndex) {
             splitIndex = Math.ceil(rowMarkup.length / 2);
             clearBodies();
             appendRange(primaryBody, 0, splitIndex);
@@ -229,7 +287,20 @@
         return;
     }
 
-    const clamp = (value) => String(value) === "2" ? "2" : "1";
+    // 1x or 2x. Desktops start at 2x and remember the choice; tablets start
+    // at 1x and remember; phones always open at 1x, 2x there is for this
+    // visit only (it scrolls sideways in the box).
+    // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room.
+    const desktop = window.matchMedia("(min-width: 1200px)");
+    const phone = window.matchMedia("(max-width: 575.98px)");
+    const stored = () => {
+        if (phone.matches) return null;
+        try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+    };
+    const clamp = (raw) => {
+        const zoom = raw || stored() || (desktop.matches ? "2" : "1");
+        return zoom === "1" ? "1" : "2";
+    };
 
     const setActive = (zoom) => {
         buttons.forEach((button) => {
@@ -249,13 +320,13 @@
         return zoom;
     };
 
-    const initialZoom = applyZoom(localStorage.getItem(STORAGE_KEY) || "1");
-    localStorage.setItem(STORAGE_KEY, initialZoom);
+    applyZoom();
+    desktop.addEventListener("change", () => applyZoom());
 
     buttons.forEach((button) => {
         button.addEventListener("click", () => {
-            const zoom = applyZoom(button.getAttribute("data-battle-zoom") || "1");
-            localStorage.setItem(STORAGE_KEY, zoom);
+            const zoom = applyZoom(button.getAttribute("data-battle-zoom") || "2");
+            try { localStorage.setItem(STORAGE_KEY, zoom); } catch (e) {}
         });
     });
 })();

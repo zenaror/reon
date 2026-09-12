@@ -1,0 +1,42 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.logs-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<form class="admin-form__row mb-3" method="get">
+		<label>
+			{{ 'admin.logs-service'|trans }}
+			<select name="unit">
+				{% for name, meta in units %}
+					<option value="{{ name }}"{% if name == unit %} selected{% endif %}>{{ meta.label }}</option>
+				{% endfor %}
+			</select>
+		</label>
+		<label>
+			{{ 'admin.logs-lines'|trans }}
+			<select name="lines">
+				{% for n in [50, 100, 200, 500, 1000] %}
+					<option value="{{ n }}"{% if n == lines %} selected{% endif %}>{{ n }}</option>
+				{% endfor %}
+			</select>
+		</label>
+		<button class="btn btn-outline-primary" type="submit">{{ 'admin.logs-show'|trans }}</button>
+	</form>
+
+	{% if not available %}
+		{# The command is here rather than a bare "not enabled": joining the
+		   journal group grants reading and nothing else, which is a much
+		   smaller thing to hand out than the sudo rule the Services page
+		   needs. Someone who wants logs should not have to grant restarts. #}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-1"><strong>{{ 'admin.logs-unavailable'|trans }}</strong></p>
+			<p class="mb-1">{{ 'admin.logs-unavailable-why'|trans({'%user%': web_user}) }}</p>
+			<pre class="admin-console mb-0">sudo usermod -aG systemd-journal {{ web_user }}
+sudo systemctl restart php8.5-fpm</pre>
+		</div>
+	{% elseif text is empty %}
+		<p>{{ 'admin.logs-empty'|trans }}</p>
+	{% else %}
+		<pre class="admin-console">{{ text }}</pre>
+	{% endif %}
+{% endblock %}

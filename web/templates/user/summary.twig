@@ -15,9 +15,16 @@
 
 {% block content %}
 	<h1>{{'account.your-reon-account'|trans}}</h1>
+	{# Two columns that each stack their own cards, instead of three rows
+	   pairing a left card with a right one. The rows looked right only
+	   while the pairs happened to match in height: the identity card had
+	   no partner, so the settings card waited for the next row and left a
+	   hole under Stats, and nothing separated one row from the next, so
+	   the identity and DION cards touched. Stacking gives every card the
+	   same gap and lets the right column follow its own content. #}
 	<div class="row">
 		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
 					{{'account.account-details'|trans}}
 				</div>
@@ -29,31 +36,31 @@
 					<hr>
 					<a href="change_email.php" class="btn btn-primary">{{'account.change-email'|trans}}</a>
 					<a href="change_password.php" class="btn btn-primary">{{'account.change-password'|trans}}</a>
-                    <a href="adapter_config.php" class="btn btn-primary" download="config.bin">Download Config Data</a>
+                    <a href="adapter_config.php" class="btn btn-primary" download="mobile_config.bin">{{'account.download-config-data'|trans}}</a>
 				</div>
 			</div>
-		</div>
-		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
-					{{'account.stats'|trans}}
+					{{'account.reon-identity'|trans}}
 				</div>
 				<div class="card-body">
 					<div class="mb-3">
-						<label for="inboxSize" class="form-label">{{'account.emails-in-inbox'|trans}}</label>
-						<input id="inboxSize" type="text" readonly class="form-control-plaintext" value="{{ inbox_size }}">
+						<label for="username" class="form-label">{{'auth.reon-username'|trans}}</label>
+						<input id="username" type="text" readonly class="form-control" value="{{ username|e }}">
 					</div>
 					<div class="mb-3">
-						<label for="moneySpent" class="form-label">{{'account.money-spent'|trans}}</label>
-						<input id="moneySpent" type="text" readonly class="form-control-plaintext" value="{{ money_spent }}">
+						<label for="externalEmail" class="form-label">{{'account.external-email'|trans}}</label>
+						<input id="externalEmail" type="text" readonly class="form-control" value="{{ external_email|e }}">
+						{% if external_email_short != external_email %}
+							<div class="form-text">
+								{{'account.external-email-alias'|trans}}
+								<code>{{ external_email_short|e }}</code>
+							</div>
+						{% endif %}
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-lg-6">
-			<div class="card">
+			<div class="card mb-4">
 				<div class="card-header">
 					{{'account.dion-account-details'|trans}}
 				</div>
@@ -77,19 +84,53 @@
 							<input id="dionPasswordNoJs" type="text" readonly class="form-control" value="{{ log_in_password|e }}">
 						</noscript>
 					</div>
+					{% if relay_number %}
+					<div class="mb-3">
+						<label for="relayNumber" class="form-label">{{'account.relay-number'|trans}}</label>
+						<input id="relayNumber" type="text" readonly class="form-control" value="{{ relay_number|e }}">
+					</div>
+					<div class="mb-3">
+						<label for="relayToken" class="form-label js-only">{{'account.relay-token'|trans}}</label>
+						<div class="input-group js-only">
+							<input id="relayToken" type="text" readonly class="form-control" value="&lt;hidden&gt;" data-token="{{ relay_token|e }}" aria-describedby="relayTokenRevealButton">
+							<button id="relayTokenRevealButton" type="button" class="btn btn-outline-primary">{{'reveal'|trans}}</button>
+						</div>
+						<noscript>
+							<label for="relayTokenNoJs" class="form-label">{{'account.relay-token'|trans}}</label>
+							<input id="relayTokenNoJs" type="text" readonly class="form-control" value="{{ relay_token|e }}">
+						</noscript>
+					</div>
+					{% endif %}
 					<hr>
 					<button type="button" class="btn btn-primary js-only" data-bs-toggle="modal" data-bs-target="#confirmPasswordRerollModal">{{'account.reroll-log-in-password'|trans}}</button>
 					<noscript>
 						<a href="reroll_password.php" class="btn btn-primary">{{'account.reroll-log-in-password'|trans}}</a>
 					</noscript>
+					<a href="devices.php" class="btn btn-primary">{{'devices.title'|trans}}</a>
 				</div>
 			</div>
 		</div>
-        <div class="col-lg-6">
-			<div class="card">
+		<div class="col-lg-6">
+			<div class="card mb-4">
+				<div class="card-header">
+					{{'account.stats'|trans}}
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label for="inboxSize" class="form-label">{{'account.emails-in-inbox'|trans}}</label>
+						<input id="inboxSize" type="text" readonly class="form-control-plaintext" value="{{ inbox_size }}">
+					</div>
+					<div class="mb-3">
+						<label for="moneySpent" class="form-label">{{'account.money-spent'|trans}}</label>
+						<input id="moneySpent" type="text" readonly class="form-control-plaintext" value="{{ money_spent }}">
+					</div>
+				</div>
+			</div>
+			<div class="card mb-4">
 				<div class="card-header">{{ "account.pokemon-crystal-settings"|trans }}</div>
 				<div class="card-body">
                     <form method="post">
+                    	<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
                         <div class="mb-3">
                             <label for="tradeRegions">{{ "account.trade-corner-region-allowlist"|trans }}</label>
                             <small><p>{{ "account.trade-region-allowlist-blurb"|trans }}</p></small>
@@ -125,9 +166,11 @@
                             <label for="timeZone">{{ "account.time-zone"|trans }}</label>
                             <small><p>{{ "account.time-zone-blurb"|trans }}</p></small>
                             <select id="timeZone" name="timeZone">
-                                <option value="+0900"{% if (time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
+                                <option value="Asia/Tokyo"{% if (time_zone == "Asia/Tokyo" or time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
                                 {% for zone in all_time_zones %}
+                                {% if zone != "Asia/Tokyo" %}
                                 <option value="{{ zone|e }}"{% if (zone == time_zone) %} selected{% endif %}>{{ zone }}</option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             {% if ("timeZoneValue" in errors) %}
@@ -160,5 +203,6 @@
 				</div>
 			</div>
 		</div>
+	</div>
 	</div>
 {% endblock %}

@@ -1,0 +1,153 @@
+{
+  "families": {
+    "00": {
+      "title": "Il gioco non è riuscito a raggiungere REON",
+      "means": "Un codice generico, che il gioco usa quando non ne ha uno migliore. In pratica significa lo stesso di 10-XXX: la conversazione con l'adattatore non è andata da nessuna parte.",
+      "todo": "Segui i controlli del 10-000, più sotto."
+    },
+    "10": {
+      "title": "L'adattatore non c'è",
+      "means": "Il gioco ha cercato un Mobile Adapter e non ha trovato nulla. Su emulatore di solito vuol dire che l'adattatore non è attivato nell'emulatore; su hardware reale, che il cavo o l'adattatore non è inserito bene.",
+      "todo": "Collega l'adattatore <strong>prima</strong> di avviare il gioco e lascialo inserito. In mGBA apri <em>Mobile Game Boy Adapter…</em> e verifica che sia abilitato."
+    },
+    "11": {
+      "title": "La chiamata non è andata a buon fine",
+      "means": "L'adattatore ha provato a comporre il numero e non è arrivato da nessuna parte. Su REON non c'è una linea telefonica: è l'adattatore che non riesce ad aprire la connessione al server.",
+      "todo": "Controlla che la macchina sia online. Su hardware reale, controlla le impostazioni Wi-Fi che hai scritto. Poi riprova: il gioco la considera una cosa passeggera."
+    },
+    "12": {
+      "title": "La linea è occupata",
+      "means": "Stessa famiglia dell'11: l'adattatore non è riuscito a completare la connessione e il gioco dà la colpa a una linea congestionata.",
+      "todo": "Aspetta un momento e riprova."
+    },
+    "13": {
+      "title": "La chiamata non è andata a buon fine",
+      "means": "Un altro degli errori di composizione, mostrato con lo stesso messaggio dell'11-000.",
+      "todo": "Aspetta un momento e riprova; se non funziona mai, guarda il lato rete."
+    },
+    "14": {
+      "title": "Le impostazioni dell'adattatore sono danneggiate",
+      "means": "La configurazione salvata nell'adattatore non ha superato il proprio controllo, quindi l'adattatore si rifiuta di usarla.",
+      "todo": "Ricarica il tuo <code>mobile_config.bin</code>. Si trova in <a href=\"/user/summary.php\">Il tuo account</a>, e la <a href=\"/guide.php\">guida</a> dice dove metterlo."
+    },
+    "15": {
+      "title": "L'adattatore ha ricevuto una risposta che non ha capito",
+      "means": "Qualcosa ha risposto, ma non nella forma attesa. È il codice che gli script di REON stessi producono quando l'adattatore non è riuscito a raggiungere bene un server.",
+      "todo": "Riprova. Se persiste vale la pena segnalarlo: di solito vuol dire che i due lati non concordano su qualcosa, non che hai sbagliato tu."
+    },
+    "16": {
+      "title": "Errore di comunicazione",
+      "means": "Uno degli errori generici. Il gioco non ha altro da offrire se non «non ha funzionato».",
+      "todo": "Aspetta e riprova. Se si ripete sempre nello stesso punto, segnalalo dicendo cosa stavi facendo."
+    },
+    "20": {
+      "title": "È stato scelto il centro mobile sbagliato",
+      "means": "L'adattatore ha provato a raggiungere un servizio per cui non è configurato.",
+      "todo": "Ricarica il tuo <code>mobile_config.bin</code>: è lui che punta l'adattatore su REON."
+    },
+    "24": {
+      "title": "La connessione è stata rifiutata",
+      "means": "L'adattatore ha raggiunto la rete ma non è riuscito ad aprire la connessione: un errore TCP.",
+      "todo": "Verifica che nulla sulla tua macchina blocchi la connessione in uscita, poi riprova."
+    },
+    "25": {
+      "title": "L'adattatore non è mai stato configurato",
+      "means": "Nell'adattatore non c'è alcuna configurazione, quindi non ha un numero da comporre.",
+      "todo": "Carica il tuo <code>mobile_config.bin</code>, oppure usa il Mobile Trainer per registrare l'adattatore."
+    },
+    "30": {
+      "title": "Il server di posta ha rifiutato il messaggio",
+      "means": "Questa famiglia riguarda l'<strong>invio della posta</strong>. Le ultime tre cifre sono la risposta SMTP del server stesso: 4xx è temporaneo, 5xx è definitivo.",
+      "todo": "Vedi il codice specifico. Un 4xx vale la pena riprovarlo; un 5xx continuerà a fallire finché qualcosa non cambia."
+    },
+    "31": {
+      "title": "Il server della casella ha restituito un errore",
+      "means": "Questa famiglia riguarda il <strong>ritiro della posta</strong> via POP3.",
+      "todo": "Riprova. Se si ripete, il tuo account potrebbe aver bisogno di attenzione: verifica se riesci a leggere la stessa casella da <a href=\"/user/mail.php\">REON Mail</a>."
+    },
+    "32": {
+      "title": "La richiesta web è fallita",
+      "means": "Questa famiglia riguarda le richieste <strong>HTTP</strong> che un gioco fa per classifiche, notizie e download. Le ultime tre cifre sono lo stato HTTP con cui il server ha risposto.",
+      "todo": "Vedi il codice specifico qui sotto."
+    },
+    "33": {
+      "title": "Il centro mobile ha segnalato un problema",
+      "means": "Il servizio ha risposto, ma con una sua lamentela invece dei dati richiesti dal gioco.",
+      "todo": "Aspetta e riprova. Se una funzione precisa fallisce sempre così, segnalalo: indica quella funzione, non la tua installazione."
+    },
+    "101": {
+      "title": "La connessione si è rotta sotto",
+      "means": "Un errore a livello di socket: la connessione è caduta, è scaduta o è stata azzerata mentre il gioco la usava.",
+      "todo": "Di solito è la rete, non il gioco. Riprova su una connessione più stabile."
+    }
+  },
+  "codes": {
+    "30-221": {
+      "means": "Il server di posta ha chiuso la conversazione. Spesso innocuo di per sé."
+    },
+    "30-421": {
+      "means": "Il server di posta non accetta messaggi in questo momento (SMTP 421). Temporaneo."
+    },
+    "30-450": {
+      "means": "La casella non era disponibile (SMTP 450). Temporaneo: riprova più tardi."
+    },
+    "30-451": {
+      "means": "Il server ha avuto un errore proprio nel gestire il messaggio (SMTP 451). Temporaneo."
+    },
+    "30-452": {
+      "means": "Il server è a corto di spazio (SMTP 452). Temporaneo."
+    },
+    "30-550": {
+      "means": "Quella casella non esiste (SMTP 550). Controlla l'indirizzo digitato nel gioco."
+    },
+    "30-551": {
+      "means": "L'indirizzo non appartiene a quel server (SMTP 551)."
+    },
+    "30-552": {
+      "means": "Il messaggio è troppo grande per la casella (SMTP 552)."
+    },
+    "30-553": {
+      "means": "L'indirizzo non è valido (SMTP 553). Controlla quello che hai scritto."
+    },
+    "30-554": {
+      "means": "Il server ha rifiutato il messaggio senza mezzi termini (SMTP 554)."
+    },
+    "31-002": {
+      "means": "Il server POP3 ha risposto con un errore. Su REON di solito è un accesso che il server non ha accettato."
+    },
+    "32-301": {
+      "means": "La pagina si è spostata (HTTP 301). Il gioco non segue i reindirizzamenti, quindi fallisce."
+    },
+    "32-302": {
+      "means": "La pagina si è spostata temporaneamente (HTTP 302). Stesso problema: il gioco non la segue."
+    },
+    "32-401": {
+      "means": "Il server voleva credenziali che il gioco non ha inviato (HTTP 401)."
+    },
+    "32-403": {
+      "means": "Il server ha rifiutato la richiesta (HTTP 403)."
+    },
+    "32-404": {
+      "means": "Il server non ha nulla a quell'indirizzo (HTTP 404). Su REON di solito è un gioco o una funzione che non serviamo ancora."
+    },
+    "32-408": {
+      "means": "La richiesta ha impiegato troppo (HTTP 408)."
+    },
+    "32-500": {
+      "means": "Qualcosa si è rotto dalla nostra parte (HTTP 500). Vale la pena segnalarlo con l'ora in cui è successo."
+    },
+    "32-502": {
+      "means": "È tornata una risposta sbagliata dalla porta d'ingresso (HTTP 502). Di solito breve."
+    },
+    "32-503": {
+      "means": "Il servizio è fermo o sovraccarico (HTTP 503). Riprova più tardi."
+    },
+    "32-504": {
+      "means": "Il nostro lato ha impiegato troppo a rispondere (HTTP 504). Riprova più tardi."
+    }
+  },
+  "_comment": [
+    "Escrito à mão, não gerado. AdapterErrorUtil lê este arquivo por cima",
+    "do .en.json, campo a campo: o que faltar aqui cai para o inglês."
+  ]
+}

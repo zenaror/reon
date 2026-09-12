@@ -4,6 +4,12 @@
 define('CORE_PATH', dirname(dirname(__DIR__)) . '/cgb');
 require_once(CORE_PATH.'/core.php');
 require_once(CORE_PATH.'/auth.php');
+require_once(CORE_PATH.'/magbtest_log.php');
+
+	// Before doAuth(), because on the challenge and the authenticated-probe
+	// requests doAuth() exit()s and nothing downstream ever runs. No-op unless
+	// the path is a /MAGBTEST/ fixture.
+	magbtestLog('upload');
 
 	doAuth();
     serveFileOrExecScript($_GET["name"], "upload");

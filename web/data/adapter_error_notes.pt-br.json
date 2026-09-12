@@ -1,0 +1,157 @@
+{
+  "families": {
+    "00": {
+      "title": "O jogo não conseguiu alcançar o REON",
+      "means": "Um código genérico, que o jogo usa quando não tem um melhor. Na prática significa o mesmo que 10-XXX: a conversa com o adaptador não chegou a lugar nenhum.",
+      "todo": "Siga as verificações do 10-000, abaixo."
+    },
+    "10": {
+      "title": "O adaptador não está aí",
+      "means": "O jogo procurou um Mobile Adapter e não achou nada. Em emulador isso quase sempre quer dizer que o adaptador não está ligado no emulador; em hardware real, que o cabo ou o adaptador não está encaixado.",
+      "todo": "Ligue o adaptador <strong>antes</strong> de iniciar o jogo e deixe ligado. No mGBA, abra <em>Mobile Game Boy Adapter…</em> e confirme que está habilitado."
+    },
+    "11": {
+      "title": "A ligação não completou",
+      "means": "O adaptador tentou discar e não chegou a lugar nenhum. No REON não existe linha telefônica — isto é o adaptador falhando em abrir a conexão com o servidor.",
+      "todo": "Confira se a máquina está na internet. Em hardware real, confira as configurações de Wi-Fi que você gravou. Depois tente de novo: o jogo trata isso como passageiro, e você também pode."
+    },
+    "12": {
+      "title": "A linha está ocupada",
+      "means": "Mesma família do 11: o adaptador não conseguiu completar a conexão, e o jogo culpa uma linha congestionada.",
+      "todo": "Espere um momento e tente de novo."
+    },
+    "13": {
+      "title": "A ligação não completou",
+      "means": "Outra das falhas de discagem, mostrada com a mesma mensagem do 11-000.",
+      "todo": "Espere um momento e tente de novo; se nunca funcionar, veja o lado da rede."
+    },
+    "14": {
+      "title": "As configurações do adaptador estão danificadas",
+      "means": "A configuração guardada no adaptador não passou na própria verificação, então o adaptador se recusa a usá-la.",
+      "todo": "Carregue o seu <code>mobile_config.bin</code> de novo. Ele está em <a href=\"/user/summary.php\">Sua Conta</a>, e o <a href=\"/guide.php\">guia</a> diz onde colocá-lo."
+    },
+    "15": {
+      "title": "O adaptador recebeu uma resposta que não entendeu",
+      "means": "Alguma coisa respondeu, mas não no formato que o adaptador esperava. É o código que os próprios scripts do REON produzem quando o adaptador não conseguiu alcançar um servidor direito.",
+      "todo": "Tente de novo. Se persistir, vale relatar — este costuma significar que os dois lados discordam de alguma coisa, não que você fez algo errado."
+    },
+    "16": {
+      "title": "Erro de comunicação",
+      "means": "Uma das falhas genéricas. O jogo não tem detalhe nenhum a oferecer além de \"não funcionou\".",
+      "todo": "Espere e tente de novo. Se repetir sempre no mesmo ponto, relate dizendo o que você estava fazendo."
+    },
+    "20": {
+      "title": "O centro móvel selecionado está errado",
+      "means": "O adaptador tentou alcançar um serviço para o qual não está configurado.",
+      "todo": "Carregue o seu <code>mobile_config.bin</code> de novo — é ele que aponta o adaptador para o REON."
+    },
+    "24": {
+      "title": "A conexão foi recusada",
+      "means": "O adaptador alcançou a rede mas não conseguiu abrir a conexão — uma falha de TCP.",
+      "todo": "Verifique se nada na sua máquina bloqueia a conexão de saída, e tente de novo."
+    },
+    "25": {
+      "title": "O adaptador nunca foi configurado",
+      "means": "Não há configuração nenhuma no adaptador, então ele não tem para onde discar.",
+      "todo": "Carregue o seu <code>mobile_config.bin</code>, ou rode o Mobile Trainer para registrar o adaptador."
+    },
+    "30": {
+      "title": "O servidor de e-mail recusou a mensagem",
+      "means": "Esta família é sobre <strong>enviar e-mail</strong>. Os três últimos dígitos são a resposta SMTP do próprio servidor — 4xx é passageiro, 5xx é definitivo.",
+      "todo": "Veja o código específico. Um 4xx vale tentar de novo; um 5xx vai continuar falhando até algo mudar."
+    },
+    "31": {
+      "title": "O servidor da caixa postal devolveu um erro",
+      "means": "Esta família é sobre <strong>buscar e-mail</strong> por POP3.",
+      "todo": "Tente de novo. Se repetir, a sua conta pode precisar de atenção — confira se você consegue ler a mesma caixa pelo <a href=\"/user/mail.php\">REON Mail</a>."
+    },
+    "32": {
+      "title": "A requisição web falhou",
+      "means": "Esta família é sobre as requisições <strong>HTTP</strong> que um jogo faz para rankings, notícias e downloads. Os três últimos dígitos são o status HTTP com que o servidor respondeu.",
+      "todo": "Veja o código específico abaixo."
+    },
+    "33": {
+      "title": "O centro móvel relatou um problema",
+      "means": "O serviço respondeu, mas com uma reclamação própria em vez dos dados que o jogo pediu.",
+      "todo": "Espere e tente de novo. Se um recurso específico falhar sempre assim, relate — isso aponta para aquele recurso, não para a sua instalação."
+    },
+    "101": {
+      "title": "A conexão se rompeu por baixo",
+      "means": "Uma falha no nível do socket: a conexão caiu, expirou ou foi reiniciada enquanto o jogo a usava.",
+      "todo": "Costuma ser a rede, não o jogo. Tente de novo numa conexão mais estável."
+    }
+  },
+  "codes": {
+    "30-221": {
+      "means": "O servidor de e-mail encerrou a conversa. Muitas vezes inofensivo por si só."
+    },
+    "30-421": {
+      "means": "O servidor de e-mail não está aceitando mensagens agora (SMTP 421). Passageiro."
+    },
+    "30-450": {
+      "means": "A caixa postal estava indisponível (SMTP 450). Passageiro — tente mais tarde."
+    },
+    "30-451": {
+      "means": "O servidor teve um erro próprio ao tratar a mensagem (SMTP 451). Passageiro."
+    },
+    "30-452": {
+      "means": "O servidor está sem espaço (SMTP 452). Passageiro."
+    },
+    "30-550": {
+      "means": "Não existe essa caixa postal (SMTP 550). Confira o endereço digitado no jogo."
+    },
+    "30-551": {
+      "means": "O endereço não pertence àquele servidor (SMTP 551)."
+    },
+    "30-552": {
+      "means": "A mensagem é grande demais para a caixa (SMTP 552)."
+    },
+    "30-553": {
+      "means": "O endereço não é válido (SMTP 553). Confira o que você digitou."
+    },
+    "30-554": {
+      "means": "O servidor recusou a mensagem de saída (SMTP 554)."
+    },
+    "31-002": {
+      "means": "O servidor POP3 respondeu com erro. No REON isso costuma ser um login que o servidor não aceitou."
+    },
+    "32-301": {
+      "means": "A página mudou de lugar (HTTP 301). O jogo não segue redirecionamentos, então isto falha."
+    },
+    "32-302": {
+      "means": "A página mudou de lugar temporariamente (HTTP 302). Mesmo problema: o jogo não segue."
+    },
+    "32-401": {
+      "means": "O servidor quis credenciais que o jogo não enviou (HTTP 401)."
+    },
+    "32-403": {
+      "means": "O servidor recusou a requisição (HTTP 403)."
+    },
+    "32-404": {
+      "means": "O servidor não tem nada naquele endereço (HTTP 404). No REON isso costuma ser um jogo ou um recurso que ainda não servimos."
+    },
+    "32-408": {
+      "means": "A requisição demorou demais (HTTP 408)."
+    },
+    "32-500": {
+      "means": "Algo quebrou do nosso lado (HTTP 500). Vale relatar com a hora em que aconteceu."
+    },
+    "32-502": {
+      "means": "Veio uma resposta ruim pela porta da frente (HTTP 502). Costuma ser breve."
+    },
+    "32-503": {
+      "means": "O serviço está fora do ar ou sobrecarregado (HTTP 503). Tente mais tarde."
+    },
+    "32-504": {
+      "means": "O nosso lado demorou demais para responder (HTTP 504). Tente mais tarde."
+    }
+  },
+  "_comment": [
+    "Escrito à mão, não gerado. web/classes/AdapterErrorUtil.php lê este",
+    "arquivo por cima do .en.json, campo a campo: o que faltar aqui cai",
+    "para o inglês, em vez de deixar a entrada vazia.",
+    "",
+    "As famílias marcadas com same_as no .en.json não precisam aparecer:",
+    "elas herdam de outra, e a herança é resolvida depois da mistura."
+  ]
+}

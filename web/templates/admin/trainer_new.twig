@@ -1,0 +1,44 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.trainer-new'|trans }}{% endblock %}
+
+{% block admin_actions %}
+	<a class="btn btn-sm btn-outline-secondary" href="/admin/trainer.php">{{ 'admin.trainer-back'|trans }}</a>
+{% endblock %}
+
+{% block admin_body %}
+	<p>{{ 'admin.trainer-new-intro'|trans }}</p>
+
+	<form class="admin-form" method="post">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="action" value="create">
+
+		{# The game's own directory. Listed rather than typed: a page in a
+		   directory no console asks for is a page nobody will ever see. With
+		   only one game installed this is a single option, and saying which
+		   one is still better than saying nothing. #}
+		<label>
+			{{ 'admin.trainer-dir'|trans }}
+			<select name="dir">
+				{% for dir, writable in directories %}
+					<option value="{{ dir }}"{% if not writable %} disabled{% endif %}>/01/{{ dir }}/</option>
+				{% endfor %}
+			</select>
+		</label>
+
+		<label>
+			{{ 'admin.trainer-file'|trans }}
+			<span class="admin-form__hint">{{ 'admin.trainer-file-hint'|trans }}</span>
+			<input type="text" name="name" required maxlength="40"
+			       pattern="[a-z0-9][a-z0-9_\-]*"
+			       placeholder="credits" spellcheck="false">
+		</label>
+
+		<div class="admin-form__row">
+			<button class="btn btn-primary" type="submit"{% if not can_create %} disabled{% endif %}>{{ 'admin.trainer-create'|trans }}</button>
+		</div>
+		{% if not can_create %}
+			<p class="admin-form__hint">{{ 'admin.trainer-readonly'|trans }}</p>
+		{% endif %}
+	</form>
+{% endblock %}

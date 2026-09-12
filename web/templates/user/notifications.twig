@@ -1,0 +1,80 @@
+{% extends "main.twig" %}
+{# Same chrome as the mailbox: full width, portal background, and the
+   mobile-trainer panel/button styles the rest of the account area uses. #}
+{% set body_class = "home home-v2 reon-mail" %}
+
+{% block title %}{{ 'notify.title'|trans }}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	<section>
+		<div class="mt-panel mt-panel--flat">
+			<h2 class="mt-panel__bar">{{ 'notify.title'|trans }} <span class="mt-panel__count">{{ total }}</span></h2>
+
+			{# Dito na página porque é o que o botão abaixo faz e o que ele
+			   não faz: o histórico fica guardado até a PESSOA limpá-lo, e
+			   limpar não desfaz nada -- a mensagem ou a troca que o aviso
+			   apontava continua onde estava. #}
+			<p class="mt-summary">{{ 'notify.history-note'|trans }}</p>
+
+			{% if items is empty %}
+				<p class="mt-empty">{{ 'notify.none'|trans }}</p>
+			{% else %}
+				<ul class="notify-list">
+					{% for n in items %}
+						<li class="notify-list__row{{ n.unread ? ' is-unread' : '' }}">
+							<span class="notify-tag notify-tag--{{ n.category }}">{{ ('notify.cat-' ~ n.category)|trans }}</span>
+							<div class="notify-list__text">
+								<span class="notify-list__title">
+									{% if n.link %}<a href="{{ n.link }}">{{ n.title }}</a>{% else %}{{ n.title }}{% endif %}
+								</span>
+								{% if n.body %}<span class="notify-list__body">{{ n.body }}</span>{% endif %}
+							</div>
+							<span class="notify-list__when">
+								{% if n.game %}<span class="notify-list__game">{{ n.game }}</span>{% endif %}
+								{{ n.created_at|date("Y.m.d H:i") }}
+							</span>
+						</li>
+					{% endfor %}
+				</ul>
+			{% endif %}
+		</div>
+
+		{% if items is not empty %}
+			<div class="mt-statusbar">
+				<span class="mt-statusbar__hint">{{ 'notify.clear-hint'|trans }}</span>
+				<span class="mt-statusbar__acts">
+					<form method="post" action="/user/notifications.php"
+						onsubmit="return confirm('{{ 'notify.clear-confirm'|trans|e('js') }}');">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="action" value="clear">
+						<button class="mt-btn mt-btn--danger" type="submit">{{ 'notify.clear'|trans }}</button>
+					</form>
+				</span>
+			</div>
+		{% endif %}
+
+		{% if pages > 1 %}
+			<nav class="mt-pager">
+				<span></span>
+				<span class="mt-pager__nav">
+					{% if page > 1 %}
+						<a class="mt-btn" href="/user/notifications.php?page={{ page - 1 }}">{{'notify.newer'|trans}}</a>
+					{% else %}
+						<span class="mt-btn is-disabled" aria-disabled="true">{{'notify.newer'|trans}}</span>
+					{% endif %}
+					<span class="mt-pager__at">{{ page }} / {{ pages }}</span>
+					{% if page < pages %}
+						<a class="mt-btn" href="/user/notifications.php?page={{ page + 1 }}">{{'notify.older'|trans}}</a>
+					{% else %}
+						<span class="mt-btn is-disabled" aria-disabled="true">{{'notify.older'|trans}}</span>
+					{% endif %}
+				</span>
+			</nav>
+		{% endif %}
+	</section>
+{% endblock %}

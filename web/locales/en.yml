@@ -5,6 +5,7 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 homepage:
   eyebrow: The Mobile GB System
@@ -34,14 +35,40 @@ home: Home
 games: Games
 mobile-home: Mobile Homepage
 news: News
+guide: "Get started"
+downloads: "Downloads"
+terms: "Terms of use"
+privacy: "Privacy policy"
+close: "Close"
+open-full-page: "Open the full page"
+page-not-found: "This page doesn't exist yet."
+page-contents: "Contents"
+game-page:
+  on-this-page: "On this page"
+  services: "Online services"
+  map-gallery: "Map gallery"
+  get-started: "Get started"
+news-empty: "No news yet."
+news-see-more: "Read more"
+news-newer: "Newer"
+news-older: "Older"
+news-not-found: "That post doesn't exist (or isn't published)."
+news-back-to-list: "Back to news"
 status: Status
-players-online: Players online
-in-service-since: In service since
+service-web: Web
+service-mail: Mail
+service-mobile-relay: Relay
+service-relay-policy: External Mail
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Unknown
+service-devices-connected: "%count% connected"
 welcome-alpha: Welcome to the alpha test!
 what-is-this: What is this?
 send: Send
 continue: Continue
 reset: Reset
+reset-password: Reset password
 reveal: Reveal
 login: Login
 logout: Logout
@@ -49,19 +76,31 @@ signup: Sign-up
 your-account: Your Account
 forgot-password: Forgot password
 email-addr: Email address
+email-or-username: Email or username
 password: Password
+password-show: Show password
+password-hide: Hide password
+password-caps-on: Caps Lock is on
 current-password: Current password
 new-password: New password
 confirm-password: Confirm password
 confirm-new-password: Confirm new password
 new-email: New email
 invalid-email: Invalid email
-password-invalid: Password invalid
+password-invalid: "The password must be between 8 and 71 characters."
+password-hint: "8 to 71 characters."
+password-rules-label: "Password requirements"
+password-rule-min: "At least %count% characters"
+password-rule-max: "At most %count% characters"
 passwords-dont-match: The passwords don't match
 wrong-password: Wrong password
 link-invalid-expired: This link is invalid or has expired.
+csrf-invalid: This form has expired or was not sent from this site. Go back and try again.
+email-send-failed: We could not send the e-mail just now. Please try again in a few minutes.
 invalid-trade-setting: Not a valid region pool setting.
 invalid-pokemon-news-setting: Not a valid Pokémon news preference.
+default-time-zone: Default (Japan, +0900)
+invalid-time-zone-setting: Not a valid time zone.
 auth:
   login-to-reon: Login to your REON account
   invalid-email-pass: Incorrect email or password
@@ -71,8 +110,16 @@ auth:
   registration-email-sent: If not yet registered, an email containing a link to continue
     your registration was sent to the specified email address.
   registration-complete: Your registration is complete.
-  reon-email: REON email address
-  reon-email-invalid: REON email invalid or taken
+  reon-username: "REON username"
+  reon-username-hint: "3 to 20 characters, lowercase letters and numbers only."
+  reon-username-invalid: "Invalid username, or already taken"
+  reon-username-mail-note: "This name also becomes your REON mail address, used by the games:"
+  reon-username-mail-internal: "From the Game Boy"
+  reon-username-mail-external: "From the internet"
+  reon-username-taken: "That name is already taken — please choose another."
+  reon-username-free: "That name is available."
+  reon-username-mail-or: "or"
+  reon-username-mail-truncated: "The Game Boy only holds 8 characters, so the in-game address is your username shortened — both reach the same inbox."
   region-explanation-para1: REON enables international trade for Pokémon Crystal players,
     via the in-game facility called the Trade Corner. This includes trading between
     Japanese and non-Japanese games, which are normally incompatible due to using
@@ -93,17 +140,30 @@ password-reset:
 account:
   your-reon-account: Your REON account
   account-details: Account details
+  reon-identity: "REON identity"
+  external-email: "External e-mail address"
+  external-email-alias: "Also reachable at"
   change-email: Change email
   change-password: Change password
+  download-config-data: Download Config Data
+  reroll-success: Your Log-In Password was rerolled.
   stats: Stats
   emails-in-inbox: Emails in inbox
   money-spent: Money spent
   dion-account-details: DION account details
   dion-id: DION ID
   log-in-password: Log-In Password
+  relay-number: REON Number
+  relay-token: Relay Token
   reroll-log-in-password: Reroll Log-In Password
   reroll-confirm-message: Are you sure you want to do this?
   reroll-warning: You will have to change your password in all games.
+  revoke-devices: Revoke All Devices
+  revoke-devices-confirm-message: Are you sure you want to do this?
+  revoke-devices-warning: Every device using this account will need to download
+    a new config file before it can send mail to the real internet again.
+  revoke-devices-success: All devices for this account were revoked. Download a
+    new config file on each device you want to keep using.
   change-email-address: Change your email address
   email-confirm-sent: If not yet registered, an email containing a link to confirm
     this change was sent to the specified email address.
@@ -120,6 +180,10 @@ account:
   trade-option-1: National only (only your game's region)
   trade-option-2: All regions with compatible languages
   trade-option-3: All regions, including Latin-Japanese conversion
+  time-zone: Time Zone
+  time-zone-blurb: Choose the time zone dates and times are shown in across the
+    site. Leave the default to see everything in the game's original time zone
+    (Japan, +0900).
   update-settings: Update settings
   pokemon-news-custom-opt-in: 'Pokémon News: News Preferences'
   pokemon-news-custom-opt-in-blurb: When enabled, Pokémon News downloads may use custom
@@ -140,12 +204,17 @@ index:
   mobile-adapter-description: The Mobile Adapter was a thing.
 gameboy-wars: Game Boy Wars 3
 pokemon-crystal: Pokémon Crystal
+pokemon-stadium: "Pokémon Stadium"
 rankings: Rankings
 trade-corner: Trade Corner
+battle-tower: Battle Tower
+bxt-save-converter: BXT Save Converter
 pokemon-pages:
   index-description: Cute little critters and stuff
   rankings-description: How big did you say that magikarp was?
   trade-corner-description: Look at all those caterpie and weedle!
+  battle-tower-description: View the Battle Tower honor roll by level and room.
+  bxt-save-converter-description: Convert Crystal BYT saves to BXT format locally in your browser.
 region:
   text: Region
   global: Global
@@ -1748,3 +1817,491 @@ pokemon:
     US-WI: Wisconsin
     US-WV: West Virginia
     US-WY: Wyoming
+
+admin:
+  nav-adapter: "Adapter config"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "What the generator writes into every mobile_config.bin. Only what is the same for everyone is here — the e-mail address, the gID, the device key and the relay token come from each account and have nothing to configure."
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "Port"
+  adapter-empty: "leave empty"
+  adapter-dns2-note: "Leave DNS 2 empty unless there really is a second server. Repeating the first address gives no redundancy — it would fail for the same reason at the same moment. Empty means the field is marked as unset, and the adapter keeps whatever the game already had."
+  adapter-relay: "Relay and P2P"
+  adapter-relay-host: "Relay server"
+  adapter-p2p: "P2P port"
+  adapter-device: "Adapter"
+  adapter-model: "Model"
+  adapter-unmetered: "Unmetered (no per-minute charge)"
+  adapter-current: "Current device:"
+  adapter-metered: "Metered"
+  adapter-unmetered-short: "Unmetered"
+  adapter-save: "Save"
+  adapter-footer: "A saved change applies to the next download. Nobody has to download again because of it: a file already in use keeps working, and these values only decide where a fresh one points."
+  adapter-saved: "Saved. New downloads use these values."
+  adapter-failed: "Could not save."
+  adapter-invalid: "Nothing was saved. Check the fields marked below — an address or port that does not make sense would produce a file the cartridge cannot read."
+  news-title: News admin
+  news-new: New post
+  news-editing: Editing post
+  news-date: Date
+  news-post-title: Title
+  news-state: State
+  news-published: Published
+  news-draft: Draft
+  news-view: View
+  news-edit: Edit
+  news-delete: Delete
+  news-delete-confirm: Delete this post?
+  news-title-required: A title is required.
+  news-body: Body
+  news-markdown-hint: "Markdown: **bold**, _italic_, ## heading, [link](url), ![](image)."
+  news-publish: Published (visible on the site)
+  news-save: Save
+  news-cancel: Cancel
+  news-preview: Preview
+  news-md-link: Link
+  news-md-list: List
+  news-md-image: Image
+  news-upload-failed: Upload failed.
+  panel: "Admin"
+  nav-dashboard: "Dashboard"
+  nav-news: "News"
+  nav-news-maker: "Pokémon News"
+  news-maker-title: "Pokémon News"
+  news-maker-intro: "A news issue is a small program the game runs, assembled from the real toolchain. You choose the words, the rankings and the minigame; everything else comes from an issue that is known to work."
+  news-maker-unavailable: "Cannot build yet — missing:"
+  news-maker-new: "New issue"
+  news-maker-back: "Back to issues"
+  news-maker-none: "No issue has been made yet."
+  news-maker-issue: "Issue"
+  news-maker-rankings: "Rankings"
+  news-maker-built: "Built for"
+  news-maker-not-built: "not built"
+  news-maker-name: "Name"
+  news-maker-name-hint: "For you, and for the file name. Not shown in the game."
+  news-maker-message: "Mailbox line"
+  news-maker-message-hint: "The single line the game's mailbox shows for this issue before anyone opens it. Left blank, this language's headline is used. At most %n% characters, and written in the game's own characters, so anything it cannot draw is refused by name."
+  news-maker-schedule-locked: "Issues can be built, but not scheduled yet."
+  news-maker-schedule-why: "The calendar for custom issues is a file of its own, and the web server cannot write it. It is deliberately not the config beside it — that one also holds the ordinary news schedule, which this panel has no business changing:"
+  news-maker-built-only: "built, but not in the calendar — no player sees it"
+  month-1: "January"
+  month-2: "February"
+  month-3: "March"
+  month-4: "April"
+  month-5: "May"
+  month-6: "June"
+  month-7: "July"
+  month-8: "August"
+  month-9: "September"
+  month-10: "October"
+  month-11: "November"
+  month-12: "December"
+  news-maker-date: "Goes live on"
+  news-maker-date-hint: "The day this issue takes over, and it keeps going out until another issue's day comes round. You pick the month and the day; the year is the current one, so a day still ahead waits for it instead of going out now. February stops at 28, because a 29th would only exist in a leap year."
+  news-maker-withdraw: "Withdraw"
+  news-maker-withdrawn: "Withdrawn. The game will not use it again."
+  news-maker-withdraw-confirm: "Take this issue out of the calendar and delete what was built? It stops going out — but the news row keeps this issue's content until the ordinary news next rotates that region, because that is when the scheduler re-mirrors it."
+  news-maker-lang-j: "Japanese"
+  news-maker-lang-e: "English"
+  news-maker-lang-d: "German"
+  news-maker-lang-f: "French"
+  news-maker-lang-i: "Italian"
+  news-maker-lang-s: "Spanish"
+  news-maker-scheduled: "In the calendar"
+  news-maker-template: "Based on"
+  news-maker-template-hint: "The real issue whose menus, scripts and layout this one borrows."
+  news-maker-minigame: "Minigame"
+  news-maker-minigame-broken: "This minigame does not build with the current toolchain — there is a mistake in its own source, upstream. It has no prize to choose, and an issue cannot be published with it. Pick another one."
+  news-maker-publish-now-unbuilt: "This issue has not been built yet. Open it, tick the languages and press Publish first."
+  news-maker-published-now: "Live now in %regions%."
+  news-maker-prizes: "Prizes"
+  news-maker-prizes-hint: "What the minigame hands out when the player wins. The list is read from the minigame's own code, so choosing another minigame changes it. The whole item table is offered, key items included — the cartridge knows them, but the game never expects to receive one from the news."
+  news-maker-prize: "Prize %n%"
+  news-maker-prize-default: "as it comes: %item%"
+  news-maker-prize-fixed: "The minigame picks this one."
+  news-maker-prize-none: "This minigame hands out no prize."
+  news-maker-bad-prize: "No such item:"
+  news-maker-headline-hint: "The issue's name on the news screen itself — on the banner while the console downloads it, and as the title at the top of the page. At most %n% characters, which is what the widest real issue uses."
+  news-maker-body-hint: "The text behind the \"News guide\" item — the article the player reads. A blank line starts a paragraph; the first line opens the textbox, the second sits under it, the rest scroll. **%n% characters per line**, because the textbox is %n% tiles wide. No limit on how many lines: the text scrolls."
+  news-maker-random: "RANDOM RANKING"
+  news-maker-ranking-hint: "The three rankings this issue is about. \"RANDOM RANKING\" picks a category when you save, and what it picked is kept — the same issue does not change rankings between builds. The three must differ: they sit side by side on one screen."
+  news-maker-duplicate-ranking: "The three rankings must be different from each other."
+  news-maker-no-categories: "There are not enough ranking categories to fill the three slots."
+  news-maker-unknown-ranking: "That is not a ranking category this toolchain knows."
+  news-maker-too-long: "Too long for the screen:"
+  news-maker-region-empty: "Cannot build a region whose language has no text — it would not come out blank, it would come out carrying the template's 2002 article:"
+  news-maker-region-needs: "Write the headline and the article in %lang% first."
+  news-maker-ranking: "Ranking %n%"
+  news-maker-text: "Words"
+  news-maker-text-hint: "Three different texts, each showing up somewhere else. Leave a language empty and that language keeps whatever the template had."
+  news-maker-text-none: "Tick a language under “Build for” above and its fields appear here."
+  news-maker-headline: "Headline"
+  news-maker-body: "Article"
+  news-maker-regions: "Build for"
+  news-maker-regions-hint: "One build per region. A region can only be picked once its language has a headline and an article — E, P and U all take the English text; F and D, S and I share a character table."
+  news-maker-save: "Save"
+  news-maker-publish: "Save and build"
+  news-maker-saved: "Saved."
+  news-maker-published: "Built %good% of %total% regions."
+  news-maker-result: "Result"
+  news-maker-failed-region: "failed"
+  news-maker-failed: "Could not do it: %detail%"
+  news-maker-deleted: "Issue deleted."
+  news-maker-publish-now: "Publish now"
+  news-maker-publish-now-confirm: "Publish this issue now? Its date becomes today, and the scheduler runs straight after instead of waiting for the next cycle. Once published it can no longer be edited."
+  news-maker-ran: "The scheduler ran: it is live."
+  news-maker-run-failed: "Built and scheduled, but the scheduler could not be run now (%detail%). It goes out on the next cycle, within 15 minutes."
+  news-maker-restored: "The official issue is back in place for %count% region(s)."
+  news-maker-locked: "This issue has already been published and can no longer be changed."
+  news-maker-locked-title: "Published issue — read only"
+  news-maker-locked-why: "It has already gone out, and players may have read it. Rebuilding over it would change the content with nobody able to tell, under the same name and the same date. To change anything, delete this issue and publish another."
+  news-maker-delete-confirm: "Delete this issue? Anything already built for it stays where it is."
+  news-maker-need-name: "Give it a name first."
+  news-maker-need-region: "Pick at least one region to build for."
+  nav-notifications: "Notifications"
+  nav-users: "Users"
+  nav-services: "Services"
+  nav-logs: "Logs"
+  nav-trainer: "Mobile Trainer"
+  nav-audit: "Activity"
+  count-users: "Accounts"
+  count-banned: "Banned"
+  count-devices: "Consoles"
+  count-devices-blocked: "Consoles blocked"
+  count-mail-today: "Mail, last 24h"
+  count-trades: "Trades waiting"
+  count-news: "News posts"
+  count-notifications: "Notifications sent"
+  audit-title: "Admin activity"
+  audit-empty: "Nothing has been done here yet."
+  audit-when: "When"
+  audit-who: "Who"
+  audit-what: "What"
+  audit-target: "Target"
+  audit-all: "See all activity"
+  notify-title: "Send a notification"
+  notify-intro: "Notifications appear under the bell in the header and stay in the reader's history. They cannot be deleted afterwards, by you or by them."
+  notify-to: "To"
+  notify-to-all: "Everybody"
+  notify-to-user: "Chosen accounts"
+  notify-to-many: "%count% accounts"
+  notify-user-hint: "Type a name…"
+  notify-user-remove: "Remove"
+  notify-sent-many: "Sent to %count% accounts."
+  notify-user: "Account"
+  notify-category: "Kind"
+  notify-headline: "Headline"
+  notify-body: "Detail (optional)"
+  notify-link: "Link (optional)"
+  notify-send: "Send"
+  notify-sent: "Sent to %who%."
+  notify-sent-all: "Sent to %count% accounts."
+  notify-need-title: "A headline is required."
+  notify-no-user: "Pick an account to send to."
+  notify-recent: "Recently sent"
+  notify-when: "When"
+  notify-who: "To"
+  users-title: "Accounts"
+  users-search: "Search by name or address"
+  users-search-go: "Search"
+  users-id: "ID"
+  users-name: "Name"
+  users-email: "Address"
+  users-dion: "DION"
+  users-devices: "Consoles"
+  users-state: "State"
+  users-actions: ""
+  users-open: "Open"
+  users-none: "No account matches."
+  users-active: "Active"
+  users-banned: "Banned"
+  users-admin: "Admin"
+  user-title: "Account"
+  user-back: "Back to accounts"
+  user-ban: "Ban"
+  user-unban: "Lift ban"
+  user-ban-reason: "Reason (shown in the activity log)"
+  user-ban-confirm: "Ban this account? They lose the site, the mailbox and the adapter."
+  user-make-admin: "Grant admin"
+  user-drop-admin: "Revoke admin"
+  user-admin-confirm: "Grant this account the admin panel?"
+  user-banned-since: "Banned since %when%"
+  user-devices: "Consoles"
+  user-device-code: "Code"
+  user-device-nick: "Name"
+  user-device-state: "State"
+  user-device-seen: "Last seen"
+  user-device-block: "Block"
+  user-device-unblock: "Unblock"
+  user-blocked: "Blocked"
+  user-allowed: "Allowed"
+  user-no-devices: "No console has connected with this account."
+  err-no-such-user: "No such account."
+  err-not-yourself: "Not on the account you are signed in with."
+  err-not-an-admin: "An administrator cannot be banned. Revoke the admin first."
+  mailauth-title: "Mail authentication"
+  mailauth-explain: "The adapter proves who it is with the 256-bit device key (APOP), and the password never crosses the wire. The eight-character password is the older way in, kept only for adapters that do not speak APOP yet. Close it once the new builds are in players' hands: eight characters are guessable, and leaving the weak door open beside the strong one means an attacker uses the weak one."
+  mailauth-on: "Password sign-in accepted"
+  mailauth-off: "Device key only"
+  mailauth-turn-off: "Require the device key"
+  mailauth-turn-on: "Accept passwords again"
+  mailauth-off-confirm: "Any adapter that cannot do APOP stops collecting mail. Continue?"
+  mailauth-on-confirm: "The eight-character password will be accepted again. Continue?"
+  setting-saved: "Setting saved."
+  setting-failed: "The setting could not be saved."
+  services-title: "Services"
+  services-note: "Restarting is done through a helper the server has to allow explicitly. Until that is installed the buttons report what they would have run and change nothing."
+  services-service: "Service"
+  services-state: "State"
+  services-restart: "Restart"
+  services-restart-confirm: "Restart this service? Anyone connected is disconnected."
+  services-done: "%service%: %detail%"
+  services-failed: "%service% could not be restarted: %detail%"
+  services-unavailable: "Restarting is not enabled on this server yet. Nothing was run."
+  services-daemons: "Always running"
+  services-jobs: "Scheduled jobs"
+  services-jobs-note: "These run on a systemd timer. Run one now, switch its timer off, or give it a different schedule — the schedule is written as a drop-in, so the unit the repository ships is never touched and \"Reset\" puts it back."
+  services-start: "Start"
+  services-stop: "Stop"
+  services-run: "Run now"
+  services-refresh-confirm: "This clears the rankings of EVERY configured region, not only the ones whose news rotated today, and it cannot be undone. Re-apply the news and wipe all rankings?"
+  services-enable: "Switch on"
+  services-disable: "Switch off"
+  services-on: "on"
+  services-off: "off"
+  services-running: "running"
+  services-no-timer: "no timer"
+  services-schedule: "Schedule"
+  services-schedule-hint: "systemd calendar, e.g. *-*-* *:0/15:00"
+  services-schedule-reset: "Reset"
+  services-schedule-reset-confirm: "Go back to the schedule this job ships with?"
+  services-next: "Next run"
+  services-stop-confirm: "Stop this service? It stays down until someone starts it again."
+  services-disable-confirm: "Switch this job off? It will not run again until it is switched back on."
+  services-no-stop: "No Stop: this page is served by it, so stopping it would take away the button that starts it again."
+  logs-title: "Service logs"
+  logs-service: "Service"
+  logs-lines: "Lines"
+  logs-show: "Show"
+  logs-empty: "Nothing to show."
+  logs-unavailable: "The journal cannot be read yet, so there is nothing to show."
+  logs-unavailable-why: "PHP runs as \"%user%\", and reading the system journal needs membership of the journal group. That grants reading and nothing else — it is not the sudo rule the Services page needs, and it lets nobody restart anything:"
+  trainer-title: "Mobile Trainer pages"
+  trainer-intro: "The pages a Game Boy sees through the Mobile Trainer. They are served as-is to the adapter, which renders a small subset of HTML."
+  trainer-page: "Page"
+  trainer-size: "Size"
+  trainer-changed: "Changed"
+  trainer-edit: "Edit"
+  trainer-save: "Save"
+  trainer-saved: "Saved."
+  trainer-failed: "Could not save: %detail%"
+  trainer-none: "No page found under web/htdocs/01."
+  trainer-back: "Back to pages"
+  trainer-tags: "Tags the adapter renders"
+  trainer-new: "New page"
+  trainer-new-intro: "A page is a file inside a game's directory. Make one here, then link to it from another page with &lt;a href=\"name.html\"&gt;."
+  trainer-dir: "Game directory"
+  trainer-file: "File name"
+  trainer-file-hint: "Lower case, letters, digits, - and _. \".html\" is added."
+  trainer-entry: "entry page"
+  trainer-create: "Create"
+  trainer-view: "View"
+  trainer-open: "Open"
+  trainer-delete: "Delete"
+  trainer-delete-confirm: "Delete this page? A console asking for it will get nothing."
+  trainer-deleted: "Page deleted."
+  trainer-locked: "read-only"
+  trainer-preview: "As the console sees it"
+  trainer-preview-note: "160x144 at 2x, with the Trainer's own font — so a line wraps here roughly where it wraps there. Roughly: the adapter runs its own renderer, not a browser."
+  trainer-tags-note: "From the adapter's documentation, and this is the whole list — <p>, <table> and <form> are not on it. Nothing is refused for being absent, because the docs do not say what the adapter does with a tag it does not know. Two surprises: <b> turns text red rather than bold, and <center> only works inside <html>. Images are 1BPP BMP only, each side at most 255 pixels."
+  trainer-images: "Images"
+  trainer-img-empty: "This page has no images yet."
+  trainer-img-name: "File"
+  trainer-img-write: "Write this in the page"
+  trainer-img-facts: "Checked"
+  trainer-img-file: "BMP file"
+  trainer-img-rules: "1BPP BMP only, each side at most %n% pixels, no compression. Checked against what the live site's own images actually are, not against the documentation — that would refuse 34 of the 37 already there."
+  trainer-img-rename: "Name it (optional)"
+  trainer-img-rename-hint: "Lower case, letters, digits, - and _. \".bmp\" is added. Left blank, the uploaded file's own name is used."
+  trainer-img-upload: "Upload"
+  trainer-img-added: "%name% uploaded."
+  trainer-img-deleted: "Image deleted."
+  trainer-img-delete-confirm: "Delete this image? A page still pointing at it will show a broken-image icon."
+  trainer-img-ok: "ok"
+  trainer-img-none: "No file was received."
+  trainer-img-bad-name: "That name has nothing usable in it."
+  trainer-img-not-a-bmp: "Not a BMP."
+  trainer-img-odd-header: "BMP header in a shape this cannot read."
+  trainer-img-not-1bpp: "Must be 1BPP. The adapter draws nothing else."
+  trainer-img-planes: "The BMP plane count must be 1."
+  trainer-img-compressed: "Compressed BMPs are not accepted."
+  trainer-img-palette: "More colours declared than a 1BPP bitmap can have."
+  trainer-img-empty-image: "The image has no pixels."
+  trainer-img-not-8-bit: "Width and height must each fit in 8 bits (at most %n%)."
+  trainer-img-offset-too-far: "The pixel data starts too far into the file to be addressed."
+  trainer-img-too-large: "Larger than the format allows."
+  trainer-img-too-big: "The file is too large."
+  trainer-img-not-writable: "The image directory cannot be written."
+  trainer-img-mkdir-failed: "The image directory could not be created."
+  trainer-img-write-failed: "The file could not be written."
+  trainer-img-replace-failed: "The file could not be put into place."
+  trainer-img-no-such-page: "That page does not exist."
+  trainer-readonly: "These files cannot be written by the web server, so nothing here can be saved yet."
+  trainer-readonly-why: "PHP runs as \"%user%\", and the pages belong to the account that deployed them. Granting that user write access is one command:"
+
+mail:
+  title: "REON Mail"
+  inbox: "Inbox"
+  inbox-summary: "%total% in the inbox · %unread% unread"
+  filter-placeholder: "Search subject, sender or text"
+  filter-all: "Everything"
+  filter-unread: "Unread only"
+  filter-players: "Players only"
+  filter-internet: "Internet only"
+  filter-apply: "Filter"
+  filter-clear: "Clear"
+  filter-none: "Nothing matches the filter."
+  thread-with: "%count% messages with %party%"
+  thread-unread: "%count% unread"
+  thread-you: "You"
+  thread-delete: "Delete conversation"
+  thread-hint: "Reading a conversation"
+  thread-count: "%count% messages"
+  thread-you-wrote: "you wrote"
+  sent-summary: "%total% sent"
+  trash-summary: "%total% in the trash"
+  empty: "No messages."
+  message: "Message"
+  from: "From"
+  date: "Date"
+  game: "Game"
+  no-subject: "no subject"
+  back: "Back to inbox"
+  not-found: "That message doesn't exist."
+  trash: "Trash"
+  trash-empty: "The trash is empty."
+  delete: "Delete"
+  restore: "Restore"
+  delete-forever: "Delete for good"
+  confirm-delete: "Delete this message for good? This cannot be undone."
+  trash-note: "Messages stay in the trash for %days% days, then are deleted for good. Restoring one puts it back in the mailbox, so the game will download it again on the next sync."
+  by-game: "deleted on the Game Boy"
+  by-web: "deleted here"
+  was-downloaded: "the game had downloaded it"
+  never-downloaded: "never downloaded"
+  refresh: "Check for new mail"
+  refresh-short: "Refresh"
+  compose: "Compose"
+  reply: "Reply"
+  send: "Send"
+  to: "To"
+  subject: "Subject"
+  body: "Message"
+  sent-ok: "Message sent."
+  compose-note: "Write to another REON player using their username, or to any e-mail address."
+  compose-note-subject: "A title is limited to %subject% characters, which is all a game's mailbox shows."
+  hint-compose: "Writing a message"
+  err-empty: "Fill in the address and the message."
+  size-note: "A Game Boy message holds %lines% lines of %width% characters. Long lines are broken as you type, and longer messages are refused."
+  reformat-confirm: "This message was written without a width limit. To reach a player it has to be re-broken into lines of %width% characters, and whatever runs past %lines% lines will be cut, along with any title beyond %subject% characters. Reformat it now?"
+  size-count: "%lines%/%maxlines% lines · %chars%/%maxchars% characters"
+  err-too-many-lines: "Too many lines — a Game Boy message holds %lines%."
+  err-subject-too-long: "Title too long — a game's mailbox shows %chars% characters."
+  err-too-many-chars: "Too long — a Game Boy message holds %chars% characters."
+  err-bad-address: "That doesn't look like a valid e-mail address."
+  err-rate-limited: "You've sent a lot of mail in the last hour. Try again later."
+  err-relay-failed: "The mail server refused the message. Try again in a moment."
+  err-failed: "The message could not be sent."
+  show-new: "Show"
+  new-arrived: "%count% new message(s) arrived"
+  sent: "Sent"
+  sent-empty: "Nothing sent yet."
+  via-game: "from the Game Boy"
+  via-web: "from the web"
+  select-all: "Select all"
+  n-selected: "%count% selected"
+  delete-selected: "Delete selected"
+  confirm-delete-sent: "Delete the selected sent copies? Sent mail has no trash, so this cannot be undone."
+  per-page: "Per page"
+  page-prev: "Previous"
+  page-next: "Next"
+  page-of: "Page %page% of %pages%"
+  restore-selected: "Restore selected"
+  delete-selected-forever: "Delete selected"
+  hint-list: "Pick messages to act on"
+  hint-read: "Reading email"
+  hint-trash: "In the trash"
+
+passport:
+  title: "Your passport to REON."
+  download-hint: "Click here to download"
+  intro: "This file is your passport to accessing REON's services."
+  body-1: "Whether you're connecting through emulation with mGBA or using original hardware, this small configuration file contains the information your game needs to find and connect to REON."
+  body-2: "Think of it as the link between your game and the REON network. Once mobile_config.bin is installed in the correct location, supported games and software can use it to connect to REON's servers and access their online functionality."
+  mgba-heading: "Playing with mGBA?"
+  mgba-body: "It's easy to get started! Download mobile_config.bin, then head over to the mGBA Setup Guide. We'll take you through the process step by step."
+  hardware-heading: "Playing on original hardware?"
+  hardware-body: "You can connect to REON from the real thing, too! Check out the Original Hardware Setup Guide to find out what you'll need and how to get connected."
+  keep-heading: "Don't lose your passport!"
+  keep-body: "Keep a copy of mobile_config.bin somewhere safe. You may need it again if you set up REON on another device or reinstall your emulator."
+  redownload-note: "If you ever lose it, a fresh copy can be downloaded from your %link_open%My Account%link_close% page."
+devices:
+  title: "Connected devices"
+  intro: "Every device that has used this account to send mail to the real internet appears here, most recent first. Give a device a name once you have recognised it, and block one you no longer trust."
+  code-help: "The pairing code is the same one the device shows on its own screen, console or serial output, so you can match the row to the device in your hands."
+  none: "No device has connected yet."
+  code: "Pairing code"
+  nickname: "Name"
+  nickname-placeholder: "e.g. blue 3DS"
+  status: "Status"
+  status-authorized: "Authorized now"
+  status-blocked: "Blocked"
+  status-idle: "Idle"
+  last-seen: "Last seen"
+  first-seen: "First seen"
+  actions: "Actions"
+  save: "Save"
+  block: "Block"
+  unblock: "Unblock"
+  block-confirm: "Block this device? It will stop being able to send mail to the real internet until you unblock it here."
+  block-help: "Blocking keeps the device's record so nothing it sent earlier can be replayed; you can unblock it at any time."
+  limit: "Up to %n% devices per account."
+  legacy: "No identification"
+  ago-now: "just now"
+  ago-minutes: "%n% min ago"
+  ago-hours: "%n% h ago"
+  ago-days: "%n% days ago"
+
+notify:
+  title: "Notifications"
+  bell: "Notifications"
+  none: "Nothing here yet."
+  see-all: "See all notifications"
+  unread: "%count% new"
+  mark-read: "Mark all as read"
+  all-read: "All caught up"
+  history-note: "Every notification is kept until you clear it yourself. Clearing removes the list only: the mail or trade an entry points to stays where it is."
+  clear: "Clear notifications"
+  clear-hint: "Clearing removes the list only. Nothing it points to is deleted."
+  clear-confirm: "Clear every notification? This cannot be undone."
+  newer: "Newer"
+  older: "Older"
+  cat-mail: "Mail"
+  cat-trade: "Trade"
+  cat-game: "Game"
+  cat-system: "System"
+  cat-admin: "Announcement"
+  new-mail: "New mail from %from%"
+  trade-done: "Trade completed"
+  trade-none: "No trade yet"
+
+errors:
+  title: "Adapter error codes"
+  intro: "When something goes wrong the game shows a message and, behind it, a code. Type that code here to look it up. Codes that mean the same thing share one answer, and each entry can show the message the game itself prints."
+  filter-code: "Error code"
+  partial: "※ Not every code has an explanation yet."
+  count: "Showing %n% of %total% codes."
+  no-meaning: "No description yet"
+  missing: "The error data has not been built yet. Run maint/build_adapter_errors.php."

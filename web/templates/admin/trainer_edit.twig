@@ -1,0 +1,145 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}<code>{{ page.url }}</code>{% endblock %}
+
+{% block admin_actions %}
+	<div class="admin-form__row">
+		<a class="btn btn-sm btn-outline-secondary" href="{{ page.url }}" target="_blank" rel="noopener">{{ 'admin.trainer-open'|trans }}</a>
+		<a class="btn btn-sm btn-outline-secondary" href="/admin/trainer.php">{{ 'admin.trainer-back'|trans }}</a>
+	</div>
+{% endblock %}
+
+{% block admin_head %}
+	<script src="{{ asset('/js/trainer-editor.js') }}" defer></script>
+{% endblock %}
+
+{% block admin_body %}
+	{% if not page.writable %}
+		<p class="admin-notice admin-notice--bad">{{ 'admin.trainer-readonly'|trans }}</p>
+	{% endif %}
+
+	<form method="post" class="trainer-edit" id="trainer-edit-form"
+	      data-trainer-editor
+	      data-base="{{ page.url }}">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="action" value="save">
+		<input type="hidden" name="page" value="{{ page.url }}">
+
+		<div class="trainer-edit__source">
+			<label class="trainer-edit__label" for="trainer-html">HTML</label>
+			<textarea id="trainer-html" name="html" spellcheck="false"
+			          {% if not page.writable %}readonly{% endif %}
+			          data-trainer-source>{{ html }}</textarea>
+			<p class="admin-form__hint">
+				{{ 'admin.trainer-tags'|trans }}:
+				{% for tag in tags %}<code>&lt;{{ tag }}&gt;</code>{% if not loop.last %} {% endif %}{% endfor %}
+				<br>{{ 'admin.trainer-tags-note'|trans }}
+			</p>
+		</div>
+
+		<div class="trainer-edit__preview">
+			<span class="trainer-edit__label">{{ 'admin.trainer-preview'|trans }}</span>
+			{# The Game Boy screen is 160x144. The frame below is exactly that,
+			   drawn at 2x, with the Mobile Trainer's own font at its real
+			   size -- so where a line wraps here is roughly where it wraps
+			   there. Roughly, and no more than that: what the adapter runs is
+			   its own renderer, not a browser, and the note under it says so
+			   rather than letting the picture imply a promise. #}
+			<div class="trainer-screen">
+				<iframe class="trainer-screen__frame" title="{{ 'admin.trainer-preview'|trans }}"
+				        sandbox referrerpolicy="no-referrer" data-trainer-preview></iframe>
+			</div>
+			<p class="admin-form__hint">{{ 'admin.trainer-preview-note'|trans }}</p>
+		</div>
+
+	</form>
+
+	{# Its own form, outside the editor's: a form cannot contain another one,
+	   and this one posts a file rather than the page. #}
+	<section class="admin-section trainer-images">
+		<h2 class="admin-section__title">{{ 'admin.trainer-images'|trans }}</h2>
+
+		{% if images is empty %}
+			<p class="admin-form__hint">{{ 'admin.trainer-img-empty'|trans }}</p>
+		{% else %}
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>{{ 'admin.trainer-img-name'|trans }}</th>
+							<th>{{ 'admin.trainer-img-write'|trans }}</th>
+							<th>{{ 'admin.trainer-img-facts'|trans }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for img in images %}
+							<tr>
+								<td><code>{{ img.name }}</code></td>
+								{# What to type in the page to reach it, ready to be copied
+								   rather than worked out from the directory layout. #}
+								<td><code>&lt;img src="{{ img.ref }}"&gt;</code></td>
+								<td>
+									{% if img.ok %}
+										<span class="admin-pill admin-pill--up">{{ 'admin.trainer-img-ok'|trans }}</span>
+									{% else %}
+										{# Checked again on listing, not only on upload: a file
+										   that would be refused today is worth flagging even
+										   though nothing refused it when it arrived. #}
+										<span class="admin-pill admin-pill--down">{{ ('admin.trainer-img-' ~ img.reason)|trans({'%n%': image_max}) }}</span>
+									{% endif %}
+									<span class="admin-form__hint">
+										{% if img.facts.width is defined %}{{ img.facts.width }}×{{ img.facts.height }}{% endif %}
+										{% if img.facts.depth is defined %} · {{ img.facts.depth }}BPP{% endif %}
+										· {{ img.size }} bytes
+									</span>
+								</td>
+								<td>
+									{% if img.writable %}
+										<form method="post" onsubmit="return confirm('{{ 'admin.trainer-img-delete-confirm'|trans|e('js') }}');">
+											<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+											<input type="hidden" name="action" value="image-delete">
+											<input type="hidden" name="page" value="{{ page.url }}">
+											<input type="hidden" name="name" value="{{ img.name }}">
+											<button class="btn btn-sm btn-outline-danger" type="submit">{{ 'admin.trainer-delete'|trans }}</button>
+										</form>
+									{% endif %}
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+
+		{% if page.writable %}
+			<form class="admin-form" method="post" enctype="multipart/form-data">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="action" value="upload">
+				<input type="hidden" name="page" value="{{ page.url }}">
+				<label>
+					{{ 'admin.trainer-img-file'|trans }}
+					<span class="admin-form__hint">{{ 'admin.trainer-img-rules'|trans({'%n%': image_max}) }}</span>
+					<input type="file" name="image" accept=".bmp,image/bmp" required>
+				</label>
+				<label>
+					{{ 'admin.trainer-img-rename'|trans }}
+					<span class="admin-form__hint">{{ 'admin.trainer-img-rename-hint'|trans }}</span>
+					<input type="text" name="name" maxlength="24" placeholder="banner" spellcheck="false">
+				</label>
+				<div class="admin-form__row">
+					<button class="btn btn-outline-primary" type="submit">{{ 'admin.trainer-img-upload'|trans }}</button>
+				</div>
+			</form>
+		{% endif %}
+	</section>
+
+	{# Outside the editor's form, on purpose: a form cannot contain another
+	   one, and the upload below needed to be its own. HTML5's form attribute
+	   lets the button sit at the end of the page -- where someone finishes
+	   reading -- and still submit the editor above it. #}
+	<div class="trainer-edit__actions">
+		<button class="btn btn-primary" type="submit" form="trainer-edit-form"{% if not page.writable %} disabled{% endif %}>{{ 'admin.trainer-save'|trans }}</button>
+		<span class="admin-form__hint" data-trainer-size></span>
+	</div>
+{% endblock %}

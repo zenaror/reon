@@ -6,8 +6,19 @@
   var MOBILE_SCALE_MEDIA_QUERY = "(max-width: 768px)";
   var supportsElementZoomCache = null;
 
+  // Phones always open at 1x; 2x there is a choice for this visit only (the
+  // cards then scroll sideways inside the box). Larger screens remember.
+  var phoneQuery = window.matchMedia ? window.matchMedia("(max-width: 575.98px)") : null;
+
   function clampScale(raw) {
     return String(raw) === "2" ? "2" : "1";
+  }
+
+  function rememberedScale() {
+    if (phoneQuery && phoneQuery.matches) {
+      return "1";
+    }
+    return localStorage.getItem(SCALE_STORAGE_KEY) || "1";
   }
 
   function supportsElementZoom() {
@@ -132,6 +143,13 @@
 
   function applyTradeScale(scale) {
     var resolved = clampScale(scale);
+    if (phoneQuery && !phoneQuery.__reonBound) {
+      phoneQuery.__reonBound = true;
+      // Rotating past the breakpoint restores whatever the user chose.
+      phoneQuery.addEventListener("change", function () {
+        applyTradeScale(rememberedScale());
+      });
+    }
     var page = document.querySelector(".exchange-page");
     if (!page) {
       return resolved;
@@ -156,7 +174,7 @@
       return false;
     }
 
-    var initial = clampScale(localStorage.getItem(SCALE_STORAGE_KEY) || "1");
+    var initial = clampScale(rememberedScale());
     applyTradeScale(initial);
     setActiveScaleButton(buttons, initial);
 
@@ -180,7 +198,7 @@
       return;
     }
 
-    var initial = clampScale(localStorage.getItem(SCALE_STORAGE_KEY) || slider.value || "1");
+    var initial = clampScale((phoneQuery && phoneQuery.matches) ? "1" : (localStorage.getItem(SCALE_STORAGE_KEY) || slider.value || "1"));
     slider.value = initial;
     applyTradeScale(initial);
 

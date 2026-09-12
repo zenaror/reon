@@ -1,0 +1,118 @@
+{% extends "main.twig" %}
+
+{% block title %}{{ 'devices.title'|trans }}{% endblock %}
+
+{% block content %}
+	<h1 class="mb-3">{{ 'devices.title'|trans }}</h1>
+	<p class="text-body-secondary">{{ 'devices.intro'|trans }}</p>
+	<p class="text-body-secondary"><small>{{ 'devices.code-help'|trans }}</small></p>
+
+	<div class="card mb-4">
+		<div class="card-body p-0">
+			{% if devices is empty %}
+				<p class="m-3 mb-3 text-body-secondary">{{ 'devices.none'|trans }}</p>
+			{% else %}
+			<div class="table-responsive">
+				<table class="table table-hover align-middle mb-0">
+					<thead>
+						<tr>
+							<th scope="col">{{ 'devices.code'|trans }}</th>
+							<th scope="col">{{ 'devices.nickname'|trans }}</th>
+							<th scope="col">{{ 'devices.status'|trans }}</th>
+							<th scope="col">{{ 'devices.last-seen'|trans }}</th>
+							<th scope="col">{{ 'devices.first-seen'|trans }}</th>
+							<th scope="col" class="text-end">{{ 'devices.actions'|trans }}</th>
+						</tr>
+					</thead>
+					<tbody>
+					{% for d in devices %}
+						<tr{% if d.blocked %} class="table-secondary"{% endif %}>
+							<td>
+								<code class="fs-6">{{ d.pairing_code }}</code>
+								{% if d.legacy %}<br><small class="text-body-secondary">{{ 'devices.legacy'|trans }}</small>{% endif %}
+							</td>
+							<td>
+								<form method="post" class="d-flex gap-1" style="min-width: 14rem;">
+									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+									<input type="hidden" name="op" value="nickname">
+									<input type="hidden" name="device" value="{{ d.device_id }}">
+									<input type="text" name="nickname" class="form-control form-control-sm" maxlength="32" value="{{ d.nickname|default('')|e }}" placeholder="{{ 'devices.nickname-placeholder'|trans }}" aria-label="{{ 'devices.nickname'|trans }}">
+									<button type="submit" class="btn btn-sm btn-outline-primary">{{ 'devices.save'|trans }}</button>
+								</form>
+							</td>
+							<td>
+								{% if d.blocked %}
+									<span class="badge text-bg-secondary">{{ 'devices.status-blocked'|trans }}</span>
+								{% elseif d.authorized_now %}
+									<span class="badge text-bg-success">{{ 'devices.status-authorized'|trans }}</span>
+								{% else %}
+									<span class="badge text-bg-light border">{{ 'devices.status-idle'|trans }}</span>
+								{% endif %}
+							</td>
+							<td>
+								{% if d.last_seen %}
+									{{ d.last_seen }}<br>
+									<small class="text-body-secondary">{{ d.ago_key|trans({'%n%': d.ago_n}) }}{% if d.last_ip %} · {{ d.last_ip }}{% endif %}</small>
+								{% else %}
+									<span class="text-body-secondary">—</span>
+								{% endif %}
+							</td>
+							<td>{{ d.first_seen }}</td>
+							<td class="text-end">
+								<form method="post" class="d-inline"{% if not d.blocked %} onsubmit="return confirm({{ 'devices.block-confirm'|trans|json_encode }});"{% endif %}>
+									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+									<input type="hidden" name="device" value="{{ d.device_id }}">
+									{% if d.blocked %}
+										<input type="hidden" name="op" value="unblock">
+										<button type="submit" class="btn btn-sm btn-outline-success">{{ 'devices.unblock'|trans }}</button>
+									{% else %}
+										<input type="hidden" name="op" value="block">
+										<button type="submit" class="btn btn-sm btn-outline-danger">{{ 'devices.block'|trans }}</button>
+									{% endif %}
+								</form>
+							</td>
+						</tr>
+					{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% endif %}
+		</div>
+		<div class="card-footer text-body-secondary">
+			<small>{{ 'devices.block-help'|trans }} {{ 'devices.limit'|trans({'%n%': max_devices}) }}</small>
+		</div>
+	</div>
+
+	<div class="card mb-4 border-danger-subtle">
+		<div class="card-body">
+			<h2 class="fs-5">{{ 'account.revoke-devices'|trans }}</h2>
+			<p class="text-body-secondary mb-3">{{ 'account.revoke-devices-warning'|trans }}</p>
+			<button type="button" class="btn btn-outline-danger js-only" data-bs-toggle="modal" data-bs-target="#confirmRevokeDevicesModal">{{ 'account.revoke-devices'|trans }}</button>
+			<noscript>
+				<a href="revoke_devices.php" class="btn btn-outline-danger">{{ 'account.revoke-devices'|trans }}</a>
+			</noscript>
+		</div>
+	</div>
+
+	<a href="summary.php" class="btn btn-outline-primary">&larr; {{ 'your-account'|trans }}</a>
+{% endblock %}
+
+{% block body %}
+	<div id="confirmRevokeDevicesModal" class="modal fade" tabindex="-1" aria-labelledby="confirmRevokeDevicesModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 id="confirmRevokeDevicesModalLabel" class="modal-title fs-5">{{ 'account.revoke-devices'|trans }}</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					{{ 'account.revoke-devices-confirm-message'|trans }}<br>
+					{{ 'account.revoke-devices-warning'|trans }}
+				</div>
+				<div class="modal-footer">
+					<a href="revoke_devices.php" class="btn btn-danger">{{ 'account.revoke-devices'|trans }}</a>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}

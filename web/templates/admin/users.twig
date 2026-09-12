@@ -1,0 +1,61 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.users-title'|trans }} <span class="admin-form__hint">({{ total }})</span>{% endblock %}
+
+{% block admin_body %}
+	<form class="admin-form__row mb-3" method="get">
+		<input type="search" name="q" value="{{ q }}" placeholder="{{ 'admin.users-search'|trans }}" aria-label="{{ 'admin.users-search'|trans }}">
+		<button class="btn btn-outline-primary" type="submit">{{ 'admin.users-search-go'|trans }}</button>
+	</form>
+
+	{% if users is empty %}
+		<p>{{ 'admin.users-none'|trans }}</p>
+	{% else %}
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th class="admin-table__num">{{ 'admin.users-id'|trans }}</th>
+						<th>{{ 'admin.users-name'|trans }}</th>
+						<th>{{ 'admin.users-email'|trans }}</th>
+						<th>{{ 'admin.users-dion'|trans }}</th>
+						<th class="admin-table__num">{{ 'admin.users-devices'|trans }}</th>
+						<th>{{ 'admin.users-state'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for u in users %}
+						<tr{% if u.banned %} class="is-banned"{% endif %}>
+							<td class="admin-table__num">{{ u.id }}</td>
+							<td>{{ u.username }}</td>
+							<td>{{ u.email|default('—') }}</td>
+							<td><code>{{ u.dion_email_local }}</code></td>
+							<td class="admin-table__num">
+								{{ u.devices }}{% if u.devices_blocked > 0 %} <span class="admin-pill admin-pill--down">{{ u.devices_blocked }}</span>{% endif %}
+							</td>
+							<td>
+								{% if u.banned %}
+									<span class="admin-pill admin-pill--down">{{ 'admin.users-banned'|trans }}</span>
+								{% else %}
+									<span class="admin-pill admin-pill--up">{{ 'admin.users-active'|trans }}</span>
+								{% endif %}
+								{% if u.is_admin %} <span class="admin-pill admin-pill--on">{{ 'admin.users-admin'|trans }}</span>{% endif %}
+							</td>
+							<td><a href="/admin/users.php?id={{ u.id }}">{{ 'admin.users-open'|trans }}</a></td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+
+		{% if pages > 1 %}
+			<nav class="admin-form__row mt-3">
+				{% set base = '/admin/users.php?' ~ (q ? 'q=' ~ q|url_encode ~ '&' : '') %}
+				{% if page > 1 %}<a class="btn btn-sm btn-outline-secondary" href="{{ base }}page={{ page - 1 }}">&larr;</a>{% endif %}
+				<span>{{ page }} / {{ pages }}</span>
+				{% if page < pages %}<a class="btn btn-sm btn-outline-secondary" href="{{ base }}page={{ page + 1 }}">&rarr;</a>{% endif %}
+			</nav>
+		{% endif %}
+	{% endif %}
+{% endblock %}

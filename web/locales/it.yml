@@ -5,20 +5,118 @@ locale:
   es: Español
   it: Italiano
   fr: Français
+  pt-br: Português (Brasil)
 
 home: Home
 games: Giochi
 mobile-home: Pagina mobile
 news: Notizie
+guide: "Per iniziare"
+downloads: "Download"
+terms: "Termini d'uso"
+privacy: "Informativa sulla privacy"
+close: "Chiudi"
+open-full-page: "Apri la pagina intera"
+page-not-found: "Questa pagina non esiste ancora."
+page-contents: "Contenuti"
+game-page:
+  on-this-page: "In questa pagina"
+  services: "Servizi online"
+  map-gallery: "Galleria delle mappe"
+  get-started: "Per iniziare"
+news-empty: "Ancora nessuna notizia."
+news-see-more: "Leggi di più"
+news-newer: "Più recenti"
+news-older: "Meno recenti"
+news-not-found: "Questo articolo non esiste (o non è pubblicato)."
+news-back-to-list: "Torna alle notizie"
 status: Stato
-players-online: Giocatori online
-in-service-since: In servizio dal
+service-web: Web
+service-mail: Posta
+service-mobile-relay: Relay
+service-relay-policy: Posta esterna
+service-status-up: Online
+service-status-down: Offline
+service-status-unknown: Sconosciuto
+service-devices-connected: "%count% connesso/i"
 welcome-alpha: Benvenuto alla prova alfa!
 login: Accedi
 logout: Esci
 signup: Registrati
+forgot-password: Password dimenticata
+email-addr: Indirizzo e-mail
+email-or-username: E-mail o nome utente
+password: Password
+password-show: Mostra password
+password-hide: Nascondi password
+password-caps-on: Blocco maiuscole attivo
+current-password: Password attuale
+new-password: Nuova password
+confirm-password: Conferma password
+confirm-new-password: Conferma nuova password
+new-email: Nuova e-mail
+invalid-email: E-mail non valida
+password-invalid: "La password deve contenere tra 8 e 71 caratteri."
+password-hint: "Da 8 a 71 caratteri."
+password-rules-label: "Requisiti della password"
+password-rule-min: "Almeno %count% caratteri"
+password-rule-max: "Al massimo %count% caratteri"
+passwords-dont-match: Le password non corrispondono
+wrong-password: Password errata
+link-invalid-expired: Questo link non è valido o è scaduto.
+csrf-invalid: Questo modulo è scaduto o non proviene da questo sito. Torna indietro e riprova.
+email-send-failed: Non siamo riusciti a inviare l'e-mail in questo momento. Riprova tra qualche minuto.
+invalid-trade-setting: Non è un'impostazione di regione valida.
+default-time-zone: Predefinito (Giappone, +0900)
+invalid-time-zone-setting: Non è un fuso orario valido.
+continue: Continua
+reset: Reimposta
+reset-password: Reimposta password
+send: Invia
+reveal: Mostra
+what-is-this: "Cos'è questo?"
+
+auth:
+  login-to-reon: Accedi al tuo account REON
+  invalid-email-pass: E-mail o password errati
+  signup-to-reon: Registrati su REON
+  i-agree-terms: Accetto i termini di utilizzo e l'informativa sulla privacy
+  you-must-agree: Devi accettare
+  registration-email-sent: Se non sei ancora registrato, un'e-mail contenente un link per continuare la registrazione è stata inviata all'indirizzo specificato.
+  registration-complete: La tua registrazione è completa.
+  reon-username: "Nome utente REON"
+  reon-username-hint: "Da 3 a 20 caratteri, solo lettere minuscole e numeri."
+  reon-username-invalid: "Nome utente non valido o già in uso"
+  reon-username-mail-note: "Questo nome diventa anche il tuo indirizzo e-mail REON, usato dai giochi:"
+  reon-username-mail-internal: "Dal Game Boy"
+  reon-username-mail-external: "Da internet"
+  reon-username-taken: "Questo nome è già in uso — scegline un altro."
+  reon-username-free: "Questo nome è disponibile."
+  reon-username-mail-or: "o"
+  reon-username-mail-truncated: "Il Game Boy accetta solo 8 caratteri, quindi l'indirizzo nel gioco è il tuo nome utente accorciato: entrambi arrivano nella stessa casella."
+  region-explanation-para1: REON consente lo scambio internazionale per i giocatori di Pokémon Cristallo, tramite la funzione di gioco chiamata Trade Corner. Questo include scambi tra giochi giapponesi e non giapponesi, normalmente incompatibili perché usano set di caratteri diversi. Per rendere possibili questi scambi, il servizio modifica i soprannomi dei Pokémon, i nomi degli Allenatori e i messaggi scritti sulla Posta durante l'abbinamento di Pokémon tra giochi giapponesi e non giapponesi (ad esempio, cambiando "A" in "ア", e viceversa). Queste modifiche sono irreversibili, ma cercano di imitare la scrittura della lingua originale nel modo più fedele possibile.
+  region-explanation-para2: Scegli l'insieme di regioni con cui accetti di scambiare. Questa impostazione può essere modificata anche dopo la registrazione.
+
+password-reset:
+  title: Reimposta la tua password
+  this-email-not-registered: Questa e-mail non è registrata
+  email-sent-recently: Un'e-mail è stata inviata meno di 5 minuti fa
+  email-sent: Se registrata, un'e-mail contenente un link per reimpostare la password è stata inviata all'indirizzo specificato.
+  success: La tua password è stata reimpostata con successo.
+
 your-account: Il mio account
 pokemon-crystal: Pokémon Cristallo
+pokemon-stadium: "Pokémon Stadium"
+rankings: Classifica
+trade-corner: Trade Corner
+battle-tower: Torre di Lotta
+bxt-save-converter: Convertitore di salvataggi BXT
+pokemon-pages:
+  index-description: Piccole creature carine e altre cose
+  rankings-description: "Quanto hai detto che era grande quel Magikarp?"
+  trade-corner-description: "Guarda tutti quei Caterpie e Weedle!"
+  battle-tower-description: Visualizza l'albo d'onore della Torre di Lotta per livello e stanza.
+  bxt-save-converter-description: Converti i salvataggi BYT di Cristallo nel formato BXT localmente nel tuo browser.
 gameboy-wars: Game Boy Wars 3
 
 mario-kart:
@@ -827,4 +925,475 @@ account:
   pokemon-news-custom-opt-in-off: Solo notizie Pokémon ufficiali
   pokemon-news-custom-opt-in-on: Notizie Pokémon personalizzate quando disponibili
 
+  your-reon-account: Il tuo account REON
+  account-details: Dettagli account
+  reon-identity: "Identità REON"
+  external-email: "Indirizzo e-mail esterno"
+  external-email-alias: "Raggiungibile anche a"
+  change-email: Cambia e-mail
+  change-password: Cambia password
+  download-config-data: Scarica dati di configurazione
+  reroll-success: La tua Password DION è stata rigenerata.
+  stats: Statistiche
+  emails-in-inbox: E-mail nella posta in arrivo
+  money-spent: Denaro speso
+  dion-account-details: Dettagli account DION
+  dion-id: ID DION
+  log-in-password: Password DION
+  relay-number: Numero REON
+  relay-token: Token Relay
+  reroll-log-in-password: Rigenera Password DION
+  reroll-confirm-message: Sei sicuro di voler farlo?
+  reroll-warning: Dovrai cambiare la password in tutti i giochi.
+  revoke-devices: Revoca tutti i dispositivi
+  revoke-devices-confirm-message: Sei sicuro di voler farlo?
+  revoke-devices-warning: Ogni dispositivo che usa questo account dovrà scaricare un nuovo file di configurazione prima di poter inviare di nuovo posta a internet reale.
+  revoke-devices-success: Tutti i dispositivi di questo account sono stati revocati. Scarica un nuovo file di configurazione su ogni dispositivo che vuoi continuare a usare.
+  change-email-address: Cambia il tuo indirizzo e-mail
+  email-changed-success: La tua e-mail è stata cambiata con successo.
+  email-confirm-sent: Se non sei ancora registrato, un'e-mail contenente un link per confermare questa modifica è stata inviata all'indirizzo specificato.
+  change-your-password: Cambia la tua password
+  password-changed-success: La tua password è stata cambiata con successo.
+  trade-corner-region-allowlist: "Trade Corner: Preferenze di Scambio"
+  trade-option-1: Solo nazionale (solo la regione del tuo gioco)
+  trade-option-2: Tutte le regioni con lingue compatibili
+  trade-option-3: Tutte le regioni, inclusa la conversione latino-giapponese
+  time-zone: Fuso orario
+  time-zone-blurb: Scegli il fuso orario in cui vengono mostrate le date e gli orari sul sito. Lascia il valore predefinito per vedere tutto nel fuso orario originale del gioco (Giappone, +0900).
+  update-settings: Aggiorna impostazioni
 invalid-pokemon-news-setting: Preferenza Notizie Pokémon non valida.
+
+mail:
+  title: "REON Mail"
+  inbox: "Posta in arrivo"
+  inbox-summary: "%total% in arrivo · %unread% da leggere"
+  filter-placeholder: "Cerca oggetto, mittente o testo"
+  filter-all: "Tutto"
+  filter-unread: "Solo da leggere"
+  filter-players: "Solo giocatori"
+  filter-internet: "Solo internet"
+  filter-apply: "Filtra"
+  filter-clear: "Azzera"
+  filter-none: "Niente corrisponde al filtro."
+  thread-with: "%count% messaggi con %party%"
+  thread-unread: "%count% da leggere"
+  thread-you: "Tu"
+  thread-delete: "Elimina conversazione"
+  thread-hint: "Lettura di una conversazione"
+  thread-count: "%count% messaggi"
+  thread-you-wrote: "hai scritto"
+  sent-summary: "%total% inviati"
+  trash-summary: "%total% nel cestino"
+  empty: "Nessun messaggio."
+  message: "Messaggio"
+  from: "Da"
+  date: "Data"
+  game: "Gioco"
+  no-subject: "senza oggetto"
+  back: "Torna alla posta"
+  not-found: "Questo messaggio non esiste."
+  read-only-note: "Solo lettura per ora: i messaggi che il gioco scarica e rimuove dal server spariscono anche da qui."
+
+passport:
+  title: "Il tuo passaporto per REON."
+  download-hint: "Clicca qui per scaricare"
+  intro: "Questo file è il tuo passaporto per accedere ai servizi di REON."
+  body-1: "Che tu ti stia collegando tramite emulazione con mGBA o con hardware originale, questo piccolo file di configurazione contiene le informazioni di cui il tuo gioco ha bisogno per trovare REON e connettersi ad esso."
+  body-2: "Pensalo come il collegamento tra il tuo gioco e la rete REON. Una volta installato mobile_config.bin nel posto giusto, i giochi e i software supportati possono usarlo per connettersi ai server di REON e accedere alle loro funzionalità online."
+  mgba-heading: "Giochi con mGBA?"
+  mgba-body: "Iniziare è facile! Scarica mobile_config.bin, poi consulta la Guida alla configurazione di mGBA. Ti guideremo passo dopo passo."
+  hardware-heading: "Giochi su hardware originale?"
+  hardware-body: "Puoi collegarti a REON anche dalla console vera! Consulta la Guida alla configurazione per hardware originale per scoprire cosa ti serve e come collegarti."
+  keep-heading: "Non perdere il tuo passaporto!"
+  keep-body: "Conserva una copia di mobile_config.bin in un posto sicuro. Potresti averne di nuovo bisogno se configuri REON su un altro dispositivo o reinstalli il tuo emulatore."
+  redownload-note: "Se lo perdi, puoi scaricare una nuova copia dalla tua pagina %link_open%Il mio account%link_close%."
+devices:
+  title: "Dispositivi connessi"
+  intro: "Ogni dispositivo che ha usato questo account per inviare posta a internet reale compare qui, il più recente per primo. Dai un nome a un dispositivo quando lo riconosci e blocca quello di cui non ti fidi più."
+  code-help: "Il codice di abbinamento è lo stesso che il dispositivo mostra sul proprio schermo, console o uscita seriale, così puoi associare la riga all'apparecchio che hai in mano."
+  none: "Nessun dispositivo si è ancora connesso."
+  code: "Codice di abbinamento"
+  nickname: "Nome"
+  nickname-placeholder: "es. 3DS blu"
+  status: "Stato"
+  status-authorized: "Autorizzato ora"
+  status-blocked: "Bloccato"
+  status-idle: "Inattivo"
+  last-seen: "Ultimo utilizzo"
+  first-seen: "Primo utilizzo"
+  actions: "Azioni"
+  save: "Salva"
+  block: "Blocca"
+  unblock: "Sblocca"
+  block-confirm: "Bloccare questo dispositivo? Non potrà più inviare posta a internet reale finché non lo sblocchi qui."
+  block-help: "Il blocco conserva il record del dispositivo, così nulla di ciò che ha inviato prima può essere riutilizzato; puoi sbloccarlo in qualsiasi momento."
+  limit: "Fino a %n% dispositivi per account."
+  legacy: "Senza identificazione"
+  ago-now: "proprio ora"
+  ago-minutes: "%n% min fa"
+  ago-hours: "%n% h fa"
+  ago-days: "%n% giorni fa"
+
+notify:
+  title: "Notifiche"
+  bell: "Notifiche"
+  none: "Ancora niente qui."
+  see-all: "Vedi tutte le notifiche"
+  unread: "%count% nuove"
+  mark-read: "Segna tutte come lette"
+  all-read: "Tutto in ordine"
+  history-note: "Ogni notifica resta salvata finché non la cancelli tu. Cancellare rimuove solo l'elenco: il messaggio o lo scambio a cui rimanda resta dov'è."
+  clear: "Cancella notifiche"
+  clear-hint: "Cancellare rimuove solo l'elenco. Nulla di ciò che indica viene perso."
+  clear-confirm: "Cancellare tutte le notifiche? L'operazione è irreversibile."
+  newer: "Più recenti"
+  older: "Più vecchie"
+  cat-mail: "Posta"
+  cat-trade: "Scambio"
+  cat-game: "Gioco"
+  cat-system: "Sistema"
+  cat-admin: "Annuncio"
+  new-mail: "Nuova posta da %from%"
+  trade-done: "Scambio effettuato"
+  trade-none: "Ancora nessuno scambio"
+admin:
+  nav-adapter: "Config. adattatore"
+  adapter-title: "mobile_config.bin"
+  adapter-intro: "Ciò che il generatore scrive in ogni mobile_config.bin. Qui c'è solo quello che è uguale per tutti — indirizzo e-mail, gID, chiave del dispositivo e token di relay vengono da ciascun account e non si configurano."
+  adapter-dns: "DNS"
+  adapter-dns1: "DNS 1"
+  adapter-dns2: "DNS 2"
+  adapter-port: "Porta"
+  adapter-empty: "lascia vuoto"
+  adapter-dns2-note: "Lascia il DNS 2 vuoto a meno che non esista davvero un secondo server. Ripetere il primo indirizzo non dà ridondanza: fallirebbe per lo stesso motivo, nello stesso momento. Vuoto significa campo non impostato, e l'adattatore mantiene quello che il gioco aveva già."
+  adapter-relay: "Relay e P2P"
+  adapter-relay-host: "Server di relay"
+  adapter-p2p: "Porta P2P"
+  adapter-device: "Adattatore"
+  adapter-model: "Modello"
+  adapter-unmetered: "Senza tariffa al minuto"
+  adapter-current: "Dispositivo attuale:"
+  adapter-metered: "A consumo"
+  adapter-unmetered-short: "Senza consumo"
+  adapter-save: "Salva"
+  adapter-footer: "Una modifica salvata vale dal prossimo download. Nessuno deve riscaricare per questo: un file già in uso continua a funzionare, e questi valori decidono solo dove punta uno nuovo."
+  adapter-saved: "Salvato. I nuovi download usano questi valori."
+  adapter-failed: "Impossibile salvare."
+  adapter-invalid: "Non è stato salvato nulla. Controlla i campi segnalati sotto: un indirizzo o una porta senza senso produrrebbe un file che la cartuccia non riesce a leggere."
+  news-title: Gestione notizie
+  news-new: Nuovo articolo
+  news-editing: Modifica dell'articolo
+  news-date: Data
+  news-post-title: Titolo
+  news-state: Stato
+  news-published: Pubblicato
+  news-draft: Bozza
+  news-view: Vedi
+  news-edit: Modifica
+  news-delete: Elimina
+  news-delete-confirm: Eliminare questo articolo?
+  news-title-required: Serve un titolo.
+  news-body: Testo
+  news-markdown-hint: 'Markdown: **grassetto**, _corsivo_, ## titolo, [link](url), ![](immagine).'
+  news-publish: Pubblicato (visibile sul sito)
+  news-save: Salva
+  news-cancel: Annulla
+  news-preview: Anteprima
+  news-md-link: Link
+  news-md-list: Elenco
+  news-md-image: Immagine
+  news-upload-failed: Caricamento fallito.
+  panel: Amministrazione
+  nav-dashboard: Pannello
+  nav-news: Notizie
+  nav-news-maker: Pokémon News
+  news-maker-title: Pokémon News
+  news-maker-intro: Un numero della rivista è un piccolo programma che il gioco esegue, costruito con gli strumenti veri. Tu scegli le parole, le classifiche e il minigioco; tutto il resto viene da un numero che si sa funzionare.
+  news-maker-unavailable: 'Non si può ancora compilare — manca:'
+  news-maker-new: Nuovo numero
+  news-maker-back: Torna ai numeri
+  news-maker-none: Non è stato ancora creato nessun numero.
+  news-maker-issue: Numero
+  news-maker-rankings: Classifiche
+  news-maker-built: Compilato per
+  news-maker-not-built: non compilato
+  news-maker-name: Nome
+  news-maker-name-hint: Per te e per il nome del file. Non viene mostrato nel gioco.
+  news-maker-message: Riga della casella postale
+  news-maker-message-hint: 'L''unica riga che la casella postale del gioco mostra per questo numero prima che qualcuno lo apra. Se la lasci vuota, viene usato il titolo di questa lingua. Al massimo %n% caratteri, e scritta con i caratteri propri del gioco: ciò che non sa disegnare viene rifiutato indicando quale è.'
+  news-maker-schedule-locked: I numeri si possono compilare, ma non ancora programmare.
+  news-maker-schedule-why: 'Il calendario dei numeri fatti in casa è un file a parte, e il server web non può scriverlo. Di proposito non è la configurazione accanto: quella contiene anche il calendario delle notizie ordinarie, che questo pannello non ha motivo di cambiare:'
+  news-maker-built-only: compilato, ma fuori dal calendario — nessun giocatore lo vede
+  month-1: gennaio
+  month-2: febbraio
+  month-3: marzo
+  month-4: aprile
+  month-5: maggio
+  month-6: giugno
+  month-7: luglio
+  month-8: agosto
+  month-9: settembre
+  month-10: ottobre
+  month-11: novembre
+  month-12: dicembre
+  news-maker-date: Esce il
+  news-maker-date-hint: Il giorno in cui questo numero prende il posto degli altri, e continua a uscire finché non arriva il giorno di un altro. Scegli il mese e il giorno; l'anno è quello corrente, così un giorno che non è ancora arrivato aspetta invece di uscire subito. Febbraio si ferma al 28, perché un 29 esisterebbe solo in un anno bisestile.
+  news-maker-withdraw: Ritira
+  news-maker-withdrawn: Ritirato. Il gioco non lo userà più.
+  news-maker-withdraw-confirm: Togliere questo numero dal calendario ed eliminare ciò che è stato compilato? Smette di uscire, ma la riga delle notizie conserva il suo contenuto fino al prossimo cambio delle notizie ordinarie per quella regione, perché è allora che il programmatore la ricopia.
+  news-maker-lang-j: giapponese
+  news-maker-lang-e: inglese
+  news-maker-lang-d: tedesco
+  news-maker-lang-f: francese
+  news-maker-lang-i: italiano
+  news-maker-lang-s: spagnolo
+  news-maker-scheduled: Nel calendario
+  news-maker-template: Basato su
+  news-maker-template-hint: Il numero vero di cui questo prende menu, script e impaginazione.
+  news-maker-minigame: Minigioco
+  news-maker-minigame-broken: "Questo minigioco non compila con la toolchain attuale: c'è un errore nel suo stesso sorgente, a monte. Non c'è nessun premio da scegliere e il numero non può essere pubblicato con esso. Scegline un altro."
+  news-maker-publish-now-unbuilt: Questo numero non è ancora stato compilato. Aprilo, seleziona le lingue e premi prima Pubblica.
+  news-maker-published-now: In onda ora in %regions%.
+  news-maker-prizes: Premi
+  news-maker-prizes-hint: "Ciò che il minigioco consegna a chi vince. L'elenco è letto dal codice del minigioco stesso, quindi cambiare minigioco cambia l'elenco. Viene offerta tutta la tabella degli oggetti, oggetti chiave compresi: la cartuccia li conosce, ma il gioco non si aspetta di riceverne uno dalle notizie."
+  news-maker-prize: Premio %n%
+  news-maker-prize-default: "com'è: %item%"
+  news-maker-prize-fixed: Lo sceglie il minigioco.
+  news-maker-prize-none: Questo minigioco non consegna premi.
+  news-maker-bad-prize: "Questo oggetto non esiste:"
+  news-maker-headline-hint: Il nome del numero sulla schermata delle notizie — sullo striscione mentre la console lo scarica, e come titolo in cima alla pagina. Al massimo %n% caratteri, quanti ne usa il numero vero più largo.
+  news-maker-body-hint: 'Il testo dietro «Guida alle notizie»: l''articolo che legge il giocatore. Una riga vuota comincia un paragrafo; la prima riga apre il riquadro, la seconda sta sotto, il resto scorre. **%n% caratteri per riga**, perché il riquadro è largo %n% caselle. Nessun limite al numero di righe: il testo scorre.'
+  news-maker-random: CLASSIFICA CASUALE
+  news-maker-ranking-hint: 'Le tre classifiche di cui parla questo numero. «CLASSIFICA CASUALE» estrae una categoria al salvataggio, e ciò che è uscito resta: lo stesso numero non cambia classifiche tra una compilazione e l''altra. Le tre devono essere diverse: stanno una accanto all''altra su una sola schermata.'
+  news-maker-duplicate-ranking: Le tre classifiche devono essere diverse tra loro.
+  news-maker-no-categories: Non ci sono abbastanza categorie di classifica per riempire i tre posti.
+  news-maker-unknown-ranking: Questa non è una categoria di classifica che questi strumenti conoscano.
+  news-maker-too-long: 'Troppo lungo per lo schermo:'
+  news-maker-region-empty: 'Non si può compilare una regione la cui lingua non ha testo: non uscirebbe vuota, uscirebbe con l''articolo del 2002 del modello:'
+  news-maker-region-needs: Scrivi prima il titolo e l'articolo in %lang%.
+  news-maker-ranking: Classifica %n%
+  news-maker-text: Testi
+  news-maker-text-hint: Tre testi diversi, ognuno compare in un punto diverso. Se lasci vuota una lingua, quella lingua mantiene ciò che aveva il modello.
+  news-maker-text-none: "Seleziona una lingua in «Compila per» qui sopra e i suoi campi compaiono qui."
+  news-maker-headline: Titolo
+  news-maker-body: Articolo
+  news-maker-regions: Compila per
+  news-maker-regions-hint: Una compilazione per regione. Una regione si può scegliere solo quando la sua lingua ha titolo e articolo — E, P e U usano tutte e tre il testo inglese; F e D, S e I condividono una tabella di caratteri.
+  news-maker-save: Salva
+  news-maker-publish: Salva e compila
+  news-maker-saved: Salvato.
+  news-maker-published: Compilate %good% regioni su %total%.
+  news-maker-result: Risultato
+  news-maker-failed-region: fallita
+  news-maker-failed: 'Non è stato possibile: %detail%'
+  news-maker-deleted: Numero eliminato.
+  news-maker-publish-now: "Pubblica adesso"
+  news-maker-publish-now-confirm: "Pubblicare questo numero adesso? La sua data diventa oggi, e il programmatore parte subito dopo invece di aspettare il ciclo successivo. Una volta pubblicato non si può più modificare."
+  news-maker-ran: "Il programmatore è partito: è online."
+  news-maker-run-failed: "Compilato e programmato, ma il programmatore non è potuto partire adesso (%detail%). Esce al ciclo successivo, entro 15 minuti."
+  news-maker-restored: "Il numero ufficiale è tornato al suo posto in %count% regione/i."
+  news-maker-locked: 'Questo numero è già stato pubblicato: non può più essere modificato.'
+  news-maker-locked-title: Numero pubblicato — sola lettura
+  news-maker-locked-why: È già uscito e i giocatori potrebbero averlo letto. Ricompilarlo sopra cambierebbe il contenuto senza che nessuno possa accorgersene, con lo stesso nome e la stessa data. Per cambiare qualcosa, elimina questo numero e pubblicane un altro.
+  news-maker-delete-confirm: Eliminare questo numero? Ciò che è già stato compilato resta dov'è.
+  news-maker-need-name: Dagli prima un nome.
+  news-maker-need-region: Scegli almeno una regione per cui compilare.
+  nav-notifications: Notifiche
+  nav-users: Account
+  nav-services: Servizi
+  nav-logs: Registri
+  nav-trainer: Mobile Trainer
+  nav-audit: Attività
+  count-users: Account
+  count-banned: Bloccati
+  count-devices: Console
+  count-devices-blocked: Console bloccate
+  count-mail-today: Posta, ultime 24 h
+  count-trades: Scambi in attesa
+  count-news: Articoli di notizie
+  count-notifications: Notifiche inviate
+  audit-title: Attività di amministrazione
+  audit-empty: Qui non è stato ancora fatto nulla.
+  audit-when: Quando
+  audit-who: Chi
+  audit-what: Cosa
+  audit-target: Oggetto
+  audit-all: Vedi tutta l'attività
+  notify-title: Invia una notifica
+  notify-intro: Le notifiche compaiono sotto la campanella nell'intestazione e restano nella cronologia di chi le riceve. Dopo non si possono eliminare, né da te né da lui.
+  notify-to: A
+  notify-to-all: Tutti
+  notify-to-user: Account scelti
+  notify-to-many: '%count% account'
+  notify-user-hint: Scrivi un nome…
+  notify-user-remove: Togli
+  notify-sent-many: Inviata a %count% account.
+  notify-user: Account
+  notify-category: Tipo
+  notify-headline: Titolo
+  notify-body: Dettaglio (facoltativo)
+  notify-link: Link (facoltativo)
+  notify-send: Invia
+  notify-sent: Inviata a %who%.
+  notify-sent-all: Inviata a %count% account.
+  notify-need-title: Serve un titolo.
+  notify-no-user: Scegli a quale account inviarla.
+  notify-recent: Inviate di recente
+  notify-when: Quando
+  notify-who: A
+  users-title: Account
+  users-search: Cerca per nome o indirizzo
+  users-search-go: Cerca
+  users-id: ID
+  users-name: Nome
+  users-email: Indirizzo
+  users-dion: DION
+  users-devices: Console
+  users-state: Stato
+  users-actions: ''
+  users-open: Apri
+  users-none: Nessun account corrisponde.
+  users-active: Attivo
+  users-banned: Bloccato
+  users-admin: Amministratore
+  user-title: Account
+  user-back: Torna agli account
+  user-ban: Blocca
+  user-unban: Togli il blocco
+  user-ban-reason: Motivo (compare nel registro delle attività)
+  user-ban-confirm: Bloccare questo account? Perde il sito, la casella postale e l'adattatore.
+  user-make-admin: Dai l'amministrazione
+  user-drop-admin: Togli l'amministrazione
+  user-admin-confirm: Dare a questo account il pannello di amministrazione?
+  user-banned-since: Bloccato dal %when%
+  user-devices: Console
+  user-device-code: Codice
+  user-device-nick: Nome
+  user-device-state: Stato
+  user-device-seen: Vista l'ultima volta
+  user-device-block: Blocca
+  user-device-unblock: Sblocca
+  user-blocked: Bloccata
+  user-allowed: Consentita
+  user-no-devices: Nessuna console si è collegata con questo account.
+  err-no-such-user: Questo account non esiste.
+  err-not-yourself: Non sull'account con cui hai effettuato l'accesso.
+  err-not-an-admin: Un amministratore non può essere bloccato. Togligli prima l'amministrazione.
+  mailauth-title: "Autenticazione della posta"
+  mailauth-explain: "L'adattatore dimostra chi è con la chiave del dispositivo da 256 bit (APOP) e la password non viaggia mai in rete. La password di otto caratteri è l'ingresso vecchio, tenuto solo per gli adattatori che non parlano ancora APOP. Chiudilo quando le nuove versioni saranno in mano ai giocatori: otto caratteri si indovinano, e lasciare la porta debole accanto a quella solida significa che chi attacca userà la debole."
+  mailauth-on: "Accesso con password accettato"
+  mailauth-off: "Solo chiave del dispositivo"
+  mailauth-turn-off: "Richiedere la chiave del dispositivo"
+  mailauth-turn-on: "Accettare di nuovo le password"
+  mailauth-off-confirm: "Ogni adattatore che non sa fare APOP smetterà di scaricare la posta. Continuare?"
+  mailauth-on-confirm: "La password di otto caratteri tornerà a essere accettata. Continuare?"
+  setting-saved: "Impostazione salvata."
+  setting-failed: "Non è stato possibile salvare l'impostazione."
+  services-title: Servizi
+  services-note: Il riavvio passa per un programma di supporto che il server deve permettere esplicitamente. Finché non è installato, i pulsanti dicono cosa avrebbero eseguito e non cambiano nulla.
+  services-service: Servizio
+  services-state: Stato
+  services-restart: Riavvia
+  services-restart-confirm: Riavviare questo servizio? Chi è collegato viene disconnesso.
+  services-done: '%service%: %detail%'
+  services-failed: '%service% non è stato riavviato: %detail%'
+  services-unavailable: Su questo server il riavvio non è ancora abilitato. Non è stato eseguito nulla.
+  services-daemons: Sempre in funzione
+  services-jobs: Operazioni programmate
+  services-jobs-note: Girano su un timer di systemd. Eseguine una adesso, spegni il suo timer oppure dagli un altro orario — l'orario viene scritto come aggiunta, così l'unità che arriva col progetto non viene mai toccata e «Ripristina» la rimette a posto.
+  services-start: Avvia
+  services-stop: Ferma
+  services-run: Esegui adesso
+  services-refresh-confirm: Questo cancella le classifiche di TUTTE le regioni configurate, non solo di quelle le cui notizie sono cambiate oggi, e non si può annullare. Riapplicare le notizie e cancellare tutte le classifiche?
+  services-enable: Accendi
+  services-disable: Spegni
+  services-on: acceso
+  services-off: spento
+  services-running: in funzione
+  services-no-timer: nessun timer
+  services-schedule: Orario
+  services-schedule-hint: Calendario systemd, per es. *-*-* *:0/15:00
+  services-schedule-reset: Ripristina
+  services-schedule-reset-confirm: Tornare all'orario con cui questa operazione viene distribuita?
+  services-next: Prossima esecuzione
+  services-stop-confirm: Fermare questo servizio? Resta fermo finché qualcuno non lo riavvia.
+  services-disable-confirm: Spegnere questa operazione? Non girerà più finché non verrà riaccesa.
+  services-no-stop: 'Niente Ferma: questa pagina è servita da lui, quindi fermarlo toglierebbe il pulsante che lo riavvia.'
+  logs-title: Registri dei servizi
+  logs-service: Servizio
+  logs-lines: Righe
+  logs-show: Mostra
+  logs-empty: Niente da mostrare.
+  logs-unavailable: Il diario di sistema non è ancora leggibile, quindi non c'è niente da mostrare.
+  logs-unavailable-why: 'PHP gira come «%user%», e leggere il diario di sistema richiede di appartenere al gruppo del diario. Questo concede la lettura e nient''altro: non è la regola sudo di cui ha bisogno la pagina Servizi, e non permette a nessuno di riavviare niente:'
+  trainer-title: Pagine del Mobile Trainer
+  trainer-intro: Le pagine che un Game Boy vede attraverso il Mobile Trainer. Vengono servite così come sono all'adattatore, che disegna un piccolo sottoinsieme di HTML.
+  trainer-page: Pagina
+  trainer-size: Dimensione
+  trainer-changed: Modificata
+  trainer-edit: Modifica
+  trainer-save: Salva
+  trainer-saved: Salvata.
+  trainer-failed: 'Non è stato possibile salvare: %detail%'
+  trainer-none: Nessuna pagina trovata sotto web/htdocs/01.
+  trainer-back: Torna alle pagine
+  trainer-tags: Tag che l'adattatore disegna
+  trainer-new: Nuova pagina
+  trainer-new-intro: Una pagina è un file dentro la cartella di un gioco. Creala qui, poi collegala da un'altra pagina con &lt;a href="nome.html"&gt;.
+  trainer-dir: Cartella del gioco
+  trainer-file: Nome del file
+  trainer-file-hint: Minuscole, lettere, cifre, - e _. «.html» viene aggiunto.
+  trainer-entry: pagina iniziale
+  trainer-create: Crea
+  trainer-view: Vedi
+  trainer-open: Apri
+  trainer-delete: Elimina
+  trainer-delete-confirm: Eliminare questa pagina? Una console che la chiede non riceverà niente.
+  trainer-deleted: Pagina eliminata.
+  trainer-locked: sola lettura
+  trainer-preview: Come la vede la console
+  trainer-preview-note: '160x144 al doppio, con il carattere del Trainer stesso — così una riga va a capo qui più o meno dove va a capo là. Più o meno: l''adattatore usa il proprio disegnatore, non un browser.'
+  trainer-tags-note: 'Dalla documentazione dell''adattatore, e questa è la lista completa — <p>, <table> e <form> non ci sono. Niente viene rifiutato per essere assente, perché la documentazione non dice cosa fa l''adattatore con un tag che non conosce. Due sorprese: <b> rende il testo rosso invece che grassetto, e <center> funziona solo dentro <html>. Le immagini sono solo BMP a 1BPP, con ogni lato di 255 pixel al massimo.'
+  trainer-images: Immagini
+  trainer-img-empty: Questa pagina non ha ancora immagini.
+  trainer-img-name: File
+  trainer-img-write: Scrivi questo nella pagina
+  trainer-img-facts: Verificato
+  trainer-img-file: File BMP
+  trainer-img-rules: Solo BMP a 1BPP, ogni lato di %n% pixel al massimo, senza compressione. Verificato su ciò che sono davvero le immagini del sito in funzione, non sulla documentazione — quella rifiuterebbe 34 delle 37 già presenti.
+  trainer-img-rename: Dagli un nome (facoltativo)
+  trainer-img-rename-hint: Minuscole, lettere, cifre, - e _. «.bmp» viene aggiunto. Se lo lasci vuoto, viene usato il nome del file caricato.
+  trainer-img-upload: Carica
+  trainer-img-added: '%name% caricata.'
+  trainer-img-deleted: Immagine eliminata.
+  trainer-img-delete-confirm: Eliminare questa immagine? Una pagina che la indica ancora mostrerà l'icona di immagine rotta.
+  trainer-img-ok: ok
+  trainer-img-none: Non è stato ricevuto nessun file.
+  trainer-img-bad-name: In quel nome non c'è niente di utilizzabile.
+  trainer-img-not-a-bmp: Non è un BMP.
+  trainer-img-odd-header: Intestazione BMP in una forma che qui non si riesce a leggere.
+  trainer-img-not-1bpp: Deve essere a 1BPP. L'adattatore non disegna altro.
+  trainer-img-planes: Il numero di piani del BMP deve essere 1.
+  trainer-img-compressed: I BMP compressi non vengono accettati.
+  trainer-img-palette: Dichiara più colori di quanti possa averne una bitmap a 1BPP.
+  trainer-img-empty-image: L'immagine non ha pixel.
+  trainer-img-not-8-bit: Larghezza e altezza devono stare ciascuna in 8 bit (al massimo %n%).
+  trainer-img-offset-too-far: I dati dei pixel cominciano troppo avanti nel file per poter essere indirizzati.
+  trainer-img-too-large: Più grande di quanto il formato consenta.
+  trainer-img-too-big: Il file è troppo grande.
+  trainer-img-not-writable: Nella cartella delle immagini non si può scrivere.
+  trainer-img-mkdir-failed: Non è stato possibile creare la cartella delle immagini.
+  trainer-img-write-failed: Non è stato possibile scrivere il file.
+  trainer-img-replace-failed: Non è stato possibile mettere il file al suo posto.
+  trainer-img-no-such-page: Quella pagina non esiste.
+  trainer-readonly: Il server web non può scrivere questi file, quindi qui non si può ancora salvare niente.
+  trainer-readonly-why: 'PHP gira come «%user%», e le pagine appartengono all''account che le ha installate. Dare il permesso di scrittura a quell''utente è un solo comando:'
+
+errors:
+  title: "Codici di errore dell'adattatore"
+  intro: "Quando qualcosa non va il gioco mostra un messaggio e, dietro, un codice. Digita quel codice qui per cercarlo. I codici che significano la stessa cosa condividono un'unica risposta, e ogni voce può mostrare il messaggio che il gioco stesso stampa."
+  filter-code: "Codice di errore"
+  partial: "※ Non tutti i codici hanno ancora una spiegazione."
+  count: "Mostrati %n% di %total% codici."
+  no-meaning: "Ancora senza descrizione"
+  missing: "I dati di errore non sono ancora stati generati. Esegui maint/build_adapter_errors.php."

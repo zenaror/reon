@@ -1,0 +1,153 @@
+{
+  "families": {
+    "00": {
+      "title": "Le jeu n'a pas pu joindre REON",
+      "means": "Un code fourre-tout, utilisé quand le jeu n'en a pas de meilleur. En pratique il signifie la même chose que 10-XXX : la conversation avec l'adaptateur n'a mené nulle part.",
+      "todo": "Suivez les vérifications du 10-000, plus bas."
+    },
+    "10": {
+      "title": "L'adaptateur n'est pas là",
+      "means": "Le jeu a cherché un Mobile Adapter et n'a rien trouvé. Sur émulateur, cela veut presque toujours dire que l'adaptateur n'est pas activé dans l'émulateur ; sur matériel réel, que le câble ou l'adaptateur est mal enfoncé.",
+      "todo": "Branchez l'adaptateur <strong>avant</strong> de lancer le jeu et laissez-le en place. Dans mGBA, ouvrez <em>Mobile Game Boy Adapter…</em> et vérifiez qu'il est activé."
+    },
+    "11": {
+      "title": "L'appel n'a pas abouti",
+      "means": "L'adaptateur a tenté de composer et n'est arrivé à rien. Sur REON il n'y a pas de ligne téléphonique : c'est l'adaptateur qui échoue à ouvrir la connexion au serveur.",
+      "todo": "Vérifiez que la machine est connectée. Sur matériel réel, vérifiez les réglages Wi-Fi que vous avez flashés. Puis réessayez : le jeu considère cela comme passager."
+    },
+    "12": {
+      "title": "La ligne est occupée",
+      "means": "Même famille que 11 : l'adaptateur n'a pas pu établir la connexion, et le jeu accuse une ligne encombrée.",
+      "todo": "Patientez un instant et réessayez."
+    },
+    "13": {
+      "title": "L'appel n'a pas abouti",
+      "means": "Un autre échec de numérotation, affiché avec le même message que 11-000.",
+      "todo": "Patientez un instant et réessayez ; si cela ne marche jamais, regardez du côté du réseau."
+    },
+    "14": {
+      "title": "Les réglages de l'adaptateur sont abîmés",
+      "means": "La configuration stockée dans l'adaptateur n'a pas passé sa propre vérification, alors l'adaptateur refuse de s'en servir.",
+      "todo": "Rechargez votre <code>mobile_config.bin</code>. Il est sur <a href=\"/user/summary.php\">Votre compte</a>, et le <a href=\"/guide.php\">guide</a> dit où le placer."
+    },
+    "15": {
+      "title": "L'adaptateur a reçu une réponse qu'il n'a pas comprise",
+      "means": "Quelque chose a répondu, mais pas dans la forme attendue. C'est le code que les scripts de REON produisent eux-mêmes quand l'adaptateur n'a pas pu joindre un serveur correctement.",
+      "todo": "Réessayez. Si cela persiste, cela vaut un signalement : ce code veut généralement dire que les deux côtés ne s'accordent pas sur quelque chose, pas que vous avez mal fait."
+    },
+    "16": {
+      "title": "Erreur de communication",
+      "means": "L'un des échecs génériques. Le jeu n'a rien de plus à offrir que « cela n'a pas marché ».",
+      "todo": "Patientez et réessayez. Si cela se répète toujours au même endroit, signalez-le en disant ce que vous faisiez."
+    },
+    "20": {
+      "title": "Le mauvais centre mobile a été sélectionné",
+      "means": "L'adaptateur a tenté de joindre un service pour lequel il n'est pas configuré.",
+      "todo": "Rechargez votre <code>mobile_config.bin</code> : c'est lui qui pointe l'adaptateur vers REON."
+    },
+    "24": {
+      "title": "La connexion a été refusée",
+      "means": "L'adaptateur a atteint le réseau mais n'a pas pu ouvrir la connexion — un échec TCP.",
+      "todo": "Vérifiez que rien sur votre machine ne bloque la connexion sortante, puis réessayez."
+    },
+    "25": {
+      "title": "L'adaptateur n'a jamais été configuré",
+      "means": "Il n'y a aucune configuration dans l'adaptateur, il n'a donc nulle part où composer.",
+      "todo": "Chargez votre <code>mobile_config.bin</code>, ou lancez le Mobile Trainer pour enregistrer l'adaptateur."
+    },
+    "30": {
+      "title": "Le serveur de messagerie a refusé le message",
+      "means": "Cette famille concerne l'<strong>envoi de courrier</strong>. Les trois derniers chiffres sont la réponse SMTP du serveur lui-même — 4xx est temporaire, 5xx est définitif.",
+      "todo": "Voyez le code précis. Un 4xx vaut la peine d'être retenté ; un 5xx continuera d'échouer tant que rien ne change."
+    },
+    "31": {
+      "title": "Le serveur de la boîte a renvoyé une erreur",
+      "means": "Cette famille concerne la <strong>relève du courrier</strong> en POP3.",
+      "todo": "Réessayez. Si cela se répète, votre compte demande peut-être une vérification : voyez si vous pouvez lire la même boîte depuis <a href=\"/user/mail.php\">REON Mail</a>."
+    },
+    "32": {
+      "title": "La requête web a échoué",
+      "means": "Cette famille concerne les requêtes <strong>HTTP</strong> qu'un jeu émet pour les classements, les actualités et les téléchargements. Les trois derniers chiffres sont le statut HTTP renvoyé par le serveur.",
+      "todo": "Voyez le code précis ci-dessous."
+    },
+    "33": {
+      "title": "Le centre mobile a signalé un problème",
+      "means": "Le service a répondu, mais avec une plainte à lui plutôt qu'avec les données demandées.",
+      "todo": "Patientez et réessayez. Si une fonction précise échoue toujours ainsi, signalez-le : cela désigne cette fonction, pas votre installation."
+    },
+    "101": {
+      "title": "La connexion a lâché en dessous",
+      "means": "Un échec au niveau du socket : la connexion est tombée, a expiré ou a été réinitialisée pendant que le jeu s'en servait.",
+      "todo": "C'est en général le réseau, pas le jeu. Réessayez sur une connexion plus stable."
+    }
+  },
+  "codes": {
+    "30-221": {
+      "means": "Le serveur de messagerie a clos la conversation. Souvent sans gravité en soi."
+    },
+    "30-421": {
+      "means": "Le serveur de messagerie n'accepte pas de courrier en ce moment (SMTP 421). Temporaire."
+    },
+    "30-450": {
+      "means": "La boîte était indisponible (SMTP 450). Temporaire — réessayez plus tard."
+    },
+    "30-451": {
+      "means": "Le serveur a rencontré une erreur à lui en traitant le message (SMTP 451). Temporaire."
+    },
+    "30-452": {
+      "means": "Le serveur manque de place (SMTP 452). Temporaire."
+    },
+    "30-550": {
+      "means": "Cette boîte n'existe pas (SMTP 550). Vérifiez l'adresse saisie dans le jeu."
+    },
+    "30-551": {
+      "means": "L'adresse n'appartient pas à ce serveur (SMTP 551)."
+    },
+    "30-552": {
+      "means": "Le message est trop gros pour la boîte (SMTP 552)."
+    },
+    "30-553": {
+      "means": "L'adresse n'est pas valide (SMTP 553). Vérifiez ce que vous avez saisi."
+    },
+    "30-554": {
+      "means": "Le serveur a refusé le message d'emblée (SMTP 554)."
+    },
+    "31-002": {
+      "means": "Le serveur POP3 a répondu par une erreur. Sur REON il s'agit généralement d'une connexion que le serveur n'a pas acceptée."
+    },
+    "32-301": {
+      "means": "La page a déménagé (HTTP 301). Le jeu ne suit pas les redirections, donc cela échoue."
+    },
+    "32-302": {
+      "means": "La page a déménagé temporairement (HTTP 302). Même problème : le jeu ne la suit pas."
+    },
+    "32-401": {
+      "means": "Le serveur voulait des identifiants que le jeu n'a pas envoyés (HTTP 401)."
+    },
+    "32-403": {
+      "means": "Le serveur a refusé la requête (HTTP 403)."
+    },
+    "32-404": {
+      "means": "Le serveur n'a rien à cette adresse (HTTP 404). Sur REON c'est généralement un jeu ou une fonction que nous ne servons pas encore."
+    },
+    "32-408": {
+      "means": "La requête a pris trop de temps (HTTP 408)."
+    },
+    "32-500": {
+      "means": "Quelque chose a cassé de notre côté (HTTP 500). Signalez-le avec l'heure à laquelle c'est arrivé."
+    },
+    "32-502": {
+      "means": "Une mauvaise réponse est revenue par la porte d'entrée (HTTP 502). Généralement bref."
+    },
+    "32-503": {
+      "means": "Le service est hors service ou surchargé (HTTP 503). Réessayez plus tard."
+    },
+    "32-504": {
+      "means": "Notre côté a mis trop de temps à répondre (HTTP 504). Réessayez plus tard."
+    }
+  },
+  "_comment": [
+    "Escrito à mão, não gerado. AdapterErrorUtil lê este arquivo por cima",
+    "do .en.json, campo a campo: o que faltar aqui cai para o inglês."
+  ]
+}
