@@ -103,11 +103,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   o jogo recebia a mensagem sem o único campo que importava e a descartava
   calado. Correspondência interna passou a ser entregue exatamente como está
   gravada; só a externa é tratada
-* Fix: corrida no POP3 nos dois caminhos de autenticação, XAPOP incluído — o
-  `+OK` saía antes do maildrop existir, então cliente rápido via caixa vazia
-  numa caixa cheia
-* XAPOP/XPROVISION — login POP3 sem repetir senha, reaproveitando a chave de
-  device-auth
+* Fix: corrida no POP3 nos dois caminhos de autenticação — o `+OK` saía
+  antes do maildrop existir, então cliente rápido via caixa vazia numa caixa
+  cheia. Valia para o nosso servidor POP3, que nesta mesma leva saiu do
+  caminho quando o Dovecot assumiu a porta
+* Login POP3 sem repetir senha, reaproveitando a chave de device-auth.
+  Nasceu como `XAPOP`/`XPROVISION`, comando nosso, e **virou APOP padrão
+  ainda nesta leva** (acima), quando a porta 110 passou a ser do Dovecot --
+  um comando que só o nosso servidor entendia não sobrevive a um servidor
+  que não é nosso. O `XPROVISION` não existe mais
 * Envio de e-mail do jogo pra internet real (outbound relay via Postfix +
   Brevo), com autorização por dispositivo — domínio, cabeçalho e corpo
   (incluindo japonês) reescritos/decodificados só na saída
@@ -645,8 +649,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   "bloqueado" — vem assinada com o eco dentro, para um DNS malicioso não
   conseguir nem forjar bloqueio (DoS) nem reaproveitar um antigo; ao
   verificar "bloqueado", o core da libmobile não sobe DNS/TCP naquela
-  sessão e o jogo mostra a própria tela de erro. Identificação no XAPOP e
-  no relay P2P foi descartada: só recusaria quem já coopera. Um `query`
+  sessão e o jogo mostra a própria tela de erro. Identificação na
+  autenticação do POP3 e no relay P2P foi descartada: só recusaria quem já
+  coopera. Um `query`
   válido passou a criar a linha do aparelho, para ele aparecer na lista
   assim que fala com o servidor, e carimba o "último uso" (só quando o
   contador ecoado é maior que o último gasto em consulta, para um replay
@@ -910,7 +915,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 * Device-auth: autorizar/desautorizar agora por sessão PPP, não por conexão
   TCP individual
-* Suporte a XAPOP/XPROVISION do lado do core
+* Autenticação de POP3 sem repetir senha, do lado do core: primeiro
+  `XAPOP`/`XPROVISION`, depois **APOP padrão** (`72fac61`), quando o servidor
+  passou a ser o Dovecot. O segredo continua sendo a chave de device-auth, em
+  64 caracteres hex; o nome de login é o gID que a `mobile_config.bin` leva.
+  O `XPROVISION` foi embora junto
 * API pública exposta pra guardar/ler a chave de device-auth
 * Fix real de bug: envio parcial de socket (TCP/DNS) sendo tratado como
   sucesso/erro errado por truncamento de tipo
@@ -948,7 +957,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 * Corrigido bug de leitura de socket POP3/HTTP que travava com resposta
   grande
 * Corrigido: resposta da conexão não sendo drenada antes de fechar
-* Puxadas as correções do core (device-auth, XAPOP, envio parcial de socket)
+* Puxadas as correções do core (device-auth, autenticação de POP3, envio
+  parcial de socket); builds republicadas em `72fac61`, já com APOP
 * No topo do ramo (`bb2d9b4`): `77b09e9` e `159d299` integrados e testados;
   reversão dos timestamps temporários de log (`08a2320`)
 * Builds Linux e Windows produzidas para empacotamento
@@ -971,8 +981,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ## PicoAdapterGB
 
-* Implementação completa de device-auth, XAPOP e relay (backends Pico W e
-  ESP)
+* Implementação completa de device-auth, autenticação de POP3 e relay
+  (backends Pico W e ESP). O POP3 nasceu com `XAPOP` e acompanha o core na
+  troca para APOP
 * Confirmado: sem auto-negociação de relay token (repasse direto)
 * Confirmado (via engenharia reversa do binário fechado do ESP-AT): strings
   de evento Wi-Fi/socket batem com o parser
