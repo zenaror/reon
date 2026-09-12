@@ -93,7 +93,7 @@ auth:
   reon-username-taken: "その名前は既に使われています。別の名前を選んでください。"
   reon-username-free: "その名前は使えます。"
   reon-username-mail-or: "または"
-  reon-username-mail-truncated: "ゲーム側は8文字しか保持できないため、ゲームボーイ内では短縮形が使われます。どちらでも届きます。"
+  reon-username-mail-truncated: "ゲームボーイ側は8文字までのため、ゲーム内のアドレスはユーザー名を短くしたものです。どちらも同じ受信箱に届きます。"
   region-explanation-para1: REONは、ゲーム内のトレードコーナー機能を通じて、ポケモンクリスタルのプレイヤー同士の国際交換を可能にします。これには、通常は文字セットが異なるため互換性のない日本版と海外版の間の交換も含まれます。このような交換を可能にするため、本サービスは日本版と海外版のポケモンをマッチングする際に、ポケモンのニックネーム、トレーナー名、メールに書かれたメッセージを変更します(例:「A」を「ア」に変更、およびその逆)。これらの変更は元に戻せませんが、元の言語の表記をできるだけ忠実に再現することを目指しています。
   region-explanation-para2: 交換してもよい地域のプールを選んでください。この設定は登録後にも変更できます。
 
@@ -105,6 +105,7 @@ password-reset:
   success: パスワードが正常にリセットされました。
 your-account: マイページ
 pokemon-crystal: ポケットモンスター クリスタル
+pokemon-stadium: "ポケモンスタジアム"
 rankings: ランキング
 trade-corner: トレードコーナー
 battle-tower: バトルタワー
@@ -1165,6 +1166,7 @@ admin:
   news-maker-template: 元にする号
   news-maker-template-hint: メニュー、スクリプト、組み方を借りてくる本物の号です。
   news-maker-minigame: ミニゲーム
+  news-maker-minigame-broken: "このミニゲームは現在のツールチェーンではビルドできません。上流のソース自体に誤りがあります。選べる賞品はなく、この号を公開することもできません。別のミニゲームを選んでください。"
   news-maker-publish-now-unbuilt: この号はまだビルドされていません。開いて言語を選び、先に「公開」を押してください。
   news-maker-published-now: "%regions% で公開中です。"
   news-maker-prizes: 賞品
@@ -1292,6 +1294,16 @@ admin:
   err-no-such-user: そのアカウントはありません。
   err-not-yourself: 今ログインしているアカウントには行えません。
   err-not-an-admin: 管理者を利用停止にはできません。先に管理権限を外してください。
+  mailauth-title: "メールの認証"
+  mailauth-explain: "アダプタは256ビットの端末鍵（APOP）で本人であることを示し、パスワードが通信路に流れることはありません。8文字のパスワードは古い入口で、まだAPOPに対応していないアダプタのためだけに残してあります。新しいビルドがプレイヤーの手に渡ったら閉じてください。8文字は推測され得ますし、強い扉の横に弱い扉を開けたままにすれば、攻撃者は弱いほうを使います。"
+  mailauth-on: "パスワードでのログインを受け付け中"
+  mailauth-off: "端末鍵のみ"
+  mailauth-turn-off: "端末鍵を必須にする"
+  mailauth-turn-on: "パスワードを再び受け付ける"
+  mailauth-off-confirm: "APOPに対応していないアダプタはメールを受信できなくなります。続けますか？"
+  mailauth-on-confirm: "8文字のパスワードが再び受け付けられます。続けますか？"
+  setting-saved: "設定を保存しました。"
+  setting-failed: "設定を保存できませんでした。"
   services-title: サービス
   services-note: 再起動は、サーバー側で明示的に許可する必要がある補助プログラムを通して行います。それが入るまで、ボタンは実行するはずだった内容を表示するだけで、何も変えません。
   services-service: サービス
@@ -1391,3 +1403,14 @@ admin:
   trainer-img-no-such-page: そのページはありません。
   trainer-readonly: ウェブサーバーがこれらのファイルに書き込めないため、ここではまだ何も保存できません。
   trainer-readonly-why: PHP は「%user%」として動いており、ページはそれを配置したアカウントのものです。そのユーザーに書き込み権限を与えるのは、コマンド1つです：
+
+errors:
+  title: "アダプタのエラーコード"
+  intro: "不具合が起きるとゲームはメッセージを表示し、その裏にコードがあります。コードを入力するか、画面に出た文の一部で検索してください。同じ意味のコードは一つの説明にまとめてあります。"
+  filter-game: "ゲーム"
+  all-games: "すべてのゲーム"
+  filter-code: "エラーコード"
+  show-screen: "ゲームが表示する文面"
+  count: "%total% 件中 %n% 件を表示。"
+  no-meaning: "説明はまだありません"
+  missing: "エラーデータがまだ生成されていません。maint/build_adapter_errors.php を実行してください。"

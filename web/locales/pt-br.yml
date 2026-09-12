@@ -26,6 +26,7 @@ mario-kart:
 
 gameboy-wars: Game Boy Wars 3
 pokemon-crystal: Pokémon Cristal
+pokemon-stadium: "Pokémon Stadium"
 rankings: Classificação
 trade-corner: Trade Corner
 battle-tower: Torre de Batalha
@@ -124,7 +125,7 @@ auth:
   reon-username-taken: "Esse nome já está em uso — escolha outro."
   reon-username-free: "Esse nome está disponível."
   reon-username-mail-or: "ou"
-  reon-username-mail-truncated: "Os jogos só comportam 8 caracteres, então uma forma abreviada é usada dentro do Game Boy — as duas chegam até você."
+  reon-username-mail-truncated: "O Game Boy só comporta 8 caracteres, então o endereço no jogo é o seu nome de usuário encurtado — os dois chegam na mesma caixa."
   region-explanation-para1: O REON permite trocas internacionais para jogadores de Pokémon Crystal, através do recurso do jogo chamado Trade Corner. Isso inclui trocas entre jogos japoneses e não-japoneses, que normalmente são incompatíveis por usarem conjuntos de caracteres diferentes. Para tornar essas trocas possíveis, o serviço altera apelidos de Pokémon, nomes de Treinador e mensagens escritas no Correio ao parear Pokémon entre jogos japoneses e não-japoneses (por exemplo, trocando "A" por "ア", e vice-versa). Essas alterações são irreversíveis, mas procuram imitar a escrita do idioma original da forma mais fiel possível.
   region-explanation-para2: Escolha o conjunto de regiões com as quais você aceita trocar. Essa configuração também pode ser alterada depois do cadastro.
 
@@ -251,6 +252,7 @@ admin:
   news-maker-template: "Baseada em"
   news-maker-template-hint: "A edição real de onde vêm os menus, scripts e layout."
   news-maker-minigame: "Minigame"
+  news-maker-minigame-broken: "Este minijogo não compila com a ferramenta atual — há um erro no fonte dele, lá no upstream. Não há prêmio para escolher, e a edição não sai com ele. Escolha outro."
   news-maker-publish-now-unbuilt: "Esta edição ainda não foi compilada. Abra, marque os idiomas e use Publicar primeiro."
   news-maker-published-now: "No ar agora em %regions%."
   news-maker-prizes: "Prêmios"
@@ -378,6 +380,16 @@ admin:
   err-no-such-user: "Conta inexistente."
   err-not-yourself: "Não na conta com que você está logado."
   err-not-an-admin: "Não dá para banir um administrador. Tire o admin primeiro."
+  mailauth-title: "Autenticação do correio"
+  mailauth-explain: "O adaptador prova quem é com a chave do aparelho, de 256 bits (APOP), e a senha nunca passa pelo fio. A senha de oito caracteres é a entrada antiga, mantida só para adaptador que ainda não fala APOP. Feche quando as versões novas estiverem na mão dos jogadores: oito caracteres se adivinham, e deixar a porta fraca aberta ao lado da forte faz o invasor usar a fraca."
+  mailauth-on: "Entrada por senha aceita"
+  mailauth-off: "Só com a chave do aparelho"
+  mailauth-turn-off: "Exigir a chave do aparelho"
+  mailauth-turn-on: "Aceitar senha de novo"
+  mailauth-off-confirm: "Todo adaptador que não fizer APOP para de buscar correio. Continuar?"
+  mailauth-on-confirm: "A senha de oito caracteres volta a ser aceita. Continuar?"
+  setting-saved: "Configuração salva."
+  setting-failed: "Não foi possível salvar a configuração."
   services-title: "Serviços"
   services-note: "O reinício passa por um auxiliar que o servidor precisa autorizar explicitamente. Enquanto isso não estiver instalado, os botões dizem o que teriam rodado e não mexem em nada."
   services-service: "Serviço"
@@ -631,3 +643,14 @@ region:
     f: "Francês"
     i: "Italiano"
     s: "Espanhol"
+
+errors:
+  title: "Códigos de erro do adaptador"
+  intro: "Quando algo dá errado o jogo mostra uma mensagem e, por trás dela, um código. Procure o seu aqui: digite o código, ou busque um pedaço do texto que apareceu na tela. Códigos que significam a mesma coisa dividem uma resposta só."
+  filter-game: "Jogo"
+  all-games: "Todos os jogos"
+  filter-code: "Código de erro"
+  show-screen: "O que o jogo escreve na tela"
+  count: "Mostrando %n% de %total% códigos."
+  no-meaning: "Ainda sem descrição"
+  missing: "Os dados de erro ainda não foram gerados. Rode maint/build_adapter_errors.php."

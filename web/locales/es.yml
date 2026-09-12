@@ -93,7 +93,7 @@ auth:
   reon-username-taken: "Ese nombre ya está en uso: elige otro."
   reon-username-free: "Ese nombre está disponible."
   reon-username-mail-or: "o"
-  reon-username-mail-truncated: "Los juegos solo admiten 8 caracteres, así que dentro de la Game Boy se usa una forma abreviada: ambas te llegan."
+  reon-username-mail-truncated: "La Game Boy solo admite 8 caracteres, así que la dirección dentro del juego es tu nombre de usuario acortado: ambas llegan al mismo buzón."
   region-explanation-para1: REON permite el intercambio internacional para jugadores de Pokémon Cristal, a través de la función del juego llamada Trade Corner. Esto incluye intercambios entre juegos japoneses y no japoneses, que normalmente son incompatibles por usar distintos conjuntos de caracteres. Para hacer posibles estos intercambios, el servicio cambia los apodos de los Pokémon, los nombres de Entrenador y los mensajes escritos en el Correo al emparejar Pokémon entre juegos japoneses y no japoneses (por ejemplo, cambiando "A" por "ア", y viceversa). Estos cambios son irreversibles, pero buscan imitar la escritura del idioma original de la forma más fiel posible.
   region-explanation-para2: Elige el conjunto de regiones con las que aceptas intercambiar. Este ajuste también se puede cambiar después del registro.
 
@@ -106,6 +106,7 @@ password-reset:
 
 your-account: Mi cuenta
 pokemon-crystal: Pokémon Cristal
+pokemon-stadium: "Pokémon Stadium"
 rankings: Clasificación
 trade-corner: Trade Corner
 battle-tower: Torre de Combate
@@ -1125,6 +1126,7 @@ admin:
   news-maker-template: Basado en
   news-maker-template-hint: El número real cuyos menús, guiones y disposición presta a este.
   news-maker-minigame: Minijuego
+  news-maker-minigame-broken: "Este minijuego no compila con la herramienta actual: hay un error en su propio código, en el upstream. No hay premio que elegir y la edición no puede publicarse con él. Elige otro."
   news-maker-publish-now-unbuilt: Esta edición aún no se ha compilado. Ábrela, marca los idiomas y pulsa Publicar primero.
   news-maker-published-now: En el aire ahora en %regions%.
   news-maker-prizes: Premios
@@ -1252,6 +1254,16 @@ admin:
   err-no-such-user: No existe esa cuenta.
   err-not-yourself: No sobre la cuenta con la que has entrado.
   err-not-an-admin: No se puede vetar a un administrador. Quítale la administración primero.
+  mailauth-title: "Autenticación del correo"
+  mailauth-explain: "El adaptador demuestra quién es con la clave del dispositivo, de 256 bits (APOP), y la contraseña nunca viaja por la red. La contraseña de ocho caracteres es la entrada antigua, conservada solo para adaptadores que aún no hablan APOP. Ciérrala cuando las versiones nuevas estén en manos de los jugadores: ocho caracteres se adivinan, y dejar la puerta débil junto a la fuerte hace que el atacante use la débil."
+  mailauth-on: "Se acepta el acceso con contraseña"
+  mailauth-off: "Solo con la clave del dispositivo"
+  mailauth-turn-off: "Exigir la clave del dispositivo"
+  mailauth-turn-on: "Aceptar contraseñas de nuevo"
+  mailauth-off-confirm: "Cualquier adaptador que no haga APOP dejará de recoger correo. ¿Continuar?"
+  mailauth-on-confirm: "La contraseña de ocho caracteres volverá a aceptarse. ¿Continuar?"
+  setting-saved: "Ajuste guardado."
+  setting-failed: "No se pudo guardar el ajuste."
   services-title: Servicios
   services-note: Reiniciar se hace mediante un ayudante que el servidor tiene que permitir expresamente. Hasta que esté instalado, los botones dicen qué habrían ejecutado y no cambian nada.
   services-service: Servicio
@@ -1351,3 +1363,14 @@ admin:
   trainer-img-no-such-page: Esa página no existe.
   trainer-readonly: El servidor web no puede escribir estos archivos, así que aquí todavía no se puede guardar nada.
   trainer-readonly-why: 'PHP se ejecuta como «%user%», y las páginas pertenecen a la cuenta que las desplegó. Dar permiso de escritura a ese usuario es un solo comando:'
+
+errors:
+  title: "Códigos de error del adaptador"
+  intro: "Cuando algo falla el juego muestra un mensaje y, detrás, un código. Búscalo aquí: escribe el código o busca parte del texto que viste en pantalla. Los códigos que significan lo mismo comparten una sola respuesta."
+  filter-game: "Juego"
+  all-games: "Todos los juegos"
+  filter-code: "Código de error"
+  show-screen: "Lo que muestra el juego"
+  count: "Mostrando %n% de %total% códigos."
+  no-meaning: "Aún sin descripción"
+  missing: "Los datos de error aún no se han generado. Ejecuta maint/build_adapter_errors.php."

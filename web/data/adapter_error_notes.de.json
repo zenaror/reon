@@ -1,0 +1,153 @@
+{
+  "families": {
+    "00": {
+      "title": "Das Spiel konnte REON nicht erreichen",
+      "means": "Ein Sammelcode, den das Spiel nimmt, wenn es keinen besseren hat. Praktisch bedeutet er dasselbe wie 10-XXX: das Gespräch mit dem Adapter kam nie zustande.",
+      "todo": "Arbeiten Sie die Prüfungen zu 10-000 weiter unten durch."
+    },
+    "10": {
+      "title": "Der Adapter ist nicht da",
+      "means": "Das Spiel hat nach einem Mobile Adapter gesucht und nichts gefunden. Im Emulator heißt das meist, dass der Adapter dort nicht eingeschaltet ist; bei echter Hardware, dass Kabel oder Adapter nicht richtig steckt.",
+      "todo": "Stecken Sie den Adapter <strong>vor</strong> dem Start des Spiels ein und lassen Sie ihn stecken. In mGBA öffnen Sie <em>Mobile Game Boy Adapter…</em> und prüfen, dass er aktiviert ist."
+    },
+    "11": {
+      "title": "Die Verbindung kam nicht zustande",
+      "means": "Der Adapter hat zu wählen versucht und kam nirgendwo an. Bei REON gibt es keine Telefonleitung — das ist der Adapter, der die Verbindung zum Server nicht aufbauen kann.",
+      "todo": "Prüfen Sie, ob der Rechner online ist. Bei echter Hardware prüfen Sie die geflashten WLAN-Einstellungen. Dann erneut versuchen: das Spiel behandelt das als vorübergehend."
+    },
+    "12": {
+      "title": "Die Leitung ist belegt",
+      "means": "Dieselbe Familie wie 11: der Adapter konnte die Verbindung nicht aufbauen, und das Spiel schiebt es auf eine überlastete Leitung.",
+      "todo": "Kurz warten und erneut versuchen."
+    },
+    "13": {
+      "title": "Die Verbindung kam nicht zustande",
+      "means": "Ein weiterer Wählfehler, angezeigt mit derselben Meldung wie 11-000.",
+      "todo": "Kurz warten und erneut versuchen; wenn es nie klappt, prüfen Sie die Netzwerkseite."
+    },
+    "14": {
+      "title": "Die Einstellungen des Adapters sind beschädigt",
+      "means": "Die im Adapter gespeicherte Konfiguration hat die eigene Prüfsumme nicht bestanden, deshalb weigert sich der Adapter, sie zu benutzen.",
+      "todo": "Laden Sie Ihre <code>mobile_config.bin</code> erneut. Sie liegt unter <a href=\"/user/summary.php\">Ihr Konto</a>, und die <a href=\"/guide.php\">Anleitung</a> sagt, wohin damit."
+    },
+    "15": {
+      "title": "Der Adapter bekam eine Antwort, die er nicht verstand",
+      "means": "Etwas hat geantwortet, aber nicht in der erwarteten Form. Es ist der Code, den REONs eigene Skripte erzeugen, wenn der Adapter einen Server nicht richtig erreichen konnte.",
+      "todo": "Erneut versuchen. Hält es an, ist eine Meldung sinnvoll — dieser Code heißt meist, dass sich beide Seiten uneinig sind, nicht dass Sie etwas falsch gemacht haben."
+    },
+    "16": {
+      "title": "Kommunikationsfehler",
+      "means": "Einer der allgemeinen Fehler. Das Spiel hat nichts anzubieten außer „hat nicht funktioniert“.",
+      "todo": "Warten und erneut versuchen. Wiederholt es sich immer an derselben Stelle, melden Sie es mit dem, was Sie gerade taten."
+    },
+    "20": {
+      "title": "Das falsche Mobile Center wurde gewählt",
+      "means": "Der Adapter wollte einen Dienst erreichen, für den er nicht konfiguriert ist.",
+      "todo": "Laden Sie Ihre <code>mobile_config.bin</code> erneut — sie richtet den Adapter auf REON aus."
+    },
+    "24": {
+      "title": "Die Verbindung wurde abgewiesen",
+      "means": "Der Adapter erreichte das Netz, konnte die Verbindung aber nicht öffnen — ein TCP-Fehler.",
+      "todo": "Prüfen Sie, dass nichts auf Ihrem Rechner die ausgehende Verbindung blockiert, und versuchen Sie es erneut."
+    },
+    "25": {
+      "title": "Der Adapter wurde nie eingerichtet",
+      "means": "Es gibt überhaupt keine Konfiguration im Adapter, er hat also nichts zu wählen.",
+      "todo": "Laden Sie Ihre <code>mobile_config.bin</code>, oder richten Sie den Adapter mit dem Mobile Trainer ein."
+    },
+    "30": {
+      "title": "Der Mailserver hat die Nachricht abgelehnt",
+      "means": "Diese Familie betrifft das <strong>Senden von Post</strong>. Die letzten drei Ziffern sind die SMTP-Antwort des Servers selbst — 4xx ist vorübergehend, 5xx endgültig.",
+      "todo": "Siehe den konkreten Code. Ein 4xx lohnt einen neuen Versuch; ein 5xx scheitert weiter, bis sich etwas ändert."
+    },
+    "31": {
+      "title": "Der Postfachserver meldete einen Fehler",
+      "means": "Diese Familie betrifft das <strong>Abholen von Post</strong> über POP3.",
+      "todo": "Erneut versuchen. Wiederholt es sich, braucht Ihr Konto vielleicht Aufmerksamkeit — prüfen Sie, ob Sie dasselbe Postfach in <a href=\"/user/mail.php\">REON Mail</a> lesen können."
+    },
+    "32": {
+      "title": "Die Web-Anfrage schlug fehl",
+      "means": "Diese Familie betrifft die <strong>HTTP</strong>-Anfragen, die ein Spiel für Ranglisten, Nachrichten und Downloads stellt. Die letzten drei Ziffern sind der HTTP-Status der Antwort.",
+      "todo": "Siehe den konkreten Code weiter unten."
+    },
+    "33": {
+      "title": "Das Mobile Center meldete ein Problem",
+      "means": "Der Dienst hat geantwortet, aber mit einer eigenen Beschwerde statt mit den angefragten Daten.",
+      "todo": "Warten und erneut versuchen. Scheitert immer dieselbe Funktion so, melden Sie es — das zeigt auf diese Funktion, nicht auf Ihre Einrichtung."
+    },
+    "101": {
+      "title": "Die Verbindung brach darunter weg",
+      "means": "Ein Fehler auf Socket-Ebene: die Verbindung fiel aus, lief ab oder wurde zurückgesetzt, während das Spiel sie nutzte.",
+      "todo": "Das ist meist das Netz, nicht das Spiel. Versuchen Sie es über eine stabilere Verbindung."
+    }
+  },
+  "codes": {
+    "30-221": {
+      "means": "Der Mailserver hat das Gespräch beendet. Für sich genommen oft harmlos."
+    },
+    "30-421": {
+      "means": "Der Mailserver nimmt gerade keine Post an (SMTP 421). Vorübergehend."
+    },
+    "30-450": {
+      "means": "Das Postfach war nicht verfügbar (SMTP 450). Vorübergehend — später versuchen."
+    },
+    "30-451": {
+      "means": "Der Server hatte beim Verarbeiten einen eigenen Fehler (SMTP 451). Vorübergehend."
+    },
+    "30-452": {
+      "means": "Dem Server fehlt Platz (SMTP 452). Vorübergehend."
+    },
+    "30-550": {
+      "means": "Dieses Postfach gibt es nicht (SMTP 550). Prüfen Sie die im Spiel eingegebene Adresse."
+    },
+    "30-551": {
+      "means": "Die Adresse gehört nicht zu diesem Server (SMTP 551)."
+    },
+    "30-552": {
+      "means": "Die Nachricht ist zu groß für das Postfach (SMTP 552)."
+    },
+    "30-553": {
+      "means": "Die Adresse ist ungültig (SMTP 553). Prüfen Sie Ihre Eingabe."
+    },
+    "30-554": {
+      "means": "Der Server hat die Nachricht rundheraus abgelehnt (SMTP 554)."
+    },
+    "31-002": {
+      "means": "Der POP3-Server antwortete mit einem Fehler. Bei REON ist das meist eine Anmeldung, die der Server nicht akzeptiert hat."
+    },
+    "32-301": {
+      "means": "Die Seite ist umgezogen (HTTP 301). Das Spiel folgt keinen Weiterleitungen, also scheitert das."
+    },
+    "32-302": {
+      "means": "Die Seite ist vorübergehend umgezogen (HTTP 302). Dasselbe Problem: das Spiel folgt nicht."
+    },
+    "32-401": {
+      "means": "Der Server wollte Zugangsdaten, die das Spiel nicht gesendet hat (HTTP 401)."
+    },
+    "32-403": {
+      "means": "Der Server hat die Anfrage abgelehnt (HTTP 403)."
+    },
+    "32-404": {
+      "means": "Der Server hat unter dieser Adresse nichts (HTTP 404). Bei REON ist das meist ein Spiel oder eine Funktion, die wir noch nicht anbieten."
+    },
+    "32-408": {
+      "means": "Die Anfrage hat zu lange gedauert (HTTP 408)."
+    },
+    "32-500": {
+      "means": "Auf unserer Seite ist etwas kaputtgegangen (HTTP 500). Bitte mit Uhrzeit melden."
+    },
+    "32-502": {
+      "means": "Eine schlechte Antwort kam durch die Eingangstür zurück (HTTP 502). Meist kurz."
+    },
+    "32-503": {
+      "means": "Der Dienst ist aus oder überlastet (HTTP 503). Später versuchen."
+    },
+    "32-504": {
+      "means": "Unsere Seite hat zu lange zum Antworten gebraucht (HTTP 504). Später versuchen."
+    }
+  },
+  "_comment": [
+    "Escrito à mão, não gerado. AdapterErrorUtil lê este arquivo por cima",
+    "do .en.json, campo a campo: o que faltar aqui cai para o inglês."
+  ]
+}

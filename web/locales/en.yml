@@ -119,7 +119,7 @@ auth:
   reon-username-taken: "That name is already taken — please choose another."
   reon-username-free: "That name is available."
   reon-username-mail-or: "or"
-  reon-username-mail-truncated: "The games can only hold 8 characters, so a shortened form is used inside the Game Boy — both reach you."
+  reon-username-mail-truncated: "The Game Boy only holds 8 characters, so the in-game address is your username shortened — both reach the same inbox."
   region-explanation-para1: REON enables international trade for Pokémon Crystal players,
     via the in-game facility called the Trade Corner. This includes trading between
     Japanese and non-Japanese games, which are normally incompatible due to using
@@ -204,6 +204,7 @@ index:
   mobile-adapter-description: The Mobile Adapter was a thing.
 gameboy-wars: Game Boy Wars 3
 pokemon-crystal: Pokémon Crystal
+pokemon-stadium: "Pokémon Stadium"
 rankings: Rankings
 trade-corner: Trade Corner
 battle-tower: Battle Tower
@@ -1889,6 +1890,7 @@ admin:
   news-maker-template: "Based on"
   news-maker-template-hint: "The real issue whose menus, scripts and layout this one borrows."
   news-maker-minigame: "Minigame"
+  news-maker-minigame-broken: "This minigame does not build with the current toolchain — there is a mistake in its own source, upstream. It has no prize to choose, and an issue cannot be published with it. Pick another one."
   news-maker-publish-now-unbuilt: "This issue has not been built yet. Open it, tick the languages and press Publish first."
   news-maker-published-now: "Live now in %regions%."
   news-maker-prizes: "Prizes"
@@ -2016,6 +2018,16 @@ admin:
   err-no-such-user: "No such account."
   err-not-yourself: "Not on the account you are signed in with."
   err-not-an-admin: "An administrator cannot be banned. Revoke the admin first."
+  mailauth-title: "Mail authentication"
+  mailauth-explain: "The adapter proves who it is with the 256-bit device key (APOP), and the password never crosses the wire. The eight-character password is the older way in, kept only for adapters that do not speak APOP yet. Close it once the new builds are in players' hands: eight characters are guessable, and leaving the weak door open beside the strong one means an attacker uses the weak one."
+  mailauth-on: "Password sign-in accepted"
+  mailauth-off: "Device key only"
+  mailauth-turn-off: "Require the device key"
+  mailauth-turn-on: "Accept passwords again"
+  mailauth-off-confirm: "Any adapter that cannot do APOP stops collecting mail. Continue?"
+  mailauth-on-confirm: "The eight-character password will be accepted again. Continue?"
+  setting-saved: "Setting saved."
+  setting-failed: "The setting could not be saved."
   services-title: "Services"
   services-note: "Restarting is done through a helper the server has to allow explicitly. Until that is installed the buttons report what they would have run and change nothing."
   services-service: "Service"
@@ -2258,3 +2270,14 @@ notify:
   new-mail: "New mail from %from%"
   trade-done: "Trade completed"
   trade-none: "No trade yet"
+
+errors:
+  title: "Adapter error codes"
+  intro: "When something goes wrong the game shows a message and, behind it, a code. Look yours up here: type the code, or search for part of the text you saw on screen. Codes that mean the same thing share one answer."
+  filter-game: "Game"
+  all-games: "All games"
+  filter-code: "Error code"
+  show-screen: "What the game prints"
+  count: "Showing %n% of %total% codes."
+  no-meaning: "No description yet"
+  missing: "The error data has not been built yet. Run maint/build_adapter_errors.php."
