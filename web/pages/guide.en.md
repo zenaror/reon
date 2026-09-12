@@ -107,15 +107,15 @@ setup steps and what you can do online:
 ### Error messages
 
 When a game cannot get online it shows a message, and behind that message
-there is a code like `10-000`. The
-**[adapter error codes](/errors.php)** page lists them: pick your game, type
-the code, or paste part of the text you saw on screen.
+there is a code like `10-000`. Type that code into the
+**[adapter error codes](/errors.php)** page to look it up. Codes that mean
+the same thing are listed together, under one answer.
 
-<div class="reon-note">※ The messages are in Japanese because that is what
-the cartridges print — the page shows them exactly as the game breaks the
-lines, so you can match what is in front of you. The English explanation
-exists for the dozen codes that have one; the rest say so rather than
-guess.</div>
+<div class="reon-note">※ Not every code has an explanation yet. The ones
+that do not say so rather than guess. Each entry can also show the message
+the cartridge itself prints, line breaks and all, if you want to check that
+you found the right code — that text is in Japanese, because that is the
+language the cartridges were made to print.</div>
 
 ### Frequently asked questions
 

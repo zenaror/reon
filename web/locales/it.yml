@@ -1042,7 +1042,10 @@ notify:
   unread: "%count% nuove"
   mark-read: "Segna tutte come lette"
   all-read: "Tutto in ordine"
-  history-note: "Ogni notifica resta salvata. Qui non viene rimosso nulla, così puoi sempre tornare a controllare cos'è successo."
+  history-note: "Ogni notifica resta salvata finché non la cancelli tu. Cancellare rimuove solo l'elenco: il messaggio o lo scambio a cui rimanda resta dov'è."
+  clear: "Cancella notifiche"
+  clear-hint: "Cancellare rimuove solo l'elenco. Nulla di ciò che indica viene perso."
+  clear-confirm: "Cancellare tutte le notifiche? L'operazione è irreversibile."
   newer: "Più recenti"
   older: "Più vecchie"
   cat-mail: "Posta"
@@ -1365,9 +1368,7 @@ admin:
 
 errors:
   title: "Codici di errore dell'adattatore"
-  intro: "Quando qualcosa non va il gioco mostra un messaggio e, dietro, un codice. Cercalo qui: digita il codice oppure cerca una parte del testo visto a schermo. I codici che significano la stessa cosa condividono un'unica risposta."
-  filter-game: "Gioco"
-  all-games: "Tutti i giochi"
+  intro: "Quando qualcosa non va il gioco mostra un messaggio e, dietro, un codice. Digita quel codice qui per cercarlo. I codici che significano la stessa cosa condividono un'unica risposta, e ogni voce può mostrare il messaggio che il gioco stesso stampa."
   filter-code: "Codice di errore"
   show-screen: "Cosa mostra il gioco"
   count: "Mostrati %n% di %total% codici."

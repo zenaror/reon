@@ -227,6 +227,27 @@
 			return $n;
 		}
 
+		// Apaga o histórico inteiro de uma conta.
+		//
+		// Durante muito tempo esta classe não teve como apagar nada, e isso
+		// era proposital -- a página dizia ao usuário, em sete idiomas, que
+		// nada ali era removido. O dono pediu o botão, então a promessa
+		// mudou junto: o histórico fica guardado até que a PESSOA decida
+		// limpá-lo. Quem apaga é sempre o dono da linha, nunca o sistema.
+		//
+		// Sem lixeira e sem volta: notificação é aviso do que já aconteceu,
+		// e o que ela apontava (a mensagem, a troca) continua onde estava.
+		public function clearForUser($userId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("delete from sys_notifications where user_id = ?");
+			$userId = (int)$userId;
+			$stmt->bind_param("i", $userId);
+			$stmt->execute();
+			$n = $stmt->affected_rows;
+			$stmt->close();
+			return $n;
+		}
+
 		public function markRead($userId, $id) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("update sys_notifications set read_at = now() where user_id = ? and id = ? and read_at is null");

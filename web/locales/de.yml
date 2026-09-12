@@ -1042,7 +1042,10 @@ notify:
   unread: "%count% neu"
   mark-read: "Alle als gelesen markieren"
   all-read: "Alles erledigt"
-  history-note: "Jede Benachrichtigung bleibt erhalten. Hier wird nichts gelöscht, du kannst also jederzeit nachsehen, was passiert ist."
+  history-note: "Jede Benachrichtigung bleibt erhalten, bis du sie selbst löschst. Löschen entfernt nur die Liste: Die Nachricht oder der Tausch, auf den sie verweist, bleibt bestehen."
+  clear: "Benachrichtigungen löschen"
+  clear-hint: "Löschen entfernt nur die Liste. Nichts, worauf sie verweist, geht verloren."
+  clear-confirm: "Alle Benachrichtigungen löschen? Das lässt sich nicht rückgängig machen."
   newer: "Neuere"
   older: "Ältere"
   cat-mail: "Post"
@@ -1365,9 +1368,7 @@ admin:
 
 errors:
   title: "Fehlercodes des Adapters"
-  intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Schlagen Sie ihn hier nach: Code eingeben oder nach einem Teil des Bildschirmtexts suchen. Codes mit gleicher Bedeutung teilen sich eine Antwort."
-  filter-game: "Spiel"
-  all-games: "Alle Spiele"
+  intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Geben Sie diesen Code hier ein, um ihn nachzuschlagen. Codes mit gleicher Bedeutung teilen sich eine Antwort, und jeder Eintrag kann die Meldung zeigen, die das Spiel selbst ausgibt."
   filter-code: "Fehlercode"
   show-screen: "Was das Spiel anzeigt"
   count: "%n% von %total% Codes werden angezeigt."
