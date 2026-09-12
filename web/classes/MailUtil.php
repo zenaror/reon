@@ -257,6 +257,10 @@
 					// discarded unread; only meaningful for trashed messages.
 					"retrieved" => $row["retrieved_at"] !== null,
 					"unread" => $row["read_at"] === null,
+					// Só para o agrupamento em conversas.
+					"message_id" => $parsed["message_id"],
+					"in_reply_to" => $parsed["in_reply_to"],
+					"references" => $parsed["references"],
 				];
 			}
 			return $this->cacheCaixa[$chave] = $out;
@@ -364,7 +368,12 @@
 
 		// Sends from $fromUserId. Returns [ok, reason]; "external" means the
 		// recipient is off-site and this path cannot deliver it yet.
-		public function send($fromUserId, $toAddress, $subject, $body) {
+		// $threadKey: a conversa que isto continua. Null quer dizer assunto
+		// novo, e então nasce uma identidade própria -- é o que impede que
+		// uma mensagem nova seja adotada por uma conversa antiga só porque
+		// os títulos batem.
+		public function send($fromUserId, $toAddress, $subject, $body, $threadKey = null) {
+			if ($threadKey === null || $threadKey === "") $threadKey = $this->newThreadKey();
 			$db = DBUtil::getInstance()->getDB();
 			$fromUserId = (int)$fromUserId;
 
@@ -378,7 +387,7 @@
 			if ($recipientId === null) {
 				// Off to the real internet: no Game Boy will ever render it,
 				// so the 8-line / 96-character budget does not apply.
-				return $this->sendExternal($fromUserId, $sender, $toAddress, $subject, $body);
+				return $this->sendExternal($fromUserId, $sender, $toAddress, $subject, $body, $threadKey);
 			}
 
 			// A message another player will read on a Game Boy: refused
@@ -408,9 +417,9 @@
 			// o remetente de verdade. O deliver.js reconhece o
 			// X-REON-Origin que submitLocally() carimba e não repete nenhum
 			// dos dois.
-			$ok = $this->submitLocally($fromAddress, $toAddress, $message);
+			$ok = $this->submitLocally($fromAddress, $toAddress, $message, $threadKey);
 			if ($ok) {
-				$this->recordSent($fromUserId, $toAddress, $message);
+				$this->recordSent($fromUserId, $toAddress, $message, $threadKey);
 				// A line in the recipient's bell beside the mail badge. The
 				// badge says there is something to read; this says a letter
 				// from this person arrived at this hour, and stays on the
@@ -441,7 +450,7 @@
 		// Postfix routes it to default_transport = reonoutbound, which is
 		// mail/outboundRelay.js -- the same relay, domain rewriting included,
 		// that game mail already uses.
-		private function sendExternal($fromUserId, $sender, $toAddress, $subject, $body) {
+		private function sendExternal($fromUserId, $sender, $toAddress, $subject, $body, $threadKey = null) {
 			$toAddress = trim((string)$toAddress);
 			if (!filter_var($toAddress, FILTER_VALIDATE_EMAIL)) {
 				return [false, "bad-address"];
@@ -453,14 +462,26 @@
 			$cfg = ConfigUtil::getInstance()->getConfig();
 			// The externally routable form of their address, so a reply comes
 			// back to them rather than to a domain the internet cannot answer.
-			$fromAddress = $sender["username"] . "@" . $cfg["email_domain"];
+			//
+			// O local part é o dion_email_local, NÃO o username, e a diferença
+			// não é cosmética: quem recebe correspondência é o Postfix, e o
+			// mapa dele conhece uma coluna só -- dion_email_local. Assinar com
+			// o username produzia um endereço que sabíamos escrever e não
+			// sabíamos ler: responder a ele voltava com "550 User unknown in
+			// virtual mailbox table", que foi o que o dono viu ao responder do
+			// Gmail. O nome de conta continua aparecendo, como nome de exibição.
+			$fromAddress = $sender["dion_email_local"] . "@" . $cfg["email_domain"];
 
 			$message = $this->buildMessage(
 				$fromAddress, (string)$sender["username"], $toAddress,
 				trim((string)$subject), (string)$body
 			);
 
-			$accepted = $this->submitLocally($fromAddress, $toAddress, $message);
+			// Quem arquiva a cópia do correio externo é o outboundRelay.js,
+			// do outro lado do Postfix, e ele não tem como saber de qual
+			// conversa se trata -- então a chave viaja com a mensagem, no
+			// mesmo cabeçalho de serviço que já dizia a origem.
+			$accepted = $this->submitLocally($fromAddress, $toAddress, $message, $threadKey);
 			$this->logOutbound($fromUserId, $toAddress, $subject, $accepted);
 			return [$accepted, $accepted ? "sent" : "relay-failed"];
 		}
@@ -472,9 +493,16 @@
 		// tell a webmail send from the game's. The relay strips this before
 		// handing the message on, so it never reaches the recipient.
 		const ORIGIN_HEADER = "X-REON-Origin";
+		// Mesma ideia, para a conversa. Ver send().
+		const THREAD_HEADER = "X-REON-Thread";
 
-		private function submitLocally($envelopeFrom, $recipient, $message) {
+		private function submitLocally($envelopeFrom, $recipient, $message, $threadKey = null) {
 			$message = self::ORIGIN_HEADER . ": web\r\n" . $message;
+			// Lido e removido pelo relay, como o de origem: nunca chega a
+			// quem recebe.
+			if ($threadKey !== null && preg_match('/^[0-9a-f]{32}$/', (string)$threadKey)) {
+				$message = self::THREAD_HEADER . ": " . $threadKey . "\r\n" . $message;
+			}
 			$cmd = ["/usr/sbin/sendmail", "-i", "-f", $envelopeFrom, "--", $recipient];
 			$spec = [0 => ["pipe", "r"], 1 => ["pipe", "w"], 2 => ["pipe", "w"]];
 			$proc = @proc_open($cmd, $spec, $pipes);
@@ -599,7 +627,7 @@
 		public function listSentForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
-				"select id, recipient, origin, timestamp, message from sys_sent
+				"select id, recipient, origin, thread_key, timestamp, message from sys_sent
 				 where user_id = ? order by timestamp desc, id desc"
 			);
 			$userId = (int)$userId;
@@ -621,6 +649,10 @@
 					"game" => $parsed["game"],
 					"body" => $parsed["body"],
 					"unread" => false,
+					// Nulo nas linhas anteriores à coluna: quer dizer "deduza
+					// pelo assunto", que é como tudo funcionava antes.
+					"thread_key" => $row["thread_key"],
+					"message_id" => $parsed["message_id"],
 				];
 			}
 			return $out;
@@ -665,14 +697,15 @@
 		// through Postfix -- the game's, and the webmail's external sends --
 		// is recorded by deliver.js and outboundRelay.js instead, so nothing
 		// is written twice.
-		private function recordSent($userId, $toAddress, $message) {
+		private function recordSent($userId, $toAddress, $message, $threadKey = null) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
-				"insert into sys_sent (user_id, recipient, origin, message) values (?, ?, 'web', ?)"
+				"insert into sys_sent (user_id, recipient, origin, thread_key, message) values (?, ?, 'web', ?, ?)"
 			);
 			$userId = (int)$userId;
 			$toAddress = substr((string)$toAddress, 0, 254);
-			$stmt->bind_param("iss", $userId, $toAddress, $message);
+			if ($threadKey !== null && !preg_match('/^[0-9a-f]{32}$/', (string)$threadKey)) $threadKey = null;
+			$stmt->bind_param("isss", $userId, $toAddress, $threadKey, $message);
 			$stmt->execute();
 		}
 
@@ -753,19 +786,103 @@
 			return substr($this->partyKey($address), 0, 1) === "u";
 		}
 
+		// Uma identidade de conversa nova, para quem está escrevendo algo
+		// que não responde a nada.
+		public function newThreadKey() {
+			return bin2hex(random_bytes(16));
+		}
+
+		// A chave que a dedução antiga daria. Continua valendo para tudo que
+		// CHEGA (um Game Boy não manda cabeçalho nenhum que amarre uma
+		// resposta) e para as linhas enviadas anteriores à coluna.
+		private function fallbackKey($subject, $partyKey) {
+			return md5($this->normalizeSubject($subject) . "|" . $partyKey);
+		}
+
 		// Every conversation of the inbox, newest activity first. Each carries
 		// its messages oldest first (received and sent, bodies included), the
 		// unread count, and the inbox ids a bulk action can act on.
+		//
+		// As mensagens são percorridas em ordem cronológica, e isso é o que
+		// sustenta a regra: uma mensagem que chega só pode entrar numa
+		// conversa que já existia antes dela. Sem isso, uma mensagem nova
+		// escrita hoje puxaria para si uma resposta recebida semana passada
+		// só porque o título bate.
 		public function threadsForUser($userId) {
-			$threads = [];
+			$todas = [];
 			foreach ($this->listForUser($userId, "inbox") as $m) {
 				$m["kind"] = "in";
-				$this->threadAdd($threads, $m, $this->partyKey($m["sender"]), $m["sender"], $m["from_name"]);
+				$todas[] = $m;
 			}
 			foreach ($this->listSentForUser($userId) as $m) {
 				$m["kind"] = "out";
-				$this->threadAdd($threads, $m, $this->partyKey($m["recipient"]), $m["recipient"], "");
+				$todas[] = $m;
 			}
+			usort($todas, function ($a, $b) {
+				return strcmp((string)$a["timestamp"], (string)$b["timestamp"])
+					?: ((int)$a["id"] <=> (int)$b["id"]);
+			});
+
+			$threads = [];
+			// Message-Id do que nós mandamos -> conversa. É por aqui que a
+			// resposta de um cliente de verdade acha o lugar certo.
+			$porMessageId = [];
+			// (assunto normalizado + outra parte) -> a conversa MAIS RECENTE
+			// com esse par. O palpite de sempre, para quem não referencia
+			// nada -- um Game Boy respondendo, por exemplo.
+			$porAssunto = [];
+
+			foreach ($todas as $m) {
+				if ($m["kind"] === "out") {
+					$partyKey = $this->partyKey($m["recipient"]);
+					// A coluna é a única afirmação confiável sobre em qual
+					// conversa isto entra: foi escrita na hora do envio, que
+					// é a única hora em que se sabe se era resposta ou
+					// assunto novo.
+					$key = ($m["thread_key"] !== null && $m["thread_key"] !== "")
+						? $m["thread_key"]
+						: $this->fallbackKey($m["subject"], $partyKey);
+					$this->threadAdd($threads, $key, $m, $partyKey, $m["recipient"], "");
+					if ($m["message_id"] !== "") $porMessageId[$m["message_id"]] = $key;
+				} else {
+					$partyKey = $this->partyKey($m["sender"]);
+					$key = null;
+					foreach ($this->replyRefs($m) as $ref) {
+						if (isset($porMessageId[$ref])) { $key = $porMessageId[$ref]; break; }
+					}
+					if ($key === null) {
+						// O palpite por assunto só vale para quem NUNCA
+						// escreve cabeçalho de resposta: um Game Boy. Lá o
+						// assunto é o único fio que existe, e juntar é o
+						// certo.
+						//
+						// Para quem vem da internet, não. Um cliente de
+						// verdade escreve In-Reply-To ao responder; se não
+						// escreveu, não é resposta -- é mensagem nova que por
+						// acaso repete o título, e foi exatamente isso que o
+						// dono viu grudar numa conversa alheia. Sem sinal de
+						// resposta, cada uma abre a sua.
+						//
+						// (Hoje o sinal nunca chega: o filtro de entrega poda
+						// In-Reply-To/References junto com o resto do que não
+						// cabe num Game Boy. Enquanto for assim, toda carta de
+						// fora abre conversa própria -- que é o erro barato.
+						// O caro é juntar o que não é do mesmo assunto.)
+						if (substr($partyKey, 0, 1) === "u") {
+							$palpite = $this->fallbackKey($m["subject"], $partyKey);
+							$key = isset($porAssunto[$palpite]) ? $porAssunto[$palpite] : $palpite;
+						} else {
+							$key = md5("recebida|" . $m["id"]);
+						}
+					}
+					$this->threadAdd($threads, $key, $m, $partyKey, $m["sender"], $m["from_name"]);
+				}
+				// Seja qual for a origem da chave, é esta conversa que um
+				// próximo recebido sem referência deve encontrar.
+				$porAssunto[$this->fallbackKey($m["subject"],
+					$this->partyKey($m["kind"] === "out" ? $m["recipient"] : $m["sender"]))] = $key;
+			}
+
 			foreach ($threads as &$t) {
 				usort($t["messages"], function ($a, $b) {
 					return strcmp($a["timestamp"], $b["timestamp"]) ?: ((int)$a["id"] <=> (int)$b["id"]);
@@ -784,8 +901,19 @@
 			return array_values($threads);
 		}
 
-		private function threadAdd(&$threads, $m, $partyKey, $partyAddress, $partyName) {
-			$key = md5($this->normalizeSubject($m["subject"]) . "|" . $partyKey);
+		// O que uma mensagem recebida diz estar respondendo, do mais
+		// específico para o mais geral: In-Reply-To primeiro, depois o fim da
+		// cadeia de References.
+		private function replyRefs($m) {
+			$refs = [];
+			if (!empty($m["in_reply_to"])) $refs[] = $m["in_reply_to"];
+			if (!empty($m["references"])) {
+				foreach (array_reverse((array)$m["references"]) as $r) $refs[] = $r;
+			}
+			return $refs;
+		}
+
+		private function threadAdd(&$threads, $key, $m, $partyKey, $partyAddress, $partyName) {
 			if (!isset($threads[$key])) {
 				$threads[$key] = [
 					"key" => $key,
@@ -796,6 +924,7 @@
 					"messages" => [],
 					"unread" => 0,
 					"inbox_ids" => [],
+					"sent_ids" => [],
 					"has_sent" => false,
 					"game" => "",
 				];
@@ -803,7 +932,13 @@
 			$t = &$threads[$key];
 			$t["messages"][] = $m;
 			if ($m["kind"] === "in") {
-				$t["inbox_ids"][] = (int)$m["id"];
+				// SEM (int): desde que a caixa passou a ser do Dovecot, o id
+				// de uma recebida é "INBOX:1", não um número. Convertido, ele
+				// virava 0 -- e com ele o link de Responder da conversa
+				// (abria o formulário em branco), o marcar-como-lida ao abrir
+				// e o apagar da conversa inteira, todos mirando um id que não
+				// existe. Os ids de Enviados, esses sim, são inteiros.
+				$t["inbox_ids"][] = $m["id"];
 				if ($m["unread"]) $t["unread"]++;
 				// Received mail names the other side best: the From header
 				// carries their display name; a sent copy only has an address.
@@ -811,8 +946,70 @@
 				if ($m["game"] !== "" && $t["game"] === "") $t["game"] = $m["game"];
 				$t["party"] = $partyAddress;
 			} else {
+				// Guardado para que o botão Responder de uma conversa sem
+				// nada recebido ainda tenha uma mensagem concreta de onde
+				// tirar destinatário e assunto.
+				$t["sent_ids"][] = (int)$m["id"];
 				$t["has_sent"] = true;
 			}
+		}
+
+		// Tudo que a tela de escrever precisa saber para que uma resposta
+		// seja mesmo uma resposta: para quem vai, com que título, e em qual
+		// conversa entra.
+		//
+		// Aceita as duas origens porque o botão Responder existe nas duas
+		// telas, e os ids NÃO são do mesmo espaço de nomes: o da entrada é da
+		// caixa do Dovecot, o de Enviados é da linha em sys_sent. Tratá-los
+		// como se fossem um só era o defeito: o id de Enviados ia parar numa
+		// busca na caixa, que não achava nada (e o formulário abria vazio) --
+		// ou pior, achava OUTRA mensagem com aquele número e a resposta
+		// mudava de destinatário sem avisar.
+		//
+		// Devolve null quando o id não é do dono, e aí não há resposta a dar.
+		public function replyContext($userId, $inboxId, $sentId) {
+			if ($inboxId !== null && $inboxId !== "") {
+				$original = $this->getForUser($userId, $inboxId);
+				if ($original === null) return null;
+				// Responder à correspondência de um jogo não é coisa que o
+				// webmail faça: o corpo é carga binária de cartucho.
+				if (!empty($original["is_game"])) return null;
+				$para = $original["sender"];
+				$kind = "in";
+				$id = $inboxId;
+			} elseif ($sentId !== null && $sentId !== "") {
+				$original = $this->getSentForUser($userId, $sentId);
+				if ($original === null) return null;
+				// Em Enviados, "sender" já é para quem foi: continuar a
+				// conversa é escrever de novo para a mesma pessoa.
+				$para = $original["sender"];
+				$kind = "out";
+				$id = $sentId;
+			} else {
+				return null;
+			}
+
+			$assunto = trim((string)$original["subject"]);
+			return [
+				"to" => $para,
+				"subject" => preg_match('/^re:\s/i', $assunto) ? $assunto : ("Re: " . $assunto),
+				"thread_key" => $this->threadKeyContaining($userId, $kind, $id),
+			];
+		}
+
+		// Em qual conversa uma mensagem já está. Null quando não se acha --
+		// e aí quem envia abre conversa nova, que é o padrão seguro.
+		private function threadKeyContaining($userId, $kind, $id) {
+			// Os dois espaços de nomes de novo: "INBOX:1" de um lado, inteiro
+			// do outro. Comparados como texto, que serve aos dois.
+			$id = trim((string)$id);
+			$campo = $kind === "in" ? "inbox_ids" : "sent_ids";
+			foreach ($this->threadsForUser($userId) as $t) {
+				foreach ($t[$campo] as $cand) {
+					if ((string)$cand === $id) return $t["key"];
+				}
+			}
+			return null;
 		}
 
 		public function threadForUser($userId, $key) {
@@ -906,7 +1103,14 @@
 			}
 
 			return [
-				"subject" => $this->decodeHeader($headers["subject"] ?? ""),
+				// X-REON-Subject é o título inteiro, guardado pela moldagem de
+				// entrega quando ela precisou encurtar o Subject para caber na
+				// tela do Game Boy. O corte é exigência do cartucho; aqui não
+				// tem por que herdá-lo. Sem ele, vale o Subject mesmo.
+				"subject" => $this->decodeHeader(
+					($headers["x-reon-subject"] ?? "") !== ""
+						? $headers["x-reon-subject"]
+						: ($headers["subject"] ?? "")),
 				"from_name" => $this->fromDisplayName($headers["from"] ?? ""),
 				"game" => $headers["x-game-title"] ?? "",
 				// The same pair the Mobile Trainer itself tests before deciding
@@ -915,7 +1119,30 @@
 				"is_game" => isset($headers["x-game-code"])
 					&& strtolower($headers["x-gbmail-type"] ?? "") === "exclusive",
 				"body" => $this->decodeBody($body, $charset),
+				// Os três que amarram uma resposta ao que ela responde. Um
+				// Game Boy não escreve nenhum deles -- mas um cliente de
+				// verdade do outro lado (o Gmail de quem recebeu a nossa
+				// mensagem) escreve, e é por eles que a resposta dele acha a
+				// conversa certa em vez de cair no palpite por assunto.
+				"message_id" => $this->firstMessageId($headers["message-id"] ?? ""),
+				"in_reply_to" => $this->firstMessageId($headers["in-reply-to"] ?? ""),
+				"references" => $this->allMessageIds($headers["references"] ?? ""),
 			];
+		}
+
+		// "<a@b>" -> "a@b". Devolve "" quando não há nada utilizável.
+		private function firstMessageId($value) {
+			$ids = $this->allMessageIds($value);
+			return $ids === [] ? "" : $ids[0];
+		}
+
+		private function allMessageIds($value) {
+			$value = (string)$value;
+			if (preg_match_all('/<([^<>\s]+)>/', $value, $m)) {
+				return array_map("strtolower", $m[1]);
+			}
+			$value = strtolower(trim($value));
+			return $value === "" ? [] : [$value];
 		}
 
 		// Whatever a From header can hand us: real inbound mail writes the

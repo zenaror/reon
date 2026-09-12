@@ -83,7 +83,14 @@ function main() {
 	// A saída sai PRIMEIRO. O que vem depois é efeito colateral, e efeito
 	// colateral não pode segurar a entrega da mensagem.
 	fs.writeFileSync(1, saida);
-	avisaEfeitos(saida);
+	// O ORIGINAL, não o moldado: quem recebe isto decide pelo X-REON-Origin
+	// se a mensagem veio do webmail -- que já arquivou em Enviados e já tocou
+	// o sino sozinho. Esse carimbo está na lista de remoção logo acima, de
+	// modo que o moldado nunca o tem: mandar o moldado era o mesmo que dizer
+	// "não veio do webmail" para toda mensagem, e o resultado era uma segunda
+	// cópia em Enviados e um segundo toque no sino a cada carta entre
+	// jogadores.
+	avisaEfeitos(bruto);
 }
 
 // Cópia em Enviados e linha no sino -- o que o deliver.js fazia antes de o

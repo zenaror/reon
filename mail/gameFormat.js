@@ -48,6 +48,9 @@ function stripTransportHeaders(raw) {
 		// saída e pelo deliver.js. Nunca foi para o cartucho e não é
 		// agora que vai.
 		"x-reon-origin",
+		// Idem: diz ao relay em que conversa arquivar a cópia em Enviados.
+		// É recado entre as nossas peças, não parte da carta.
+		"x-reon-thread",
 	];
 
 	let out = [];
@@ -148,8 +151,24 @@ function slimMessage(raw) {
 	const KEEP = [
 		"mime-version", "from", "to", "subject",
 		"x-game-title", "x-game-code", "x-game-result", "x-gbmail-type",
+		// Mantido para o WEBMAIL, não para o cartucho: é o único fio que
+		// liga uma resposta vinda da internet à mensagem que ela responde.
+		// A redução existia no RETR do POP3, onde só o jogo a via; agora
+		// que ela acontece na entrega, o que for podado aqui some para os
+		// dois leitores. ~70 bytes, contra um teto de mensagem de 15 KB.
+		"in-reply-to",
 	];
 	let lines = [];
+	// O título inteiro, quando a redução o encurta. Mesmo motivo: o corte
+	// em SUBJECT_MAX_CHARS é uma exigência da tela do Game Boy, e o webmail
+	// não tem por que herdá-la. Só aparece quando houve corte de verdade,
+	// então uma carta de título curto não paga nada por isso.
+	if (headers["subject"]) {
+		const inteiro = normalizeHeaderValue(headers["subject"].value);
+		if (truncateSubject(inteiro) !== inteiro) {
+			lines.push("X-REON-Subject: " + inteiro);
+		}
+	}
 	for (let key of KEEP) {
 		if (!headers[key]) continue;
 		let value = normalizeHeaderValue(headers[key].value);

@@ -76,13 +76,17 @@
 				{% if compose.reply_id %}
 					<input type="hidden" name="reply" value="{{ compose.reply_id }}">
 				{% endif %}
+				{% if compose.reply_sent_id %}
+					<input type="hidden" name="reply_sent" value="{{ compose.reply_sent_id }}">
+				{% endif %}
+				{% set is_reply = compose.reply_id or compose.reply_sent_id %}
 				<label>
 					<span>{{'mail.to'|trans}}</span>
 					{# Locked when replying: the server re-derives "to" from
 					   reply_id regardless of what's posted, so this readonly
 					   attribute is UX, not the actual guarantee -- editing it
 					   client-side wouldn't retarget the reply anyway. #}
-					<input type="text" name="to" value="{{ compose.to }}" autocomplete="off" required{% if compose.reply_id %} readonly class="mt-input--locked"{% endif %}>
+					<input type="text" name="to" value="{{ compose.to }}" autocomplete="off" required{% if is_reply %} readonly class="mt-input--locked"{% endif %}>
 				</label>
 				<label>
 					<span>{{'mail.subject'|trans}}</span>
@@ -90,7 +94,11 @@
 					   mail leaving for the internet keeps a normal title. No
 					   maxlength attribute, since which limit applies depends on
 					   the recipient. #}
-					<input type="text" name="subject" id="mt-subject" value="{{ compose.subject }}" autocomplete="off" data-max-chars="{{ subject_max_chars }}">
+					{# Travado ao responder pelo mesmo motivo que o destinatário:
+					   uma resposta pertence a uma conversa, e o título é parte
+					   de como ela é reconhecida. O servidor re-deriva os dois
+					   de qualquer forma. #}
+					<input type="text" name="subject" id="mt-subject" value="{{ compose.subject }}" autocomplete="off" data-max-chars="{{ subject_max_chars }}"{% if is_reply %} readonly class="mt-input--locked"{% endif %}>
 				</label>
 				<label>
 					<span>{{'mail.body'|trans}}</span>
@@ -646,6 +654,12 @@
 						<input type="hidden" name="action" value="trash">
 						<button class="mt-btn" type="submit">{{'mail.thread-delete'|trans}}</button>
 					</form>
+				{% elseif thread.sent_ids is not empty %}
+					{# Conversa só de mensagens enviadas (ninguém respondeu ainda).
+					   Continua tendo de onde tirar destinatário e título: a
+					   última que saiu. Antes este ramo mandava só o endereço na
+					   URL, e o título abria em branco. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply_sent={{ thread.sent_ids|last }}">{{'mail.reply'|trans}}</a>
 				{% else %}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;to={{ thread.party|url_encode }}">{{'mail.reply'|trans}}</a>
 				{% endif %}
@@ -686,7 +700,11 @@
 				{% set back_to = folder != 'inbox' ? '/user/mail.php?folder=' ~ folder : (message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php') %}
 				<a class="mt-btn" href="{{ back_to }}">{{'mail.back'|trans}}</a>
 				{% if message.deleted_at %}
-					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ message.id }}">{{'mail.reply'|trans}}</a>
+					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
+					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
+					   acha nada -- e, pior, poderia achar uma mensagem alheia que
+					   por acaso tivesse aquele número. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 						<input type="hidden" name="id" value="{{ message.id }}">
@@ -700,7 +718,11 @@
 						<button class="mt-btn mt-btn--danger" type="submit">{{'mail.delete-forever'|trans}}</button>
 					</form>
 				{% else %}
-					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply={{ message.id }}">{{'mail.reply'|trans}}</a>
+					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
+					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
+					   acha nada -- e, pior, poderia achar uma mensagem alheia que
+					   por acaso tivesse aquele número. #}
+					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 						<input type="hidden" name="id" value="{{ message.id }}">
