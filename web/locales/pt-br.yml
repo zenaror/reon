@@ -621,7 +621,10 @@ notify:
   unread: "%count% nova(s)"
   mark-read: "Marcar todas como lidas"
   all-read: "Tudo em dia"
-  history-note: "Toda notificação fica guardada. Nada daqui é removido, então dá para voltar e conferir o que aconteceu."
+  history-note: "Toda notificação fica guardada até você mesmo limpar. Limpar apaga só a lista: a mensagem ou a troca que o aviso aponta continua onde está."
+  clear: "Limpar notificações"
+  clear-hint: "Limpar apaga só a lista. Nada do que ela aponta é removido."
+  clear-confirm: "Limpar todas as notificações? Não dá para desfazer."
   newer: "Mais recentes"
   older: "Mais antigas"
   cat-mail: "E-mail"
@@ -646,9 +649,7 @@ region:
 
 errors:
   title: "Códigos de erro do adaptador"
-  intro: "Quando algo dá errado o jogo mostra uma mensagem e, por trás dela, um código. Procure o seu aqui: digite o código, ou busque um pedaço do texto que apareceu na tela. Códigos que significam a mesma coisa dividem uma resposta só."
-  filter-game: "Jogo"
-  all-games: "Todos os jogos"
+  intro: "Quando algo dá errado o jogo mostra uma mensagem e, por trás dela, um código. Digite esse código aqui para procurá-lo. Códigos que significam a mesma coisa dividem uma resposta só, e cada entrada pode mostrar a mensagem que o próprio jogo imprime."
   filter-code: "Código de erro"
   show-screen: "O que o jogo escreve na tela"
   count: "Mostrando %n% de %total% códigos."

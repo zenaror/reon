@@ -15,8 +15,10 @@
 		<div class="mt-panel mt-panel--flat">
 			<h2 class="mt-panel__bar">{{ 'notify.title'|trans }} <span class="mt-panel__count">{{ total }}</span></h2>
 
-			{# Said plainly on the page, because it is the reason there is no
-			   delete button anywhere on it: the history is meant to be kept. #}
+			{# Dito na página porque é o que o botão abaixo faz e o que ele
+			   não faz: o histórico fica guardado até a PESSOA limpá-lo, e
+			   limpar não desfaz nada -- a mensagem ou a troca que o aviso
+			   apontava continua onde estava. #}
 			<p class="mt-summary">{{ 'notify.history-note'|trans }}</p>
 
 			{% if items is empty %}
@@ -41,6 +43,20 @@
 				</ul>
 			{% endif %}
 		</div>
+
+		{% if items is not empty %}
+			<div class="mt-statusbar">
+				<span class="mt-statusbar__hint">{{ 'notify.clear-hint'|trans }}</span>
+				<span class="mt-statusbar__acts">
+					<form method="post" action="/user/notifications.php"
+						onsubmit="return confirm('{{ 'notify.clear-confirm'|trans|e('js') }}');">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="action" value="clear">
+						<button class="mt-btn mt-btn--danger" type="submit">{{ 'notify.clear'|trans }}</button>
+					</form>
+				</span>
+			</div>
+		{% endif %}
 
 		{% if pages > 1 %}
 			<nav class="mt-pager">

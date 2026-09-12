@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/TemplateUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/NotificationUtil.php");
 	session_start();
@@ -11,6 +12,17 @@
 
 	$userId = $_SESSION["user_id"];
 	$notify = NotificationUtil::getInstance();
+
+	// Limpar é POST, e não um link: um GET que destrói é seguido por
+	// prefetch de navegador, por crawler e por <img> alheia. Mesma regra das
+	// ações da caixa de correio.
+	if ($_SERVER["REQUEST_METHOD"] === "POST") {
+		CsrfUtil::check();
+		if (($_POST["action"] ?? "") === "clear") $notify->clearForUser($userId);
+		// Redireciona depois do POST para que um F5 não repita a ação.
+		header("Location: /user/notifications.php");
+		return;
+	}
 
 	$per = NotificationUtil::PAGE_SIZE;
 	$page = max(1, (int)($_GET["page"] ?? 1));
