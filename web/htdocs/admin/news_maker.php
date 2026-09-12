@@ -178,6 +178,15 @@
 			$noticeKind = "bad";
 		} elseif (
 			($action !== "delete" && $action !== "withdraw")
+			&& $maker->brokenMinigame((string)($issue["minigame"] ?? "")) !== null
+		) {
+			// Recusado aqui, e não lá na frente: sem isto a pessoa preenche a
+			// edição inteira, aperta Publicar e recebe o erro cru do
+			// montador sobre um arquivo que ela não escreveu.
+			$notice = TemplateUtil::translate("admin.news-maker-minigame-broken");
+			$noticeKind = "bad";
+		} elseif (
+			($action !== "delete" && $action !== "withdraw")
 			&& ($unknown = $maker->checkPrizes($issue)) !== []
 		) {
 			// O montador recusaria um nome de item inexistente, mas só na
@@ -328,6 +337,7 @@
 			"minigames" => $maker->minigames(),
 			"prize_items" => $maker->items(),
 			"prizes_by_minigame" => $maker->prizesByMinigame(),
+			"broken_minigames" => $maker->brokenMinigames(),
 			"categories" => $maker->rankingCategories(),
 			"missing" => $maker->missing(),
 			"tool" => $maker->toolVersion(),

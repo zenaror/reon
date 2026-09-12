@@ -252,43 +252,299 @@
 			return $found;
 		}
 
-		// The prizes a minigame hands out, in the order its script reaches
-		// them.
+		// Minijogos que a ferramenta upstream não monta hoje, por erro de
+		// digitação no fonte dela. Não fazemos fork, então a correção não é
+		// nossa -- o que é nosso é não oferecer na tela o que não vai
+		// funcionar.
 		//
-		// A prize is an `nsc_giveitem` call in the minigame's own source, in
-		// one of two forms -- with a quantity and without. The first argument
-		// is not always an item: `game_personality` passes a macro parameter,
-		// and `game_cry_memory` names constants its own table fills in. Those
-		// are returned marked `fixed` rather than dropped, so the panel can
-		// say "this one belongs to the game" instead of showing a shorter
-		// list than the player will actually receive.
-		public function prizes($minigame) {
+		// Cada entrada carrega a LINHA exata que causa o erro, e só vale
+		// enquanto essa linha estiver no arquivo. Assim a lista expira sozinha
+		// quando o upstream corrigir, em vez de virar uma mentira que alguém
+		// aqui teria de lembrar de apagar.
+		//
+		// Vazia hoje: os três erros que existiam foram corrigidos no nosso
+		// fork em 11/09/2026 (`9130492`). Fica o mecanismo, porque a
+		// ferramenta é de fora e a próxima atualização dela pode trazer
+		// outro -- e porque ter isto pronto é a diferença entre a tela dizer
+		// o que houve e a pessoa preencher uma edição inteira para receber o
+		// despejo do montador.
+		const BROKEN_MINIGAMES = [];
+
+		// A linha que impede este minijogo de montar, ou null se ele monta.
+		public function brokenMinigame($minigame) {
+			$marker = self::BROKEN_MINIGAMES[$minigame] ?? null;
+			if ($marker === null) return null;
+
+			$dir = $this->sourceDir();
+			if ($dir === false) return null;
+
+			// Linha inteira, e não `strpos`: o primeiro marcador que escrevi
+			// era `lang I, next "PARCO NAZIONALE?` -- sem a aspa final, que era
+			// justamente o defeito. A correção só acrescenta a aspa no fim, e
+			// o marcador continuava sendo substring da linha corrigida. A
+			// detecção nunca teria expirado, que é o contrário do que ela
+			// existe para fazer.
+			$text = (string)@file_get_contents($dir . "/" . $minigame);
+			foreach (explode("\n", $text) as $line) {
+				if (rtrim($line, "\r") === $marker) return $marker;
+			}
+			return null;
+		}
+
+		// Os minijogos quebrados hoje, para a tela não oferecer prêmio onde
+		// não adianta escolher.
+		public function brokenMinigames() {
+			$found = [];
+			foreach (array_keys($this->minigames()) as $minigame) {
+				if ($this->brokenMinigame($minigame) !== null) $found[$minigame] = true;
+			}
+			return $found;
+		}
+
+		// Onde cada prêmio está escrito no minijogo, na ordem em que o script
+		// chega neles.
+		//
+		// Um prêmio nem sempre é um item literal num `nsc_giveitem`. Dois dos
+		// minijogos passam por macro, e ler só a linha do `nsc_giveitem`
+		// mostrava o token cru da macro -- um "\4" que não diz nada a quem
+		// está escrevendo uma revista, e, pior, contava UM prêmio onde o jogo
+		// entrega seis:
+		//
+		//   game_personality   `nsc_giveitem \4` dentro de MACRO quizresult,
+		//                      invocada 6 vezes, uma por resultado do quiz
+		//   game_cry_memory    `nsc_giveitem CRYSET1_BIG_PRIZE`, e a constante
+		//                      vem de `DEF CRYSET\1_BIG_PRIZE EQU \6` dentro
+		//                      de MACRO def_cryset
+		//
+		// Então o que se procura não é a linha do `nsc_giveitem`, é o lugar
+		// onde o nome do item está escrito de verdade -- que pode ser um
+		// argumento de uma invocação de macro lá em outra parte do arquivo.
+		// Cada entrada carrega esse endereço, e é por ele que a troca é feita.
+		private function prizeSites($minigame) {
 			$dir = $this->sourceDir();
 			if ($dir === false || !isset($this->minigames()[$minigame])) return [];
 
+			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
 			$items = $this->items();
-			$text = (string)@file_get_contents($dir . "/" . $minigame);
 
+			// 1. Corpos de macro, para saber o que é definição e o que é uso.
+			$macros = [];
+			$open = null;
+			foreach ($lines as $i => $line) {
+				if (preg_match('/^\s*MACRO\s+([A-Za-z_][A-Za-z0-9_]*)/', $line, $m)) {
+					$open = ["name" => $m[1], "from" => $i];
+					continue;
+				}
+				if ($open !== null && preg_match('/^\s*ENDM\b/', $line)) {
+					$macros[$open["name"]] = ["from" => $open["from"], "to" => $i];
+					$open = null;
+				}
+			}
+			$inMacro = function ($i) use ($macros) {
+				foreach ($macros as $name => $span) {
+					if ($i >= $span["from"] && $i <= $span["to"]) return $name;
+				}
+				return null;
+			};
+
+			// 2. O que cada macro faz com os argumentos dela: entregar um item
+			//    direto, ou definir uma constante que vira item depois.
+			$gives = [];
+			$defines = [];
+			foreach ($lines as $i => $line) {
+				$owner = $inMacro($i);
+				if ($owner === null) continue;
+				if (preg_match('/^\s*nsc_giveitem\s+\\\\(\d)\b/', $line, $m)) {
+					$gives[$owner] = (int)$m[1] - 1;
+				}
+				if (preg_match('/^\s*DEF\s+(\S+)\s+EQU\s+\\\\(\d)\s*$/', $line, $m)) {
+					$defines[$owner][] = ["name" => $m[1], "arg" => (int)$m[2] - 1];
+				}
+			}
+
+			// 3. As invocações no nível de cima, com a posição exata de cada
+			//    argumento -- posição, e não o texto separado por vírgula,
+			//    para a troca não estragar o alinhamento do arquivo.
+			$calls = [];
+			$constants = [];
+			foreach ($lines as $i => $line) {
+				if ($inMacro($i) !== null) continue;
+				if (!preg_match('/^(\s*)([A-Za-z_][A-Za-z0-9_]*)\s+(?=\S)/', $line, $m)) continue;
+				$name = $m[2];
+				if (!isset($macros[$name])) continue;
+
+				$args = self::argumentSpans($line, strlen($m[0]));
+				$calls[$name][] = ["line" => $i, "args" => $args];
+
+				foreach ($defines[$name] ?? [] as $def) {
+					if (!isset($args[$def["arg"]])) continue;
+					// O nome da constante também sai dos argumentos:
+					// `CRYSET\1_BIG_PRIZE` com \1 = 1 vira CRYSET1_BIG_PRIZE.
+					$constant = preg_replace_callback('/\\\\(\d)/',
+						function ($c) use ($args) {
+							return $args[(int)$c[1] - 1]["text"] ?? $c[0];
+						}, $def["name"]);
+					$constants[$constant] = [
+						"line" => $i, "span" => $args[$def["arg"]],
+						"value" => $args[$def["arg"]]["text"],
+					];
+				}
+			}
+
+			// 4. Os prêmios, na ordem em que o script chega neles.
 			$found = [];
-			foreach (explode("\n", $text) as $line) {
+			foreach ($lines as $i => $line) {
 				if (!preg_match('/^\s*nsc_giveitem\s+(.+)$/', $line, $m)) continue;
 
 				$args = array_map("trim",
 					explode(",", (string)preg_replace('/;.*$/', "", $m[1])));
-				$item = $args[0];
-
-				// Four arguments means the second is a quantity; three means
-				// the macro supplies 1.
+				$first = $args[0];
 				$quantity = count($args) >= 4 && ctype_digit($args[1]) ? (int)$args[1] : 1;
+				$owner = $inMacro($i);
 
-				$found[] = [
-					"item" => $item,
-					"label" => $items[$item] ?? str_replace("_", " ", $item),
-					"quantity" => $quantity,
-					"fixed" => !isset($items[$item]),
-				];
+				if ($owner !== null) {
+					// Dentro de macro: um prêmio por invocação dela. O som não
+					// precisa de conserto aqui -- o próprio minijogo escolhe
+					// pelo prefixo do item (`STRSUB("\4", 1, 3)`).
+					if (!isset($gives[$owner])) continue;
+					$arg = $gives[$owner];
+					foreach ($calls[$owner] ?? [] as $call) {
+						if (!isset($call["args"][$arg])) continue;
+						$found[] = self::prizeEntry($call["args"][$arg]["text"], $quantity,
+							$call["line"], $call["args"][$arg], null, $items);
+					}
+					continue;
+				}
+
+				if (isset($items[$first])) {
+					$spans = self::argumentSpans($line,
+						strpos($line, "nsc_giveitem") + strlen("nsc_giveitem"));
+					$found[] = self::prizeEntry($first, $quantity, $i, $spans[0],
+						self::giftSoundLine($lines, $i), $items);
+					continue;
+				}
+
+				if (isset($constants[$first])) {
+					$c = $constants[$first];
+					$found[] = self::prizeEntry($c["value"], $quantity, $c["line"], $c["span"],
+						self::giftSoundLine($lines, $i), $items);
+					continue;
+				}
+
+				// Sobrou algo que não dá para nomear. Marcado, não escondido:
+				// se um minijogo novo aparecer com outra forma, isso vira uma
+				// linha visível na tela em vez de um prêmio que some.
+				$found[] = self::prizeEntry($first, $quantity, null, null, null, $items);
 			}
 			return $found;
+		}
+
+		private static function prizeEntry($item, $quantity, $line, $span, $sound, $items) {
+			return [
+				"item" => $item,
+				"label" => $items[$item] ?? str_replace("_", " ", $item),
+				"quantity" => $quantity,
+				"fixed" => $line === null || !isset($items[$item]),
+				"line" => $line, "span" => $span, "sound" => $sound,
+			];
+		}
+
+		// Os argumentos separados por vírgula a partir de $at, cada um com o
+		// recorte exato no texto original, para trocar um deles sem mexer no
+		// espaçamento em volta.
+		private static function argumentSpans($line, $at) {
+			$text = (string)preg_replace('/;.*$/', "", $line);
+			$spans = [];
+			$start = $at;
+			$length = strlen($text);
+			for ($i = $at; $i <= $length; $i++) {
+				if ($i < $length && $text[$i] !== ",") continue;
+				$raw = substr($text, $start, $i - $start);
+				$lead = strlen($raw) - strlen(ltrim($raw));
+				$spans[] = [
+					"text" => trim($raw),
+					"at" => $start + $lead,
+					"length" => strlen(trim($raw)),
+				];
+				$start = $i + 1;
+			}
+			return $spans;
+		}
+
+		// A linha do som de presente que pertence ao prêmio da linha $at: a
+		// primeira depois dele e antes do próximo prêmio.
+		private static function giftSoundLine($lines, $at) {
+			$last = min($at + 12, count($lines) - 1);
+			for ($i = $at + 1; $i <= $last; $i++) {
+				if (strpos($lines[$i], "nsc_giveitem") !== false) return null;
+				if (preg_match('/^\s*nsc_playsound\s+(?:SFX_GET_TM|SFX_ITEM)\s*$/', $lines[$i])) {
+					return $i;
+				}
+			}
+			return null;
+		}
+
+		// Os prêmios de um minijogo, como a tela precisa vê-los: sem os
+		// endereços internos, que são detalhe da substituição.
+		public function prizes($minigame) {
+			if ($this->brokenMinigame($minigame) !== null) return [];
+			$shown = [];
+			foreach ($this->prizeSites($minigame) as $one) {
+				unset($one["line"], $one["span"], $one["sound"]);
+				$shown[] = $one;
+			}
+			return $shown;
+		}
+
+		// O fonte do minijogo com os prêmios desta edição dentro, ou null
+		// quando a edição não trocou nenhum -- e aí o build inclui o arquivo
+		// da ferramenta como sempre, sem cópia nenhuma.
+		//
+		// O som acompanha o item onde o minijogo não escolhe sozinho. Trocar
+		// só o item faria o jogo tocar a fanfarra de TM para uma BERRY; a
+		// regra é a do próprio upstream, que decide pelo prefixo `TM_`.
+		public function minigameWithPrizes($minigame, $chosen) {
+			$dir = $this->sourceDir();
+			if ($dir === false) return null;
+
+			$sites = $this->prizeSites($minigame);
+			if (!$sites) return null;
+
+			$items = $this->items();
+			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
+
+			// Agrupadas por linha, porque uma invocação só pode carregar dois
+			// prêmios -- `def_cryset` define o grande e o segundo grande na
+			// mesma linha -- e cada troca move o que vem depois dela.
+			$edits = [];
+			foreach ($sites as $i => $site) {
+				if ($site["fixed"]) continue;
+
+				$want = trim((string)($chosen[$i] ?? ""));
+				if ($want === "" || $want === $site["item"] || !isset($items[$want])) continue;
+
+				$edits[$site["line"]][] = ["span" => $site["span"], "to" => $want];
+
+				if ($site["sound"] !== null) {
+					$lines[$site["sound"]] = (string)preg_replace(
+						'/(nsc_playsound\s+)(?:SFX_GET_TM|SFX_ITEM)/',
+						'${1}' . (preg_match('/^(?:TM|HM)_/', $want) ? "SFX_GET_TM" : "SFX_ITEM"),
+						$lines[$site["sound"]]);
+				}
+			}
+			if (!$edits) return null;
+
+			foreach ($edits as $at => $list) {
+				// Da direita para a esquerda: uma troca de tamanho diferente
+				// desloca tudo que está depois dela na mesma linha.
+				usort($list, function ($a, $b) { return $b["span"]["at"] - $a["span"]["at"]; });
+				foreach ($list as $edit) {
+					$lines[$at] = substr_replace($lines[$at], $edit["to"],
+						$edit["span"]["at"], $edit["span"]["length"]);
+				}
+			}
+
+			return implode("\n", $lines);
 		}
 
 		// Every minigame's prize slots, for the panel: choosing a different
@@ -325,62 +581,6 @@
 				}
 			}
 			return $bad;
-		}
-
-		// The minigame's source with this issue's prizes written into it, or
-		// null when the issue changed none of them -- in which case the build
-		// includes the toolchain's own file and no copy exists at all.
-		//
-		// The sound moves with the item. Every prize is followed by an
-		// `nsc_playsound` chosen for the item that used to be there, so
-		// swapping a TM for a BERRY and leaving the line alone makes the game
-		// play the TM fanfare for a berry. The rule applied here is upstream's
-		// own: `game_personality` picks its sound with
-		// `STRSUB("\4", 1, 3) == "TM_"`.
-		public function minigameWithPrizes($minigame, $chosen) {
-			$dir = $this->sourceDir();
-			if ($dir === false) return null;
-
-			$slots = $this->prizes($minigame);
-			if (!$slots) return null;
-
-			$items = $this->items();
-			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
-			$ordinal = -1;
-			$changed = false;
-
-			foreach ($lines as $i => $line) {
-				if (!preg_match('/^(\s*nsc_giveitem\s+)([^,]+)(,.*)$/', $line, $m)) continue;
-
-				$ordinal++;
-				$slot = $slots[$ordinal] ?? null;
-				if ($slot === null || $slot["fixed"]) continue;
-
-				$want = trim((string)($chosen[$ordinal] ?? ""));
-				if ($want === "" || $want === $slot["item"] || !isset($items[$want])) continue;
-
-				$lines[$i] = $m[1] . $want . $m[3];
-				$changed = true;
-				self::retuneGiftSound($lines, $i, $want);
-			}
-
-			return $changed ? implode("\n", $lines) : null;
-		}
-
-		// Rewrites the gift sound belonging to the prize on line $at. Stops at
-		// the next prize, so a minigame with several never retunes a
-		// neighbour's.
-		private static function retuneGiftSound(&$lines, $at, $item) {
-			$want = preg_match('/^(?:TM|HM)_/', $item) ? "SFX_GET_TM" : "SFX_ITEM";
-			$last = min($at + 12, count($lines) - 1);
-
-			for ($i = $at + 1; $i <= $last; $i++) {
-				if (strpos($lines[$i], "nsc_giveitem") !== false) return;
-				if (preg_match('/^(\s*nsc_playsound\s+)(?:SFX_GET_TM|SFX_ITEM)\s*$/', $lines[$i], $m)) {
-					$lines[$i] = $m[1] . $want;
-					return;
-				}
-			}
 		}
 
 		// ------------------------------------------------------------ text		// ------------------------------------------------------------ text
