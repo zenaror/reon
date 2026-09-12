@@ -139,3 +139,47 @@ body.mariokart-theme .game-section > h2 { font-size: 32px !important; line-heigh
 @media (max-width: 575.98px) {
   .game-nav { position: static; }
 }
+
+/* ------------------------------------------------------------------ abas
+
+   Um nível acima do menu de seções: o menu diz onde se está dentro de um
+   jogo, as abas dizem de qual jogo se trata. Por isso ficam maiores e com
+   a borda inferior aberta -- a aba escolhida encosta no conteúdo, que é o
+   que uma aba significa. */
+.game-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 14px;
+  border-bottom: 2px solid var(--reon-line);
+}
+
+.game-tab {
+  padding: 8px 18px;
+  border: 2px solid var(--reon-line);
+  border-bottom: 0;
+  background: var(--reon-panel);
+  color: var(--reon-ink);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  /* Encosta na linha de baixo para a aba ativa poder cobri-la. */
+  margin-bottom: -2px;
+}
+
+.game-tab[aria-selected="true"] {
+  background: var(--reon-blue-deep);
+  color: #fff;
+  border-color: var(--reon-blue-deep);
+}
+
+.game-tab:focus-visible {
+  outline: 2px solid var(--reon-blue-deep);
+  outline-offset: 2px;
+}
+
+/* O menu de seções gruda no topo; com a barra de abas acima dele, é ela que
+   precisa dar o espaço, senão os dois disputam a mesma faixa ao rolar. */
+.game-tabs + .game-nav {
+  top: 0;
+}

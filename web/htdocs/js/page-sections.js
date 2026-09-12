@@ -7,7 +7,17 @@
  * (so a link to a section survives edits above it) and one entry in the
  * nav's list. The nav stays hidden with fewer than two sections. While
  * scrolling, the entry whose section is on screen is marked .is-active.
- * Shared by the Markdown pages (guide, downloads) and the game hubs. */
+ * Shared by the Markdown pages (guide, downloads) and the game hubs.
+ *
+ * A page may carry more than one pair -- the Crystal hub has one per tab.
+ * Give both halves the same name to pair them up:
+ *
+ *   <nav data-sections-nav="stadium" hidden><ol></ol></nav>
+ *   <div data-sections="stadium"> … </div>
+ *
+ * An unnamed pair still works on its own, which is every other page. The
+ * scroll highlight only looks at the group that is actually on screen, so
+ * a hidden tab never steals it. */
 (function () {
 	function slugify(text) {
 		return text.trim().toLowerCase()
@@ -16,9 +26,15 @@
 	}
 
 	function init() {
-		var body = document.querySelector("[data-sections]");
-		var nav = document.querySelector("[data-sections-nav]");
-		if (!body || !nav) return;
+		document.querySelectorAll("[data-sections]").forEach(initGroup);
+	}
+
+	function initGroup(body) {
+		var key = body.getAttribute("data-sections");
+		var nav = key
+			? document.querySelector('[data-sections-nav="' + key + '"]')
+			: document.querySelector("[data-sections-nav]");
+		if (!nav) return;
 		var heads = body.querySelectorAll("h2");
 		if (heads.length < 2) return;
 		var list = nav.querySelector("ol, ul");
@@ -40,7 +56,11 @@
 			list.appendChild(li);
 			links.push({ h: h, a: a });
 		});
-		nav.hidden = false;
+		// Escondido continua escondido: numa página de abas este script roda
+		// no DOMContentLoaded, DEPOIS do game-tabs.js, que é síncrono. Um
+		// `false` cru aqui reabria o menu da aba que o outro acabara de
+		// fechar, e os dois menus apareciam juntos.
+		nav.hidden = body.offsetParent === null;
 
 		// The ids only exist now, so a link that arrived with #section has
 		// not scrolled yet; do it here.
@@ -50,7 +70,10 @@
 		}
 
 		// The section whose heading was last scrolled past is the current one.
+		// Skipped entirely while this group is off screen: a hidden tab has
+		// every heading at top 0 and would fight the visible one.
 		function update() {
+			if (body.offsetParent === null) return;
 			var line = window.scrollY + Math.max(80, window.innerHeight * 0.25);
 			var current = links[0];
 			links.forEach(function (l) {

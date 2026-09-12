@@ -12,15 +12,22 @@ jump to [Troubleshooting](#troubleshooting) at the bottom.
 Two things:
 
 1. **A way to run the game with a Mobile Adapter.** Either:
-   - an emulator that knows about the Mobile Adapter GB (for example
-     [our build of **mGBA**](/downloads.php#emulators), for PC and 3DS), **or**
+   - an emulator that knows about the Mobile Adapter GB — 
+     [our build of **mGBA**](/downloads.php#emulators) for the PC is the
+     one this guide walks through, **or**
    - a real Game Boy Color / Game Boy Advance and a substitute Mobile
-     Adapter (for example a [**PicoAdapterGB**](/downloads.php#real-hardware)).
+     Adapter, such as a
+     [**PicoAdapterGB**](https://github.com/zenaror/PicoAdapterGB).
 2. **The game you want to play.** Some games need a small patch to bring
-   their online features back. See [Get started with games](#get-started-with-games).
+   their online features back — the patches are on
+   [Downloads](/downloads.php#games-and-patches). What each game can do
+   online, and how to reach it, is under
+   [Get started with games](#get-started-with-games).
 
-<div class="reon-note">For now this guide covers the emulator. Instructions
-for real hardware will follow.</div>
+<div class="reon-note">※ The step-by-step below is for <strong>mGBA on a
+PC</strong>, which supports everything REON offers. The other builds are
+listed under <strong>Other ways to connect</strong>, at the end of Setup,
+each pointing at the project that maintains it.</div>
 
 ## Setup
 
@@ -60,15 +67,21 @@ you reinstall your emulator or set up another device.
 3. Go to the **Settings** tab and press **Load config file**.
 4. Pick the `mobile_config.bin` you downloaded. That's it!
 
-**3DS (mGBA)**
+### Other ways to connect
 
-[To be written.] The build is on the [Downloads](/downloads.php#emulators)
-page.
+This guide covers **mGBA on a PC**, because that is the shortest path from
+nothing to playing. The other builds work too, and each one is documented
+where it is developed:
 
-**Real hardware (PicoAdapterGB)**
+- **Other mGBA versions** — the same emulator also builds for the
+  **Nintendo 3DS**, the **Wii** and the **Switch**.
+  [Get them and read their instructions on GitHub](https://github.com/zenaror/mgba).
+- **PicoAdapterGB** — a real adapter you build yourself, for a real Game Boy.
+  [Get it and read its instructions on GitHub](https://github.com/zenaror/PicoAdapterGB).
 
-[To be written.] The firmware for each board is on the
-[Downloads](/downloads.php#real-hardware) page.
+<div class="reon-note">※ Whichever you use, the `mobile_config.bin` from
+step 2 is the same file. Set one up and the rest of this site works the
+same.</div>
 
 ### You're almost set!
 
@@ -93,14 +106,28 @@ setup steps and what you can do online:
 
 ### Error messages
 
-[To be written: one entry per message the game can show, what it means,
-what to do.]
+When a game cannot get online it shows a message, and behind that message
+there is a code like `10-000`. The
+**[adapter error codes](/errors.php)** page lists them: pick your game, type
+the code, or paste part of the text you saw on screen.
+
+<div class="reon-note">※ The messages are in Japanese because that is what
+the cartridges print — the page shows them exactly as the game breaks the
+lines, so you can match what is in front of you. The English explanation
+exists for the dozen codes that have one; the rest say so rather than
+guess.</div>
 
 ### Frequently asked questions
 
-<!-- BGB (libmobile-bgb) steps were removed on purpose for now: on the
-     PC the guide shows only mGBA, so nobody is sent down the harder
-     setup by mistake. Add them back here when the time comes. -->
+<!-- Only mGBA on a PC gets step-by-step instructions here, and mGBA
+     supports everything the service offers. The other builds are named
+     under "Other ways to connect" with nothing but a link to the
+     repository that maintains them: no steps and no download button, so
+     there is no second copy here to drift out of date.
+
+     libmobile-bgb / BGB is deliberately absent from the whole site for
+     now -- mGBA covers the same ground with an easier setup. Put it back
+     only when someone asks for it. -->
 
 **Do I need to download `mobile_config.bin` again?**
 Only if you lost it. The same file works on all your devices, and a fresh

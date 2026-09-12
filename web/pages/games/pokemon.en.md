@@ -34,6 +34,3 @@ page. Come back here for what is special about Crystal.</div>
 
 **Battle Tower**
 [To be written.]
-
-**Mobile Stadium**
-[To be written.]

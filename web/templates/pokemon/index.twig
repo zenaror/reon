@@ -20,25 +20,55 @@
 		</div>
 	</header>
 
-	<nav class="game-nav" data-sections-nav hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+	{# Duas abas, não dois hubs: o Stadium não tem Mobile Adapter próprio --
+	   tudo o que ele mostra chega num cartucho de Crystal que teve um. Uma
+	   página separada diria que são dois caminhos independentes, e não são.
+	   O Crystal é a aba padrão porque é por onde se entra. #}
+	{% if stadium_html %}
+		<div class="game-tabs" role="tablist" data-game-tabs
+		     aria-label="{{'pokemon-crystal'|trans}}">
+			<button type="button" class="game-tab" role="tab" data-tab="crystal"
+			        aria-selected="true" aria-controls="tab-crystal">{{'pokemon-crystal'|trans}}</button>
+			<button type="button" class="game-tab" role="tab" data-tab="stadium"
+			        aria-selected="false" aria-controls="tab-stadium">{{'pokemon-stadium'|trans}}</button>
+		</div>
+	{% endif %}
 
-	<div class="game-sections" data-sections>
-		{% if doc_html %}
-			<div class="game-doc">{{ doc_html|raw }}</div>
-		{% endif %}
+	<nav class="game-nav" data-sections-nav="crystal" hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+	{% if stadium_html %}
+		<nav class="game-nav" data-sections-nav="stadium" hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+	{% endif %}
 
-		<section class="game-section">
-			<h2>{{'game-page.services'|trans}}</h2>
-			<div class="game-services">
-				<a href="rankings.php"><strong>{{'rankings'|trans}}</strong>{{'pokemon-pages.rankings-description'|trans}}</a>
-				<a href="tradecorner.php"><strong>{{'trade-corner'|trans}}</strong>{{'pokemon-pages.trade-corner-description'|trans}}</a>
-				<a href="battletower.php"><strong>{{'battle-tower'|trans}}</strong>{{'pokemon-pages.battle-tower-description'|trans}}</a>
-				<a href="saveconverter.php"><strong>{{'bxt-save-converter'|trans}}</strong>{{'pokemon-pages.bxt-save-converter-description'|trans}}</a>
-			</div>
-		</section>
+	<div id="tab-crystal" data-tab-panel="crystal">
+		<div class="game-sections" data-sections="crystal">
+			{% if doc_html %}
+				<div class="game-doc">{{ doc_html|raw }}</div>
+			{% endif %}
+
+			<section class="game-section">
+				<h2>{{'game-page.services'|trans}}</h2>
+				<div class="game-services">
+					<a href="rankings.php"><strong>{{'rankings'|trans}}</strong>{{'pokemon-pages.rankings-description'|trans}}</a>
+					<a href="tradecorner.php"><strong>{{'trade-corner'|trans}}</strong>{{'pokemon-pages.trade-corner-description'|trans}}</a>
+					<a href="battletower.php"><strong>{{'battle-tower'|trans}}</strong>{{'pokemon-pages.battle-tower-description'|trans}}</a>
+					<a href="saveconverter.php"><strong>{{'bxt-save-converter'|trans}}</strong>{{'pokemon-pages.bxt-save-converter-description'|trans}}</a>
+				</div>
+			</section>
+		</div>
 	</div>
+
+	{# Sem os serviços: rankings, Trade Corner e Battle Tower são do Crystal.
+	   Repeti-los aqui faria parecer que o Stadium fala com o servidor. #}
+	{% if stadium_html %}
+		<div id="tab-stadium" data-tab-panel="stadium" hidden>
+			<div class="game-sections" data-sections="stadium">
+				<div class="game-doc">{{ stadium_html|raw }}</div>
+			</div>
+		</div>
+	{% endif %}
 {% endblock %}
 
 {% block body %}
 <script src="{{ asset('/js/page-sections.js') }}"></script>
+{% if stadium_html %}<script src="{{ asset('/js/game-tabs.js') }}"></script>{% endif %}
 {% endblock %}
