@@ -136,6 +136,29 @@
 			</table>
 		</div>
 	</section>
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.mailauth-title'|trans }}</h2>
+		<p class="admin-form__hint">{{ 'admin.mailauth-explain'|trans }}</p>
+		<div class="admin-form__row">
+			{% if pop3_password_fallback %}
+				<span class="admin-pill admin-pill--down">{{ 'admin.mailauth-on'|trans }}</span>
+				<form method="post" onsubmit="return confirm('{{ 'admin.mailauth-off-confirm'|trans|e('js') }}');">
+					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					<input type="hidden" name="setting" value="pop3_password_fallback">
+					<input type="hidden" name="value" value="0">
+					<button class="btn btn-sm btn-outline-primary" type="submit">{{ 'admin.mailauth-turn-off'|trans }}</button>
+				</form>
+			{% else %}
+				<span class="admin-pill admin-pill--up">{{ 'admin.mailauth-off'|trans }}</span>
+				<form method="post" onsubmit="return confirm('{{ 'admin.mailauth-on-confirm'|trans|e('js') }}');">
+					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					<input type="hidden" name="setting" value="pop3_password_fallback">
+					<input type="hidden" name="value" value="1">
+					<button class="btn btn-sm btn-outline-secondary" type="submit">{{ 'admin.mailauth-turn-on'|trans }}</button>
+				</form>
+			{% endif %}
+		</div>
+	</section>
 {% endblock %}
 
 {# One button, one form. Every one of these posts a verb and a unit and
