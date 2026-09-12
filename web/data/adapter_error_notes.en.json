@@ -1,0 +1,124 @@
+{
+  "_comment": [
+    "Escrito à mão, não gerado. maint/build_adapter_errors.php lê este",
+    "arquivo e o mistura ao que baixa das fontes, então regenerar nunca",
+    "apaga o que está aqui.",
+    "",
+    "'families' casa pelo primeiro número do código; 'codes' casa o código",
+    "inteiro e ganha da família. O texto é explicação, não tradução: a",
+    "mensagem japonesa continua no dado, para quem quiser comparar com a",
+    "tela, mas quem chega aqui quer saber o que fazer."
+  ],
+
+  "families": {
+    "00": {
+      "title": "The game could not reach REON",
+      "means": "A catch-all the game falls back to when it has no better code. In practice it means the same as 10-XXX: the conversation with the adapter never got anywhere.",
+      "todo": "Work through the 10-000 checks below."
+    },
+    "10": {
+      "title": "The adapter is not there",
+      "means": "The game looked for a Mobile Adapter and found nothing. On an emulator that usually means the adapter is not switched on in the emulator; on real hardware, that the cable or the adapter is not seated.",
+      "todo": "Plug the adapter in <strong>before</strong> starting the game and leave it in. In mGBA, open <em>Mobile Game Boy Adapter…</em> and make sure it is enabled."
+    },
+    "11": {
+      "title": "The call did not go through",
+      "means": "The adapter tried to dial and got nowhere. On REON there is no telephone line — this is the adapter failing to open a connection to the server.",
+      "todo": "Check the machine is online. If you are on real hardware, check the Wi-Fi settings you flashed. Then try again: the game treats this as temporary and so should you."
+    },
+    "12": {
+      "title": "The line is busy",
+      "means": "Same family as 11: the adapter could not complete the connection, and the game blames a congested line.",
+      "todo": "Wait a moment and try again."
+    },
+    "13": {
+      "title": "The call did not go through",
+      "means": "Another of the dialling failures, shown with the same message as 11-000.",
+      "todo": "Wait a moment and try again; if it never works, check the network side."
+    },
+    "14": {
+      "title": "The adapter's settings are damaged",
+      "means": "The configuration stored in the adapter did not pass its own checksum, so the adapter refuses to use it.",
+      "todo": "Load your <code>mobile_config.bin</code> again. It is on <a href=\"/user/summary.php\">Your Account</a>, and the <a href=\"/guide.php\">guide</a> says where to put it."
+    },
+    "15": {
+      "title": "The adapter got an answer it did not understand",
+      "means": "Something replied, but not in the shape the adapter expected. It is the code REON's own scripts produce when the adapter could not reach a server properly.",
+      "todo": "Try again. If it persists, it is worth reporting — this one usually means the two sides disagree about something, not that you did anything wrong."
+    },
+    "16": {
+      "title": "Communication error",
+      "means": "One of the generic failures. The game has no detail to offer beyond \"it did not work\".",
+      "todo": "Wait and try again. If it repeats in the same place every time, report it with what you were doing."
+    },
+    "17": { "same_as": "16" },
+    "20": {
+      "title": "The wrong mobile centre was selected",
+      "means": "The adapter tried to reach a service it is not configured for.",
+      "todo": "Load your <code>mobile_config.bin</code> again — it is what points the adapter at REON."
+    },
+    "21": { "same_as": "16" },
+    "22": { "same_as": "16" },
+    "23": { "same_as": "16" },
+    "24": {
+      "title": "The connection was refused",
+      "means": "The adapter reached the network but could not open the connection — a TCP failure.",
+      "todo": "Check that nothing on your machine blocks the outgoing connection, then try again."
+    },
+    "25": {
+      "title": "The adapter was never set up",
+      "means": "There is no configuration in the adapter at all, so it has nothing to dial.",
+      "todo": "Load your <code>mobile_config.bin</code>, or run the Mobile Trainer to register the adapter."
+    },
+    "26": { "same_as": "16" },
+    "30": {
+      "title": "The mail server refused the message",
+      "means": "This family is about <strong>sending mail</strong>. The last three digits are the mail server's own SMTP reply — 4xx is temporary, 5xx is permanent.",
+      "todo": "See the specific code. A 4xx is worth retrying; a 5xx will keep failing until something changes."
+    },
+    "31": {
+      "title": "The mailbox server returned an error",
+      "means": "This family is about <strong>collecting mail</strong> over POP3.",
+      "todo": "Try again. If it repeats, your account may need attention — check you can read the same mailbox from <a href=\"/user/mail.php\">REON Mail</a>."
+    },
+    "32": {
+      "title": "The web request failed",
+      "means": "This family is about the <strong>HTTP</strong> requests a game makes for rankings, news and downloads. The last three digits are the HTTP status the server replied with.",
+      "todo": "See the specific code below."
+    },
+    "33": {
+      "title": "The mobile centre reported a problem",
+      "means": "The service answered, but with a complaint of its own rather than the data the game asked for.",
+      "todo": "Wait and try again. If one particular feature always fails this way, report it — it points at that feature, not at your setup."
+    },
+    "101": {
+      "title": "The connection broke underneath",
+      "means": "A socket-level failure: the connection dropped, timed out or was reset while the game was using it.",
+      "todo": "These are usually the network, not the game. Try again on a steadier connection."
+    }
+  },
+
+  "codes": {
+    "30-221": { "means": "The mail server closed the conversation. Often harmless on its own." },
+    "30-421": { "means": "The mail server is not accepting mail right now (SMTP 421). Temporary." },
+    "30-450": { "means": "The mailbox was unavailable (SMTP 450). Temporary — try later." },
+    "30-451": { "means": "The server hit an error of its own while handling the message (SMTP 451). Temporary." },
+    "30-452": { "means": "The server is out of room (SMTP 452). Temporary." },
+    "30-550": { "means": "There is no such mailbox (SMTP 550). Check the address you typed in the game." },
+    "30-551": { "means": "The address is not local to that server (SMTP 551)." },
+    "30-552": { "means": "The message is too large for the mailbox (SMTP 552)." },
+    "30-553": { "means": "The address is not a valid one (SMTP 553). Check what you typed." },
+    "30-554": { "means": "The server refused the message outright (SMTP 554)." },
+    "31-002": { "means": "The POP3 server answered with an error. On REON this is usually a login the server did not accept." },
+    "32-301": { "means": "The page moved (HTTP 301). The game does not follow redirects, so this fails." },
+    "32-302": { "means": "The page moved temporarily (HTTP 302). Same problem: the game does not follow it." },
+    "32-401": { "means": "The server wanted credentials the game did not send (HTTP 401)." },
+    "32-403": { "means": "The server refused the request (HTTP 403)." },
+    "32-404": { "means": "The server has nothing at that address (HTTP 404). On REON this usually means a game or a feature we do not serve yet." },
+    "32-408": { "means": "The request took too long (HTTP 408)." },
+    "32-500": { "means": "Something broke on our side (HTTP 500). Worth reporting with the time it happened." },
+    "32-502": { "means": "A bad answer came back through the front door (HTTP 502). Usually brief." },
+    "32-503": { "means": "The service is down or overloaded (HTTP 503). Try later." },
+    "32-504": { "means": "Our side took too long to answer (HTTP 504). Try later." }
+  }
+}

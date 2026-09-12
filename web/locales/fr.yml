@@ -120,7 +120,7 @@ auth:
   reon-username-taken: "Ce nom est déjà pris — choisissez-en un autre."
   reon-username-free: "Ce nom est disponible."
   reon-username-mail-or: "ou"
-  reon-username-mail-truncated: "Les jeux ne retiennent que 8 caractères, donc une forme abrégée est utilisée dans la Game Boy — les deux vous parviennent."
+  reon-username-mail-truncated: "La Game Boy ne retient que 8 caractères : l'adresse dans le jeu est donc votre nom d'utilisateur abrégé — les deux arrivent dans la même boîte."
   region-explanation-para1: REON permet l'échange international pour les joueurs de Pokémon Cristal, via la fonctionnalité en jeu appelée le Coin Troc. Cela inclut les échanges entre jeux japonais et non-japonais, normalement incompatibles à cause de jeux de caractères différents. Pour rendre ces échanges possibles, le service modifie les surnoms des Pokémon, les noms des Dresseurs, et les messages écrits sur le Courrier lors de la mise en relation entre jeux japonais et non-japonais (par exemple, en changeant « A » en « ア », et vice-versa). Ces changements sont irréversibles, mais ils visent à imiter aussi fidèlement que possible l'écriture de la langue d'origine.
   region-explanation-para2: Choisissez le pool de régions avec lesquelles vous êtes d'accord d'échanger. Ce réglage peut aussi être modifié après l'inscription.
 password-reset:
@@ -201,6 +201,7 @@ gameboy-wars: Game Boy Wars 3
 mario-kart:
   title: Mario Kart
 pokemon-crystal: Pokémon Cristal
+pokemon-stadium: "Pokémon Stadium"
 rankings: Classement
 trade-corner: Trade Corner
 battle-tower: Tour de Combat
@@ -1188,6 +1189,7 @@ admin:
   news-maker-template: D'après
   news-maker-template-hint: Le vrai numéro dont celui-ci emprunte les menus, les scripts et la mise en page.
   news-maker-minigame: Mini-jeu
+  news-maker-minigame-broken: "Ce mini-jeu ne se compile pas avec la chaîne d'outils actuelle : il y a une erreur dans son propre code source, en amont. Aucun prix à choisir, et un numéro ne peut pas être publié avec lui. Choisissez-en un autre."
   news-maker-publish-now-unbuilt: Ce numéro n'a pas encore été compilé. Ouvrez-le, cochez les langues et appuyez d'abord sur Publier.
   news-maker-published-now: En ligne maintenant dans %regions%.
   news-maker-prizes: Prix
@@ -1315,6 +1317,16 @@ admin:
   err-no-such-user: Ce compte n'existe pas.
   err-not-yourself: Pas sur le compte avec lequel vous êtes connecté.
   err-not-an-admin: Un administrateur ne peut pas être banni. Retirez-lui d'abord l'administration.
+  mailauth-title: "Authentification du courrier"
+  mailauth-explain: "L'adaptateur prouve son identité avec la clé d'appareil de 256 bits (APOP), et le mot de passe ne circule jamais sur le réseau. Le mot de passe de huit caractères est l'ancienne entrée, conservée uniquement pour les adaptateurs qui ne parlent pas encore APOP. Fermez-la dès que les nouvelles versions sont entre les mains des joueurs : huit caractères se devinent, et laisser la porte faible à côté de la solide revient à choisir la faible pour l'attaquant."
+  mailauth-on: "Connexion par mot de passe acceptée"
+  mailauth-off: "Clé d'appareil uniquement"
+  mailauth-turn-off: "Exiger la clé d'appareil"
+  mailauth-turn-on: "Accepter de nouveau les mots de passe"
+  mailauth-off-confirm: "Tout adaptateur incapable de faire APOP cessera de relever le courrier. Continuer ?"
+  mailauth-on-confirm: "Le mot de passe de huit caractères sera de nouveau accepté. Continuer ?"
+  setting-saved: "Réglage enregistré."
+  setting-failed: "Le réglage n'a pas pu être enregistré."
   services-title: Services
   services-note: Le redémarrage passe par un utilitaire que le serveur doit autoriser explicitement. Tant qu'il n'est pas installé, les boutons annoncent ce qu'ils auraient lancé et ne changent rien.
   services-service: Service
@@ -1414,3 +1426,14 @@ admin:
   trainer-img-no-such-page: Cette page n'existe pas.
   trainer-readonly: Le serveur web ne peut pas écrire ces fichiers, donc rien ne peut encore être enregistré ici.
   trainer-readonly-why: 'PHP tourne en tant que « %user% », et les pages appartiennent au compte qui les a déployées. Accorder le droit d''écriture à cet utilisateur tient en une commande :'
+
+errors:
+  title: "Codes d'erreur de l'adaptateur"
+  intro: "En cas de problème, le jeu affiche un message et, derrière, un code. Cherchez le vôtre ici : saisissez le code, ou cherchez une partie du texte vu à l'écran. Les codes de même sens partagent une seule réponse."
+  filter-game: "Jeu"
+  all-games: "Tous les jeux"
+  filter-code: "Code d'erreur"
+  show-screen: "Ce que le jeu affiche"
+  count: "%n% codes affichés sur %total%."
+  no-meaning: "Pas encore de description"
+  missing: "Les données d'erreur n'ont pas encore été générées. Lancez maint/build_adapter_errors.php."

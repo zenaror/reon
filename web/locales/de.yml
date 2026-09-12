@@ -93,7 +93,7 @@ auth:
   reon-username-taken: "Dieser Name ist bereits vergeben — bitte wähle einen anderen."
   reon-username-free: "Dieser Name ist verfügbar."
   reon-username-mail-or: "oder"
-  reon-username-mail-truncated: "Die Spiele fassen nur 8 Zeichen, daher wird im Game Boy eine Kurzform verwendet — beide erreichen dich."
+  reon-username-mail-truncated: "Der Game Boy fasst nur 8 Zeichen, deshalb ist die Adresse im Spiel Ihr gekürzter Benutzername — beide erreichen dasselbe Postfach."
   region-explanation-para1: REON ermöglicht internationalen Tausch für Pokémon-Kristall-Spieler über die Spielfunktion namens Trade Corner. Das schließt Tausche zwischen japanischen und nicht-japanischen Spielen ein, die normalerweise wegen unterschiedlicher Zeichensätze inkompatibel sind. Um solche Tausche zu ermöglichen, ändert der Dienst Pokémon-Spitznamen, Trainernamen und auf Post geschriebene Nachrichten beim Zusammenführen von Pokémon zwischen japanischen und nicht-japanischen Spielen (zum Beispiel wird "A" zu "ア" geändert, und umgekehrt). Diese Änderungen sind unumkehrbar, versuchen aber, die Schreibweise der Originalsprache so originalgetreu wie möglich nachzuahmen.
   region-explanation-para2: Wähle die Region-Gruppe, mit der du tauschen möchtest. Diese Einstellung kann auch nach der Registrierung geändert werden.
 
@@ -105,6 +105,7 @@ password-reset:
   success: Dein Passwort wurde erfolgreich zurückgesetzt.
 your-account: Mein Konto
 pokemon-crystal: Pokémon Kristall
+pokemon-stadium: "Pokémon Stadium"
 rankings: Rangliste
 trade-corner: Trade Corner
 battle-tower: Kampfturm
@@ -1124,6 +1125,7 @@ admin:
   news-maker-template: Beruht auf
   news-maker-template-hint: Die echte Ausgabe, deren Menüs, Skripte und Aufbau diese übernimmt.
   news-maker-minigame: Minispiel
+  news-maker-minigame-broken: "Dieses Minispiel lässt sich mit der aktuellen Toolchain nicht bauen — im Quelltext des Minispiels selbst steckt ein Fehler, upstream. Es gibt keinen Preis zur Auswahl, und eine Ausgabe kann damit nicht veröffentlicht werden. Bitte ein anderes wählen."
   news-maker-publish-now-unbuilt: Diese Ausgabe wurde noch nicht gebaut. Öffnen Sie sie, wählen Sie die Sprachen und drücken Sie zuerst Veröffentlichen.
   news-maker-published-now: Jetzt live in %regions%.
   news-maker-prizes: Preise
@@ -1251,6 +1253,16 @@ admin:
   err-no-such-user: Dieses Konto gibt es nicht.
   err-not-yourself: Nicht beim Konto, mit dem Sie angemeldet sind.
   err-not-an-admin: Ein Verwalter kann nicht gesperrt werden. Entziehen Sie ihm zuerst die Verwaltung.
+  mailauth-title: "Anmeldung am Postfach"
+  mailauth-explain: "Der Adapter weist sich mit dem 256-Bit-Geräteschlüssel aus (APOP); das Passwort geht nie über die Leitung. Das achtstellige Passwort ist der alte Weg und bleibt nur für Adapter, die noch kein APOP sprechen. Schließen Sie ihn, sobald die neuen Versionen bei den Spielern sind: acht Zeichen lassen sich raten, und wer die schwache Tür neben der starken offen lässt, sorgt dafür, dass Angreifer die schwache nehmen."
+  mailauth-on: "Anmeldung mit Passwort erlaubt"
+  mailauth-off: "Nur mit Geräteschlüssel"
+  mailauth-turn-off: "Geräteschlüssel verlangen"
+  mailauth-turn-on: "Passwörter wieder erlauben"
+  mailauth-off-confirm: "Jeder Adapter ohne APOP holt keine Post mehr ab. Fortfahren?"
+  mailauth-on-confirm: "Das achtstellige Passwort wird wieder akzeptiert. Fortfahren?"
+  setting-saved: "Einstellung gespeichert."
+  setting-failed: "Die Einstellung konnte nicht gespeichert werden."
   services-title: Dienste
   services-note: Das Neustarten läuft über ein Hilfsprogramm, das der Server ausdrücklich erlauben muss. Solange es nicht eingerichtet ist, melden die Schaltflächen nur, was sie ausgeführt hätten, und ändern nichts.
   services-service: Dienst
@@ -1350,3 +1362,14 @@ admin:
   trainer-img-no-such-page: Diese Seite gibt es nicht.
   trainer-readonly: Der Webserver kann diese Dateien nicht schreiben, hier lässt sich also noch nichts speichern.
   trainer-readonly-why: 'PHP läuft als „%user%“, und die Seiten gehören dem Konto, das sie ausgerollt hat. Diesem Benutzer Schreibrecht zu geben ist ein einziger Befehl:'
+
+errors:
+  title: "Fehlercodes des Adapters"
+  intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Schlagen Sie ihn hier nach: Code eingeben oder nach einem Teil des Bildschirmtexts suchen. Codes mit gleicher Bedeutung teilen sich eine Antwort."
+  filter-game: "Spiel"
+  all-games: "Alle Spiele"
+  filter-code: "Fehlercode"
+  show-screen: "Was das Spiel anzeigt"
+  count: "%n% von %total% Codes werden angezeigt."
+  no-meaning: "Noch keine Beschreibung"
+  missing: "Die Fehlerdaten wurden noch nicht erzeugt. maint/build_adapter_errors.php ausführen."

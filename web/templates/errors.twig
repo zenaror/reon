@@ -1,0 +1,57 @@
+{% extends "main.twig" %}
+{% set body_class = "home home-v2" %}
+{% set nav_item = "guide" %}
+
+{% block title %}{{ 'errors.title'|trans }}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/pages.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	<div class="home-layout">
+		{% include "_portal_sidebar.twig" %}
+		<div class="home-main">
+			<section class="reon-box">
+				<h1 class="reon-box__bar reon-box__bar--purple">{{ 'errors.title'|trans }}</h1>
+				<div class="reon-box__body">
+
+					<p>{{ 'errors.intro'|trans }}</p>
+
+					{% if not errors %}
+						<div class="reon-note reon-note--warn">{{ 'errors.missing'|trans }}</div>
+					{% else %}
+						{# Três filtros porque há três jeitos de chegar aqui: com o
+						   código na mão, com o jogo na mão, ou só com o texto que
+						   apareceu na tela e nenhum dos dois. #}
+						{# Um filtro só: a página é consulta por código. O texto que o
+						   jogo imprime continua em cada entrada, fechado, para confirmar
+						   que se achou a certa. #}
+						<div class="err-filters">
+							<label>
+								{{ 'errors.filter-code'|trans }}
+								<input type="search" id="err-code" placeholder="10-000" autocomplete="off">
+							</label>
+						</div>
+
+						<p class="err-count" id="err-count" data-template="{{ 'errors.count'|trans }}"></p>
+
+						<div class="err-list" id="err-list"
+						     data-screen="{{ 'errors.show-screen'|trans }}"
+						     data-unknown="{{ 'errors.no-meaning'|trans }}"></div>
+					{% endif %}
+
+				</div>
+			</section>
+		</div>
+	</div>
+{% endblock %}
+
+{% block body %}
+	{% if errors %}
+		<script id="err-data" type="application/json" data-unknown="{{ 'errors.no-meaning'|trans }}">{{ errors|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}</script>
+		<script src="{{ asset('/js/error-codes.js') }}"></script>
+	{% endif %}
+{% endblock %}
