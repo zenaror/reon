@@ -19,7 +19,7 @@
 		"bin_dns2_host", "bin_dns2_port",
 		"bin_relay_host", "bin_relay_port",
 		"bin_p2p_port",
-		"bin_adapter_device", "bin_unmetered",
+		"bin_adapter_device", "bin_unmetered", "bin_user_choice",
 	];
 
 	$notice = null;
@@ -36,7 +36,10 @@
 		$novos = [];
 		foreach ($CAMPOS as $k) {
 			$v = trim((string)($_POST[$k] ?? ""));
-			if ($k === "bin_unmetered") $v = ($v === "1") ? "1" : "0";
+			// Caixa desmarcada não chega no POST, então a ausência é o
+			// valor "0" -- e não "não mexeu", que deixaria a marca ligada
+			// para sempre depois da primeira vez.
+			if ($k === "bin_unmetered" || $k === "bin_user_choice") $v = ($v === "1") ? "1" : "0";
 			if (!SettingsUtil::isValid($k, $v)) { $invalidos[] = $k; continue; }
 			$novos[$k] = $v;
 		}

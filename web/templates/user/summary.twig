@@ -126,6 +126,40 @@
 					</div>
 				</div>
 			</div>
+			{# Só existe quando o painel libera. O formulário é separado do
+			   de Pokémon Crystal de propósito: são assuntos diferentes, e
+			   juntá-los faria um salvar mexer no outro. #}
+			{% if adapter_choice_allowed %}
+			<div class="card mb-4">
+				<div class="card-header">{{ "account.adapter-settings"|trans }}</div>
+				<div class="card-body">
+					<form method="post">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<div class="mb-3">
+							<label for="adapterDevice" class="form-label">{{ "account.adapter-color"|trans }}</label>
+							<small><p>{{ "account.adapter-blurb"|trans }}</p></small>
+							<select id="adapterDevice" name="adapterDevice" class="form-select">
+								{% for code, nome in adapter_models %}
+									<option value="{{ code }}"{% if adapter_device == code ~ '' %} selected{% endif %}>{{ ("account.adapter-color-" ~ code)|trans }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="mb-3 form-check">
+							<input class="form-check-input" type="checkbox" id="adapterUnmetered" name="adapterUnmetered" value="1"{% if adapter_unmetered %} checked{% endif %}>
+							<label class="form-check-label" for="adapterUnmetered">{{ "account.adapter-unmetered"|trans }}</label>
+						</div>
+						{% if ("adapterValue" in errors) %}
+							<small><p>{{ "account.adapter-invalid"|trans }}</p></small>
+						{% endif %}
+						{% if adapter_is_default %}
+							<small><p>{{ "account.adapter-following-default"|trans }}</p></small>
+						{% endif %}
+						<small><p>{{ "account.adapter-download-note"|trans }}</p></small>
+						<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
+					</form>
+				</div>
+			</div>
+			{% endif %}
 			<div class="card mb-4">
 				<div class="card-header">{{ "account.pokemon-crystal-settings"|trans }}</div>
 				<div class="card-body">

@@ -962,6 +962,17 @@ account:
   time-zone: Zona horaria
   time-zone-blurb: Elige la zona horaria en la que se muestran las fechas y horas en el sitio. Deja el valor por defecto para verlo todo en la zona horaria original del juego (Japón, +0900).
   update-settings: Actualizar configuración
+  adapter-settings: "Adaptador"
+  adapter-color: "Color del adaptador"
+  adapter-blurb: "Qué adaptador ven los juegos al leer tu mobile_config.bin. Cambia el color y el nombre que muestra el juego, nada más."
+  adapter-unmetered: "Sin tarificación (sin cargo por minuto)"
+  adapter-color-8: "Azul"
+  adapter-color-9: "Amarillo"
+  adapter-color-10: "Verde"
+  adapter-color-11: "Rojo"
+  adapter-following-default: "Todavía no has elegido, así que estos son los valores del sitio."
+  adapter-download-note: "El cambio se aplica a la próxima mobile_config.bin que descargues. Un archivo ya en uso sigue funcionando."
+  adapter-invalid: "Ese no es un adaptador que el servidor conozca. No se cambió nada."
 invalid-pokemon-news-setting: Preferencia de Noticias Pokémon no válida.
 
 mail:
@@ -1390,6 +1401,8 @@ admin:
   trainer-readonly: El servidor web no puede escribir estos archivos, así que aquí todavía no se puede guardar nada.
   trainer-readonly-why: 'PHP se ejecuta como «%user%», y las páginas pertenecen a la cuenta que las desplegó. Dar permiso de escritura a ese usuario es un solo comando:'
 
+  adapter-user-choice: "Permitir que cada cuenta elija su propio adaptador"
+  adapter-user-choice-note: "Con esto activado, el modelo y la marca de sin tarificación pasan a ser el valor inicial y no la regla: cada cuenta puede elegir el suyo en su página, y quien no elija sigue lo que se fija aquí. Desactivarlo devuelve a todos a estos valores sin borrar la elección de nadie."
 errors:
   title: "Códigos de error del adaptador"
   intro: "Cuando algo falla el juego muestra un mensaje y, detrás, un código. Escribe ese código aquí para buscarlo. Los códigos que significan lo mismo comparten una sola respuesta, y cada entrada puede mostrar el mensaje que el propio juego imprime."

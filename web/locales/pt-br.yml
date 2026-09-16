@@ -180,6 +180,17 @@ account:
   pokemon-news-custom-opt-in-off: Só notícias Pokémon oficiais
   pokemon-news-custom-opt-in-on: Notícias Pokémon personalizadas quando disponíveis
 
+  adapter-settings: "Adaptador"
+  adapter-color: "Cor do adaptador"
+  adapter-blurb: "Qual adaptador os jogos enxergam ao ler a sua mobile_config.bin. Muda a cor e o nome que o jogo mostra — nada mais no funcionamento."
+  adapter-unmetered: "Não tarifado (sem cobrança por minuto)"
+  adapter-color-8: "Azul"
+  adapter-color-9: "Amarelo"
+  adapter-color-10: "Verde"
+  adapter-color-11: "Vermelho"
+  adapter-following-default: "Você ainda não escolheu, então estes são os padrões do site."
+  adapter-download-note: "A mudança vale para a próxima mobile_config.bin que você baixar. Arquivo já em uso continua funcionando."
+  adapter-invalid: "Este não é um adaptador que o servidor conhece. Nada foi alterado."
 admin:
   nav-adapter: "Config do adaptador"
   adapter-title: "mobile_config.bin"
@@ -513,6 +524,8 @@ admin:
   trainer-readonly: "O servidor web não consegue escrever nesses arquivos, então nada aqui pode ser salvo ainda."
   trainer-readonly-why: "O PHP roda como \"%user%\", e as páginas pertencem à conta que fez o deploy. Dar escrita a esse usuário é um comando:"
 
+  adapter-user-choice: "Deixar cada conta escolher o próprio adaptador"
+  adapter-user-choice-note: "Com isto ligado, o modelo e a marca de não-tarifado acima viram padrão em vez de regra: cada conta pode escolher os seus na página dela, e quem não escolher continua seguindo o que está aqui. Desligar devolve todo mundo a estes valores sem apagar a escolha de ninguém."
 mail:
   title: "REON Mail"
   inbox: "Caixa de entrada"

@@ -61,7 +61,7 @@
 
 		$db = $db_util->getDB();
 
-		$stmt = $db->prepare("select email, dion_ppp_id, dion_email_local from sys_users where id = ?");
+		$stmt = $db->prepare("select email, dion_ppp_id, dion_email_local, adapter_device, adapter_unmetered from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -133,8 +133,27 @@
 
 		// Modelo do adaptador, mais a marca de não-tarifado no bit 0x80
 		// (MOBILE_CONFIG_DEVICE_UNMETERED, config.h da libmobile).
-		$modelo = (int)$vAdmin("bin_adapter_device");
-		if ($vAdmin("bin_unmetered") === "1") $modelo |= 0x80;
+		//
+		// Estes dois são os únicos campos do arquivo que a própria pessoa
+		// pode escolher, e só quando o painel libera (`bin_user_choice`).
+		// Nulo na conta quer dizer "não escolhi", e aí vale o painel -- por
+		// isso a coluna é nula em vez de nascer com uma cópia do padrão:
+		// quem nunca escolheu acompanha a mudança global.
+		//
+		// A escolha guardada passa pela MESMA validação do painel antes de
+		// virar byte. É a segunda rede: uma linha que tenha entrado por
+		// outro caminho não produz arquivo que o cartucho não entende, ela
+		// só é ignorada.
+		$escolhaLiberada = $vAdmin("bin_user_choice") === "1";
+		$modeloConta = $result["adapter_device"];
+		$usaConta = $escolhaLiberada && $modeloConta !== null &&
+			SettingsUtil::isValid("bin_adapter_device", (string)(int)$modeloConta);
+
+		$modelo = $usaConta ? (int)$modeloConta : (int)$vAdmin("bin_adapter_device");
+		$naoTarifado = $usaConta
+			? ((int)$result["adapter_unmetered"] === 1)
+			: ($vAdmin("bin_unmetered") === "1");
+		if ($naoTarifado) $modelo |= 0x80;
 		$lib_data .= pack('C', $modelo);
 
 		// dns1/dns2 type. libmobile only overrides the game's DNS servers

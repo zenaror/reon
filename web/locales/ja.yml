@@ -1002,6 +1002,17 @@ account:
   pokemon-news-custom-opt-in-off: 公式ポケモンニュースのみ
   pokemon-news-custom-opt-in-on: 利用可能な場合はカスタムポケモンニュース
 
+  adapter-settings: "アダプタ"
+  adapter-color: "アダプタの色"
+  adapter-blurb: "mobile_config.bin を読んだゲームが認識するアダプタです。ゲームに表示される色と名前が変わるだけで、動作は変わりません。"
+  adapter-unmetered: "定額（分単位の課金なし）"
+  adapter-color-8: "ブルー"
+  adapter-color-9: "イエロー"
+  adapter-color-10: "グリーン"
+  adapter-color-11: "レッド"
+  adapter-following-default: "まだ選んでいないため、サイトの初期値が使われています。"
+  adapter-download-note: "変更は次にダウンロードする mobile_config.bin から有効です。すでに使っているファイルはそのまま動きます。"
+  adapter-invalid: "このサーバーが知らないアダプタです。何も変更していません。"
 invalid-pokemon-news-setting: 無効なポケモンニュース設定です。
 
 mail:
@@ -1430,6 +1441,8 @@ admin:
   trainer-readonly: ウェブサーバーがこれらのファイルに書き込めないため、ここではまだ何も保存できません。
   trainer-readonly-why: PHP は「%user%」として動いており、ページはそれを配置したアカウントのものです。そのユーザーに書き込み権限を与えるのは、コマンド1つです：
 
+  adapter-user-choice: "アカウントごとにアダプタを選べるようにする"
+  adapter-user-choice-note: "オンにすると、上の機種と定額の印は規則ではなく初期値になります。各アカウントは自分のページで選べ、選ばない人はここの設定に従ったままです。オフに戻すと全員がこの値に戻り、誰の選択も消えません。"
 errors:
   title: "アダプタのエラーコード"
   intro: "不具合が起きるとゲームはメッセージを表示し、その裏にコードがあります。そのコードを入力して調べてください。同じ意味のコードは一つの説明にまとめてあり、各項目ではゲームが実際に表示する文面も開けます。"

@@ -43,6 +43,10 @@
 			// quando não-tarifado.
 			"bin_adapter_device" => "8",
 			"bin_unmetered" => "0",
+			// Quando ligado, os dois campos acima viram padrão em vez de
+			// regra: cada conta pode escolher os seus na página dela, e
+			// quem não escolher continua seguindo o que está aqui.
+			"bin_user_choice" => "0",
 		];
 
 		// O que cada chave aceita. Isto não é zelo: o valor vai para dentro
@@ -61,6 +65,7 @@
 			"bin_p2p_port" => "porta",
 			"bin_adapter_device" => "modelo",
 			"bin_unmetered" => "bool",
+			"bin_user_choice" => "bool",
 		];
 
 		// Devolve true quando o valor serve para a chave.

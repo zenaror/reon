@@ -961,6 +961,17 @@ account:
   pokemon-news-custom-opt-in-off: Nur offizielle Pokémon-Nachrichten
   pokemon-news-custom-opt-in-on: Benutzerdefinierte Pokémon-Nachrichten, wenn verfügbar
 
+  adapter-settings: "Adapter"
+  adapter-color: "Adapterfarbe"
+  adapter-blurb: "Welchen Adapter die Spiele sehen, wenn sie deine mobile_config.bin lesen. Das ändert Farbe und Namen, die das Spiel anzeigt — sonst nichts."
+  adapter-unmetered: "Pauschal (keine Abrechnung pro Minute)"
+  adapter-color-8: "Blau"
+  adapter-color-9: "Gelb"
+  adapter-color-10: "Grün"
+  adapter-color-11: "Rot"
+  adapter-following-default: "Du hast noch nicht gewählt, daher gelten die Vorgaben der Seite."
+  adapter-download-note: "Die Änderung gilt für die nächste heruntergeladene mobile_config.bin. Eine bereits genutzte Datei funktioniert weiter."
+  adapter-invalid: "Das ist kein Adapter, den dieser Server kennt. Es wurde nichts geändert."
 invalid-pokemon-news-setting: Ungültige Pokémon-Nachrichten-Einstellung.
 
 mail:
@@ -1389,6 +1400,8 @@ admin:
   trainer-readonly: Der Webserver kann diese Dateien nicht schreiben, hier lässt sich also noch nichts speichern.
   trainer-readonly-why: 'PHP läuft als „%user%“, und die Seiten gehören dem Konto, das sie ausgerollt hat. Diesem Benutzer Schreibrecht zu geben ist ein einziger Befehl:'
 
+  adapter-user-choice: "Jedes Konto seinen eigenen Adapter wählen lassen"
+  adapter-user-choice-note: "Ist dies aktiv, werden Modell und Pauschal-Kennzeichen oben zur Vorgabe statt zur Regel: Jedes Konto kann auf seiner Seite eigene wählen, wer nicht wählt, folgt weiterhin dem hier Eingestellten. Abschalten setzt alle wieder auf diese Werte, ohne jemandes Wahl zu löschen."
 errors:
   title: "Fehlercodes des Adapters"
   intro: "Geht etwas schief, zeigt das Spiel eine Meldung und dahinter einen Code. Geben Sie diesen Code hier ein, um ihn nachzuschlagen. Codes mit gleicher Bedeutung teilen sich eine Antwort, und jeder Eintrag kann die Meldung zeigen, die das Spiel selbst ausgibt."
