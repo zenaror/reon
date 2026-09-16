@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="battle-tower-page" data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
+<div class="battle-tower-page" data-battle-zoom="2" data-bt-extra="{{ (show_level ? 1 : 0) + (show_room ? 1 : 0) }}">
     <div class="battle-table-shell">
     <div class="battle-table-inner">
     <h1 class="trade-corner-title">&#xFF22;&#xFF21;&#xFF34;&#xFF34;&#xFF2C;&#xFF25;&#x3000;&#xFF34;&#xFF2F;&#xFF37;&#xFF25;&#xFF32;</h1>
@@ -51,8 +51,8 @@
         <div class="battle-control-zoom">
             <label class="battle-zoom-label" for="battle-zoom-btn-1">Zoom:</label>
             <div class="trade-size-buttons battle-zoom-buttons" role="group" aria-label="Battle Tower zoom">
-                <button id="battle-zoom-btn-1" class="trade-size-btn battle-zoom-btn" type="button" data-battle-zoom="1" aria-pressed="true">1x</button>
-                <button class="trade-size-btn battle-zoom-btn" type="button" data-battle-zoom="2" aria-pressed="false">2x</button>
+                <button id="battle-zoom-btn-1" class="trade-size-btn battle-zoom-btn" type="button" data-battle-zoom="1" aria-pressed="false">1x</button>
+                <button class="trade-size-btn battle-zoom-btn is-active" type="button" data-battle-zoom="2" aria-pressed="true">2x</button>
             </div>
         </div>
 
@@ -287,10 +287,12 @@
         return;
     }
 
-    // 1x or 2x. Desktops start at 2x and remember the choice; tablets start
-    // at 1x and remember; phones always open at 1x, 2x there is for this
-    // visit only (it scrolls sideways in the box).
-    // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room.
+    // 1x or 2x, and 2x is the default everywhere -- the owner's call, so the
+    // table opens at the size it is meant to be read at. A choice made with
+    // the buttons is remembered; on a phone it lasts the visit only, and at
+    // 2x there the table scrolls sideways inside its box.
+    // 1200px, not 992: at 2x the ALL/ALL table is 1036px and needs the room,
+    // which is what the split layout below still asks about.
     const desktop = window.matchMedia("(min-width: 1200px)");
     const phone = window.matchMedia("(max-width: 575.98px)");
     const stored = () => {
@@ -298,7 +300,7 @@
         try { return localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
     };
     const clamp = (raw) => {
-        const zoom = raw || stored() || (desktop.matches ? "2" : "1");
+        const zoom = raw || stored() || "2";
         return zoom === "1" ? "1" : "2";
     };
 
