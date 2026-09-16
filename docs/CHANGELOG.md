@@ -514,6 +514,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### app/pokemon-battle — Battle Tower
 
+* A **Battle Tower abre em 2×** em qualquer tela. Antes o padrão vinha da
+  largura: desktop largo em 2×, tablet e celular em 1×
+
 * **Visão ALL** — os filtros de nível e sala aceitam ALL, e as colunas LV e
   ROOM aparecem só quando o filtro correspondente está aberto. A tabela é de
   largura fixa (440px do layout de referência) e a coluna do líder era a
@@ -656,6 +659,22 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   Revogação é fail-safe e passou a ser honrada com contador igual
 
 ### mobile_config.bin (dados do adaptador)
+
+* **A cor do adaptador e a marca de não-tarifado podem ser de cada conta**,
+  quando o painel liberar. A caixa fica na seção Adapter, e libera um cartão
+  na página da conta, entre Stats e Pokémon Crystal settings. Com a opção
+  ligada a escolha da pessoa prevalece; desligada, o painel volta a valer na
+  hora
+  * As colunas são nulas, e nulo quer dizer "não escolhi", não "azul
+    tarifado". Duas consequências: quem nunca abriu a tela acompanha uma
+    mudança global do painel, e desligar a opção não apaga escolha de
+    ninguém — religar devolve tudo
+  * A checagem da opção acontece no PHP, não só no template: esconder o
+    formulário não impede um POST, e estes dois valores viram byte dentro de
+    um arquivo que um cartucho lê. Desligada, o que vier no POST é ignorado
+  * A validação é a mesma função do painel, e o gerador valida de novo ao
+    escrever: uma linha inválida no banco não produz arquivo que o cartucho
+    não entenda, ela só é ignorada e o padrão vale
 
 * **O arquivo agora se chama `mobile_config.bin`**, que é o nome que o mGBA
   usa — antes era `config.bin` e a pessoa tinha de renomear. O nome passou a
@@ -941,6 +960,17 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   só logado, nunca altera o estado (não é autenticado). 15 verificações,
   suíte inteira verde; sondado ao vivo contra o relay de produção
 
+* Fix: **a resposta de consulta com dois campos era recusada** (`be1c4fc`) —
+  `<contador> <assinatura>`, sem eco, que é o que o servidor devolve na
+  primeira consulta da vida de um aparelho, com contador zero. O parser
+  exigia três campos, e nenhum teste cobria o caminho
+* Suíte de testes versionada em `tests/` com ctest (`ac3f3af`), desligada por
+  padrão quando o core é subprojeto — foi ela que pegou o defeito acima
+* Documentado (`eef8398`): o teto de desafio APOP de 96 veio de medição —
+  66 bytes no Dovecot em produção —, não de limite de protocolo; e CRAM-MD5
+  foi avaliado e deliberadamente não implementado, porque a fraqueza que ele
+  corrige só importa contra segredo curto
+
 ## libmobile-bgb
 
 * Corrigido bug de leitura de socket POP3/HTTP que travava com resposta
@@ -967,6 +997,19 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   branch publicada. A única assinatura perdida é a do próprio dono
   (`5db419f` → `9eab62d`); a de terceiro (`12a30c5`, Andrew Cook) ficou
   fora do range e intacta
+
+* **Aviso quando não há chave de correio** (`624c725`) — o código de
+  pareamento saía normal num aparelho sem chave, e a falha só aparecia
+  depois, na primeira busca
+* Dois logs de andaime removidos (`4819a72`): imprimiam o `ppp_id` no stderr
+  de todo authorize, identificador de conta que alguém cola num pedido de
+  ajuda sem perceber. Os outros dois ficaram, re-rotulados como o que
+  viraram: log de suporte
+* Teste do caminho bloqueado (`d6bfc6b`, `1e763a3`), com servidor de
+  device-auth falso e resposta `blocked` assinada de verdade. Rodar achou um
+  defeito no próprio harness: a leitura do stderr bloqueava até encher o
+  buffer, o que nenhum teste anterior expunha por só ler depois de o processo
+  morrer
 
 ## PicoAdapterGB
 
@@ -1008,6 +1051,20 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   de bloco do container — a prova é o ELF (1 ocorrência nos seis) e o sha256.
   Handshake v1 ainda não exercitado em hardware
 
+* **Aviso quando não há chave de correio** na interface web (`db8cd43`), com
+  o texto convergido entre as três implementações
+* Fix: **leitura fora dos limites em `flash_eeprom.c`** (`f9dbb4a`) — o
+  `memcpy` usava o tamanho do destino, lendo 20 e 55 bytes além do fim dos
+  literais de SSID e senha padrão. O aviso do compilador já aparecia sem
+  ligar flag nenhuma; ninguém lia o log
+* Limpeza da chave por ponteiro `volatile` no lugar de `memset` (`de1e4b3`) —
+  um `memset` em buffer que ninguém mais lê é escrita morta, e o compilador
+  pode descartá-la
+* `SPDX-License-Identifier: GPL-3.0-only` em 27 arquivos (`88b2fc8`)
+* Dois alvos a mais no pacote: `Pico2W_SmBoard` e `Pico2ESP_SmBoard`. São
+  oito, não seis — nunca foi limitação técnica, os pinos do StackSmashing
+  existem iguais no Pico 2 W
+
 ## mGBA
 
 * **Fechado de ponta a ponta em produção (3DS, 08/09/2026)** — primeiro
@@ -1043,6 +1100,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   jogo, config do 3DS em `/mGBA/`)
 * Próximo (prioridade mais baixa, qualquer outra demanda passa na frente):
   otimizações do emulador para ARM na Vita
+
+* **Aviso quando não há chave de correio** (`9d2e9b91a`), nos quatro lugares
+  que mostram o código de pareamento. O `Unavailable` do Qt continua
+  significando falta de identidade, que é outra falha com outra solução
+* Fix: **o arquivo de identidade do libretro era aceito sem se olhar o
+  conteúdo** — bastava ter 16 bytes. Um arquivo zerado por escrita
+  interrompida passava como válido, e toda instalação nessa situação
+  colidiria numa identidade só. Agora rejeita e sorteia de novo
 
 ## Mobile Adapter GB TestSuite ROM
 
