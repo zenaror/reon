@@ -1,0 +1,30 @@
+{# Um documento legal dentro da própria tela. Usado no cadastro: a pessoa
+   está no meio de um formulário e mandá-la para outra página para ler o que
+   está prestes a aceitar é como perder o que já digitou.
+
+   O texto vem do MESMO Markdown que /terms.php e /privacy.php servem
+   (PageUtil::html), então não existe segunda cópia para envelhecer. Vem
+   embutido, e não buscado ao abrir: é o documento que o consentimento
+   referencia, e ele tem de estar legível mesmo se a rede falhar no meio do
+   cadastro.
+
+   Espera: id, title, body, href. #}
+<div class="modal fade legal-modal" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="modal-title" id="{{ id }}Label">{{ title }}</h1>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ 'close'|trans }}"></button>
+			</div>
+			<div class="modal-body legal-modal__body">
+				{{ body|raw }}
+			</div>
+			<div class="modal-footer">
+				{# A página inteira continua existindo, para quem quer imprimir,
+				   guardar ou mandar o link. #}
+				<a class="legal-modal__full" href="{{ href }}" target="_blank" rel="noopener">{{ 'open-full-page'|trans }}</a>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ 'close'|trans }}</button>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,9 +1,14 @@
 <?php
 	require_once("../classes/SessionUtil.php");
+	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/UserUtil.php");
+	require_once("../classes/ConfigUtil.php");
 	session_start();
+
+	$config = ConfigUtil::getInstance()->getConfig();
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		CsrfUtil::check();
 		if (isset($_POST["id"]) && isset($_POST["key"]) && isset($_POST["reonEmail"]) && isset($_POST["password"]) && isset($_POST["passwordConfirm"]) && isset($_POST["tradeRegions"])) {
 			// Fetch email before completing signup (completeSignupAction deletes sys_signup).
 			$email = UserUtil::getInstance()->verifySignupRequest($_POST["id"], $_POST["key"]);
@@ -28,6 +33,8 @@
 				"key" => $_POST["key"],
 				"email" => $email,
 				"reon_email" => $_POST["reonEmail"],
+				"email_domain" => $config["email_domain"],
+				"email_domain_dion" => $config["email_domain_dion"],
 				"trade_regions" => $_POST["tradeRegions"],
 				"pokemon_news_custom_opt_in" => $optIn
 			]);
@@ -43,6 +50,11 @@
 					"id" => $_GET["id"],
 					"key" => $_GET["key"],
 					"email" => $email,
+					// Only pre-filled on first load; the POST branch above
+					// echoes back whatever the person actually typed.
+					"reon_email" => UserUtil::getInstance()->suggestUsername($email),
+					"email_domain" => $config["email_domain"],
+					"email_domain_dion" => $config["email_domain_dion"],
 					"trade_regions" => "efdsipuj",
 					"pokemon_news_custom_opt_in" => 0
 				]);

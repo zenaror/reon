@@ -260,3 +260,44 @@ body.mariokart-theme > main {
 .mariokart-rankings thead th {
   font-style: italic;
 }
+
+/* Phones: the bitmap title and headers step down one size (64 -> 32, 32 ->
+   16 -- whole multiples only, this font blurs between them), and the table
+   keeps readable column widths and scrolls sideways inside the page box. */
+@media (max-width: 575.98px) {
+  .mkgba-title {
+    font-size: 32px !important;
+    line-height: 32px !important;
+    text-shadow:
+      2px 0 0 #6b0094,
+      -2px 0 0 #6b0094,
+      0 2px 0 #6b0094,
+      0 -2px 0 #6b0094,
+      2px 2px 0 #6b0094,
+      -2px 2px 0 #6b0094,
+      2px -2px 0 #6b0094,
+      -2px -2px 0 #6b0094;
+  }
+
+  .mkgba-table thead th {
+    font-size: 16px !important;
+    line-height: 16px !important;
+    text-shadow:
+      1px 0 0 #6b0094,
+      -1px 0 0 #6b0094,
+      0 1px 0 #6b0094,
+      0 -1px 0 #6b0094,
+      1px 1px 0 #6b0094,
+      -1px 1px 0 #6b0094,
+      1px -1px 0 #6b0094,
+      -1px -1px 0 #6b0094;
+  }
+
+  .mkgba-page {
+    overflow-x: auto;
+  }
+
+  .mkgba-table {
+    min-width: 540px;
+  }
+}

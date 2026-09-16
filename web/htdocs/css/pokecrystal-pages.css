@@ -236,9 +236,13 @@
   image-rendering: pixelated;
 }
 
+/* The countdown sits outside .crystal-trade, so the 8px rule scoped to the
+   card's descendants never reached it and it rendered at twice the card's
+   text size. Both share the same `zoom` from .crystal-trade-slot, so the
+   sizes compare directly and this has to be 8px to match. */
 .exchange-page .trade-remaining {
-  font-size: 16px;
-  line-height: 16px;
+  font-size: 8px;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -332,7 +336,7 @@
 
 body.trade-corner-theme,
 body.honor-roll-theme {
-  --trade-corner-nav-side-fallback: max(0px, calc((100vw - var(--trade-corner-container-width)) / 2));
+  --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
 body.honor-roll-theme {
@@ -391,8 +395,23 @@ body.rankings-theme {
     left var(--rankings-top-edge-top),
     right var(--rankings-top-edge-top),
     left top;
-  background-attachment: fixed;
-  --trade-corner-nav-side-fallback: max(0px, calc((100vw - var(--trade-corner-container-width)) / 2));
+  /* Scrolls with the document: the banner is part of the page, not a
+     backdrop the content slides over. The rails below are absolute for the
+     same reason, hung from the banner's bottom to the end of the page. */
+  background-attachment: scroll;
+  position: relative;
+  min-height: 100vh;
+  /* main.css gives <body> a 12px margin. The rails below are positioned
+     from the body's box, so with a margin they would start 12px in from the
+     page edges and 12px below the point where the gradient above turns
+     white (that gradient is painted on the canvas, from the page's own
+     origin) — a white frame around the page. Same spacing as padding
+     instead, so the box reaches the edges. The header's own 12px top margin
+     used to collapse into the body's; it is dropped below so the header
+     keeps sitting at 12px and the body's box really starts at 0. */
+  margin: 0;
+  padding: 12px;
+  --trade-corner-nav-side-fallback: max(0px, calc((var(--trade-corner-viewport-width, 100vw) - var(--trade-corner-container-width)) / 2));
 }
 
 body.trade-corner-theme::before,
@@ -431,6 +450,7 @@ body.rankings-theme::after {
 
 body.rankings-theme::before,
 body.rankings-theme::after {
+  position: absolute;
   top: var(--rankings-side-start);
 }
 
@@ -471,6 +491,11 @@ body.rankings-theme > header {
   z-index: 20;
 }
 
+/* The body's top padding supplies this gap now (see body.rankings-theme). */
+body.rankings-theme > header {
+  margin-top: 0;
+}
+
 /* These pages carry their own banner art; the shared news ticker
    overlaps the title banner, so hide its wrapper here. */
 body.trade-corner-theme > div.container-xxl,
@@ -489,18 +514,166 @@ body.rankings-theme > main {
   z-index: 1;
 }
 
+/* Phones and tablets keep the same dressing as the desktop, at pixel size:
+   the side rails shrink to their inner border (the art is positioned so that
+   only that strip shows), the content box steps in by the same amount, and
+   the Rankings banner is rebuilt from three slices of the original art
+   (label + left end, a repeating middle strip, right end) instead of a
+   2000px image that only ever showed its middle. Nothing is scaled. */
 @media (max-width: 991.98px) {
-  body.trade-corner-theme::before,
-  body.trade-corner-theme::after,
+  /* The Honor Roll rails are a copy of the wall tiles, so the wall itself
+     stands in for them. */
   body.honor-roll-theme::before,
-  body.honor-roll-theme::after,
+  body.honor-roll-theme::after {
+    display: none;
+  }
+
+  body.trade-corner-theme::before,
+  body.trade-corner-theme::after {
+    width: 24px;
+  }
+
+  /* Rankings: no JS-placed, viewport-fixed art here. The banner is a block
+     in the flow right under the header (it scrolls with the page), the rails
+     hang off the content box from the banner's bottom to the end of the
+     page, and the white column is the content box's own background. The
+     desktop keeps its fixed composition because there the rails and banner
+     are one fixed picture. */
+  body.rankings-theme {
+    background-image: none;
+  }
+
   body.rankings-theme::before,
   body.rankings-theme::after {
     display: none;
   }
 
+  body.rankings-theme > main {
+    --rankings-rail-width: 30px;
+    position: relative;
+    /* !important: Bootstrap's .mt-3 on <main> is !important too, and the
+       banner must touch the header like it does on the desktop. */
+    margin-top: 0 !important;
+    margin-left: var(--rankings-rail-width);
+    margin-right: var(--rankings-rail-width);
+    padding-left: 0;
+    padding-right: 0;
+    width: auto;
+    max-width: none;
+    background: linear-gradient(#1e4a93 0, #1e4a93 150px, #fff 150px);
+  }
+
+  body.rankings-theme > main::before,
+  body.rankings-theme > main::after {
+    content: "";
+    position: absolute;
+    top: 150px;
+    bottom: 0;
+    width: var(--rankings-rail-width);
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-repeat: repeat-y;
+  }
+
+  body.rankings-theme > main::before {
+    left: calc(-1 * var(--rankings-rail-width));
+    background-image: url("/images/crystal/RankingsPageLeftEdge.png");
+    background-position: right top;
+  }
+
+  body.rankings-theme > main::after {
+    right: calc(-1 * var(--rankings-rail-width));
+    background-image: url("/images/crystal/RankingsPageRightEdge.png");
+    background-position: left top;
+  }
+
+  /* The banner, from three slices of the original art: label + left end,
+     an 8px repeating strip, right end. Spans the full viewport width. */
+  .trainer-rankings-page::before {
+    content: "";
+    display: block;
+    height: 150px;
+    /* Out over the rails, plus the slack in the slices: the left slice
+       carries 4px and the right one 2px outside the plate's frame lines
+       (owner-measured on the phone), so those lines meet the rails' own. */
+    margin: 0 calc(-1 * var(--rankings-rail-width) - 2px) 0 calc(-1 * var(--rankings-rail-width) - 4px);
+    background-image:
+      url("/images/crystal/RankingsBannerRight.png"),
+      url("/images/crystal/RankingsBannerLeft.png"),
+      url("/images/crystal/RankingsBannerMid.png");
+    background-repeat: no-repeat, no-repeat, repeat-x;
+    background-position: right top, left top, left top;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* The plate runs from row 15 to row 120 of the banner (centre 68): a
+     24px title box at 56..80 is -94px back from the banner's bottom. The
+     block after the title clears the banner with room to spare. */
+  .trainer-rankings-page {
+    --rankings-banner-clearance: 104px;
+  }
+
+  .trainer-rankings-page h1.trade-corner-title {
+    position: relative;
+    margin-top: -94px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  /* 16px title box at 60..76. */
+  .trainer-rankings-page h1.trade-corner-title {
+    margin-top: -90px;
+  }
+}
+
+/* Under 380px the banner's right end would sit on the label's last
+   letters; slide the left slice under the edge instead. The rails narrow
+   to 8px -- their border strip, the rest of the art is white -- so a 360px
+   phone keeps a 344px column and the table (rankings.css) fits without
+   scrolling. */
+@media (max-width: 379.98px) {
+  .trainer-rankings-page::before {
+    background-position: right top, -30px top, left top;
+  }
+
+  body.rankings-theme > main {
+    --rankings-rail-width: 8px;
+  }
+}
+
+/* Phones and tablets: the 12px the site keeps around <body> is dead width
+   here -- the Rankings rails and the honor-roll frame are meant to touch the
+   screen edges, as they do on the desktop, and the Rankings table budget
+   (352px) assumes the full 412px of a phone minus the two 30px rails. The
+   header keeps its 12px inset on its own. */
+@media (max-width: 991.98px) {
   body.rankings-theme {
-    background-image: none;
+    padding-left: 0;
+    padding-right: 0;
+    /* The banner runs 4px/2px past the screen edges (see its margins); that
+       must not become a sideways scroll. */
+    overflow-x: hidden;
+  }
+
+  body.honor-roll-theme {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  body.rankings-theme > header,
+  body.honor-roll-theme > header {
+    /* The container is width:100%; the inset has to come out of it or the
+       page grows 12px past the viewport. */
+    width: calc(100% - 24px);
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  body.honor-roll-theme > main#content {
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
@@ -613,7 +786,9 @@ body.rankings-theme > main {
   .battle-tower-page .trade-corner-title,
   .trainer-rankings-page .trade-corner-title,
   .save-converter-page .trade-corner-title {
-    font-size: clamp(20px, 8vw, 24px) !important;
+    /* Whole steps of the 8px pixel grid only; a vw-based size lands the
+       bitmap font between pixels. */
+    font-size: 24px !important;
     line-height: clamp(20px, 8vw, 24px) !important;
     margin-bottom: 20px !important;
     white-space: nowrap !important;
@@ -648,9 +823,25 @@ body.rankings-theme > main {
     zoom: var(--trade-card-scale, 1) !important;
   }
 
+  /* 2x on a phone: the card keeps its designed width in its own units
+     (under zoom:2 a percentage would halve it and squeeze the layout) and
+     the list scrolls sideways. The sprites stay 56px art doubled, never a
+     fraction. */
+  .exchange-page[data-trade-scale="2"] .crystal-trade-slot {
+    width: calc(250px - 8px) !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .exchange-page[data-trade-scale="2"] .trade-corner-list {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
   .exchange-page .crystal-trade-slot .trade-warning {
-    min-height: 3.4em !important;
-    line-height: 1.2 !important;
+    min-height: 30px !important;
+    line-height: 10px !important;
     padding: 0 2px !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
@@ -706,9 +897,12 @@ body.rankings-theme > main {
     clip-path: inset(-2px 0 -2px 0) !important;
   }
 
-  .exchange-page .crystal-trade .trade-warning,
+  .exchange-page .crystal-trade .trade-warning {
+    line-height: 10px !important;
+  }
+
   .exchange-page .trade-remaining {
-    line-height: 1.15 !important;
+    line-height: 8px !important;
   }
 
   .exchange-page .crystal-trade .offer-species-line {
@@ -1259,10 +1453,15 @@ body.rankings-theme > main {
 .crystal-trade-slot .trade-warning {
   width: 100%;
   margin: 0 0 6px 0;
-  min-height: 2.7em;
-  font-size: .82em;
-  line-height: 1.25;
-  font-weight: 600;
+  /* Whole pixels only. This is a bitmap font: any fractional height here
+     (2.7em = 21.6px) lands the centred text -- and, through the slot's
+     height, every card on the next row -- half a pixel off the grid, which
+     renders as blur. 30px fits three 10px lines and keeps a two-line warning
+     the same height, so slots in a row stay equal and integer. */
+  min-height: 30px;
+  font-size: 8px;
+  line-height: 10px;
+  font-weight: 400;
   color: #8a4d00;
   box-sizing: border-box;
   text-align: center;
@@ -1278,12 +1477,16 @@ body.rankings-theme > main {
 .crystal-trade-slot .trade-remaining {
   width: 100%;
   margin-top: 6px;
-  min-height: 1.6em;
+  /* 16px, not 1.6em (12.8px): see .trade-warning. And no fractional
+     letter-spacing -- .04em is .32px per glyph, which puts every digit
+     between pixels. */
+  min-height: 16px;
   text-align: center;
-  font-size: .92em;
+  font-size: 8px;
+  line-height: 8px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  letter-spacing: .04em;
+  letter-spacing: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1568,6 +1771,17 @@ body.rankings-theme > main {
   padding-left: 2px;
 }
 
+/* The item value column has a fixed 94px budget (222px card - 48px label -
+   8px gap - sprite/padding). At the default 8px pixel size the longest real
+   Gen 2 item names (12 chars, e.g. BRIGHTPOWDER, THUNDERSTONE) render flush
+   against that edge with no slack, so on-device font hinting clips the last
+   glyph. Drop to the next whole pixel size (not a fractional em, per the
+   whole-pixel rule for this bitmap font) only for names long enough to be
+   at risk. */
+.exchange-page .crystal-trade .offer-item.offer-item--long {
+  font-size: 7px !important;
+}
+
 .crystal-trade .trade-offer .media-area {
   line-height: 1;
   min-width: var(--trade-sprite-size);
@@ -1751,3 +1965,18 @@ body.rankings-theme > main {
   height: 8px;
   line-height: 8px;
 }
+
+/* Phones: "TRAINER RANKINGS" at 24px is 384px, wider than the box. */
+@media (max-width: 575.98px) {
+  .exchange-page .trade-corner-title,
+  .battle-tower-page .trade-corner-title,
+  .trainer-rankings-page .trade-corner-title,
+  .save-converter-page .trade-corner-title {
+    font-size: 16px !important;
+    line-height: 16px !important;
+  }
+}
+
+/* Phones start at 1x but may pick 2x: the three pages then scroll their
+   zoomed table or cards sideways inside the white box. The zoom controls
+   stay visible everywhere. */

@@ -150,7 +150,7 @@
                 <div class="offer-row-gap">&nbsp;</div>
                 <div class="offer-row offer-row-item">
                     <span class="label">{{'pokemon.item'|trans}}</span>
-                    <span class="offer-item">{% if trade.pokemon.item %}{{trade.pokemon.item.name}}{% endif %}</span>
+                    <span class="offer-item{% if trade.pokemon.item and trade.pokemon.item.name|length > 10 %} offer-item--long{% endif %}">{% if trade.pokemon.item %}{{trade.pokemon.item.name}}{% endif %}</span>
                 </div>
                 <div class="offer-row-gap">&nbsp;</div>
                 <div class="offer-row offer-row-offerer">

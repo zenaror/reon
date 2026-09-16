@@ -1,10 +1,12 @@
 <?php
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/UserUtil.php");
 	session_start();
 	
 	if (SessionUtil::getInstance()->isSessionActive()) {
 		if ($_SERVER["REQUEST_METHOD"] == "POST") {
+			CsrfUtil::check();
 			if (isset($_POST["currentPassword"]) && isset($_POST["newPassword"]) && isset($_POST["newPasswordConfirm"])) {
 				$result = UserUtil::getInstance()->changePassword($_POST["currentPassword"], $_POST["newPassword"], $_POST["newPasswordConfirm"]);
 				echo TemplateUtil::render("/user/change_password", [

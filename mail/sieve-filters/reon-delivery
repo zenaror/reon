@@ -1,0 +1,124 @@
+#!/usr/local/bin/node
+// Caminho absoluto no shebang, e nao `env node`: o Sieve executa este
+// programa com um PATH minimo, onde `env` nao acha o node -- a entrega
+// seguia (a falha e aberta), mas sem tratativa nenhuma, calada.
+// As tratativas do Game Boy, aplicadas na ENTREGA.
+//
+// Elas moravam no RETR do nosso POP3. Como quem vai atender o jogo passa a ser
+// o Dovecot -- que serve os bytes guardados e não tem gancho de leitura na
+// 2.4 --, a única hora em que ainda dá para moldar a mensagem é quando ela
+// chega. Chamado pelo Sieve, via vnd.dovecot.filter.
+//
+// Usa o MESMO gameFormat.js que o POP3 usa. Não é código parecido: é o mesmo
+// arquivo. Enquanto os dois caminhos convivem, é isso que garante que o jogo
+// veja os mesmos bytes venha por onde vier.
+//
+// Duas decisões que não são estilo:
+//
+//   Leitura binária. O corpo de uma troca é payload de 8 bits, e um
+//   toString() em utf8 troca byte inválido por U+FFFD -- foi exatamente esse
+//   o defeito que corrompeu mensagem no deliver.js. latin1 entra e sai sem
+//   reinterpretar nada.
+//
+//   Falha aberta. Se qualquer coisa aqui estourar, a mensagem ORIGINAL sai
+//   inteira e o código de saída é 0. Uma entrega que falha é correio perdido;
+//   uma entrega sem tratativa é só uma mensagem gorda que o jogo ainda lê.
+//
+//   Quem decide "interna ou de fora" é o script Sieve, e não este programa.
+//   Este processo roda como vmail, e ler o config.json para descobrir os
+//   nossos domínios daria a esse usuário as credenciais do MySQL que moram no
+//   mesmo arquivo. A lista de domínios não é segredo; a senha ao lado dela é.
+
+const fs = require("fs");
+const net = require("net");
+const path = require("path");
+
+const RAIZ = path.resolve(__dirname, "..");
+
+// Só o bloco de cabeçalho, para procurar o Date sem varrer um corpo binário.
+function cabecalhoDe(texto) {
+	const fim = texto.indexOf("\r\n\r\n");
+	return fim === -1 ? texto : texto.slice(0, fim);
+}
+
+function lerEntrada() {
+	return fs.readFileSync(0);
+}
+
+function main() {
+	const bruto = lerEntrada();
+	let saida = bruto;
+	try {
+		const gameFormat = require(path.join(RAIZ, "gameFormat.js"));
+		// O Sieve manda tudo num argumento só, separado por "|", porque o
+		// comando `filter` aceita no máximo um argumento posicional:
+		//   <interna|externa>|<remetente do envelope>|<destinatário>
+		const interna = String(process.argv[2] || "").split("|")[0] === "interna";
+		const texto = bruto.toString("binary");
+
+		// A MESMA decisão do _getMail: correspondência escrita pelos nossos
+		// aplicativos já está no formato que o jogo interpreta e não passa
+		// pela redução -- foi tirar cabeçalho dela que fez o Crystal
+		// descartar toda troca concluída. Só a de fora é reduzida.
+		// O Date da PROPRIA mensagem tem que sobreviver. As duas tratativas
+		// derrubam esse cabeçalho junto com o envelope, e no POP3 ele voltava
+		// pelo carimbo da caixa -- que, no Dovecot, é lido do próprio Date.
+		// Carimbar a hora da entrega aqui quebraria esse ciclo e faria toda
+		// mensagem parecer ter chegado no instante em que passou por aqui.
+		// Só quem não declara Date nenhum ganha um.
+		const dataOriginal = /^Date:[ \t]*(.*)$/im.exec(cabecalhoDe(texto));
+
+		let moldado = interna
+			? gameFormat.stripTransportHeaders(texto)
+			: gameFormat.slimMessage(texto);
+		moldado = gameFormat.withDate(moldado,
+			dataOriginal ? new Date(dataOriginal[1].trim()) : new Date());
+
+		saida = Buffer.from(moldado, "binary");
+	} catch (erro) {
+		// Sem console.error: o que sair em stderr vira ruído no log de
+		// entrega do Dovecot a cada mensagem. O original passa e pronto.
+		saida = bruto;
+	}
+	// A saída sai PRIMEIRO. O que vem depois é efeito colateral, e efeito
+	// colateral não pode segurar a entrega da mensagem.
+	fs.writeFileSync(1, saida);
+	// O ORIGINAL, não o moldado: quem recebe isto decide pelo X-REON-Origin
+	// se a mensagem veio do webmail -- que já arquivou em Enviados e já tocou
+	// o sino sozinho. Esse carimbo está na lista de remoção logo acima, de
+	// modo que o moldado nunca o tem: mandar o moldado era o mesmo que dizer
+	// "não veio do webmail" para toda mensagem, e o resultado era uma segunda
+	// cópia em Enviados e um segundo toque no sino a cada carta entre
+	// jogadores.
+	avisaEfeitos(bruto);
+}
+
+// Cópia em Enviados e linha no sino -- o que o deliver.js fazia antes de o
+// Dovecot assumir a entrega. Quem faz é um serviço que tem o banco; daqui
+// só sai o aviso.
+//
+// Falha aberta em tudo: serviço fora do ar, recusa, demora -- a mensagem já
+// foi entregue de qualquer jeito, e um sino que não tocou é menos grave que
+// uma entrega que travou.
+function avisaEfeitos(mensagem) {
+	const partes = String(process.argv[2] || "").split("|");
+	const remetente = partes[1] || "";
+	const destino = partes[2] || "";
+	if (!remetente && !destino) return process.exit(0);
+
+	let fechou = false;
+	const fim = () => { if (!fechou) { fechou = true; process.exit(0); } };
+	const prazo = setTimeout(fim, 2000);
+	prazo.unref();
+
+	try {
+		const sock = net.createConnection(10046, "127.0.0.1", () => {
+			sock.write(remetente + "\t" + destino + "\n");
+			sock.end(mensagem);
+		});
+		sock.on("close", fim);
+		sock.on("error", fim);
+	} catch (e) { fim(); }
+}
+
+try { main(); } catch (e) { process.exit(0); }

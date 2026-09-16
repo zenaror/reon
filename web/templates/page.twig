@@ -1,0 +1,53 @@
+{% extends "main.twig" %}
+{% set body_class = "home home-v2" %}
+
+{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ (nav_item)|trans }}{% endif %}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/home.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/home-v2.css') }}" rel="stylesheet">
+	<link href="{{ asset('/css/pages.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+	{# Same portal furniture as the homepage and the news: ticker, sidebar,
+	   beige page box. The right column is one Markdown file, rendered. #}
+	<div class="reon-ticker">
+		<span class="reon-ticker__label">{{'news'|trans}}</span>
+		<marquee class="reon-ticker__scroll">{{'welcome-alpha'|trans}}</marquee>
+	</div>
+
+	<div class="home-layout">
+		{% include "_portal_sidebar.twig" %}
+
+		<div class="home-main">
+			{% if html is null %}
+				<div class="reon-pickup">{{ (nav_item)|trans }}<span class="bar"></span></div>
+				<div class="home-prose"><p>{{'page-not-found'|trans}}</p></div>
+			{% else %}
+				<div class="reon-pickup">{{ page_title }}<span class="bar"></span></div>
+
+				{# Built by the script below from the article's ## headings, so
+				   a long guide can be jumped through. Hidden until it has
+				   something to list. #}
+				<nav class="reon-page-toc" data-sections-nav hidden aria-label="{{'page-contents'|trans}}">
+					<h2 class="reon-box__bar">{{'page-contents'|trans}}</h2>
+					<ol></ol>
+				</nav>
+
+				{# data-signed-in lets the Markdown show one of two blocks: .when-signed-in / .when-signed-out #}
+				<article class="reon-post reon-page" data-sections data-signed-in="{{ session_active ? 1 : 0 }}">{{ html|raw }}</article>
+			{% endif %}
+		</div>
+	</div>
+
+	<footer class="reon-footer">
+		<div class="reon-footer__nav">
+			<a class="reon-chrome-btn" href="#top">{{'homepage.top'|trans}}</a>
+		</div>
+	</footer>
+{% endblock %}
+
+{% block body %}
+<script src="{{ asset('/js/page-sections.js') }}"></script>
+{% endblock %}

@@ -1,11 +1,22 @@
 {% extends "main.twig" %}
 
 {% block title %}{{'signup'|trans}}{% endblock %}
+
+{% block head %}
+	{# O corpo dos modais é o HTML das páginas de documento, e os avisos ※ e
+	   caixas de dentro dele tiram o estilo daqui. main.twig não carrega este
+	   arquivo porque nenhuma outra tela dele mostra Markdown de página. #}
+	<link href="{{ asset('/css/pages.css') }}" rel="stylesheet">
+{% endblock %}
 {% block content %}
 	<div class="d-flex">
 		{% if result != 0 %}
 			<div class="card m-auto">
 				<form method="post" accept-charset="utf-8" class="card-body">
+					<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					{% if result == 3 %}
+						<div class="alert alert-danger">{{'email-send-failed'|trans}}</div>
+					{% endif %}
 					<fieldset>
 						<legend>{{'auth.signup-to-reon'|trans}}</legend>
 						<div class="mb-3">
@@ -20,6 +31,20 @@
 								<label for="agree" class="form-check-label">
 									{{'auth.i-agree-terms'|trans}}
 								</label>
+								{# Os dois documentos que a frase acima cita, ligados aqui e
+								   não dentro dela: a frase existe em sete idiomas e embutir
+								   marcação em cada tradução é um jeito de uma delas quebrar
+								   sem ninguém ver. Consentimento por referência a documento
+								   que não se abre não é consentimento.
+
+								   Abrem em modal, sem sair do cadastro: o formulário já tem
+								   e-mail digitado, e trocar de página para ler o que se vai
+								   aceitar custa o que já foi preenchido. #}
+								<div class="form-text">
+									<a href="/terms.php" data-bs-toggle="modal" data-bs-target="#termsModal">{{'terms'|trans}}</a>
+									·
+									<a href="/privacy.php" data-bs-toggle="modal" data-bs-target="#privacyModal">{{'privacy'|trans}}</a>
+								</div>
 								<input id="agree" type="checkbox" name="agree" required class="form-check-input{% if result == 1 %}{{ " is-invalid" }}{% endif %}">
 								<div class="invalid-feedback">
 									{{'auth.you-must-agree'|trans}}
@@ -36,4 +61,13 @@
 			</div>
 		{% endif %}
 	</div>
+
+	{# Fora do <form>: um modal dentro dele entra no POST e, pior, o botão de
+	   fechar contaria como submit. #}
+	{% include "_legal_modal.twig" with {
+		id: "termsModal", title: 'terms'|trans, body: terms_html, href: "/terms.php"
+	} only %}
+	{% include "_legal_modal.twig" with {
+		id: "privacyModal", title: 'privacy'|trans, body: privacy_html, href: "/privacy.php"
+	} only %}
 {% endblock %}

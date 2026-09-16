@@ -38,7 +38,10 @@ function process_trade_request($region, $request_data) {
 
     bxt_trade_corner_require_enabled();
 
-    error_log('BXT_DEBUG process_trade_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . strlen($request_data));
+    // raw_len used to be strlen($request_data), which is the length of the
+    // string "php://input" -- the stream's *name*, 11 characters, logged as
+    // if it were the size of the deposit. It never varied and never could.
+    error_log('BXT_DEBUG process_trade_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . bxt_stream_length($request_data));
 
     $decoded_data = decode_exchange($region, $request_data, true);
     if (!is_array($decoded_data)) {
@@ -211,7 +214,7 @@ function process_cancel_request($region, $request_data) {
 
     bxt_trade_corner_require_enabled();
 
-    error_log('BXT_DEBUG process_cancel_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . strlen($request_data));
+    error_log('BXT_DEBUG process_cancel_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . bxt_stream_length($request_data));
 
     // Decode only the header; no Pokémon/mail blobs required for cancellation.
     $decoded_data = decode_exchange($region, $request_data, false);
@@ -364,6 +367,17 @@ function tradeCornerListOffers(string $region, int $limit = 100): array
     return $rows;
 }
 
+// How many bytes a request body actually holds. CONTENT_LENGTH is what the
+// adapter declared; php://input is read again only when it is absent, since
+// reading it twice is not guaranteed to work on every SAPI.
+function bxt_stream_length($stream) {
+    if (isset($_SERVER["CONTENT_LENGTH"]) && $_SERVER["CONTENT_LENGTH"] !== "") {
+        return (int)$_SERVER["CONTENT_LENGTH"];
+    }
+    $raw = @file_get_contents($stream);
+    return $raw === false ? -1 : strlen($raw);
+}
+
 function decode_exchange($region, $stream, $full = true) {
     $postdata = fopen($stream, "rb");
     $decData = array();
@@ -408,6 +422,24 @@ function decode_exchange($region, $stream, $full = true) {
         // $65..: Held mail data
         $mail_len = ($region === "j") ? 0x2A : 0x2F;
         $decData["mail"] = fread($postdata, $mail_len);
+
+        // The width of this field is genuinely unsettled for the non-JP
+        // games: the constant we read from says 47, and a save-side
+        // measurement of the offer struct says 33. Mail is the *last* field
+        // in the packet, so asking for too many bytes cannot misalign
+        // anything -- fread simply returns what is there. That makes what it
+        // returned the measurement: if the real field is 33, this logs 33.
+        //
+        // It has never shown up because no deposit so far has carried held
+        // mail at all; every stored blob is zeros.
+        error_log(sprintf(
+            'BXT_DEBUG decode_exchange: region=%s name=%d/%d pokemon=%d/%d mail=%d/%d mail_nonzero=%d',
+            $region,
+            strlen((string)$decData["player_name"]), $name_len,
+            strlen((string)$decData["pokemon"]), $pkm_len,
+            strlen((string)$decData["mail"]), $mail_len,
+            strlen(rtrim((string)$decData["mail"], "\0"))
+        ));
     } else {
         $decData["pokemon"] = null;
         $decData["mail"] = null;

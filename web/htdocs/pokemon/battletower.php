@@ -6,7 +6,28 @@
     require_once("../../scripts/bxt_decode_helpers.php");
     session_start();
 
+    // Both filters return null for "all", which the query reads as "no
+    // restriction on this column" and the template as "show this column",
+    // since the value stops being implied by the filter once it varies.
+    // With a level chosen the rows are ranked by performance (within the
+    // level, or one room); with L:ALL it is the overview of every level and
+    // room, since runs at different levels are not comparable.
+    const BXT_BT_ALL = "all";
+    const BXT_BT_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+    const BXT_BT_PER_PAGE_DEFAULT = 20;
+
+    function bxt_battle_tower_parse_per_page($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return 0;
+        }
+        $n = intval($raw_value);
+        return in_array($n, BXT_BT_PER_PAGE_OPTIONS, true) ? $n : BXT_BT_PER_PAGE_DEFAULT;
+    }
+
     function bxt_battle_tower_parse_level($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return null;
+        }
         $level = intval($raw_value);
         if ($level < 10 || $level > 100 || ($level % 10) !== 0) {
             return 10;
@@ -15,6 +36,9 @@
     }
 
     function bxt_battle_tower_parse_room($raw_value) {
+        if (is_string($raw_value) && strtolower(trim($raw_value)) === BXT_BT_ALL) {
+            return null;
+        }
         $room = intval($raw_value);
         if ($room < 1 || $room > 20) {
             return 1;
@@ -334,70 +358,42 @@
         return $tokens;
     }
 
-    function bxt_battle_tower_token_has_word($token) {
-        return preg_match('/[\p{L}\p{N}]/u', (string)$token) === 1;
-    }
-
-    function bxt_battle_tower_tokens_to_text($tokens) {
-        $out = "";
-        foreach ($tokens as $token) {
-            $token = trim((string)$token);
-            if ($token === "") {
-                continue;
-            }
-
-            if ($out === "") {
-                $out = $token;
-                continue;
-            }
-
-            if (bxt_battle_tower_token_has_word($token)) {
-                $out .= " " . $token;
-            } else {
-                $out .= $token;
-            }
-        }
-        return $out;
-    }
-
-    function bxt_battle_tower_message_wrap_word_limit($game_region) {
-        return (strtolower((string)$game_region) === "j") ? 3 : 2;
-    }
+    // Mirrors PrintEZChatBattleMessage (pokecrystal mobile/fixed_words.asm):
+    // each Easy Chat word is placed whole on the current 18-character line,
+    // preceded by a space when it is not the first on that line, and moves to
+    // the next line when it does not fit. The blank line between the first
+    // two rows is the Game Boy text box's own spacing.
+    const BXT_BT_CHARS_PER_LINE = 18;
 
     function bxt_battle_tower_format_message_tokens($tokens, $game_region) {
         if (!is_array($tokens) || count($tokens) === 0) {
             return "";
         }
 
-        $word_limit = bxt_battle_tower_message_wrap_word_limit($game_region);
+        $separator = (strtolower((string)$game_region) === "j") ? "" : " ";
         $lines = [];
-        $current_line_tokens = [];
-        $current_line_words = 0;
-
+        $current = "";
         foreach ($tokens as $token) {
-            $current_line_tokens[] = $token;
-            if (bxt_battle_tower_token_has_word($token)) {
-                $current_line_words++;
+            $token = trim((string)$token);
+            if ($token === "") {
+                continue;
             }
-
-            if ($current_line_words >= $word_limit) {
-                $line_text = bxt_battle_tower_tokens_to_text($current_line_tokens);
-                if ($line_text !== "") {
-                    $lines[] = $line_text;
-                }
-                $current_line_tokens = [];
-                $current_line_words = 0;
+            $needed = mb_strlen($token) + ($current === "" ? 0 : mb_strlen($separator));
+            if ($current !== "" && mb_strlen($current) + $needed > BXT_BT_CHARS_PER_LINE) {
+                $lines[] = $current;
+                $current = $token;
+            } else {
+                $current .= ($current === "" ? "" : $separator) . $token;
             }
         }
-
-        if (count($current_line_tokens) > 0) {
-            $line_text = bxt_battle_tower_tokens_to_text($current_line_tokens);
-            if ($line_text !== "") {
-                $lines[] = $line_text;
-            }
+        if ($current !== "") {
+            $lines[] = $current;
         }
 
-        return implode("\n\n", $lines);
+        if (count($lines) <= 2) {
+            return implode("\n\n", $lines);
+        }
+        return implode("\n", $lines);
     }
 
     function bxt_battle_tower_decode_trainer_class_name($game_region, $class_id, $fallback = "") {
@@ -439,8 +435,13 @@
         return "UNKNOWN";
     }
 
-    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? 10);
-    $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? 1);
+    // Defaults to ALL: an unfiltered page shows what actually exists, instead
+    // of a specific level/room that is very likely empty.
+    $selected_level = bxt_battle_tower_parse_level($_GET["level"] ?? BXT_BT_ALL);
+    $selected_room = bxt_battle_tower_parse_room($_GET["room"] ?? BXT_BT_ALL);
+    $is_ranking = $selected_level !== null;
+    $per_page = bxt_battle_tower_parse_per_page($_GET["per_page"] ?? BXT_BT_PER_PAGE_DEFAULT);
+    $page = max(1, intval($_GET["page"] ?? 1));
 
     $pkm_util = PokemonUtil::getInstance();
     $db_util = DBUtil::getInstance();
@@ -448,14 +449,58 @@
 
     [$room_is_zero_based, $level_is_zero_based] = bxt_battle_tower_detect_storage_indexing($db);
 
-    $db_level = $level_is_zero_based ? intval(($selected_level / 10) - 1) : $selected_level;
-    $db_room = $room_is_zero_based ? ($selected_room - 1) : $selected_room;
+    // Storage may be zero-based, so what the page shows and what the column
+    // holds are not the same number in either direction.
+    $to_db_level = function ($level) use ($level_is_zero_based) {
+        return $level_is_zero_based ? intval(($level / 10) - 1) : $level;
+    };
+    $to_db_room = function ($room) use ($room_is_zero_based) {
+        return $room_is_zero_based ? ($room - 1) : $room;
+    };
+    $from_db_level = function ($stored) use ($level_is_zero_based) {
+        return $level_is_zero_based ? ((intval($stored) + 1) * 10) : intval($stored);
+    };
+    $from_db_room = function ($stored) use ($room_is_zero_based) {
+        return $room_is_zero_based ? (intval($stored) + 1) : intval($stored);
+    };
+
+    $where = [];
+    $params = [];
+    if ($selected_level !== null) {
+        $where[] = "level = ?";
+        $params[] = $to_db_level($selected_level);
+    }
+    if ($selected_room !== null) {
+        $where[] = "room = ?";
+        $params[] = $to_db_room($selected_room);
+    }
+    $where_sql = count($where) > 0 ? ("where " . implode(" and ", $where) . " ") : "";
+
+    $render_args = [
+        "leaders" => [],
+        "selected_level" => $selected_level === null ? BXT_BT_ALL : $selected_level,
+        "selected_room" => $selected_room === null ? BXT_BT_ALL : $selected_room,
+        "level_options" => range(10, 100, 10),
+        "room_options" => range(1, 20),
+        // A filtered column would repeat the same value on every row.
+        "show_level" => $selected_level === null,
+        "show_room" => $selected_room === null,
+        "per_page" => $per_page,
+        "per_page_options" => BXT_BT_PER_PAGE_OPTIONS,
+        "page" => 1,
+        "total_pages" => 1,
+        "total" => 0,
+        "first_index" => 0,
+        "last_index" => 0,
+    ];
 
     $leaders = [];
 
     $stmt = $db->prepare(
         "select " .
             "id, " .
+            "level, " .
+            "room, " .
             "game_region, " .
             "player_name, " .
             "player_name_decode, " .
@@ -469,39 +514,57 @@
             "pokemon3_decode, " .
             "message_start, " .
             "message_start_decode, " .
+            "trainer_id, " .
+            "secret_id, " .
+            "account_id, " .
+            "num_trainers_defeated, " .
+            "num_turns_required, " .
+            "damage_taken, " .
+            "num_fainted_pokemon, " .
             "timestamp " .
         "from bxt_battle_tower_honor_roll " .
-        "where level = ? and room = ? " .
-        "order by timestamp desc, id desc"
+        $where_sql .
+        // Ranking: best run first, rows promoted before performance was
+        // recorded (nulls) last, ties to the most recent leader. Overview:
+        // by level and room, best run of each room first.
+        ($is_ranking ? "" : "order by level asc, room asc, ") .
+        ($is_ranking ? "order by " : "") .
+        "(num_trainers_defeated is null) asc, num_trainers_defeated desc, " .
+        "num_turns_required asc, damage_taken asc, num_fainted_pokemon asc, timestamp desc, id desc"
     );
 
     if (!$stmt) {
         error_log("Battle Tower query prepare failed: " . $db->error);
-        echo TemplateUtil::render("/pokemon/battletower", [
-            "leaders" => [],
-            "selected_level" => $selected_level,
-            "selected_room" => $selected_room,
-            "level_options" => range(10, 100, 10),
-            "room_options" => range(1, 20),
-        ]);
+        echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }
 
-    $stmt->bind_param("ii", $db_level, $db_room);
+    if (count($params) > 0) {
+        $stmt->bind_param(str_repeat("i", count($params)), ...$params);
+    }
     if (!$stmt->execute()) {
         error_log("Battle Tower query execute failed: " . $stmt->error);
-        echo TemplateUtil::render("/pokemon/battletower", [
-            "leaders" => [],
-            "selected_level" => $selected_level,
-            "selected_room" => $selected_room,
-            "level_options" => range(10, 100, 10),
-            "room_options" => range(1, 20),
-        ]);
+        echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }
 
     $data = DBUtil::fancy_get_result($stmt);
+    // The daily promotion appends the room's leader every run, so one trainer
+    // can hold many rows; only their best run counts, once (per room in the
+    // overview, since there they are different entries).
+    $seen_trainers = [];
     foreach ($data as $entry) {
+        $identity = isset($entry["trainer_id"], $entry["secret_id"], $entry["account_id"])
+            ? "id:" . $entry["trainer_id"] . ":" . $entry["secret_id"] . ":" . $entry["account_id"]
+            : "blob:" . bin2hex((string)($entry["player_name"] ?? "")) . ":" . ($entry["trainer_class_id"] ?? "") . ":" . md5((string)($entry["pokemon1"] ?? ""));
+        if (!$is_ranking) {
+            $identity .= ":" . ($entry["level"] ?? "") . ":" . ($entry["room"] ?? "");
+        }
+        if (isset($seen_trainers[$identity])) {
+            continue;
+        }
+        $seen_trainers[$identity] = true;
+
         $region = strtolower((string)($entry["game_region"] ?? "e"));
         $player_name = trim((string)($entry["player_name_decode"] ?? ""));
         if ($player_name === "" && isset($entry["player_name"])) {
@@ -551,13 +614,29 @@
             "player_name" => $player_name,
             "pokemon_names" => $pokemon_names,
             "message" => $message,
+            "level" => $from_db_level($entry["level"] ?? 0),
+            "room" => $from_db_room($entry["room"] ?? 0),
+            "wins" => isset($entry["num_trainers_defeated"]) ? intval($entry["num_trainers_defeated"]) : null,
         ];
     }
 
-    echo TemplateUtil::render("/pokemon/battletower", [
-        "leaders" => $leaders,
-        "selected_level" => $selected_level,
-        "selected_room" => $selected_room,
-        "level_options" => range(10, 100, 10),
-        "room_options" => range(1, 20),
-    ]);
+    $total = count($leaders);
+    $total_pages = $per_page > 0 ? max(1, (int)ceil($total / $per_page)) : 1;
+    $page = min($page, $total_pages);
+    if ($per_page > 0) {
+        $leaders = array_slice($leaders, ($page - 1) * $per_page, $per_page);
+    }
+    // Rank across the whole list, not the page, so the medals on page 1 are
+    // the real top three and page 2 gets none.
+    $rank_offset = $per_page > 0 ? (($page - 1) * $per_page) : 0;
+    foreach ($leaders as $i => $_) {
+        $leaders[$i]["rank"] = $rank_offset + $i + 1;
+    }
+
+    $render_args["leaders"] = $leaders;
+    $render_args["page"] = $page;
+    $render_args["total_pages"] = $total_pages;
+    $render_args["total"] = $total;
+    $render_args["first_index"] = $total === 0 ? 0 : ($per_page > 0 ? ($page - 1) * $per_page + 1 : 1);
+    $render_args["last_index"] = $per_page > 0 ? min($total, $page * $per_page) : $total;
+    echo TemplateUtil::render("/pokemon/battletower", $render_args);

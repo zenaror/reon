@@ -1,4 +1,5 @@
 ARG NODE_VERSION=25.2-trixie
+ARG NODE_VERSION2=25.2-alpine
 ARG PHP_VERSION=8.3
 ARG DOTNET_VERSION=9.0
 
@@ -65,15 +66,15 @@ COPY db/ /var/www/reon/db/
 CMD ["/var/www/reon/web/vendor/bin/phinx", "migrate"]
 
 ### Mail Service
-FROM node:${NODE_VERSION} AS mail-deps
+FROM node:${NODE_VERSION2} AS mail-deps
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apt-get -y update \
-    && apt-get install -y --no-install-recommends libc6-compat jq
+RUN apk update \
+    && apk add --no-cache libc6-compat jq
 WORKDIR /app
 COPY mail/package.json mail/package-lock.json* ./
 RUN npm ci
 
-FROM node:${NODE_VERSION} AS mail
+FROM node:${NODE_VERSION2} AS mail
 WORKDIR /app
 COPY --from=mail-deps /app/node_modules ./node_modules
 COPY mail /app

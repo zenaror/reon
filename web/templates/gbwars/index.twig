@@ -1,44 +1,60 @@
 {% extends "main.twig" %}
+{% set nav_item = "games" %}
 {% set body_class = "gbwars-theme" %}
 
-{% block title %}{{'gameboy-wars'|trans}} - Map Gallery{% endblock %}
+{% block title %}{{'gameboy-wars'|trans}}{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ asset('/css/gbwars.css') }}">
+<link rel="stylesheet" href="{{ asset('/css/game-page.css') }}">
 {% endblock %}
 
 {% block content %}
     <div class="gbwars-page">
+    {# One-page hub: text sections from web/pages/games/gbwars.<locale>.md,
+       then the live map gallery. The menu is built from the h2s. #}
     <h1>{{'gameboy-wars'|trans}}</h1>
-    <p class="lead">Map Gallery - {{ maps|length }} maps available</p>
 
-    {% if maps is empty %}
-        <div class="alert alert-info">
-            <h4>No Maps Available</h4>
-            <p>Run the seeder to import maps:</p>
-            <code>vendor/bin/phinx seed:run -s GameboyWars3Seeder</code>
-        </div>
-    {% else %}
-        <div class="map-grid">
-            {% for map in maps %}
-                <a href="map.php?id={{ map.map_id|url_encode }}" class="map-card">
-                    <div class="map-preview">
-                        <img src="preview.php?id={{ map.map_id|url_encode }}&size=8"
-                             alt="Map {{ map.map_id }}"
-                             loading="lazy">
-                    </div>
-                    <div class="map-info">
-                        <h5>{{ map.map_name }}</h5>
-                        <div class="map-meta">
-                            <span class="map-id">#{{ map.map_id }}</span>
-                            <span class="map-size">{{ map.width }}x{{ map.height }}</span>
-                            <span class="map-price">{{ map.price_yen }}&#165;</span>
-                        </div>
-                    </div>
-                </a>
-            {% endfor %}
-        </div>
-    {% endif %}
+    <nav class="game-nav" data-sections-nav hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+
+    <div class="game-sections" data-sections>
+        {% if doc_html %}
+            <div class="game-doc">{{ doc_html|raw }}</div>
+        {% endif %}
+
+        <section class="game-section">
+            <h2>{{'game-page.map-gallery'|trans}}</h2>
+            <p class="lead">{{ maps|length }} maps available</p>
+
+            {% if maps is empty %}
+                <div class="alert alert-info">
+                    <h4>No Maps Available</h4>
+                    <p>Run the seeder to import maps:</p>
+                    <code>vendor/bin/phinx seed:run -s GameboyWars3Seeder</code>
+                </div>
+            {% else %}
+                <div class="map-grid">
+                    {% for map in maps %}
+                        <a href="map.php?id={{ map.map_id|url_encode }}" class="map-card">
+                            <div class="map-preview">
+                                <img src="preview.php?id={{ map.map_id|url_encode }}&size=8"
+                                     alt="Map {{ map.map_id }}"
+                                     loading="lazy">
+                            </div>
+                            <div class="map-info">
+                                <h5>{{ map.map_name }}</h5>
+                                <div class="map-meta">
+                                    <span class="map-id">#{{ map.map_id }}</span>
+                                    <span class="map-size">{{ map.width }}x{{ map.height }}</span>
+                                    <span class="map-price">{{ map.price_yen }}&#165;</span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+    </div>
     </div>
 
 {% endblock %}
@@ -46,4 +62,5 @@
 {% block body %}
 <script src="{{ asset('/js/side-backgrounds.js') }}"></script>
 <script>initReonSideBackgrounds("gbwars");</script>
+<script src="{{ asset('/js/page-sections.js') }}"></script>
 {% endblock %}

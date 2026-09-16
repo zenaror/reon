@@ -1,0 +1,27 @@
+# Runs the news scheduler with --refresh, on demand only. No timer.
+#
+# The ordinary reon-auto-schedule.service rotates whatever is due and clears
+# the rankings of the regions that actually rotated. --refresh re-applies the
+# current expected news and clears the rankings of EVERY configured region,
+# whether anything rotated or not.
+#
+# That is a destructive operation with a legitimate use -- putting the news
+# back into a known state after a bad edit -- which is exactly why it lives in
+# its own unit instead of a flag on the scheduled one. A unit cannot be given
+# extra arguments at start time, so the alternative would have been the panel
+# assembling a command line, and a web application assembling command lines is
+# the thing the helper exists to avoid.
+#
+# Everything below is copied from reon-auto-schedule.service so this differs
+# from a normal run in exactly one flag. If that unit changes, change this one
+# with it.
+[Unit]
+Description=REON: re-apply Pokémon news and clear ALL rankings (--refresh)
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/app/auto-schedule
+ExecStart=/opt/node/bin/node /opt/reon/app/auto-schedule/index.js -c /opt/reon/config.json --refresh

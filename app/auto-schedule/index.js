@@ -305,6 +305,40 @@ function loadPokemonNewsCustomConfig(rootDir) {
     merged.schedule = {};
   }
 
+  // Issues made in the admin panel are scheduled from a file of their own,
+  // merged over whatever this config declares.
+  //
+  // A separate file on purpose. The panel runs as the web user and this
+  // config also carries the *vanilla* schedule; letting a web application
+  // write here would put the ordinary news one bad save away from breaking.
+  // Owning a smaller file means a malformed write can only cost the track
+  // the panel is responsible for.
+  //
+  // Per region, entries are merged rather than replaced, so a hand-written
+  // custom entry and a panel-made one can coexist.
+  const overlayPath = path.resolve(__dirname, "bxt_news_custom.schedule.json");
+  if (fs.existsSync(overlayPath)) {
+    try {
+      const overlay = JSON.parse(fs.readFileSync(overlayPath, "utf8"));
+      const regions = overlay && typeof overlay.schedule === "object" ? overlay.schedule : null;
+      if (regions) {
+        for (const [region, entries] of Object.entries(regions)) {
+          if (!entries || typeof entries !== "object" || Array.isArray(entries)) continue;
+          const existing =
+            merged.schedule[region] && typeof merged.schedule[region] === "object"
+              && !Array.isArray(merged.schedule[region])
+              ? merged.schedule[region]
+              : {};
+          merged.schedule[region] = { ...existing, ...entries };
+        }
+      }
+    } catch (e) {
+      // A broken overlay must not take the whole run down with it: the
+      // vanilla news still has to go out today.
+      console.warn(`[news] ignoring unreadable ${path.basename(overlayPath)}: ${e.message}`);
+    }
+  }
+
   return merged;
 }
 
@@ -1789,6 +1823,32 @@ async function mirrorVanillaToCustom(conn, region, vanillaId, existingCustomId) 
   return res.insertId;
 }
 
+// Marca a definição da edição como publicada, no instante em que ela entra
+// no bxt_news.
+//
+// O painel não deixa editar uma edição que já foi ao ar -- para mexer, apaga
+// e republica. Quem sabe a verdade sobre isso é este processo, e não o painel:
+// é ele que aplica. A marca fica na própria definição, então sobrevive a
+// retirar do calendário e a substituição por uma edição mais nova.
+//
+// Best-effort de propósito: falhar em marcar não pode impedir a notícia de
+// sair. O painel tem sua própria regra por data, que erra para o lado de
+// travar, então uma marca perdida não libera edição do que já foi publicado.
+function stampIssuePublished(newsCfg, articleId) {
+  try {
+    const slug = String(articleId || "").replace(/\.bin$/i, "");
+    if (slug === "") return;
+    const file = path.join(newsCfg.articles_dir, "bxt_custom", "_issues", slug + ".json");
+    if (!fs.existsSync(file)) return;
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!data || typeof data !== "object" || data.published_at) return;
+    data.published_at = new Date().toISOString();
+    fs.writeFileSync(file, JSON.stringify(data, null, 4) + "\n");
+  } catch (err) {
+    console.warn(`[news] could not stamp published_at for ${articleId}: ${err.message}`);
+  }
+}
+
 async function clearRankingsForRegions(conn, regions, reason) {
   const uniqueRegions = Array.from(new Set((regions || []).filter(Boolean))).sort();
   for (const region of uniqueRegions) {
@@ -1892,14 +1952,27 @@ async function processPokemonNewsCycle(
       }
     } else {
       // Pure date-based mode, no slots.
+      //
+      // O track custom não pode se guiar pelo timestamp da linha. Ele compara
+      // a data da edição com a última atualização da linha e descarta o que
+      // não for mais novo -- e a linha custom é tocada com a hora de agora
+      // sempre que o espelho é criado ou a vanilla muda. Resultado: uma
+      // edição marcada para hoje cai fora em silêncio, sem log nenhum, que é
+      // justamente o caso de quem acaba de escrever uma notícia no painel.
+      //
+      // Aqui a repetição é evitada mais abaixo, comparando o que está no ar
+      // com o que seria gravado -- não pela data.
       const selection = refresh
         ? selectCurrentScheduledEntry(regionEntries, todayDate)
-        : selectArticleForRegionDateOnly(regionEntries, lastTs, todayDate);
+        : selectArticleForRegionDateOnly(
+            regionEntries,
+            isCustom ? null : lastTs,
+            todayDate
+          );
       if (!selection) {
         continue;
       }
       chosenArticleId = selection.articleId;
-      // No cycle state to update in this mode.
     }
 
     if (!chosenArticleId) {
@@ -1985,6 +2058,39 @@ async function processPokemonNewsCycle(
     }
 
     // 3) Upsert into bxt_news
+    //
+    // Sem a data para servir de freio, o track custom regravaria a mesma
+    // edição a cada quinze minutos -- e cada regravação limpa os rankings da
+    // região, jogando fora o que os jogadores enviaram. Então a comparação é
+    // com o conteúdo: se o que está no ar já é isto, não há o que fazer.
+    if (isCustom && !refresh && existingId != null) {
+      const [currentRows] = await conn.execute(
+        "SELECT ranking_category_1, ranking_category_2, ranking_category_3, " +
+          "message, news_binary FROM bxt_news WHERE id = ? LIMIT 1",
+        [existingId]
+      );
+      if (currentRows.length > 0) {
+        const cur = currentRows[0];
+        const same =
+          (cur.ranking_category_1 ?? null) === (rankingNumbers[0] ?? null) &&
+          (cur.ranking_category_2 ?? null) === (rankingNumbers[1] ?? null) &&
+          (cur.ranking_category_3 ?? null) === (rankingNumbers[2] ?? null) &&
+          Buffer.compare(
+            Buffer.isBuffer(cur.message) ? cur.message : Buffer.from(cur.message || ""),
+            messageBuf
+          ) === 0 &&
+          Buffer.compare(
+            Buffer.isBuffer(cur.news_binary)
+              ? cur.news_binary
+              : Buffer.from(cur.news_binary || ""),
+            binData
+          ) === 0;
+        if (same) {
+          continue;
+        }
+      }
+    }
+
     if (existingId != null) {
       await conn.execute(
         "UPDATE bxt_news SET ranking_category_1 = ?, ranking_category_1_decode = ?, " +
@@ -2006,6 +2112,7 @@ async function processPokemonNewsCycle(
         ]
       );
       updatedByRegion[region] = true;
+      if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
       console.log(
         `[news:${trackLabel}] Updated bxt_news for region=${region}, id=${existingId}, article=${chosenArticleId}`
       );
@@ -2032,6 +2139,7 @@ async function processPokemonNewsCycle(
         ]
       );
       updatedByRegion[region] = true;
+      if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
       console.log(
         `[news:${trackLabel}] Inserted bxt_news for region=${region}, id=${res.insertId}, article=${chosenArticleId}`
       );

@@ -1,0 +1,10 @@
+[Unit]
+Description=REON cron job: Mail de Cute trades
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=reon
+Group=reon
+WorkingDirectory=/opt/reon/app/mail-bottle
+ExecStart=/opt/node/bin/node /opt/reon/app/mail-bottle/index.js -c /opt/reon/config.json

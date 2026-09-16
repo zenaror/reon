@@ -23,6 +23,13 @@
   --reon-green: #6eb122;
   --reon-yellow: #daac06;
   --reon-teal: #00938a;
+  /* Not a CGB hue: REON Mail's own orange (the webmail's bar colour), so
+     its gem in the side menu is not the same as Mario Kart's yellow. */
+  --reon-orange: #c25a10;
+  /* Two more for the side menu, so no two entries share a gem: berry
+     pink for the guide, the GBC "silver" shell for downloads. */
+  --reon-pink: #d9488f;
+  --reon-silver: #7f8a9c;
 
   /* Ink & paper */
   --reon-ink: #1a1c26;      /* near-black text + hard pixel borders */
@@ -36,6 +43,23 @@
                                                didn't exist in the CSS of the era */
   --reon-shadow-hard: 3px 3px 0 var(--reon-ink);  /* hard offset, no blur */
   --reon-font-display: "MobileTrainer", "Courier New", monospace;
+
+  /* ---- the pixel-font size scale ----
+     MobileTrainer was traced off the ROM's bitmap glyphs: every one of the
+     16952 outline points in the TTF sits exactly on a 12px cell edge, and the
+     font's own README says so ("native size 12px, designed for integer
+     scaling: 24px, 36px"). Set it at anything else and the renderer resamples
+     a bitmap, which is why the strokes within one word came out at different
+     weights — worst of all under clamp()/vw sizing, which lands on a
+     fractional size at nearly every window width.
+
+     So the face gets a stepped scale, not a fluid one. These four values are
+     the only sizes it may be set at; where a page needs to respond to width it
+     switches between steps at a breakpoint rather than sliding between them. */
+  --mt-1: 12px;   /* 1x — labels, dates, counters, menu and nav chrome */
+  --mt-2: 24px;   /* 2x — section headers, headings, mail body */
+  --mt-3: 36px;   /* 3x — page titles on wide screens */
+  --mt-4: 48px;   /* 4x — hero lockup */
 
   /* Bootstrap variable overrides — recolor the framework at the source */
   --bs-primary: var(--reon-blue-deep);
@@ -64,10 +88,13 @@ body:not([class*="-theme"]) legend {
   font-family: var(--reon-font-display);
   letter-spacing: 0.01em;
   color: var(--reon-ink);
+  /* the face is a bitmap; antialiasing it just blurs the cell edges */
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 body:not([class*="-theme"]) h1 {
-  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  font-size: var(--mt-2);
   line-height: 1.2;
   margin-bottom: 0.6em;
   /* chunky underline in the brand blue */
@@ -75,14 +102,20 @@ body:not([class*="-theme"]) h1 {
   border-bottom: 3px solid var(--reon-blue-deep);
 }
 
+/* one step up once there is width for it — a jump between grid sizes, never a
+   slide through the fractional sizes in between */
+@media (min-width: 768px) {
+  body:not([class*="-theme"]) h1 { font-size: var(--mt-3); }
+}
+
 body:not([class*="-theme"]) h2 {
-  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  font-size: var(--mt-2);
   line-height: 1.2;
 }
 
 body:not([class*="-theme"]) h3,
 body:not([class*="-theme"]) legend {
-  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-size: var(--mt-2);
 }
 
 /* ---------------------------------------------------------------- navbar */
@@ -103,6 +136,7 @@ body[class*="-theme"] > header.navbar.container-xxl {
 
 header.navbar .nav-link {
   font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
   color: var(--reon-ink);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -131,6 +165,7 @@ header.navbar .nav-link.active {
 
 .reon-panel__header {
   font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #fff;
@@ -152,6 +187,7 @@ header.navbar .nav-link.active {
 
 .card-header {
   font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #fff;
@@ -164,6 +200,7 @@ header.navbar .nav-link.active {
 
 .btn {
   font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-width: 2px;
@@ -265,7 +302,7 @@ header.navbar .btn:active {
   font-family: var(--reon-font-display);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  font-size: 0.9em;
+  font-size: var(--mt-1);
   color: var(--reon-ink-soft);
 }
 
@@ -314,7 +351,7 @@ header.navbar .btn:active {
   font-family: var(--reon-font-display);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  font-size: 0.9em;
+  font-size: var(--mt-1);
 }
 
 /* --------------------------------------------------------- news ticker */
@@ -338,7 +375,7 @@ header.navbar .btn:active {
   font-family: var(--reon-font-display);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.85em;
+  font-size: var(--mt-1);
   color: #fff;
   background: var(--reon-red);
   border-right: 2px solid var(--reon-line);
@@ -347,11 +384,57 @@ header.navbar .btn:active {
 
 .reon-ticker marquee,
 .reon-ticker__scroll {
+  font-size: var(--mt-1);
   flex: 1 1 auto;
   align-self: center;
   font-family: var(--reon-font-display);
   color: var(--reon-ink);
   padding: 4px 0;
+}
+
+/* --------------------------------------------------------- page footer */
+/* A mesma caixa do ticker, parada. Aqui o texto é para ser lido quando a
+   pessoa procurar, não quando passar -- e um <marquee> no rodapé seria
+   movimento competindo com o conteúdo pelo olho. */
+
+/* `reon-legalbar`, e não `reon-footer`: esse nome já é da assinatura
+   centralizada do portal (botão Top, meta, piada) em home-v2.css, e um
+   `display:flex` com borda caindo em cima dela quebraria três páginas. */
+.reon-legalbar {
+  display: flex;
+  align-items: stretch;
+  margin: 24px 0 12px;
+  border: 2px solid var(--reon-line);
+  border-radius: var(--reon-radius);
+  box-shadow: var(--reon-shadow-hard);
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Sem o chip de rótulo do ticker: os links se explicam sozinhos, e uma
+   etiqueta ali só acrescentava uma palavra para ler antes das duas que
+   importam. Sem ele, os links vão ao centro -- encostados à esquerda numa
+   barra vazia ficariam pendurados num canto. */
+.reon-legalbar__links {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 6px 12px;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+}
+
+.reon-legalbar__links a {
+  color: var(--reon-ink);
+  text-decoration: none;
+}
+
+.reon-legalbar__links a:hover,
+.reon-legalbar__links a:focus-visible {
+  text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -374,15 +457,22 @@ header.navbar .btn:active {
   border: 1px solid #6f8fc4;
   border-radius: 999px;
   font-family: var(--reon-font-display);
-  font-size: 0.85rem;
+  /* 1x on the pixel grid; 16px, which this used to be, is 1.33x and came out
+     resampled. Smoothing is off for the same reason. */
+  font-size: var(--mt-1);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-decoration: none;
   color: var(--cb-ink);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
   cursor: pointer;
+  /* The sunburst is kept, but a soft plate is laid over its middle so the
+     rays no longer run straight through the label. */
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 46%, rgba(120, 150, 200, 0.28) 100%),
+    radial-gradient(ellipse 64% 76% at 50% 50%, rgba(238, 246, 255, 0.94) 0%, rgba(238, 246, 255, 0.78) 52%, rgba(238, 246, 255, 0) 100%),
     repeating-conic-gradient(from 0deg at 50% 50%, #a9c4e8 0deg 3.2deg, #e3eefb 3.2deg 6.4deg);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9),
               inset 0 -2px 4px rgba(70, 100, 150, 0.35),
@@ -436,7 +526,10 @@ header.navbar .btn:active {
   border: 1px solid #114a86;
   border-radius: 999px;
   font-family: var(--reon-font-display);
-  font-size: 0.85rem;
+  /* Same grid reasoning as .reon-chrome-btn above. */
+  font-size: var(--mt-1);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   text-decoration: none;
@@ -450,7 +543,7 @@ header.navbar .btn:active {
   transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.1s ease;
 }
 
-.reon-gloss-btn::after { content: "\25B6"; font-size: 0.8em; }
+.reon-gloss-btn::after { content: "\25B6"; font-size: 12px; }
 .reon-gloss-btn:hover { filter: brightness(1.07); color: #fff; }
 .reon-gloss-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0, 0, 40, 0.4); }
 
@@ -465,7 +558,7 @@ header.navbar .btn:active {
   border-radius: 999px;
   background: linear-gradient(180deg, #eaf4fd 0%, #cfe6fa 100%);
   font-family: var(--reon-font-display);
-  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-size: var(--mt-2);
   color: var(--reon-blue-deep);
 }
 
@@ -553,4 +646,461 @@ body.pokecrystal-index main#content {
   border-radius: 12px;
   box-shadow: var(--reon-shadow-hard);
   padding: 16px 18px 24px;
+}
+
+/* Password fields: show/hide toggle and Caps Lock warning, added by
+   js/password-field.js to every password input on the page. */
+.reon-pass {
+  position: relative;
+  display: block;
+}
+
+/* Room for the button, so a long password never runs underneath it. */
+.reon-pass > input {
+  padding-right: 2.6rem;
+}
+
+.reon-pass__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6c757d;
+  cursor: pointer;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.reon-pass__toggle:hover {
+  color: #212529;
+}
+
+.reon-pass__toggle:focus-visible {
+  outline: 2px solid #0d6efd;
+  outline-offset: -2px;
+  color: #212529;
+}
+
+.reon-pass__caps {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a5580b;
+}
+
+.reon-pass__caps::before {
+  content: "\21EA";
+  margin-right: 0.35rem;
+}
+
+/* Password criteria list. Neutral until something is typed: showing a wall of
+   failures before the person has had a chance to satisfy them reads as
+   scolding, not helping. */
+.reon-pass__rules {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.reon-pass__rule {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.reon-pass__mark::before {
+  content: "\2022";
+  font-weight: 700;
+}
+
+.reon-pass__rule.is-met {
+  color: #16713a;
+}
+
+.reon-pass__rule.is-met .reon-pass__mark::before {
+  content: "\2713";
+}
+
+.reon-pass__rule.is-unmet {
+  color: #a5580b;
+}
+
+.reon-pass__rule.is-unmet .reon-pass__mark::before {
+  content: "\00D7";
+}
+
+/* Mail count in the navigation: shown only when something arrived since
+   this account last opened the inbox (the plain grey total is no longer
+   rendered anywhere; the base class stays for the shape). */
+.mail-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #cfd6c4;
+  color: #3f4a35;
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mail-badge--new {
+  background: #c25a10;
+  color: #fff5e2;
+}
+
+/* Beside REON Mail, the count itself pulses. There used to be a bare dot next
+   to it, which meant reading two things to learn one -- a dot saying
+   "something arrived" and a number saying how much. The number carries both,
+   and pulsing it lets each colour keep its own meaning while it asks for
+   attention. A slow fade rather than a hard blink: a sharp on/off in the
+   corner of the eye is genuinely unpleasant to sit next to, and for some
+   people it is worse than unpleasant. */
+.mail-badge--pulse {
+  animation: mail-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mail-badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.9); }
+}
+
+/* Anyone who has asked for less motion still gets the badge -- it carries the
+   information -- just without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .mail-badge--pulse { animation: none; }
+}
+
+/* ----------------------------------------------------------- passport modal
+   The "your passport to REON" config.bin introduction, shown once per
+   account. Built on a Bootstrap modal for its behaviour (backdrop, Escape,
+   focus trap); everything visual is restyled to the site's boxed retro
+   look -- hard border, hard offset shadow, square corners -- instead of
+   Bootstrap's own rounded/shadowed card. */
+
+.passport-modal .modal-dialog {
+  max-width: 600px;
+}
+
+.passport-modal .modal-content {
+  background: var(--reon-panel);
+  border: 2px solid var(--reon-line);
+  border-radius: var(--reon-radius);
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.passport-modal .modal-header {
+  background: var(--reon-blue-deep);
+  border-bottom: 2px solid var(--reon-line);
+  border-radius: 0;
+  padding: 14px 18px;
+}
+
+.passport-modal .modal-title {
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-2);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: #fff;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+.passport-modal .modal-body {
+  padding: 22px 24px 20px;
+  color: var(--reon-ink);
+  line-height: 1.6;
+}
+
+.passport-modal .modal-body p {
+  margin: 0 0 14px;
+}
+
+/* The download button is the one thing on this screen that has to get
+   clicked, so it gets the most weight: centred, oversized, gloss-styled
+   like the homepage's own sign-up button rather than a plain link. */
+.passport-download {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 18px 12px;
+  background: var(--reon-paper);
+  border: 1px dashed #b3bccc;
+}
+
+.passport-download__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border: 1px solid #114a86;
+  border-radius: 999px;
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-2);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 1px 1px rgba(0, 0, 40, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 44%),
+    linear-gradient(180deg, #5cb2f2 0%, #2e86d6 50%, #1667b4 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 2px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.1s ease;
+}
+
+.passport-download__btn:hover { filter: brightness(1.06); color: #fff; }
+.passport-download__btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0, 0, 40, 0.4); }
+
+.passport-download__icon { flex: 0 0 auto; }
+
+.passport-download__hint {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--reon-ink-soft);
+}
+
+.passport-lead {
+  font-weight: 600;
+}
+
+.passport-section {
+  margin: 0 0 16px;
+}
+
+.passport-section h2 {
+  font-family: var(--reon-font-display);
+  font-size: var(--mt-1);
+  color: var(--reon-blue-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+
+.passport-section p {
+  margin: 0;
+}
+
+.passport-footnote {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 2px dotted var(--reon-line);
+  font-size: 0.85rem;
+  color: var(--reon-ink-soft);
+}
+
+.passport-footnote a {
+  color: var(--reon-blue-deep);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- notifications
+   The bell beside the account name, its dropdown, and the history page.
+
+   Colour is the whole grammar here. The orange badge on the account name
+   still means one thing and one thing only -- a letter is waiting in the
+   mailbox -- so the bell had to be a different colour or the two would say
+   the same thing in the same voice. Purple is nothing else on this site. */
+
+.reon-bell__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Bootstrap puts a caret on every .dropdown-toggle; a bell that is plainly a
+   bell does not need one, and the caret makes the icon read as a menu label
+   rather than as a thing. */
+.reon-bell__toggle::after {
+  display: none !important;
+}
+
+.reon-bell__icon {
+  vertical-align: -3px;
+}
+
+.notify-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--reon-purple);
+  color: #efeeff;
+  font-size: 0.78em;
+  font-weight: bold;
+  line-height: 17px;
+  text-align: center;
+  vertical-align: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The same slow fade the mail badge uses, for the same reason: the number
+   carries the information and the movement only asks for attention. A hard
+   blink in the corner of the eye is unpleasant at best. */
+.notify-badge--pulse {
+  animation: mail-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notify-badge--pulse { animation: none; }
+}
+
+.notify-menu {
+  width: min(360px, calc(100vw - 24px));
+  padding: 0;
+}
+
+.notify-menu__head {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.15);
+  font-weight: bold;
+}
+
+/* The menu holds a bounded number of rows and then scrolls, rather than
+   growing until it runs off the bottom of the screen. */
+.notify-menu__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notify-menu__empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--reon-ink-soft);
+}
+
+.notify-menu__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notify-menu__row,
+.notify-list__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(26, 28, 38, 0.1);
+}
+
+.notify-menu__row:last-child,
+.notify-list__row:last-child { border-bottom: 0; }
+
+/* Unread is a left edge in the category's own colour, not a background wash:
+   the row still has to be readable, and a tinted row that also carries a
+   coloured tag ends up saying the same thing twice. */
+.notify-menu__row.is-unread,
+.notify-list__row.is-unread {
+  box-shadow: inset 3px 0 0 var(--reon-purple);
+}
+
+.notify-menu__text,
+.notify-list__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notify-menu__title,
+.notify-list__title {
+  overflow-wrap: anywhere;
+}
+
+.notify-menu__row.is-unread .notify-menu__title,
+.notify-list__row.is-unread .notify-list__title {
+  font-weight: bold;
+}
+
+.notify-menu__body,
+.notify-list__body {
+  color: var(--reon-ink-soft);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.notify-menu__when,
+.notify-list__when {
+  flex: 0 0 auto;
+  color: var(--reon-ink-soft);
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.notify-list__game {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.notify-menu__all {
+  text-align: center;
+  font-weight: bold;
+}
+
+/* What kind of thing happened. One word, one colour, the same in the
+   dropdown and on the history page. */
+.notify-tag {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--reon-silver);
+  color: #fff;
+  font-size: 0.7em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.notify-tag--mail   { background: var(--reon-orange); }
+.notify-tag--trade  { background: var(--reon-green); color: #16300a; }
+.notify-tag--game   { background: #2f6fb5; }
+.notify-tag--system { background: var(--reon-silver); }
+.notify-tag--admin  { background: var(--reon-purple); }
+
+/* History page: the same rows inside the mailbox's panel. */
+.notify-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The panel on this page has nothing above it to tuck under, so it does not
+   need the notch the folder tabs cut into the mailbox's corner. */
+.mt-panel--flat {
+  border-radius: 10px;
+}
+
+@media (max-width: 480px) {
+  .notify-menu__row,
+  .notify-list__row {
+    flex-wrap: wrap;
+  }
+  .notify-menu__when,
+  .notify-list__when {
+    text-align: left;
+  }
 }
