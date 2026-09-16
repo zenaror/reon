@@ -6,6 +6,7 @@
 	require_once("../../classes/RelayUtil.php");
 	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/UserUtil.php");
+	require_once("../../classes/SettingsUtil.php");
 	session_start();
 
 	if (SessionUtil::getInstance()->isSessionActive()) {
@@ -44,6 +45,31 @@
                 $errors[] = "pokemonNewsValue";
             }
         }
+        // Cor do adaptador e marca de não-tarifado, quando o painel libera.
+        //
+        // A checagem de `bin_user_choice` acontece AQUI, e não só no
+        // template: esconder o formulário não impede um POST, e a diferença
+        // importa porque estes dois valores vão parar dentro de um arquivo
+        // binário que um cartucho lê. Com a opção desligada, o que vier no
+        // POST é ignorado em silêncio -- não é erro da pessoa, é campo que
+        // não existe mais.
+        if (SettingsUtil::getInstance()->getValid("bin_user_choice") === "1"
+            && array_key_exists("adapterDevice", $_POST)) {
+            $modelo = (string)$_POST["adapterDevice"];
+            $unmetered = (($_POST["adapterUnmetered"] ?? "") === "1") ? 1 : 0;
+            // Mesma regra que o painel usa, pela mesma função: o conjunto de
+            // modelos válidos é o enum da libmobile, e ele não pode divergir
+            // entre as duas telas que escrevem no mesmo byte.
+            if (SettingsUtil::isValid("bin_adapter_device", $modelo)) {
+                $db = DBUtil::getInstance()->getDB();
+                $stmt = $db->prepare("update sys_users set adapter_device = ?, adapter_unmetered = ? where id = ?");
+                $dev = (int)$modelo;
+                $stmt->bind_param("iii", $dev, $unmetered, $_SESSION["user_id"]);
+                $stmt->execute();
+            } else {
+                $errors[] = "adapterValue";
+            }
+        }
         if (array_key_exists("timeZone", $_POST)) {
             // Identifiers only; the default is Asia/Tokyo (the game's own
             // time zone). "+0900" was the old spelling of that default.
@@ -60,7 +86,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone, adapter_device, adapter_unmetered from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -89,6 +115,19 @@
 			"relay_token" => $relay !== null ? bin2hex($relay["token"]) : null,
 			"relay_number" => $relay !== null ? $relay["number"] : null,
 			"inbox_size" => $inbox_size,
+			// O cartão do adaptador só existe quando o painel libera. Nulo
+			// na conta quer dizer "não escolhi": o formulário abre no que o
+			// painel está mandando hoje, e é isso que a pessoa recebe se
+			// nunca salvar.
+			"adapter_choice_allowed" => SettingsUtil::getInstance()->getValid("bin_user_choice") === "1",
+			"adapter_device" => $result["adapter_device"] !== null
+				? (string)(int)$result["adapter_device"]
+				: SettingsUtil::getInstance()->getValid("bin_adapter_device"),
+			"adapter_unmetered" => $result["adapter_unmetered"] !== null
+				? ((int)$result["adapter_unmetered"] === 1)
+				: (SettingsUtil::getInstance()->getValid("bin_unmetered") === "1"),
+			"adapter_is_default" => $result["adapter_device"] === null,
+			"adapter_models" => [8 => "Blue", 9 => "Yellow", 10 => "Green", 11 => "Red"],
             "errors" => $errors
 		]);
 	} else {

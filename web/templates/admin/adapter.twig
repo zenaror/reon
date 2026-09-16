@@ -76,10 +76,15 @@
 				<span>{{ 'admin.adapter-unmetered'|trans }}</span>
 				<input type="checkbox" name="bin_unmetered" value="1"{{ v.bin_unmetered == '1' ? ' checked' : '' }}>
 			</label>
+			<label class="admin-form__row">
+				<span>{{ 'admin.adapter-user-choice'|trans }}</span>
+				<input type="checkbox" name="bin_user_choice" value="1"{{ v.bin_user_choice == '1' ? ' checked' : '' }}>
+			</label>
 			{# O que está gravado agora, em palavras. Não acompanha os
 			   controles de propósito: é o estado salvo, não uma prévia do
 			   que o formulário faria. #}
 			<p class="admin-form__hint">{{ 'admin.adapter-current'|trans }} {{ device_words }}</p>
+			<p class="admin-form__hint">{{ 'admin.adapter-user-choice-note'|trans }}</p>
 		</section>
 
 		<div class="admin-actions">

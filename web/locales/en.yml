@@ -191,6 +191,17 @@ account:
     If no custom news exists, official news will be used instead.
   pokemon-news-custom-opt-in-off: Official Pokémon News only
   pokemon-news-custom-opt-in-on: Custom Pokémon News when available
+  adapter-settings: "Mobile Adapter"
+  adapter-color: "Adapter colour"
+  adapter-blurb: "Which adapter the games see when they read your mobile_config.bin. It changes the colour and the name the game shows — nothing else about how it works."
+  adapter-unmetered: "Unmetered (no per-minute charge)"
+  adapter-color-8: "Blue"
+  adapter-color-9: "Yellow"
+  adapter-color-10: "Green"
+  adapter-color-11: "Red"
+  adapter-following-default: "You have not chosen yet, so these are the site defaults."
+  adapter-download-note: "A saved change applies to the next mobile_config.bin you download. A file already in use keeps working."
+  adapter-invalid: "That is not an adapter this server knows. Nothing was changed."
 index:
   what-is-reon: What is REON?
   reon-description: REON is something.
@@ -2151,6 +2162,8 @@ admin:
   trainer-readonly: "These files cannot be written by the web server, so nothing here can be saved yet."
   trainer-readonly-why: "PHP runs as \"%user%\", and the pages belong to the account that deployed them. Granting that user write access is one command:"
 
+  adapter-user-choice: "Let each account choose its own adapter"
+  adapter-user-choice-note: "With this on, the model and the unmetered mark above become the default rather than the rule: each account can pick its own on their account page, and anyone who does not pick keeps following what is set here. Turning it off puts everyone back on these values without erasing anyone's choice."
 mail:
   title: "REON Mail"
   inbox: "Inbox"

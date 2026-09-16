@@ -961,6 +961,17 @@ account:
   time-zone: Fuso orario
   time-zone-blurb: Scegli il fuso orario in cui vengono mostrate le date e gli orari sul sito. Lascia il valore predefinito per vedere tutto nel fuso orario originale del gioco (Giappone, +0900).
   update-settings: Aggiorna impostazioni
+  adapter-settings: "Adattatore"
+  adapter-color: "Colore dell'adattatore"
+  adapter-blurb: "Quale adattatore vedono i giochi leggendo il tuo mobile_config.bin. Cambia il colore e il nome mostrati dal gioco, nient'altro."
+  adapter-unmetered: "Senza tariffa (nessun addebito al minuto)"
+  adapter-color-8: "Blu"
+  adapter-color-9: "Giallo"
+  adapter-color-10: "Verde"
+  adapter-color-11: "Rosso"
+  adapter-following-default: "Non hai ancora scelto, quindi valgono le impostazioni del sito."
+  adapter-download-note: "La modifica vale per il prossimo mobile_config.bin scaricato. Un file già in uso continua a funzionare."
+  adapter-invalid: "Questo non è un adattatore noto al server. Non è stato modificato nulla."
 invalid-pokemon-news-setting: Preferenza Notizie Pokémon non valida.
 
 mail:
@@ -1389,6 +1400,8 @@ admin:
   trainer-readonly: Il server web non può scrivere questi file, quindi qui non si può ancora salvare niente.
   trainer-readonly-why: 'PHP gira come «%user%», e le pagine appartengono all''account che le ha installate. Dare il permesso di scrittura a quell''utente è un solo comando:'
 
+  adapter-user-choice: "Lasciare che ogni account scelga il proprio adattatore"
+  adapter-user-choice-note: "Con questa opzione attiva, il modello e il contrassegno senza tariffa qui sopra diventano il valore iniziale e non la regola: ogni account può sceglierli nella propria pagina, e chi non sceglie continua a seguire quanto impostato qui. Disattivarla riporta tutti a questi valori senza cancellare la scelta di nessuno."
 errors:
   title: "Codici di errore dell'adattatore"
   intro: "Quando qualcosa non va il gioco mostra un messaggio e, dietro, un codice. Digita quel codice qui per cercarlo. I codici che significano la stessa cosa condividono un'unica risposta, e ogni voce può mostrare il messaggio che il gioco stesso stampa."

@@ -186,6 +186,17 @@ account:
     officielles seront utilisées à la place.
   pokemon-news-custom-opt-in-off: Actualités Pokémon officielles uniquement
   pokemon-news-custom-opt-in-on: Actualités Pokémon personnalisées lorsqu’elles sont disponibles
+  adapter-settings: "Adaptateur"
+  adapter-color: "Couleur de l'adaptateur"
+  adapter-blurb: "Quel adaptateur les jeux voient en lisant votre mobile_config.bin. Cela change la couleur et le nom affichés par le jeu, rien d'autre."
+  adapter-unmetered: "Hors forfait (pas de facturation à la minute)"
+  adapter-color-8: "Bleu"
+  adapter-color-9: "Jaune"
+  adapter-color-10: "Vert"
+  adapter-color-11: "Rouge"
+  adapter-following-default: "Vous n'avez pas encore choisi : ce sont les valeurs du site."
+  adapter-download-note: "Le changement s'applique au prochain mobile_config.bin téléchargé. Un fichier déjà en service continue de fonctionner."
+  adapter-invalid: "Ce n'est pas un adaptateur connu du serveur. Rien n'a été modifié."
 index:
   what-is-reon: Qu'est-ce c'est REON?
   reon-description: REON est quelque chose.
@@ -1453,6 +1464,8 @@ admin:
   trainer-readonly: Le serveur web ne peut pas écrire ces fichiers, donc rien ne peut encore être enregistré ici.
   trainer-readonly-why: 'PHP tourne en tant que « %user% », et les pages appartiennent au compte qui les a déployées. Accorder le droit d''écriture à cet utilisateur tient en une commande :'
 
+  adapter-user-choice: "Laisser chaque compte choisir son propre adaptateur"
+  adapter-user-choice-note: "Activé, le modèle et la marque hors forfait ci-dessus deviennent la valeur par défaut plutôt que la règle : chaque compte peut choisir les siens sur sa page, et qui ne choisit pas continue de suivre ce qui est défini ici. Désactiver remet tout le monde sur ces valeurs sans effacer le choix de personne."
 errors:
   title: "Codes d'erreur de l'adaptateur"
   intro: "En cas de problème, le jeu affiche un message et, derrière, un code. Saisissez ce code ici pour le rechercher. Les codes de même sens partagent une seule réponse, et chaque entrée peut afficher le message que le jeu lui-même affiche."
