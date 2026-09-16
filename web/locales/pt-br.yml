@@ -202,7 +202,6 @@ account:
   delete-failed: "Nada foi apagado — algo deu errado no servidor. A conta está intacta; tente de novo, e avise um administrador se continuar falhando."
   adapter-color-8: "Azul"
   adapter-color-9: "Amarelo"
-  adapter-color-10: "Verde"
   adapter-color-11: "Vermelho"
   adapter-following-default: "Você ainda não escolheu, então estes são os padrões do site."
   adapter-download-note: "A mudança vale para a próxima mobile_config.bin que você baixar. Arquivo já em uso continua funcionando."

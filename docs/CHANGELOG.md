@@ -684,6 +684,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     com o que a libmobile documenta: avisa ao jogo que a ligação não é cobrada
     por minuto, e no Crystal japonês isso tira o limite de tempo das batalhas
     por celular. A ressalva ficou junto -- nos outros jogos ninguém sabe
+  * Sem o verde: a lista oferece azul, amarelo e vermelho. Saiu também da
+    validação, senão "removido" seria só cosmético e um valor gravado por
+    outro caminho continuaria valendo. A lacuna na sequência (8, 9, 11) é de
+    propósito — são valores do enum da libmobile, não posições de lista
   * Com a escolha liberada, o download do `mobile_config.bin` muda de casa:
     sai do cartão de conta e vai para o do adaptador, ao lado de salvar. E
     deixa de ser link para ser envio do formulário, porque como link ele

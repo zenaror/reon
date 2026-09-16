@@ -983,7 +983,6 @@ account:
   delete-failed: "Es wurde nichts gelöscht — auf dem Server ging etwas schief. Das Konto ist unberührt; versuch es erneut und sag einer Administratorin oder einem Administrator Bescheid, wenn es weiter fehlschlägt."
   adapter-color-8: "Blau"
   adapter-color-9: "Gelb"
-  adapter-color-10: "Grün"
   adapter-color-11: "Rot"
   adapter-following-default: "Du hast noch nicht gewählt, daher gelten die Vorgaben der Seite."
   adapter-download-note: "Die Änderung gilt für die nächste heruntergeladene mobile_config.bin. Eine bereits genutzte Datei funktioniert weiter."

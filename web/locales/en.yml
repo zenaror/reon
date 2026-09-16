@@ -213,7 +213,6 @@ account:
   delete-failed: "Nothing was deleted — something went wrong on the server. The account is untouched; try again, and tell an administrator if it keeps failing."
   adapter-color-8: "Blue"
   adapter-color-9: "Yellow"
-  adapter-color-10: "Green"
   adapter-color-11: "Red"
   adapter-following-default: "You have not chosen yet, so these are the site defaults."
   adapter-download-note: "A saved change applies to the next mobile_config.bin you download. A file already in use keeps working."

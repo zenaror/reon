@@ -208,7 +208,6 @@ account:
   delete-failed: "Rien n'a été supprimé — une erreur est survenue sur le serveur. Le compte est intact ; réessayez, et prévenez un administrateur si cela persiste."
   adapter-color-8: "Bleu"
   adapter-color-9: "Jaune"
-  adapter-color-10: "Vert"
   adapter-color-11: "Rouge"
   adapter-following-default: "Vous n'avez pas encore choisi : ce sont les valeurs du site."
   adapter-download-note: "Le changement s'applique au prochain mobile_config.bin téléchargé. Un fichier déjà en service continue de fonctionner."
