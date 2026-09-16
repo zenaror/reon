@@ -965,6 +965,7 @@ account:
   adapter-color: "Adapterfarbe"
   adapter-blurb: "Welchen Adapter die Spiele sehen, wenn sie deine mobile_config.bin lesen. Das ändert Farbe und Namen, die das Spiel anzeigt — sonst nichts."
   adapter-unmetered: "Pauschal (keine Abrechnung pro Minute)"
+  adapter-unmetered-explanation: "Teilt dem Spiel mit, dass die Verbindung nicht pro Minute abgerechnet wird. In Pokémon Kristall (japanisch) entfällt dadurch das Zeitlimit bei Mobil-Kämpfen. Was es in den anderen Spielen bewirkt, ist nicht bekannt — niemand hat es dokumentiert — wenn sich also ein Spiel damit seltsam verhält, ist Ausschalten das Erste, was man versuchen sollte."
   adapter-color-8: "Blau"
   adapter-color-9: "Gelb"
   adapter-color-10: "Grün"

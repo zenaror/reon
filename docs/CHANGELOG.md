@@ -675,6 +675,21 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * A validação é a mesma função do painel, e o gerador valida de novo ao
     escrever: uma linha inválida no banco não produz arquivo que o cartucho
     não entenda, ela só é ignorada e o padrão vale
+  * O cartão mostra o desenho do adaptador escolhido, numa moldura no estilo
+    do resto do site. As artes são retratos e o adaptador se lê deitado, então
+    giram -90°, o que dá exatamente o mesmo quadro da arte horizontal que já
+    existia. Os quatro ficam na página e só um aparece, para a troca não
+    piscar; sem JavaScript aparece o que está salvo
+  * O "não tarifado" ganhou um "O que é isso?", no mesmo padrão do cadastro,
+    com o que a libmobile documenta: avisa ao jogo que a ligação não é cobrada
+    por minuto, e no Crystal japonês isso tira o limite de tempo das batalhas
+    por celular. A ressalva ficou junto -- nos outros jogos ninguém sabe
+  * Com a escolha liberada, o download do `mobile_config.bin` muda de casa:
+    sai do cartão de conta e vai para o do adaptador, ao lado de salvar. E
+    deixa de ser link para ser envio do formulário, porque como link ele
+    entregaria o que está GRAVADO -- quem trocasse a cor sem salvar receberia
+    uma bin que não corresponde à tela, justo no gesto em que as duas coisas
+    parecem uma só
 
 * **O arquivo agora se chama `mobile_config.bin`**, que é o nome que o mGBA
   usa — antes era `config.bin` e a pessoa tinha de renomear. O nome passou a

@@ -195,6 +195,7 @@ account:
   adapter-color: "Adapter colour"
   adapter-blurb: "Which adapter the games see when they read your mobile_config.bin. It changes the colour and the name the game shows — nothing else about how it works."
   adapter-unmetered: "Unmetered (no per-minute charge)"
+  adapter-unmetered-explanation: "It tells the game the call is not charged by the minute. In Pokémon Crystal (Japanese) that removes the time limit on mobile battles. What it does in the other games is not known — nobody has documented it — so if a game behaves oddly with this on, turning it off is the first thing to try."
   adapter-color-8: "Blue"
   adapter-color-9: "Yellow"
   adapter-color-10: "Green"

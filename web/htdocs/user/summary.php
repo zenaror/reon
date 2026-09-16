@@ -69,6 +69,19 @@
             } else {
                 $errors[] = "adapterValue";
             }
+
+            // "Baixar" é o mesmo envio, com um botão a mais: grava e só então
+            // entrega o arquivo. É por isso que ele é submit e não link -- um
+            // link baixaria o que está GRAVADO, e quem acabou de trocar a cor
+            // sem salvar receberia uma bin que não corresponde à tela.
+            //
+            // Só redireciona se a gravação passou. Com valor recusado a pessoa
+            // volta para a página com o erro, em vez de receber calada um
+            // arquivo com o valor antigo.
+            if (!$errors && array_key_exists("downloadAfterSave", $_POST)) {
+                header("Location: /user/adapter_config.php");
+                exit;
+            }
         }
         if (array_key_exists("timeZone", $_POST)) {
             // Identifiers only; the default is Asia/Tokyo (the game's own

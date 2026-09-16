@@ -4,6 +4,44 @@
 
 {% block head %}
 	<script src="/js/user/summary.js"></script>
+	<style>
+		/* A moldura. Mesma linguagem do resto do site (.reon-panel): borda
+		   dura, canto reto, sombra deslocada sem desfoque. O fundo é o campo
+		   cinza claro e não o branco do cartão, para a caixa ler como um
+		   mostrador em vez de um retângulo perdido no meio do formulário. */
+		.adapter-art {
+			background: var(--reon-paper);
+			border: 2px solid var(--reon-line);
+			border-radius: var(--reon-radius);
+			box-shadow: var(--reon-shadow-hard);
+			padding: 1rem;
+			margin: 1.25rem auto 1.5rem;
+			max-width: 420px;
+		}
+		/* A arte nasce em pé (281x842) e o adaptador se lê deitado. Girar não
+		   muda a caixa que o elemento ocupa, então o palco é declarado já
+		   deitado e a imagem é medida contra ele: largura 281/842 do palco,
+		   que depois do giro vira a altura. As duas proporções são a mesma,
+		   então não sobra borda nem corta desenho. */
+		.adapter-art__stage {
+			position: relative;
+			width: 100%;
+			aspect-ratio: 842 / 281;
+		}
+		.adapter-art__stage img {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 33.3729%;
+			height: auto;
+			transform: translate(-50%, -50%) rotate(-90deg);
+		}
+		/* A sombra dura é 3px para a direita e para baixo: sem isto ela sai
+		   da caixa do cartão em telas estreitas. */
+		@media (max-width: 575.98px) {
+			.adapter-art { margin-right: 3px; }
+		}
+	</style>
 	<noscript>
 		<style>
 			.js-only {
@@ -36,7 +74,13 @@
 					<hr>
 					<a href="change_email.php" class="btn btn-primary">{{'account.change-email'|trans}}</a>
 					<a href="change_password.php" class="btn btn-primary">{{'account.change-password'|trans}}</a>
-                    <a href="adapter_config.php" class="btn btn-primary" download="mobile_config.bin">{{'account.download-config-data'|trans}}</a>
+					{# O download mora aqui quando não há cartão de adaptador. Com a
+					   escolha liberada ele muda de casa, para ficar junto do que
+					   decide o conteúdo do arquivo -- escolher a cor e baixar a bin
+					   viram um gesto só, em vez de dois cartões distantes. #}
+					{% if not adapter_choice_allowed %}
+						<a href="adapter_config.php" class="btn btn-primary" download="mobile_config.bin">{{'account.download-config-data'|trans}}</a>
+					{% endif %}
 				</div>
 			</div>
 			<div class="card mb-4">
@@ -138,15 +182,43 @@
 						<div class="mb-3">
 							<label for="adapterDevice" class="form-label">{{ "account.adapter-color"|trans }}</label>
 							<small><p>{{ "account.adapter-blurb"|trans }}</p></small>
+							{# O desenho do adaptador escolhido. As artes são retratos
+							   (281x842) e o adaptador se lê deitado, então giram -90°,
+							   o que dá exatamente o 842x281 da arte horizontal que já
+							   existe. Decorativo: quem nomeia a cor é o menu abaixo,
+							   e repetir o nome aqui faria o leitor de tela dizer duas
+							   vezes a mesma coisa.
+
+							   Os quatro ficam no HTML e só um aparece, para a troca
+							   ser instantânea e não piscar enquanto baixa. Sem
+							   JavaScript, aparece o que está salvo -- que é o certo,
+							   já que sem script o menu também não muda nada. #}
+							<div class="adapter-art" aria-hidden="true">
+								<div class="adapter-art__stage">
+									{% for code, nome in adapter_models %}
+										<img src="{{ asset('/images/mobile_adapter/REON_Adapter_' ~ nome ~ '.svg') }}"
+											alt="" data-adapter="{{ code }}"
+											{% if adapter_device != code ~ '' %}hidden{% endif %}>
+									{% endfor %}
+								</div>
+							</div>
 							<select id="adapterDevice" name="adapterDevice" class="form-select">
 								{% for code, nome in adapter_models %}
 									<option value="{{ code }}"{% if adapter_device == code ~ '' %} selected{% endif %}>{{ ("account.adapter-color-" ~ code)|trans }}</option>
 								{% endfor %}
 							</select>
 						</div>
-						<div class="mb-3 form-check">
-							<input class="form-check-input" type="checkbox" id="adapterUnmetered" name="adapterUnmetered" value="1"{% if adapter_unmetered %} checked{% endif %}>
-							<label class="form-check-label" for="adapterUnmetered">{{ "account.adapter-unmetered"|trans }}</label>
+						<div class="mb-3">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" id="adapterUnmetered" name="adapterUnmetered" value="1"{% if adapter_unmetered %} checked{% endif %}>
+								<label class="form-check-label" for="adapterUnmetered">{{ "account.adapter-unmetered"|trans }}</label>
+							</div>
+							<small>
+							<details>
+								<summary>{{ "what-is-this"|trans }}</summary>
+								<p>{{ "account.adapter-unmetered-explanation"|trans }}</p>
+							</details>
+							</small>
 						</div>
 						{% if ("adapterValue" in errors) %}
 							<small><p>{{ "account.adapter-invalid"|trans }}</p></small>
@@ -155,7 +227,16 @@
 							<small><p>{{ "account.adapter-following-default"|trans }}</p></small>
 						{% endif %}
 						<small><p>{{ "account.adapter-download-note"|trans }}</p></small>
-						<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
+						{# Os dois lado a lado, e o de baixar é um SUBMIT, não um
+						   link. Como link ele baixaria o que está gravado, e quem
+						   acabou de trocar a cor sem salvar receberia uma bin que
+						   não corresponde à tela -- justamente no gesto em que as
+						   duas coisas parecem uma só. Enviando o formulário, o
+						   servidor grava e só então entrega o arquivo. #}
+						<div class="d-flex flex-wrap gap-2">
+							<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
+							<button type="submit" name="downloadAfterSave" value="1" class="btn btn-primary">{{'account.download-config-data'|trans}}</button>
+						</div>
 					</form>
 				</div>
 			</div>
