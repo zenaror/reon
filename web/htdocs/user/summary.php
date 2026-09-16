@@ -140,7 +140,11 @@
 				? ((int)$result["adapter_unmetered"] === 1)
 				: (SettingsUtil::getInstance()->getValid("bin_unmetered") === "1"),
 			"adapter_is_default" => $result["adapter_device"] === null,
-			"adapter_models" => [8 => "Blue", 9 => "Yellow", 10 => "Green", 11 => "Red"],
+			// Sem o verde (10) por decisão do dono. O buraco no meio da
+			// sequência é de propósito: o número é o enum da libmobile, não
+			// uma posição de lista, então preencher a lacuna renomearia um
+			// adaptador em vez de arrumar a numeração.
+			"adapter_models" => [8 => "Blue", 9 => "Yellow", 11 => "Red"],
             "errors" => $errors
 		]);
 	} else {

@@ -86,7 +86,12 @@
 					// para um campo desligado, então entra.
 					return preg_match('/^\d{1,5}$/', $value) === 1 && (int)$value <= 65535;
 				case "modelo":
-					return in_array($value, ["8", "9", "10", "11"], true);
+					// 10 (verde) saiu por decisão do dono, e sai daqui também:
+					// deixar a validação aceitar o que os dois menus não
+					// oferecem faria "removido" virar só cosmético, e um
+					// valor gravado por outro caminho continuaria valendo.
+					// Conferido antes de tirar: nenhuma conta tinha 10.
+					return in_array($value, ["8", "9", "11"], true);
 			}
 			return false;
 		}

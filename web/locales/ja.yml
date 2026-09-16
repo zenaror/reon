@@ -1024,7 +1024,6 @@ account:
   delete-failed: "何も削除されていません。サーバー側で問題が起きました。アカウントはそのままです。もう一度お試しのうえ、続くようなら管理者にお知らせください。"
   adapter-color-8: "ブルー"
   adapter-color-9: "イエロー"
-  adapter-color-10: "グリーン"
   adapter-color-11: "レッド"
   adapter-following-default: "まだ選んでいないため、サイトの初期値が使われています。"
   adapter-download-note: "変更は次にダウンロードする mobile_config.bin から有効です。すでに使っているファイルはそのまま動きます。"

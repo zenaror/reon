@@ -59,7 +59,10 @@
 		}
 	}
 
-	$MODELOS = [8 => "Blue", 9 => "Yellow", 10 => "Green", 11 => "Red"];
+	// Sem o verde (10) por decisão do dono. A lacuna na sequência é de
+	// propósito: estes números são o enum mobile_adapter_device da libmobile,
+	// não posições de uma lista.
+	$MODELOS = [8 => "Blue", 9 => "Yellow", 11 => "Red"];
 
 	$valores = [];
 	foreach ($CAMPOS as $k) $valores[$k] = $cfg->getValid($k);
