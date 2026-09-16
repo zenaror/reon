@@ -81,6 +81,13 @@
 					{% if not adapter_choice_allowed %}
 						<a href="adapter_config.php" class="btn btn-primary" download="mobile_config.bin">{{'account.download-config-data'|trans}}</a>
 					{% endif %}
+					<hr>
+					{# Os dois direitos sobre os próprios dados: levar embora e
+					   apagar. Ficam juntos e no fim do cartão, e o de apagar é o
+					   único vermelho da página -- é o único que não tem volta. #}
+					<a href="export_data.php" class="btn btn-primary" download>{{'account.download-my-data'|trans}}</a>
+					<a href="delete_account.php" class="btn btn-outline-danger">{{'account.delete-account'|trans}}</a>
+					<p class="form-text mt-2">{{'account.data-rights-note'|trans}}</p>
 				</div>
 			</div>
 			<div class="card mb-4">
