@@ -31,6 +31,23 @@ function iniciar(pool, porta = PORTA) {
 	const q = (sql, args) => new Promise((ok, erro) =>
 		pool.query(sql, args, (e, r) => e ? erro(e) : ok(r)));
 
+	// O pool que chega aqui é o de callback (mail/index.js monta com
+	// `createPool`, sem `.promise()`), e o `q` acima existe justamente para
+	// embrulhar isso. Mas o `notify` do lib/notifications.js espera a API de
+	// promise -- ele faz `const [r] = await conn.execute(...)`.
+	//
+	// Passar o pool cru derrubava o serviço a cada carta, e de um jeito que
+	// não parecia com o que era: dentro do notify o `await` devolvia um
+	// objeto não iterável e o try/catch dele registrava "not iterable", o
+	// que soava como um erro de dados. A morte vinha depois e de fora, no
+	// mysql2, que chamava um callback que ninguém passou -- exceção sem dono,
+	// que nenhum try/catch daqui alcança. 29 quedas em 12/09/2026.
+	//
+	// O outro chamador do notify (app/pokemon-exchange) já usa
+	// `mysql2/promise`, então a correção fica neste lado em vez de mudar a
+	// assinatura do notify e mexer em quem já funciona.
+	const poolPromise = typeof pool.promise === "function" ? pool.promise() : pool;
+
 	// Marcado por MailUtil::submitLocally() em tudo que sai do webmail, que já
 	// arquiva e notifica sozinho, com a origem certa. Repetir aqui daria duas
 	// cópias e duas linhas no sino.
@@ -56,7 +73,7 @@ function iniciar(pool, porta = PORTA) {
 		if (!quem.length) return;
 		// O sino não substitui o contador de não lidas: aquele diz "há algo
 		// para ler", este diz "chegou a tal hora". O dono pediu os dois.
-		await notify(pool, quem[0]["id"], "mail", {
+		await notify(poolPromise, quem[0]["id"], "mail", {
 			key: "notify.new-mail",
 			params: { from: String(remetente).split("@")[0] },
 			link: "/user/mail.php"
