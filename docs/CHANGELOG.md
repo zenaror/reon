@@ -728,6 +728,32 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Conta, cadastro e autenticação
 
+* **Levar embora e apagar.** A conta ganhou os dois direitos que faltavam,
+  na própria página: baixar tudo o que o servidor guarda sobre ela, e
+  apagá-la.
+  * Uma lista só governa as duas coisas (`AccountDataUtil`), e é de
+    propósito: o que a exportação entrega é exatamente o que a exclusão
+    apaga. Quem acrescentar uma tabela e esquecer da lista erra dos dois
+    lados — e exportação com buraco é bem mais fácil de notar do que
+    exclusão com sobra
+  * O arquivo é um JSON só, com o cadastro, as treze tabelas presas ao id,
+    as cinco que guardam o endereço em vez do id, o token de relay (que
+    mora em outro banco) e o correio, que não está em banco nenhum
+  * **Chave de aparelho e token de relay são citados, não escritos.** São
+    credenciais em uso: uma cópia num arquivo que a pessoa guarda no
+    computador é uma cópia que não existia antes, e o direito é de saber o
+    que existe, não de receber a credencial em claro
+  * Apagar pede três coisas, cada uma contra um risco diferente: token
+    anti-CSRF, a senha digitada agora (sessão aberta em máquina
+    compartilhada é comum) e o nome da conta digitado à mão — senha a
+    pessoa digita de olhos fechados, o próprio nome só digita lendo a tela
+  * A correspondência vai primeiro, porque mora fora do banco e não entra
+    em transação nenhuma: se ela falhar, o cadastro ainda está de pé e dá
+    para tentar de novo. Na ordem inversa sobraria correio órfão de uma
+    conta que não existe mais — sem dono e sem tela que o mostre
+  * `bxt_exchange` entra nas duas listas de chave, porque tem as duas
+    colunas e um depósito antigo pode ter só uma preenchida
+
 * Fuso horário da conta: a coluna misturava `+0900` (padrão) com identificadores
   IANA (`America/Sao_Paulo`); padrão agora é `Asia/Tokyo`, os `+0900` foram
   normalizados e o select só aceita identificadores
@@ -756,6 +782,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   workers, todo log do código era no-op; agora em `/var/log/reon/php-error.log`
 
 ### Servidor e segurança
+
+* Fix: **o desafio do APOP anunciava o nome da instância na nuvem** a quem
+  só abria uma conexão POP3, antes de qualquer login. Cosmético, mas de
+  graça: agora anuncia o host do serviço. Duas tentativas erradas ficaram
+  registradas no `examples/dovecot/99-reon.conf` para ninguém repetir — a
+  opção `hostname` governa outro campo e `DOVECOT_HOSTDOMAIN` governa o
+  domínio; quem manda é `DOVECOT_HOSTNAME`, que vem do ambiente do serviço
+  (`import_environment` só deixa passar, não define) e por isso só vale
+  após restart, nunca após reload
 
 * **Jail de fail2ban para o POP3 do jogo**, com a regra ao contrário do óbvio.
   A porta 110 é aberta para a internet por necessidade — é por ela que o

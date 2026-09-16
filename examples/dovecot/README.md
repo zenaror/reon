@@ -26,3 +26,19 @@ se tinha com o XAPOP, e é decisão do dono.
     10110   POP3 do Dovecot, só localhost, alvo de desenvolvimento dos
             adaptadores enquanto eles não sabem APOP
     10143   IMAP, só localhost
+
+## `dovecot-hostname.conf.example`
+
+The host name the APOP challenge announces after the `@`. Install it as
+`/etc/systemd/system/dovecot.service.d/hostname.conf`, then
+`systemctl daemon-reload && systemctl restart dovecot`.
+
+Without it Dovecot falls back to `gethostname()`, which on a cloud instance
+is the instance's own name — handed to anyone who opens a POP3 connection,
+before any login.
+
+It only works from the environment: `hostname` in the Dovecot config governs
+a different field, `DOVECOT_HOSTDOMAIN` governs the domain, and the
+`import_environment` block in `99-reon.conf` only lets the value through to
+the child processes. A reload does not re-send the environment, so this needs
+a restart — the configuration reads correctly while the greeting stays wrong.

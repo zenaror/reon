@@ -1,0 +1,56 @@
+{% extends "main.twig" %}
+
+{% block title %}{{'account.delete-account'|trans}}{% endblock %}
+{% block content %}
+	<div class="d-flex">
+		<div class="card m-auto" style="max-width: 40rem;">
+			<div class="card-header">{{'account.delete-account'|trans}}</div>
+			<form method="post" accept-charset="utf-8" class="card-body">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+
+				<p>{{'account.delete-intro'|trans}}</p>
+
+				{# O que sai junto. Uma lista, e não um parágrafo, porque o
+				   ponto é a pessoa conseguir conferir item a item antes de
+				   decidir -- várias destas coisas ela não associaria à conta
+				   se ninguém dissesse. #}
+				<ul>
+					<li>{{'account.delete-item-mail'|trans}}</li>
+					<li>{{'account.delete-item-devices'|trans}}</li>
+					<li>{{'account.delete-item-games'|trans}}</li>
+					<li>{{'account.delete-item-identity'|trans}}</li>
+				</ul>
+
+				<div class="alert alert-warning" role="alert">{{'account.delete-warning'|trans}}</div>
+
+				<p>{{'account.delete-export-first'|trans}}
+					<a href="export_data.php" download>{{'account.download-my-data'|trans}}</a></p>
+
+				<hr>
+
+				<div class="mb-3">
+					<label for="password" class="form-label">{{'current-password'|trans}}</label>
+					<input id="password" name="password" type="password" required autocomplete="current-password"
+						class="form-control{% if "senha" in errors %}{{ " is-invalid" }}{% endif %}">
+					<div class="invalid-feedback">{{'wrong-password'|trans}}</div>
+				</div>
+
+				<div class="mb-3">
+					<label for="confirmName" class="form-label">{{'account.delete-type-name'|trans({'%name%': username})}}</label>
+					<input id="confirmName" name="confirmName" type="text" required autocomplete="off" spellcheck="false"
+						class="form-control{% if "nome" in errors %}{{ " is-invalid" }}{% endif %}">
+					<div class="invalid-feedback">{{'account.delete-name-mismatch'|trans}}</div>
+				</div>
+
+				{% if "falhou" in errors %}
+					<div class="alert alert-danger" role="alert">{{'account.delete-failed'|trans}}</div>
+				{% endif %}
+
+				<div class="d-flex flex-wrap gap-2">
+					<button type="submit" class="btn btn-danger">{{'account.delete-confirm'|trans}}</button>
+					<a href="summary.php" class="btn btn-secondary">{{'account.delete-cancel'|trans}}</a>
+				</div>
+			</form>
+		</div>
+	</div>
+{% endblock %}
