@@ -1006,6 +1006,7 @@ account:
   adapter-color: "アダプタの色"
   adapter-blurb: "mobile_config.bin を読んだゲームが認識するアダプタです。ゲームに表示される色と名前が変わるだけで、動作は変わりません。"
   adapter-unmetered: "定額（分単位の課金なし）"
+  adapter-unmetered-explanation: "通話が分単位で課金されないことをゲームに伝えます。日本版ポケットモンスター クリスタルでは、これによりモバイル対戦の制限時間がなくなります。ほかのゲームでどうなるかは分かっていません（誰も記録していません）。この設定を入れてゲームの動きがおかしい場合は、まず切ってみてください。"
   adapter-color-8: "ブルー"
   adapter-color-9: "イエロー"
   adapter-color-10: "グリーン"

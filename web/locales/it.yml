@@ -965,6 +965,7 @@ account:
   adapter-color: "Colore dell'adattatore"
   adapter-blurb: "Quale adattatore vedono i giochi leggendo il tuo mobile_config.bin. Cambia il colore e il nome mostrati dal gioco, nient'altro."
   adapter-unmetered: "Senza tariffa (nessun addebito al minuto)"
+  adapter-unmetered-explanation: "Dice al gioco che la chiamata non è tariffata al minuto. In Pokémon Cristallo giapponese questo toglie il limite di tempo alle lotte via cellulare. Cosa faccia negli altri giochi non si sa — nessuno l'ha documentato — quindi se un gioco si comporta in modo strano con questa opzione attiva, disattivarla è la prima cosa da provare."
   adapter-color-8: "Blu"
   adapter-color-9: "Giallo"
   adapter-color-10: "Verde"
