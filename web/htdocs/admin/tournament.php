@@ -56,6 +56,8 @@
 	// na lista, e o template não é lugar de fazer busca.
 	foreach ($sessoes as &$s) $s["peer"] = $loja->peerOf($s);
 	unset($s);
+	// Nome da conta de cada lado, numa consulta só para a lista inteira.
+	$nomes = $loja->usernames($sessoes);
 
 	echo TemplateUtil::render("admin/tournament", [
 		"notice" => $notice,
@@ -64,4 +66,5 @@
 		"readable" => $loja->readable(),
 		"directory" => CaptureStoreUtil::DIRECTORY,
 		"sessions" => $sessoes,
+		"usernames" => $nomes,
 	]);
