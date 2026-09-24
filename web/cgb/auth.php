@@ -131,9 +131,32 @@
 		}
 		
 		if ($isAuthRequired) {
-			// If a session id was sent, validate it
-			session_id($_SERVER["HTTP_GB_AUTH_ID"]);
-			session_start();
+			// If a session id was sent, validate it.
+			//
+			// doAuth() roda DUAS vezes na mesma requisição de upload: uma em
+			// web/htdocs/cgb/upload.php, e outra dentro de news.php, que
+			// chama doAuth(2) para resolver o usuário das páginas de notícia.
+			// Na segunda passagem a sessão já está aberta -- e aberta com
+			// ESTE mesmo id, porque ele vem do cabeçalho, que não mudou.
+			//
+			// Reabrir nesse estado não funciona: o PHP recusa trocar o id de
+			// uma sessão ativa ("Session ID cannot be changed when a session
+			// is active") e ignora o session_start() seguinte. Nada quebrava,
+			// porque a sessão ativa já era a certa -- o efeito era só um par
+			// de avisos no log do servidor a cada envio de ranking.
+			//
+			// Então: se já está aberta a sessão certa, não mexe. Se está
+			// aberta OUTRA, fecha antes de abrir a certa -- esse caso não foi
+			// observado, mas era o único em que o código antigo seguiria
+			// adiante com a sessão errada em silêncio.
+			if (session_status() !== PHP_SESSION_ACTIVE) {
+				session_id($_SERVER["HTTP_GB_AUTH_ID"]);
+				session_start();
+			} elseif (session_id() !== $_SERVER["HTTP_GB_AUTH_ID"]) {
+				session_write_close();
+				session_id($_SERVER["HTTP_GB_AUTH_ID"]);
+				session_start();
+			}
 			// If there is no DION ID associated with the session, it's not valid
 			if (!(isset($_SESSION['dionId']) && isset($_SESSION['type']) && $_SESSION['type'] == "cgb")) {
 				if (session_status() == PHP_SESSION_ACTIVE) {
