@@ -47,6 +47,15 @@
 			// regra: cada conta pode escolher os seus na página dela, e
 			// quem não escolher continua seguindo o que está aqui.
 			"bin_user_choice" => "0",
+
+			// Modo torneio: o mobile-relay grava o que passa entre os dois
+			// consoles, para a partida poder virar replay depois.
+			//
+			// Não tem prefixo bin_ porque não entra no mobile_config.bin --
+			// não é dado do adaptador, é comportamento do relay. Ele lê esta
+			// linha a CADA sessão, então ligar aqui faz efeito na partida
+			// seguinte, sem reiniciar o serviço.
+			"relay_capture" => "0",
 		];
 
 		// O que cada chave aceita. Isto não é zelo: o valor vai para dentro
@@ -66,6 +75,7 @@
 			"bin_adapter_device" => "modelo",
 			"bin_unmetered" => "bool",
 			"bin_user_choice" => "bool",
+			"relay_capture" => "bool",
 		];
 
 		// Devolve true quando o valor serve para a chave.

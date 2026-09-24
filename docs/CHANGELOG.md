@@ -205,6 +205,25 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Painel de administração (`/admin`)
 
+* **Modo torneio** (`/admin/tournament.php`) — liga a gravação do que passa
+  entre dois consoles no mobile-relay, e lista o que foi gravado com botão
+  de baixar.
+  * O relay lê o interruptor a CADA sessão, não no arranque: ligar no site
+    vale para a partida seguinte, sem reiniciar serviço e sem cortar quem
+    está jogando. Guardar o valor do arranque é o erro que deixou o
+    relay-policy dias recusando correio com uma senha velha na memória
+  * Só a conversa entre os consoles. Handshake, token, login e número ficam
+    fora — a gravação começa no trecho em que a chamada já está estabelecida
+  * Uma partida são dois arquivos, um por console, porque cada lado do relay
+    só vê o que o console dele mandou. A tela oferece os dois juntos, e diz
+    quando a outra metade falta
+  * O nome do arquivo é peneirado contra um padrão antes de virar caminho:
+    é assim que "baixar log" deixa de poder virar "ler qualquer coisa do
+    disco". Todo download entra no registro de auditoria
+  * Três estados distintos na tela, e não dois: não consigo ver o diretório,
+    consigo e está vazio, e tenho gravações. Juntar os dois primeiros faria
+    um problema de permissão parecer "ninguém jogou ainda"
+
 * **Criador de Pokémon News** (`/admin/news_maker.php`). Uma edição de news
   não é documento: é um programa que o jogo interpreta, montado a partir de
   fonte rgbds. O `pokecrystal-news-maker` entra como submódulo e é a
