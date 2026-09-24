@@ -1,10 +1,17 @@
 <?php
 ini_set('log_errors', 1);
-error_log('BXT_DEBUG_BT_LEG_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 // SPDX-License-Identifier: MIT
 
 require_once(CORE_PATH . "/database.php");
 require_once(CORE_PATH . "/pokemon/func.php");
+// bxt_debug_log(): estes arquivos registram recusas, e o texto recusado
+// só aparece com a depuração ligada. require_once é idempotente.
+require_once(CORE_PATH . "/pokemon/bxt_config.php");
+// Depois do require acima, e não no topo do arquivo: esta linha chama
+// bxt_debug_log(), que o bxt_config.php define. No topo ela rodava antes
+// de a função existir -- fatal em toda requisição que tocasse este
+// arquivo, e foi assim que o teste a pegou.
+bxt_debug_log('BXT_DEBUG_BT_LEG_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 require_once(__DIR__ . "/../../scripts/bxt_decode_helpers.php");
 require_once(__DIR__ . "/../../scripts/bxt_value_validation.php");
 require_once(__DIR__ . "/../../scripts/bxt_legality_check.php");
@@ -135,7 +142,11 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
         $txt = bxt_decode_text_table($raw, $table_id);
         if ($txt === '') return;
         if (bxt_contains_banned($txt, $banned, $allowed)) {
-            error_log("bt_legality_error: banned text in {$label}: '{$txt}'");
+            // A recusa sai sempre; o texto recusado, só com a depuração
+            // ligada. Quem opera precisa saber QUE houve recusa e em qual
+            // campo; quem investiga um caso liga a depuração e vê o quê.
+            error_log("bt_legality_error: banned text in {$label}");
+            bxt_debug_log("bt_legality_error: banned text in {$label}: '{$txt}'");
             http_response_code(403);
             exit("Banned text in {$label}");
         }
@@ -157,7 +168,8 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
 	$txt = bxt_decode_text_table($raw, $table_id);
 
 		if ($txt !== '' && bxt_contains_banned($txt, $banned)) {
-			error_log("bt_legality_error: banned text in trainer name: '{$txt}'");
+			error_log("bt_legality_error: banned text in trainer name");
+			bxt_debug_log("bt_legality_error: banned text in trainer name: '{$txt}'");
 			http_response_code(403);
 			exit("Banned text in trainer name");
 		}
@@ -178,11 +190,11 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
 
         // Extra debug
         $len = strlen($blob);
-        error_log(sprintf("bt_legality_debug: %s length=%d", $label, $len));
+        bxt_debug_log(sprintf("bt_legality_debug: %s length=%d", $label, $len));
 
         [$ok, $details] = legality_check_pk2_bytes_with_details(
             $blob,
-            function ($msg) { error_log("bt_legality_debug: $msg"); }
+            function ($msg) { bxt_debug_log("bt_legality_debug: $msg"); }
         );
 
         if (!$ok) {
@@ -237,7 +249,11 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
         $data['level'],
         $validation_errors
     )) {
-        error_log('bt_legality_error: value validation failed: ' . json_encode($validation_errors));
+        // Os nomes das regras sempre; os valores só com a depuração ligada.
+        error_log('bt_legality_error: value validation failed'
+            . ' rules=' . implode(',', array_keys((array)$validation_errors)));
+        bxt_debug_log('bt_legality_error: value validation failed: '
+            . json_encode($validation_errors));
         http_response_code(403);
         exit('Invalid Battle Tower record payload');
     }
@@ -296,7 +312,7 @@ $db = connectMySQL();
             account_id
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-    error_log('BXT_DEBUG battle_tower_legality: before_prepare account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+    bxt_debug_log('BXT_DEBUG battle_tower_legality: before_prepare account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
     $stmt = $db->prepare($sql);
     if (!$stmt) {
         error_log("bt_legality_error: failed to prepare insert: " . $db->error);
@@ -343,6 +359,6 @@ $db = connectMySQL();
         exit("Failed to execute Battle Tower insert");
     }
 
-    error_log('bxt_debug_bt_execute_ok rows=' . $stmt->affected_rows);
+    bxt_debug_log('bxt_debug_bt_execute_ok rows=' . $stmt->affected_rows);
     return true;
 }

@@ -364,7 +364,7 @@ function bxt_news_allowed_regions($region) {
         }
 
         // Debug what config we actually saw.
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_NEWS_ALLOWED: download_region=' . $region .
             ' news_groups=' . json_encode($GLOBALS['bxt_config']['region_groups']['news']) .
             ' allowed=' . implode(',', $allowed)
@@ -446,7 +446,7 @@ function bxt_filter_ranking_rows_by_news_config($rows, $download_region) {
 
     // Debug: log exactly what config we saw and what we allowed.
     $newsGroupsJson = $newsGroups !== null ? json_encode($newsGroups) : 'null';
-    error_log(
+    bxt_debug_log(
         'BXT_DEBUG_NEWS_CONFIG_FILTER: download_region=' . $download_region .
         ' news_groups=' . $newsGroupsJson .
         ' allowed=' . implode(',', $allowed) .
@@ -621,8 +621,9 @@ function set_ranking($region, $content, $length) {
     // Canonicalize ranking linkage to vanilla when categories match (prefer vanilla).
     $ranking_news_id = bxt_pokemon_news_resolve_canonical_ranking_news_id($news_region, (int)$news_param['id']);
 
-    error_log(
-        'account_id=' . $userId .
+    bxt_debug_log(
+        'news_request:' .
+        ' account_id=' . $userId .
         ' region=' . $region .
         ' news_region=' . $news_region .
         ' length=' . $length .
@@ -639,7 +640,7 @@ function set_ranking($region, $content, $length) {
         $expected_data_size += $category["size"];
     }
     if ($length != $expected_data_size) {
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_NEWS_SET_RANKING_LENGTH_MISMATCH: ' .
             'account_id=' . $userId .
             ' region=' . $region .
@@ -690,7 +691,7 @@ function set_ranking($region, $content, $length) {
     }
 
     if ($decoded_name !== '' && bxt_contains_banned($decoded_name, $banned, $allowed)) {
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_NEWS_SET_RANKING_BANNED_NAME: ' .
             'account_id=' . $userId .
             ' region=' . $region .
@@ -732,8 +733,26 @@ if ($region == "j") {
 
     $message = fread($post_data, $sram["message"]["size"]);
 
-    error_log(
-        'region=' . $region .
+    // O jogo manda idade, gênero, CEP, nome e mensagem, e o servidor tem de
+    // aceitar -- é o protocolo do cartucho.
+    //
+    // Isto gravava o conjunto inteiro no log de erro do servidor web A CADA
+    // ENVIO, sem interruptor nenhum: idade, CEP, nome e mensagem de quem
+    // jogou, indo para um arquivo que é aberto por quem cuida do servidor,
+    // colado em pedido de ajuda, e guardado sem prazo (o journald não tem
+    // limite de tempo). O problema nunca foi o CONTEÚDO da linha -- era ela
+    // sair sempre.
+    //
+    // Por isso os valores continuam aqui, inteiros, incluindo o CEP cru em
+    // hexa: quando um campo chega incoerente, como já aconteceu com o CEP, é
+    // exatamente o byte que entrou que resolve, e um log que só diz o
+    // tamanho não serve para nada nessa hora. O que mudou é que a linha só
+    // sai com a depuração ligada -- um ato deliberado de quem administra,
+    // para investigar um caso, e não o estado natural do servidor.
+    bxt_debug_log(
+        'news_ranking_submit:' .
+        ' account_id=' . (isset($userId) ? $userId : 'none') .
+        ' region=' . $region .
         ' news_region=' . $news_region .
         ' news_id=' . (isset($news_param['id']) ? $news_param['id'] : 'null') .
         ' trainer_id=' . $trainer_id .
@@ -781,7 +800,7 @@ if ($region == "j") {
             $score,
             $validation_errors
         )) {
-            error_log(
+            bxt_debug_log(
                 'BXT_DEBUG_NEWS_SET_RANKING_CATEGORY_INVALID: ' .
                 'account_id=' . $userId .
                 ' region=' . $region .
@@ -797,8 +816,9 @@ if ($region == "j") {
             continue;
         }
 
-        error_log(
-            'account_id=' . $userId .
+        bxt_debug_log(
+            'news_ranking_row:' .
+            ' account_id=' . $userId .
             ' region=' . $region .
             ' news_region=' . $news_region .
             ' news_id=' . $ranking_news_id .
@@ -1210,7 +1230,8 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                     ? $p["player_name_decode"]
                     : (isset($p["player_name"]) ? bin2hex($p["player_name"]) : '');
                 $dbgScore  = isset($p["score"]) ? $p["score"] : -1;
-                error_log(
+                bxt_debug_log(
+                    'news_top10:' .
                     ' rank=' . ($idxTop + 1) .
                     ' game_region=' . $dbgRegion .
                     ' name=' . $dbgName .

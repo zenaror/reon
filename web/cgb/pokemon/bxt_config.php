@@ -106,7 +106,7 @@ if (!function_exists('bxt_get_runtime_feature_flags')) {
 
         $flags = [];
         $source = isset($decoded['flags']) && is_array($decoded['flags']) ? $decoded['flags'] : $decoded;
-        foreach (['trade_corner_enabled', 'battle_tower_enabled', 'news_distribution_enabled', 'news_ranking_enabled'] as $key) {
+        foreach (['trade_corner_enabled', 'battle_tower_enabled', 'news_distribution_enabled', 'news_ranking_enabled', 'debug_log_enabled'] as $key) {
             if (!array_key_exists($key, $source)) {
                 continue;
             }
@@ -117,6 +117,46 @@ if (!function_exists('bxt_get_runtime_feature_flags')) {
         }
 
         return $flags;
+    }
+}
+
+// -------- Registro de depuração --------
+//
+// Estes arquivos nasceram com dezenas de error_log() sem condição nenhuma, e
+// o que eles escrevem no log de erro do servidor web não é diagnóstico de
+// servidor: é dado de quem está jogando. O pior deles gravava, numa falha de
+// validação de ranking, account_id, trainer_id, secret_id, gênero, IDADE e
+// CEP -- exatamente as colunas que o registro de proteção de dados trata nas
+// divergências 6 e 18.
+//
+// Depurar continua possível: o interruptor liga tudo de uma vez. Só que ele
+// nasce DESLIGADO, e ligar passa a ser um ato deliberado de quem administra,
+// em vez do estado natural do servidor.
+//
+// Mesmo ligado, o que se escreve deve dizer O QUE aconteceu e não O QUE A
+// PESSOA ESCREVEU: apelido, mensagem e CEP não ajudam a achar defeito, e o
+// log é o lugar de onde eles vazam para um pedido de ajuda colado num chat.
+if (!function_exists('bxt_debug_enabled')) {
+    function bxt_debug_enabled(): bool {
+        // A constante é a saída de emergência para depurar uma requisição
+        // sem mexer em arquivo de estado.
+        if (defined('BXT_DEBUG') && BXT_DEBUG) {
+            return true;
+        }
+        static $cache = null;
+        if ($cache !== null) {
+            return $cache;
+        }
+        $flags = bxt_get_runtime_feature_flags();
+        return $cache = !empty($flags['debug_log_enabled']);
+    }
+}
+
+if (!function_exists('bxt_debug_log')) {
+    function bxt_debug_log(string $message): void {
+        if (bxt_debug_enabled()) {
+            error_log($message);
+        }
     }
 }
 
@@ -142,7 +182,7 @@ if (!function_exists('bxt_regions_linked_for_feature')) {
         $region = strtolower($region);
 
         if (!isset($allGroups[$feature]) || !is_array($allGroups[$feature])) {
-            error_log(
+            bxt_debug_log(
                 'BXT_DEBUG_BT_HELPER: feature=' . $feature .
                 ' region=' . $region .
                 ' no_feature_config'
@@ -156,7 +196,7 @@ if (!function_exists('bxt_regions_linked_for_feature')) {
             }
             if (in_array($region, $pool, true)) {
                 $resolved = array_values(array_map('strtolower', $pool));
-                error_log(
+                bxt_debug_log(
                     'BXT_DEBUG_BT_HELPER: feature=' . $feature .
                     ' region=' . $region .
                     ' pool_resolved=' . implode(',', $resolved)
@@ -165,7 +205,7 @@ if (!function_exists('bxt_regions_linked_for_feature')) {
             }
         }
 
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_BT_HELPER: feature=' . $feature .
             ' region=' . $region .
             ' no_pool_match'
@@ -186,7 +226,7 @@ if (!function_exists('bxt_bt_region_groups')) {
         $region = strtolower($region);
 
         if (!isset($allGroups['battle_tower']) || !is_array($allGroups['battle_tower'])) {
-            error_log(
+            bxt_debug_log(
                 'BXT_DEBUG_BT_HELPER_BT: feature=' . $feature .
                 ' region=' . $region .
                 ' no_feature_config'
@@ -200,7 +240,7 @@ if (!function_exists('bxt_bt_region_groups')) {
             }
             if (in_array($region, $pool, true)) {
                 $resolved = array_values(array_map('strtolower', $pool));
-                error_log(
+                bxt_debug_log(
                     'BXT_DEBUG_BT_HELPER_BT: feature=' . $feature .
                     ' region=' . $region .
                     ' pool_resolved=' . implode(',', $resolved)
@@ -209,7 +249,7 @@ if (!function_exists('bxt_bt_region_groups')) {
             }
         }
 
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_BT_HELPER_BT: feature=' . $feature .
             ' region=' . $region .
             ' no_pool_match'
