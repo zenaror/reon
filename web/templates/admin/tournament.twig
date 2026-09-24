@@ -1,0 +1,73 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.tournament-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint">{{ 'admin.tournament-intro'|trans }}</p>
+
+	<form method="post" action="/admin/tournament.php">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+
+		<section class="admin-section">
+			<h2 class="admin-section__title">{{ 'admin.tournament-mode'|trans }}</h2>
+			<label class="admin-form__row">
+				<span>{{ 'admin.tournament-enable'|trans }}</span>
+				<input type="checkbox" name="relay_capture" value="1"{{ on ? ' checked' : '' }}>
+			</label>
+			<p class="admin-form__hint">{{ 'admin.tournament-note'|trans }}</p>
+			<p class="admin-form__hint">{{ 'admin.tournament-privacy'|trans }}</p>
+		</section>
+
+		<div class="admin-actions">
+			<button class="admin-btn" type="submit">{{ 'admin.adapter-save'|trans }}</button>
+		</div>
+	</form>
+
+	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.tournament-sessions'|trans }}</h2>
+
+		{# Três estados, e eles não são a mesma coisa: não consigo ver onde o
+		   relay grava, consigo ver e está vazio, e tenho gravações. Juntar os
+		   dois primeiros faria um problema de permissão parecer "ninguém
+		   jogou ainda". #}
+		{% if not readable %}
+			<p class="admin-form__hint">{{ 'admin.tournament-unreadable'|trans({'%dir%': directory}) }}</p>
+		{% elseif sessions is empty %}
+			<p class="admin-form__hint">{{ 'admin.tournament-empty'|trans }}</p>
+		{% else %}
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.tournament-when'|trans }}</th>
+						<th>{{ 'admin.tournament-pair'|trans }}</th>
+						<th>{{ 'admin.tournament-role'|trans }}</th>
+						<th>{{ 'admin.tournament-size'|trans }}</th>
+						<th>{{ 'admin.tournament-file'|trans }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for s in sessions %}
+						<tr>
+							<td>{{ s.when }}</td>
+							<td>{{ s.number }} &rarr; {{ s.pair }}</td>
+							<td>{{ s.role }}</td>
+							<td>{{ s.size }}</td>
+							<td>
+								<a href="/admin/tournament.php?file={{ s.name|url_encode }}">{{ 'admin.tournament-download'|trans }}</a>
+								{# A metade do outro console. Uma partida são dois
+								   arquivos, e quem for converter precisa dos dois:
+								   cada um tem uma direção só. #}
+								{% if s.peer %}
+									&middot; <a href="/admin/tournament.php?file={{ s.peer|url_encode }}">{{ 'admin.tournament-download-peer'|trans }}</a>
+								{% else %}
+									&middot; <span class="admin-form__hint">{{ 'admin.tournament-no-peer'|trans }}</span>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			<p class="admin-form__hint">{{ 'admin.tournament-merge'|trans }}</p>
+		{% endif %}
+	</section>
+{% endblock %}
