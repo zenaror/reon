@@ -1,6 +1,15 @@
 <?php
 // SPDX-License-Identifier: MIT
 
+// bxt_debug_log() vem daqui. Este arquivo é incluído por vários pontos de
+// entrada e não incluía nada, então a função podia não existir ainda --
+// dependendo de quem carregasse primeiro. require_once é idempotente.
+if (defined('CORE_PATH')) {
+    require_once(CORE_PATH . "/pokemon/bxt_config.php");
+} else {
+    require_once(__DIR__ . "/bxt_config.php");
+}
+
 // Note: $result should have 7 entries. If not, the game will not accept the file.
 function encodeBattleTowerRoomData($result, $bxte = false) {
 	// Encode a 7-trainer Battle Tower room in the on-wire format
@@ -160,7 +169,7 @@ function decodeBattleTowerRecord($stream, $bxte = false) {
 	}
 
 	// Debug summary for Battle Tower record decode
-error_log(
+bxt_debug_log(
 	'BXT_DEBUG_BT_DECODE: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') .
 	' bxte=' . ($bxte ? '1' : '0') .
 	' room=' . (isset($decData['room']) ? $decData['room'] : 'null') .

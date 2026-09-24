@@ -66,7 +66,7 @@ function battleTowerGetRoom($region, $roomNo) {
 
     // Debug: which regions contribute to this room+level. (only if explicitly enabled).
     if (defined('BXT_DEBUG_BT_ROOM_REGIONS') && BXT_DEBUG_BT_ROOM_REGIONS) {
-        error_log(
+        bxt_debug_log(
             'BXT_DEBUG_BT_ROOM_REGIONS: ' .
             'download_region=' . $region .
             ' room=' . $room .
@@ -128,7 +128,7 @@ function battleTowerGetRoom($region, $roomNo) {
 // Keep this log only when no records are found (num_records=0).
 $numRecords = (is_array($records) ? count($records) : 0);
 if ($numRecords === 0) {
-    error_log(
+    bxt_debug_log(
         'BXT_DEBUG_BT_QUERY: ' .
         'download_region=' . $region .
         ' room=' . $room .
@@ -239,7 +239,7 @@ if ($numRecords === 0) {
                         );
                         $msgAfterHex = bin2hex($after[$msgKey]);
                         if (defined('BXT_DEBUG_BT_CONVERT') && BXT_DEBUG_BT_CONVERT) {
-                            error_log(
+                            bxt_debug_log(
                                 '[BXT_NAME_CONV_DEBUG] easy_chat shorten bt ' .
                                 'key=' . $msgKey .
                                 ' src=' . $sourceRegion .
@@ -254,7 +254,7 @@ if ($numRecords === 0) {
 
 
             if (defined('BXT_DEBUG_BT_CONVERT') && BXT_DEBUG_BT_CONVERT) {
-                error_log(
+                bxt_debug_log(
                     'BXT_DEBUG_BT_CONVERT: ' .
                     'download_region=' . $region .
                     ' source_region=' . $sourceRegion .
@@ -340,7 +340,7 @@ function battleTowerSubmitRecord($inputStream, $bxte = false) {
     bxt_battle_tower_require_enabled();
 $data = decodeBattleTowerRecord($inputStream, $bxte);
 if (!is_array($data)) {
-    error_log('BXT_DEBUG_BT_SUBMIT: decodeBattleTowerRecord returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+    bxt_debug_log('BXT_DEBUG_BT_SUBMIT: decodeBattleTowerRecord returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
     return false;
 }
 
@@ -348,7 +348,7 @@ $db = connectMySQL();
 
 $region = $bxte ? 'e' : 'j';
 
-error_log(
+bxt_debug_log(
     'BXT_DEBUG_BT_SUBMIT: decoded ' .
     ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') .
     ' region=' . $region .
@@ -377,7 +377,7 @@ $sql = "INSERT INTO bxt_battle_tower_records (
 
 $stmt = $db->prepare($sql);
 if (!$stmt) {
-    error_log('BXT_DEBUG_BT_SUBMIT: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
+    bxt_debug_log('BXT_DEBUG_BT_SUBMIT: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
     return false;
 }
 
@@ -400,7 +400,7 @@ $stmt->bind_param(
 );
 
 if (!$stmt->execute()) {
-    error_log('BXT_DEBUG_BT_SUBMIT: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
+    bxt_debug_log('BXT_DEBUG_BT_SUBMIT: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
     return false;
 }
 
