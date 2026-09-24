@@ -49,6 +49,18 @@ DEPLOY_DIR="$SCRIPT_DIR/deploy"
 OPT_REON=/opt/reon
 OPT_RELAY=/opt/mobile-relay
 
+# Onde o modo torneio guarda a conversa entre dois consoles. É um
+# StateDirectory= do systemd: o nome é relativo a /var/lib, e o systemd cria
+# o diretório já com o dono certo quando o serviço sobe.
+#
+# Fora do checkout de propósito. O relay roda como ${SYS_USER} e o checkout
+# pertence a outro usuário, então gravar lá falha com Permission denied -- e
+# o modo torneio pareceria ligado sem gravar nada. O painel (/admin) lê deste
+# caminho para listar e entregar os arquivos, e o valor está em duas pontas:
+# aqui e em CaptureStoreUtil::DIRECTORY.
+RELAY_CAPTURES_NAME=reon-captures
+RELAY_CAPTURES=/var/lib/$RELAY_CAPTURES_NAME
+
 SYS_USER=reon
 SYS_GROUP=reon
 
@@ -944,6 +956,14 @@ Group=${SYS_GROUP}
 WorkingDirectory=${OPT_RELAY}
 ExecStart=${OPT_RELAY}/.venv/bin/python3 ${OPT_RELAY}/server.py
 Environment=PYTHONUNBUFFERED=1
+# Onde o modo torneio grava a conversa entre dois consoles. O systemd cria
+# ${RELAY_CAPTURES} e o entrega ao usuário do serviço.
+#
+# Precisa ser um lugar de quem RODA o relay, e não o diretório dele: o
+# checkout pertence a outro usuário, e gravar lá falha com Permission denied
+# -- aparecendo como "modo ligado que não grava nada", provavelmente
+# descoberto no dia do torneio. Foi exatamente o que aconteceu ao testar.
+StateDirectory=${RELAY_CAPTURES_NAME}
 Restart=on-failure
 RestartSec=3
 

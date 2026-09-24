@@ -39,6 +39,7 @@
 				<thead>
 					<tr>
 						<th>{{ 'admin.tournament-when'|trans }}</th>
+						<th>{{ 'admin.tournament-account'|trans }}</th>
 						<th>{{ 'admin.tournament-pair'|trans }}</th>
 						<th>{{ 'admin.tournament-role'|trans }}</th>
 						<th>{{ 'admin.tournament-size'|trans }}</th>
@@ -48,7 +49,20 @@
 				<tbody>
 					{% for s in sessions %}
 						<tr>
-							<td>{{ s.when }}</td>
+							<td>{{ s.when_text }}</td>
+							{# A conta, e não só o número do relay: é por ela que se
+							   acha a partida de alguém. O id sem nome quer dizer
+							   conta apagada depois da gravação -- dizer isso é melhor
+							   que mostrar um campo vazio. #}
+							<td>
+								{% if s.user_id and usernames[s.user_id] is defined %}
+									{{ usernames[s.user_id] }}
+								{% elseif s.user_id %}
+									<span class="admin-form__hint">{{ 'admin.tournament-account-gone'|trans({'%id%': s.user_id}) }}</span>
+								{% else %}
+									<span class="admin-form__hint">{{ 'admin.tournament-account-unknown'|trans }}</span>
+								{% endif %}
+							</td>
 							<td>{{ s.number }} &rarr; {{ s.pair }}</td>
 							<td>{{ s.role }}</td>
 							<td>{{ s.size }}</td>

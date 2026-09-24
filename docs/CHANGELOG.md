@@ -223,6 +223,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * Três estados distintos na tela, e não dois: não consigo ver o diretório,
     consigo e está vazio, e tenho gravações. Juntar os dois primeiros faria
     um problema de permissão parecer "ninguém jogou ainda"
+  * A lista diz **de quem** e **quando**: nome da conta e data legível, no
+    lugar do número do relay e de um `20260924T142147`. O arquivo guarda o
+    id da conta, não o nome — nome muda, e resolver na hora de mostrar é o
+    que impede a lista de exibir um nome que já não existe. Conta apagada
+    depois da gravação aparece dita como apagada, não como campo vazio
+  * O diretório das gravações é um `StateDirectory=` do systemd
+    (`/var/lib/reon-captures`), criado com o dono certo, e o script de
+    instalação passa a montar isso. Antes a primeira tentativa gravava
+    dentro do checkout do relay, que é de outro usuário: falhava com
+    Permission denied e pareceria "modo ligado que não grava nada"
 
 * **Criador de Pokémon News** (`/admin/news_maker.php`). Uma edição de news
   não é documento: é um programa que o jogo interpreta, montado a partir de

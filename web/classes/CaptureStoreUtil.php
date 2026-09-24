@@ -1,5 +1,6 @@
 <?php
 	require_once(__DIR__ . "/SettingsUtil.php");
+	require_once(__DIR__ . "/DBUtil.php");
 
 	// As gravações do modo torneio, do lado do site.
 	//
@@ -58,18 +59,76 @@
 				$caminho = self::DIRECTORY . "/" . $nome;
 				if (!is_file($caminho)) continue;
 				$partes = explode("-", substr($nome, 0, -6));
+				$cabecalho = $this->header($caminho);
 				$saida[] = [
 					"name" => $nome,
 					"when" => $partes[0] ?? "",
+					// A hora em forma de gente, para a lista poder ser lida
+					// sem decifrar 20260924T142147.
+					"when_text" => $this->whenText($partes[0] ?? "", $cabecalho),
 					"number" => $partes[1] ?? "",
 					"pair" => $partes[2] ?? "",
 					"role" => $partes[3] ?? "",
+					"user_id" => $cabecalho["user_id"] ?? null,
 					"size" => (int)filesize($caminho),
 					"mtime" => (int)filemtime($caminho),
 				];
 			}
 			usort($saida, function ($a, $b) { return $b["mtime"] - $a["mtime"]; });
 			return $saida;
+		}
+
+		// A primeira linha do arquivo, que é o registro de início. Só ela: o
+		// resto é a partida, e a lista não precisa dela para se montar.
+		private function header($caminho) {
+			$f = @fopen($caminho, "r");
+			if ($f === false) return [];
+			// Teto na leitura: a primeira linha de um arquivo nosso tem
+			// algumas centenas de bytes, e um arquivo que não seja nosso não
+			// vai puxar megabytes para a memória por causa disto.
+			$linha = fgets($f, 8192);
+			fclose($f);
+			if ($linha === false) return [];
+			$dados = json_decode($linha, true);
+			return (is_array($dados) && ($dados["type"] ?? "") === "start")
+				? $dados : [];
+		}
+
+		// Nomes de conta para os ids que apareceram na lista, numa consulta
+		// só. Resolver aqui e não no arquivo é o que faz um nome trocado
+		// aparecer certo na lista, e uma conta apagada aparecer como ausente
+		// em vez de mostrar um nome que já não existe.
+		public function usernames($sessions) {
+			$ids = [];
+			foreach ($sessions as $s) {
+				$id = $s["user_id"] ?? null;
+				if ($id !== null && (int)$id > 0) $ids[(int)$id] = true;
+			}
+			if (!$ids) return [];
+			$ids = array_keys($ids);
+			$marcas = implode(",", array_fill(0, count($ids), "?"));
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select id, username from sys_users where id in ({$marcas})");
+			$stmt->bind_param(str_repeat("i", count($ids)), ...$ids);
+			$stmt->execute();
+			$mapa = [];
+			foreach (DBUtil::fancy_get_result($stmt) as $linha) {
+				$mapa[(int)$linha["id"]] = $linha["username"];
+			}
+			return $mapa;
+		}
+
+		// "2026-09-24 14:21 UTC". Prefere o que o relay escreveu; o nome do
+		// arquivo é a rede de baixo, para um arquivo sem cabeçalho legível
+		// ainda aparecer com data.
+		private function whenText($compacto, $cabecalho) {
+			if (!empty($cabecalho["started_utc"])) {
+				return substr((string)$cabecalho["started_utc"], 0, 16) . " UTC";
+			}
+			if (preg_match('/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/', (string)$compacto, $m)) {
+				return sprintf("%s-%s-%s %s:%s UTC", $m[1], $m[2], $m[3], $m[4], $m[5]);
+			}
+			return (string)$compacto;
 		}
 
 		// O caminho de um arquivo que EXISTE e cujo nome passa no padrão, ou
