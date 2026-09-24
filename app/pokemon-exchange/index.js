@@ -1,10 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
-const nodemailer = require("nodemailer");
 
 const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
+const { notify } = require("../../lib/notifications");
+const { mailUser } = require("../../lib/usermail");
+const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
 
 // ------------------------------
 // Config
@@ -19,6 +21,11 @@ program
 
 const options = program.opts();
 const config = JSON.parse(fs.readFileSync(options.config, "utf8"));
+
+// Escolhe o transporte: SMTP local quando `local_smtp_host` existir, senão o
+// binário de sendmail. Ver lib/rawmail.js -- e cuidado para não confundir com
+// `smtp_host`, que é o relay EXTERNO e tem significado oposto.
+configurarEnvio(config, config["local_smtp_host"] ? require("nodemailer") : null);
 
 const phpConfigPath = path.resolve(
   __dirname,
@@ -40,45 +47,25 @@ const dbConfig = {
 };
 
 // ------------------------------
-// SMTP transport – mirror PHP UserUtil.php config
+// Trade-result delivery
 // ------------------------------
-
-let mailTransport;
-
-const smtpHost = config["smtp_host"];
-const smtpPort = config["smtp_port"];
-const smtpAuth = config["smtp_auth"];
-const smtpSecure = config["smtp_secure"];
-
-if (!smtpHost || smtpHost === "") {
-  // Sendmail mode (PHP isSendmail())
-  mailTransport = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail", // adjust if different on your system
-  });
-} else {
-  // SMTP mode (PHP isSMTP())
-  const transportOptions = {
-    host: smtpHost,
-    port: smtpPort || 587,
-    secure: smtpSecure === "smtps", // implicit TLS
-    requireTLS: smtpSecure === "starttls", // STARTTLS
-    auth: smtpAuth
-      ? {
-          user: config["smtp_user"],
-          pass: config["smtp_pass"],
-        }
-      : undefined,
-    // allow self-signed like your PHP setup
-    tls: {
-      rejectUnauthorized: false,
-    },
-  };
-
-  mailTransport = nodemailer.createTransport(transportOptions);
-}
-
+//
+// Delivery targets the account named by the trade payload's own "email"
+// field (see trade_corner.php's decode_exchange()). Per the Consultor's
+// research against pokecrystal-mobile-eng, that field is always
+// wEmailAddress -- populated from the sending account's own adapter config
+// (self-identification), not free-form input -- so it's correct to use it,
+// matching how Pokémon Crystal's real Trade Corner protocol always has.
+// It's still resolved through the same dion_email_local lookup deliver.js
+// uses (sendExchangeSuccessEmail below) rather than trusted as a literal
+// delivery target, so a malformed/hacked payload just fails to resolve
+// instead of routing anywhere unexpected. The message is handed to the local
+// mail system as-is, rather than composed through an SMTP library --
+// Pokémon Crystal's own trade mail mechanic
+// genuinely needs this exact binary payload untouched (trainer name +
+// Pokémon data + attached mail, all real game content, per the owner), and
+// there's no reason to route it through SMTP/MIME processing at all for a
+// delivery that was always internal-only.
 // ------------------------------
 // Encoding + Pokémon name tables (embedded)
 // ------------------------------
@@ -3359,12 +3346,26 @@ function loadTradeRegionGroupsFromPhpConfig(phpPath) {
 
 const TRADE_REGION_GROUPS = loadTradeRegionGroupsFromPhpConfig(phpConfigPath);
 
+// The allowlist is a list of pools separated by commas, each pool a set of
+// region letters that trade with one another ("efdsipu,j" = the Latin
+// languages together, Japanese apart). The default when an account has none
+// on file is the same one the column default, the signup form and
+// tradecorner.php's COALESCE all use -- and it is applied here too, because
+// `null.split` throws and a trade run that dies on one account's missing
+// setting has abandoned everybody else's.
+const TRADE_REGIONS_DEFAULT = "efdsipuj";
+
 function regionCanTrade(a, b, aPool, bPool) {
   if (!a || !b) return false;
   var regions = { "a": String(a).toLowerCase(), "b": String(b).toLowerCase() }
-  
+
+  var poolText = function (value) {
+    var text = String(value == null ? "" : value).toLowerCase().trim();
+    return text === "" ? TRADE_REGIONS_DEFAULT : text;
+  };
+
   //~Set up per-player language pools
-  var regionPools = { "a": aPool.split(","), "b": bPool.split(",") }
+  var regionPools = { "a": poolText(aPool).split(","), "b": poolText(bPool).split(",") }
   
   //~For each player, isolate down to the language pool their game falls into
   for (var player in regionPools) {
@@ -3417,6 +3418,7 @@ function resolveCrystalGameTitleByRegion(regionCode) {
 // ------------------------------
 
 async function sendExchangeSuccessEmail(
+  connection,
   receivingRegion,
   emailAddress,
   trainerId,
@@ -3494,13 +3496,36 @@ async function sendExchangeSuccessEmail(
 
   const raw = header + body;
 
-  await mailTransport.sendMail({
-    envelope: {
-      from: "system@" + config["email_domain"],
-      to: emailAddress,
-    },
-    raw: raw,
-  });
+  // emailAddress comes straight from the game's own trade payload -- per
+  // the Consultor's research against pokecrystal-mobile-eng, that's always
+  // wEmailAddress, populated from the sending account's own adapter config
+  // (self-identification), the same field Pokémon Crystal's real Trade
+  // Corner protocol has always used here -- so it's correct to use it, not
+  // an account_id substitute. Still resolved safely via the same
+  // dion_email_local lookup deliver.js uses, rather than trusted as a
+  // literal delivery target: a malformed/hacked payload just fails to
+  // resolve to any account instead of routing anywhere unexpected.
+  const localPart = String(emailAddress || "").split("@")[0];
+  const [rows] = await connection.execute(
+    "select id, dion_email_local from sys_users where dion_email_local = ? limit 1",
+    [localPart]
+  );
+  if (rows.length === 0) {
+    console.error(`sendExchangeSuccessEmail: unknown recipient ${emailAddress}`);
+    return;
+  }
+
+  // Entregue FALANDO SMTP, e não gravando na caixa. Gravar direto só
+  // funciona num servidor que use a nossa tabela: no do REONTeam, que é
+  // Postfix entregando ao Dovecot, o insert dava certo e nenhum jogador
+  // recebia nada -- sem erro em log nenhum. A submissão local funciona nos
+  // dois, e é literalmente o que eles pediram.
+  //
+  // O endereço vem da linha que acabou de ser validada, nunca do texto que
+  // o cartucho mandou: a checagem acima existe para o payload malformado
+  // não virar destino de entrega, e reaproveitar o valor cru desfaria isso.
+  const to = rows[0]["dion_email_local"] + "@" + config["email_domain_dion"];
+  await sendRaw("system@" + config["email_domain_dion"], to, raw);
 }
 
 
@@ -3624,6 +3649,69 @@ async function insertExchangeLogRow(connection, row1, row2) {
   await connection.execute(sql, params);
 }
 
+// Tells a player what became of the Pokémon they left at the Trade Corner.
+//
+// Two channels, on purpose. The notification is the record on the site: it
+// stays in their history with a time on it, whether or not they were looking.
+// The e-mail goes to the address they signed up with, because the whole point
+// of a deposit is that they walked away from it -- a result they only find by
+// coming back and checking is half a result.
+//
+// The trade itself is already committed by the time this runs; neither call
+// can throw, and neither is allowed to be the reason a completed exchange
+// looks like a failure.
+async function tellPlayerAboutTrade(connection, row, outcome) {
+  const region = row["game_region"];
+  const names = DEFAULT_POKEMON_NAMES_BY_REGION[String(region || "").toLowerCase()]
+    || DEFAULT_POKEMON_NAMES_EN;
+  const offer = names[String(row["offer_species"])] || `#${row["offer_species"]}`;
+  const request = names[String(row["request_species"])] || `#${row["request_species"]}`;
+  const title = resolveCrystalGameTitleByRegion(region);
+
+  // Which way round the arrow points is the difference between the two
+  // outcomes: one says what was swapped, the other what is still waiting.
+  const done = outcome === "done";
+  const detail = done ? `${offer} -> ${request}` : `${offer} (${request})`;
+
+  await notify(connection, row["account_id"], "trade", {
+    key: done ? "notify.trade-done" : "notify.trade-none",
+    body: detail,
+    game: title,
+    link: "/pokemon/tradecorner.php"
+  });
+
+  const subject = done
+    ? "REON - your Trade Corner exchange went through"
+    : "REON - your Trade Corner deposit is still waiting";
+  const body = done
+    ? [
+        "Your Trade Corner exchange has been made.",
+        "",
+        `  You gave     ${offer}`,
+        `  You received ${request}`,
+        "",
+        "Connect with your Mobile Adapter and visit the Trade Corner to",
+        "collect it. The game downloads the result itself -- there is",
+        "nothing to do on the website.",
+        "",
+        "-- REON"
+      ].join("\n")
+    : [
+        "Nobody turned up for your Trade Corner exchange.",
+        "",
+        `  You offered  ${offer}`,
+        `  You asked for ${request}`,
+        "",
+        "The deposit has expired and your Pokémon is waiting to be taken",
+        "back. Connect with your Mobile Adapter and visit the Trade Corner",
+        "to withdraw it, or leave a new request.",
+        "",
+        "-- REON"
+      ].join("\n");
+
+  await mailUser(connection, config, row["account_id"], subject, body);
+}
+
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
 
@@ -3638,9 +3726,22 @@ async function doExchange() {
 
     const table = "bxt_exchange";
 
+    // Read the expiring deposits before they are removed: after the DELETE
+    // there is no record left of whose Pokémon went unmatched, and "nobody
+    // came" is exactly the outcome a player is owed a word about.
+    const [expired] = await connection.execute(
+      "SELECT * FROM " + table + " WHERE timestamp < NOW() - INTERVAL 7 DAY"
+    );
+
     await connection.execute(
       "DELETE FROM " + table + " WHERE timestamp < NOW() - INTERVAL 7 DAY"
     );
+
+    // Nothing is announced from inside the transaction. A notification row
+    // would roll back with it, but an e-mail that has already left cannot --
+    // so the outcomes are collected here and delivered once the exchange is
+    // actually committed.
+    const toTell = expired.map(row => [row, "none"]);
 
     const [trades] = await connection.execute(
       "SELECT bxt_exchange.*, sys_users.trade_region_allowlist " +
@@ -3702,6 +3803,7 @@ async function doExchange() {
 
           // For player B: use B's own metadata in header, partner's payload.
           await sendExchangeSuccessEmail(
+            connection,
             b["game_region"],
             b["email"],
             b["trainer_id"],
@@ -3717,6 +3819,7 @@ async function doExchange() {
 
           // For player A: use A's own metadata in header, partner's payload.
           await sendExchangeSuccessEmail(
+            connection,
             a["game_region"],
             a["email"],
             a["trainer_id"],
@@ -3752,6 +3855,8 @@ async function doExchange() {
             [a["email"], a["account_id"], a["trainer_id"], a["secret_id"]]
           );
 
+          toTell.push([a, "done"], [b, "done"]);
+
           break;
         }
       }
@@ -3759,6 +3864,10 @@ async function doExchange() {
 
     await connection.commit();
     console.log(`Finished exchange; performed ${numTrades} trade(s)`);
+
+    for (const [row, outcome] of toTell) {
+      await tellPlayerAboutTrade(connection, row, outcome);
+    }
   } catch (e) {
     console.error("Exchange failed, rolling back:", e);
     try {

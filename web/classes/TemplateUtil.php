@@ -35,6 +35,62 @@
 			if (!isset($vars)) $vars = array();
 			$vars["session_active"] = SessionUtil::getInstance()->isSessionActive();
 			$vars["curr_locale"] = SessionUtil::getInstance()->getLocale();
+			$vars["curr_username"] = SessionUtil::getInstance()->getUsername();
+			// So the account menu can offer the admin panel to the people who
+			// have it, instead of the panel being a URL you have to know.
+			$vars["curr_is_admin"] = SessionUtil::getInstance()->isAdmin();
+			// Path of the page being rendered, so the side menu can tell
+			// which of its entries is the current page.
+			$vars["current_path"] = parse_url($_SERVER["REQUEST_URI"] ?? "/", PHP_URL_PATH) ?: "/";
+
+			// Every form the site renders carries this, and every POST
+			// handler demands it back. Injected here so no template can
+			// forget it by not being handed the value.
+			require_once(__DIR__."/CsrfUtil.php");
+			$vars["csrf_token"] = CsrfUtil::token();
+			$vars["csrf_field"] = CsrfUtil::FIELD;
+
+			// Read from UserUtil so the criteria the forms display are the
+			// same numbers the validator enforces.
+			require_once(__DIR__."/UserUtil.php");
+			$vars["password_min"] = UserUtil::PASSWORD_MIN_CHARS;
+			$vars["password_max"] = UserUtil::PASSWORD_MAX_BYTES;
+
+			// Mail counts are injected globally so the navigation can show
+			// them on every page, not only inside the webmail. Two queries,
+			// and only for a signed-in visitor.
+			if ($vars["session_active"] && isset($_SESSION["user_id"])) {
+				require_once(__DIR__."/MailUtil.php");
+				$mail = MailUtil::getInstance();
+				$vars["mail_count"] = $mail->countForUser($_SESSION["user_id"]);
+				$vars["mail_new"] = $mail->countNewForUser($_SESSION["user_id"]);
+
+				// The bell's count, for the same reason: it belongs to the
+				// header, which every page renders.
+				require_once(__DIR__."/NotificationUtil.php");
+				$vars["notify_new"] = NotificationUtil::getInstance()->countUnread($_SESSION["user_id"]);
+			} else {
+				$vars["mail_count"] = 0;
+				$vars["mail_new"] = 0;
+				$vars["notify_new"] = 0;
+			}
+
+			// The mobile_config.bin "passport" modal: shown once, on whichever page
+			// a visitor happens to land on first, until dismissed. Checked
+			// globally for the same reason mail counts are -- a signed-in
+			// visitor can land on any page after logging in, not just one.
+			$vars["show_passport_modal"] = false;
+			if ($vars["session_active"] && isset($_SESSION["user_id"])) {
+				require_once(__DIR__."/DBUtil.php");
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select passport_seen_at is null as unseen from sys_users where id = ?");
+				$userId = (int)$_SESSION["user_id"];
+				$stmt->bind_param("i", $userId);
+				$stmt->execute();
+				$row = $stmt->get_result()->fetch_assoc();
+				$vars["show_passport_modal"] = $row && (int)$row["unseen"] === 1;
+			}
+
 			return self::$instance->twig->render($template.".twig", $vars);
 		}
 
@@ -59,7 +115,7 @@
 
 			$translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
 
-			$supported_locales = ['en', 'es', 'de', 'ja', 'it', 'fr'];
+			$supported_locales = ['en', 'es', 'de', 'ja', 'it', 'fr', 'pt-br'];
 			foreach ($supported_locales as $l) {
 				$path = dirname(__DIR__) . '/locales/' . $l . '.yml';
 				if (!is_file($path)) {

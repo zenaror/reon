@@ -12,10 +12,25 @@ This repository holds various folders for the service, and each has its own READ
 
 # Server Setup
 
-1. Install Apache2, PHP, MySQL
-2. Place the files in Apache2's (or the vhost's if used) website root folder
-3. Run the database migrations as described in the [database README](db/README.md)
-4. Continue these steps later once the production server is setup.
+The production server runs without Docker, installed by the scripts in
+[`setup-script/`](setup-script/README.md): clone `reon` and
+`mobile-relay` side by side on the VM, prepare `reon/.env`,
+`reon/config.json` and `mobile-relay/config.ini`, then run as root
+
+```
+sudo bash reon/setup-script/1-setup-reon.sh
+sudo bash reon/setup-script/2-setup-postfix-bridge.sh
+sudo bash reon/setup-script/3-harden-server.sh
+sudo bash reon/setup-script/4-harden-bots.sh
+```
+
+Re-running them is safe and is how the server is updated. The systemd
+units they install are described in [`examples/systemd/`](examples/systemd/README.md),
+the database migrations in the [database README](db/README.md). The
+real-internet mail bridge — Postfix in front of the game's mail, per-device
+authorization, XAPOP — is covered in the changelog's `reon-mail` section.
+A per-project changelog is kept in [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
+(in Portuguese).
 
 # Docker Setup
 

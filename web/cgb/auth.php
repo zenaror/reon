@@ -36,7 +36,24 @@
 				// If we've already authenticated this utility challenge session recently, accept it.
 				// The official client can reuse the same Authorization response across multiple requests
 				// (e.g. a follow-up POST), and it may not perform an additional 401-challenge retry.
-				if ($type == 2 && isset($_SESSION['utility_authed_user_id'], $_SESSION['utility_authed_until']) && time() <= intval($_SESSION['utility_authed_until'])) {
+				//
+				// The hit is bound to the whole Authorization value, not just the
+				// session id. That id is derived from the first 44 characters
+				// above, and those decode to the first 32 bytes of the challenge
+				// -- which the server itself published in the clear in the 401.
+				// Keyed on the id alone, a cache hit only proved that someone had
+				// seen the challenge; everything after character 44, the half
+				// actually derived from the account password, was never looked at
+				// for the whole 15-minute window. Found by the TestSuite session
+				// on 2026-09-08, whose truncated header authenticated as user 34.
+				//
+				// A miss is not a rejection: it falls through to full validation
+				// below, which for type 2 still has the challenge in the session.
+				$authFingerprint = hash("sha256", $authString);
+				if ($type == 2
+					&& isset($_SESSION['utility_authed_user_id'], $_SESSION['utility_authed_until'], $_SESSION['utility_authed_fp'])
+					&& time() <= intval($_SESSION['utility_authed_until'])
+					&& hash_equals((string)$_SESSION['utility_authed_fp'], $authFingerprint)) {
 					return intval($_SESSION['utility_authed_user_id']);
 				}
 
@@ -77,6 +94,8 @@
 						// without re-challenging (notably for follow-up POSTs).
 						$_SESSION['utility_authed_user_id'] = intval($result["userId"]);
 						$_SESSION['utility_authed_until'] = time() + 900; // 15 minutes
+						// What the next request has to match to skip revalidation.
+						$_SESSION['utility_authed_fp'] = $authFingerprint;
 						return intval($result["userId"]);
 					} else {
 						// 
@@ -112,9 +131,32 @@
 		}
 		
 		if ($isAuthRequired) {
-			// If a session id was sent, validate it
-			session_id($_SERVER["HTTP_GB_AUTH_ID"]);
-			session_start();
+			// If a session id was sent, validate it.
+			//
+			// doAuth() roda DUAS vezes na mesma requisição de upload: uma em
+			// web/htdocs/cgb/upload.php, e outra dentro de news.php, que
+			// chama doAuth(2) para resolver o usuário das páginas de notícia.
+			// Na segunda passagem a sessão já está aberta -- e aberta com
+			// ESTE mesmo id, porque ele vem do cabeçalho, que não mudou.
+			//
+			// Reabrir nesse estado não funciona: o PHP recusa trocar o id de
+			// uma sessão ativa ("Session ID cannot be changed when a session
+			// is active") e ignora o session_start() seguinte. Nada quebrava,
+			// porque a sessão ativa já era a certa -- o efeito era só um par
+			// de avisos no log do servidor a cada envio de ranking.
+			//
+			// Então: se já está aberta a sessão certa, não mexe. Se está
+			// aberta OUTRA, fecha antes de abrir a certa -- esse caso não foi
+			// observado, mas era o único em que o código antigo seguiria
+			// adiante com a sessão errada em silêncio.
+			if (session_status() !== PHP_SESSION_ACTIVE) {
+				session_id($_SERVER["HTTP_GB_AUTH_ID"]);
+				session_start();
+			} elseif (session_id() !== $_SERVER["HTTP_GB_AUTH_ID"]) {
+				session_write_close();
+				session_id($_SERVER["HTTP_GB_AUTH_ID"]);
+				session_start();
+			}
 			// If there is no DION ID associated with the session, it's not valid
 			if (!(isset($_SESSION['dionId']) && isset($_SESSION['type']) && $_SESSION['type'] == "cgb")) {
 				if (session_status() == PHP_SESSION_ACTIVE) {

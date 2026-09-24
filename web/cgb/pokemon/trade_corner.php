@@ -1,12 +1,16 @@
 <?php
 ini_set('log_errors', 1);
-error_log('BXT_DEBUG_TRADE_CORNER_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 // SPDX-License-Identifier: MIT
 
 require_once(CORE_PATH . "/database.php");
 require_once(__DIR__ . '/../../scripts/bxt_decode_helpers.php');
 require_once(__DIR__ . '/../../scripts/bxt_value_validation.php');
 require_once(CORE_PATH . "/pokemon/bxt_config.php");
+// Depois do require acima, e não no topo do arquivo: esta linha chama
+// bxt_debug_log(), que o bxt_config.php define. No topo ela rodava antes
+// de a função existir -- fatal em toda requisição que tocasse este
+// arquivo, e foi assim que o teste a pegou.
+bxt_debug_log('BXT_DEBUG_TRADE_CORNER_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 require_once(__DIR__ . '/../../scripts/bxt_legality_check.php');
 require_once(__DIR__ . "/../../scripts/bxt_legality_policy.php");
 
@@ -38,14 +42,17 @@ function process_trade_request($region, $request_data) {
 
     bxt_trade_corner_require_enabled();
 
-    error_log('BXT_DEBUG process_trade_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . strlen($request_data));
+    // raw_len used to be strlen($request_data), which is the length of the
+    // string "php://input" -- the stream's *name*, 11 characters, logged as
+    // if it were the size of the deposit. It never varied and never could.
+    bxt_debug_log('BXT_DEBUG process_trade_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . bxt_stream_length($request_data));
 
     $decoded_data = decode_exchange($region, $request_data, true);
     if (!is_array($decoded_data)) {
-        error_log('BXT_DEBUG process_trade_request: decode_exchange returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('BXT_DEBUG process_trade_request: decode_exchange returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         return;
     } else {
-        error_log('BXT_DEBUG process_trade_request: decoded keys=' . implode(',', array_keys($decoded_data)) . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('BXT_DEBUG process_trade_request: decoded keys=' . implode(',', array_keys($decoded_data)) . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
     }
 
         // Load banned / allowed word lists
@@ -62,7 +69,12 @@ function process_trade_request($region, $request_data) {
 
 
     if ($decoded_name_for_policy !== '' && bxt_contains_banned($decoded_name_for_policy, $banned, $allowed)) {
-        error_log('trade_corner_gateway: banned player name: ' . $decoded_name_for_policy);
+        // A recusa sai sempre, com a conta; o texto recusado só com a
+        // depuração ligada. Quem modera precisa saber QUE houve recusa e de
+        // quem; quem investiga um caso liga a depuração e vê o quê.
+        error_log('trade_corner_gateway: banned player name'
+            . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('trade_corner_gateway: banned player name: ' . $decoded_name_for_policy);
         http_response_code(403);
         exit("Banned player name");
     }
@@ -72,7 +84,9 @@ function process_trade_request($region, $request_data) {
 
 
     if ($decoded_mail_for_policy !== '' && bxt_contains_banned($decoded_mail_for_policy, $banned, $allowed)) {
-        error_log('trade_corner_gateway: banned mail message: ' . $decoded_mail_for_policy);
+        error_log('trade_corner_gateway: banned mail message'
+            . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('trade_corner_gateway: banned mail message: ' . $decoded_mail_for_policy);
         http_response_code(403);
         exit("Banned mail message");
     }
@@ -90,7 +104,7 @@ function process_trade_request($region, $request_data) {
     try {
         list($ok_leg, $details) = legality_check_pk2_bytes_with_details(
             $decoded_data["pokemon"],
-            function ($msg) { error_log('BXT_DEBUG trade_corner_pkm_legality_summary: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $msg); }
+            function ($msg) { bxt_debug_log('BXT_DEBUG trade_corner_pkm_legality_summary: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $msg); }
         );
         if (!$ok_leg) {
             error_log('trade_corner_gateway: illegal Pokémon blob');
@@ -103,7 +117,9 @@ function process_trade_request($region, $request_data) {
             // behaves identically across features.
             if (!bxt_policy_allow_nickname($details, $banned, $allowed)) {
                 $nick_dbg = isset($details['nickname']) && is_string($details['nickname']) ? $details['nickname'] : '';
-                error_log('trade_corner_gateway: banned pokemon nickname: ' . $nick_dbg);
+                error_log('trade_corner_gateway: banned pokemon nickname'
+                    . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+                bxt_debug_log('trade_corner_gateway: banned pokemon nickname: ' . $nick_dbg);
                 http_response_code(403);
                 exit("Banned Pokémon nickname");
             }
@@ -118,7 +134,7 @@ function process_trade_request($region, $request_data) {
             }
         }
     } catch (\Throwable $e) {
-        error_log('BXT_DEBUG trade_corner_pkm_legality_summary_exception: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $e->getMessage());
+        bxt_debug_log('BXT_DEBUG trade_corner_pkm_legality_summary_exception: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $e->getMessage());
         $pokemon_decode = null;
     }
 
@@ -136,7 +152,13 @@ function process_trade_request($region, $request_data) {
         $decoded_data["mail"],
         $validation_errors
     )) {
-        error_log('trade_corner_gateway: value validation failed: ' . json_encode($validation_errors));
+        // Os NOMES das regras sempre; os valores, que são o que a pessoa
+        // escreveu, só com a depuração ligada.
+        error_log('trade_corner_gateway: value validation failed'
+            . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none')
+            . ' rules=' . implode(',', array_keys((array)$validation_errors)));
+        bxt_debug_log('trade_corner_gateway: value validation failed: '
+            . json_encode($validation_errors));
         http_response_code(403);
         exit("Invalid exchange payload");
     }
@@ -145,8 +167,8 @@ $db = connectMySQL(); // Connect to DION Database
 
     // All regions now write into the unified `bxt_exchange` table.
     // Region differences are tracked via the `game_region` column.
-    error_log('bxt_debug_trade_before_prepare region=' . $region);
-    error_log('BXT_DEBUG process_trade_request: before_prepare account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+    bxt_debug_log('bxt_debug_trade_before_prepare region=' . $region);
+    bxt_debug_log('BXT_DEBUG process_trade_request: before_prepare account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 
     $stmt = $db->prepare(
         "REPLACE INTO `bxt_exchange` (" .
@@ -160,7 +182,7 @@ $db = connectMySQL(); // Connect to DION Database
         ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     );
     if (!$stmt) {
-        error_log('BXT_DEBUG process_trade_request: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
+        bxt_debug_log('BXT_DEBUG process_trade_request: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
         http_response_code(500);
         exit('Failed to prepare statement');
     }
@@ -195,11 +217,11 @@ $db = connectMySQL(); // Connect to DION Database
     );
 
     if (!$stmt->execute()) {
-        error_log('BXT_DEBUG process_trade_request: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
+        bxt_debug_log('BXT_DEBUG process_trade_request: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
         http_response_code(500);
         exit('Failed to insert into bxt_exchange');
     }
-    error_log('BXT_DEBUG process_trade_request: execute_ok account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+    bxt_debug_log('BXT_DEBUG process_trade_request: execute_ok account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 }
 
 /**
@@ -211,12 +233,12 @@ function process_cancel_request($region, $request_data) {
 
     bxt_trade_corner_require_enabled();
 
-    error_log('BXT_DEBUG process_cancel_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . strlen($request_data));
+    bxt_debug_log('BXT_DEBUG process_cancel_request: entry account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' region=' . $region . ' raw_len=' . bxt_stream_length($request_data));
 
     // Decode only the header; no Pokémon/mail blobs required for cancellation.
     $decoded_data = decode_exchange($region, $request_data, false);
     if (!is_array($decoded_data)) {
-        error_log('BXT_DEBUG process_cancel_request: decode_exchange returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('BXT_DEBUG process_cancel_request: decode_exchange returned non-array account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         http_response_code(403);
         exit('Invalid cancel payload');
     }
@@ -225,7 +247,7 @@ function process_cancel_request($region, $request_data) {
     $secretId  = $decoded_data["secret_id"] ?? null;
 
     if ($trainerId === null || $secretId === null) {
-        error_log('BXT_DEBUG process_cancel_request: missing trainer_id or secret_id account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+        bxt_debug_log('BXT_DEBUG process_cancel_request: missing trainer_id or secret_id account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         http_response_code(403);
         exit('Missing identifiers for cancellation');
     }
@@ -247,7 +269,7 @@ function process_cancel_request($region, $request_data) {
            AND account_id = ?"
     );
     if (!$stmt) {
-        error_log('BXT_DEBUG process_cancel_request: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
+        bxt_debug_log('BXT_DEBUG process_cancel_request: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
         http_response_code(500);
         exit('Failed to prepare cancel statement');
     }
@@ -261,12 +283,12 @@ function process_cancel_request($region, $request_data) {
     );
 
     if (!$stmt->execute()) {
-        error_log('BXT_DEBUG process_cancel_request: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
+        bxt_debug_log('BXT_DEBUG process_cancel_request: execute_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $stmt->error);
         http_response_code(500);
         exit('Failed to cancel Trade Corner offer');
     }
 
-    error_log('BXT_DEBUG process_cancel_request: execute_ok affected_rows=' . $stmt->affected_rows . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
+    bxt_debug_log('BXT_DEBUG process_cancel_request: execute_ok affected_rows=' . $stmt->affected_rows . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 }
 
 /**
@@ -345,7 +367,7 @@ function tradeCornerListOffers(string $region, int $limit = 100): array
 
     $stmt = $db->prepare($sql);
     if (!$stmt) {
-        error_log('BXT_DEBUG tradeCornerListOffers: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
+        bxt_debug_log('BXT_DEBUG tradeCornerListOffers: stmt_prepare_failed account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $db->error);
         return [];
     }
 
@@ -362,6 +384,17 @@ function tradeCornerListOffers(string $region, int $limit = 100): array
         return [];
     }
     return $rows;
+}
+
+// How many bytes a request body actually holds. CONTENT_LENGTH is what the
+// adapter declared; php://input is read again only when it is absent, since
+// reading it twice is not guaranteed to work on every SAPI.
+function bxt_stream_length($stream) {
+    if (isset($_SERVER["CONTENT_LENGTH"]) && $_SERVER["CONTENT_LENGTH"] !== "") {
+        return (int)$_SERVER["CONTENT_LENGTH"];
+    }
+    $raw = @file_get_contents($stream);
+    return $raw === false ? -1 : strlen($raw);
 }
 
 function decode_exchange($region, $stream, $full = true) {
@@ -408,6 +441,24 @@ function decode_exchange($region, $stream, $full = true) {
         // $65..: Held mail data
         $mail_len = ($region === "j") ? 0x2A : 0x2F;
         $decData["mail"] = fread($postdata, $mail_len);
+
+        // The width of this field is genuinely unsettled for the non-JP
+        // games: the constant we read from says 47, and a save-side
+        // measurement of the offer struct says 33. Mail is the *last* field
+        // in the packet, so asking for too many bytes cannot misalign
+        // anything -- fread simply returns what is there. That makes what it
+        // returned the measurement: if the real field is 33, this logs 33.
+        //
+        // It has never shown up because no deposit so far has carried held
+        // mail at all; every stored blob is zeros.
+        bxt_debug_log(sprintf(
+            'BXT_DEBUG decode_exchange: region=%s name=%d/%d pokemon=%d/%d mail=%d/%d mail_nonzero=%d',
+            $region,
+            strlen((string)$decData["player_name"]), $name_len,
+            strlen((string)$decData["pokemon"]), $pkm_len,
+            strlen((string)$decData["mail"]), $mail_len,
+            strlen(rtrim((string)$decData["mail"], "\0"))
+        ));
     } else {
         $decData["pokemon"] = null;
         $decData["mail"] = null;

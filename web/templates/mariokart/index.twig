@@ -6,12 +6,24 @@
 
 {% block head %}
 <link href="{{ asset('/css/mariokart.css') }}" rel="stylesheet">
+<link href="{{ asset('/css/game-page.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="mkgba-page">
     <h1 class="mkgba-title">Mario Kart: Super Circuit</h1>
 
+    {# One-page hub: text sections from web/pages/games/mariokart.<locale>.md,
+       then the live ghost rankings. The menu is built from the h2s. #}
+    <nav class="game-nav" data-sections-nav hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+
+    <div class="game-sections" data-sections>
+        {% if doc_html %}
+            <div class="game-doc">{{ doc_html|raw }}</div>
+        {% endif %}
+
+        <section class="game-section">
+        <h2>{{'rankings'|trans}}</h2>
     <table class="mariokart-rankings mkgba-table">
         <thead>
             <tr>
@@ -70,10 +82,13 @@
         {% endfor %}
         </tbody>
     </table>
+        </section>
+    </div>
 </div>
 {% endblock %}
 
 {% block body %}
 <script src="{{ asset('/js/side-backgrounds.js') }}"></script>
 <script>initReonSideBackgrounds("mkgba");</script>
+<script src="{{ asset('/js/page-sections.js') }}"></script>
 {% endblock %}

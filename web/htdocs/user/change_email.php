@@ -1,10 +1,12 @@
 <?php
 	require_once("../../classes/SessionUtil.php");
+	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/UserUtil.php");
 	session_start();
 	
 	if (SessionUtil::getInstance()->isSessionActive()) {
 		if ($_SERVER["REQUEST_METHOD"] == "POST") {
+			CsrfUtil::check();
 			if (isset($_POST["currentPassword"]) && isset($_POST["newEmail"])) {
 				$result = UserUtil::getInstance()->requestEmailChangeAction($_POST["currentPassword"], $_POST["newEmail"]);
 				echo TemplateUtil::render("/user/change_email", [

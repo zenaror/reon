@@ -1,0 +1,25 @@
+# /etc/systemd/system/dovecot.service.d/hostname.conf
+#
+# What the APOP challenge announces after the "@".
+#
+# Without this, Dovecot falls back to gethostname(), which on a cloud
+# instance is the instance's own name -- so every POP3 greeting hands the
+# hosting provider's machine name to anyone who opens a connection, before
+# any login. Cosmetic, but it is free to fix.
+#
+# Two settings look like they should do this and do not: `hostname` governs
+# a different field, and DOVECOT_HOSTDOMAIN governs the domain rather than
+# this. The one that decides it is DOVECOT_HOSTNAME, and Dovecot reads it
+# from the environment -- the `import_environment` block in 99-reon.conf
+# only lets it through to the child processes, it cannot define it.
+#
+# Takes effect on `systemctl restart dovecot`, never on a reload: a reload
+# does not re-send the environment. That is the trap -- the configuration
+# reads correctly while the greeting stays wrong.
+#
+# After installing:
+#   systemctl daemon-reload && systemctl restart dovecot
+#   printf '' | nc <host> 110      # the greeting should end in @<your host>
+
+[Service]
+Environment=DOVECOT_HOSTNAME=mail.example.com

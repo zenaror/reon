@@ -1,9 +1,9 @@
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
-const nodemailer = require("nodemailer");
 
 const { Command } = require("commander");
+const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
 
 // ------------------------------
 // Config
@@ -19,6 +19,11 @@ program
 const options = program.opts();
 const config = JSON.parse(fs.readFileSync(options.config, "utf8"));
 
+// Escolhe o transporte: SMTP local quando `local_smtp_host` existir, senão o
+// binário de sendmail. Ver lib/rawmail.js -- e cuidado para não confundir com
+// `smtp_host`, que é o relay EXTERNO e tem significado oposto.
+configurarEnvio(config, config["local_smtp_host"] ? require("nodemailer") : null);
+
 const dbConfig = {
   host: config["mysql_host"],
   port: config["mysql_port"] || 3306,
@@ -28,48 +33,20 @@ const dbConfig = {
 };
 
 // ------------------------------
-// SMTP transport – mirror PHP UserUtil.php config
-// ------------------------------
-
-let mailTransport;
-
-const smtpHost = config["smtp_host"];
-const smtpPort = config["smtp_port"];
-const smtpAuth = config["smtp_auth"];
-const smtpSecure = config["smtp_secure"];
-
-if (!smtpHost || smtpHost === "") {
-  // Sendmail mode (PHP isSendmail())
-  mailTransport = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail", // adjust if different on your system
-  });
-} else {
-  // SMTP mode (PHP isSMTP())
-  const transportOptions = {
-    host: smtpHost,
-    port: smtpPort || 587,
-    secure: smtpSecure === "smtps", // implicit TLS
-    requireTLS: smtpSecure === "starttls", // STARTTLS
-    auth: smtpAuth
-      ? {
-          user: config["smtp_user"],
-          pass: config["smtp_pass"],
-        }
-      : undefined,
-    // allow self-signed like your PHP setup
-    tls: {
-      rejectUnauthorized: false,
-    },
-  };
-
-  mailTransport = nodemailer.createTransport(transportOptions);
-}
-
-// ------------------------------
 // Email + main exchange logic
 // ------------------------------
+//
+// Both trade partners are always the game's own internal accounts (email is
+// always dion_email_local@email_domain_dion, set server-side in
+// 20.bottlemail.php -- never a real address a player typed in), so this
+// hands the message to the local mail system as-is, rather than composing
+// it through an SMTP library. Two reasons, not just one:
+// it keeps the player's original message bytes completely untouched (no
+// MIME/SMTP-layer reinterpretation of content that was never meant to leave
+// the game in the first place), and it avoids a real class of vulnerability
+// nodemailer's "raw" option has a history of (arbitrary file read / SSRF
+// during message processing) for content nothing internal-only should be
+// exposed to regardless of where it's ultimately addressed.
 
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
@@ -96,20 +73,15 @@ async function doExchange() {
         const a = list[i - 1];
         const b = list[i];
 
-        await mailTransport.sendMail({
-          envelope: {
-            from: a["email"],
-            to: b["email"],
-          },
-          raw: "To: " + b["email"] + "\r\n" + a["message"],
-        });
-        await mailTransport.sendMail({
-          envelope: {
-            from: b["email"],
-            to: a["email"],
-          },
-          raw: "To: " + a["email"] + "\r\n" + b["message"],
-        });
+        // Entregues FALANDO SMTP, e não gravando na caixa: gravar direto só
+        // chega a alguém num servidor que use a nossa tabela, e o do REONTeam
+        // entrega pelo Dovecot. A submissão local serve aos dois.
+        //
+        // O endereço de cada lado é o que a própria garrafa trazia, e é o
+        // mesmo valor que ia para a coluna `sender` -- então quem é interno
+        // segue decidido pelo domínio, como sempre foi.
+        await sendRaw(a["email"], b["email"], "To: " + b["email"] + "\r\n" + a["message"]);
+        await sendRaw(b["email"], a["email"], "To: " + a["email"] + "\r\n" + b["message"]);
 
         // Clean up processed rows
         await connection.execute("DELETE FROM " + table + " WHERE id = ?", [a["id"]]);

@@ -3,15 +3,72 @@
 {% set body_class = "pokecrystal-index" %}
 
 {% block title %}{{'pokemon-crystal'|trans}}{% endblock %}
+
+{% block head %}
+	<link href="{{ asset('/css/game-page.css') }}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-	<h1>{{'pokemon-crystal'|trans}}</h1>
-	<p>{{'pokemon-pages.index-description'|trans}}</p>
-	<h2><a href="rankings.php">{{'rankings'|trans}}</a></h2>
-	<p>{{'pokemon-pages.rankings-description'|trans}}</p>
-	<h2><a href="tradecorner.php">{{'trade-corner'|trans}}</a></h2>
-	<p>{{'pokemon-pages.trade-corner-description'|trans}}</p>
-	<h2><a href="battletower.php">Battle Tower</a></h2>
-	<p>View the Battle Tower honor roll by level and room.</p>
-	<h2><a href="saveconverter.php">BXT Save Converter</a></h2>
-	<p>Convert Crystal BYT saves to BXT format locally in your browser.</p>
+	{# One-page hub: the menu is built from the h2s below by page-sections.js.
+	   The text sections come from web/pages/games/pokemon.<locale>.md; the
+	   last section is the live one, with the links to the online services. #}
+	<header class="game-head">
+		<img class="game-head__logo" src="/images/crystal/logo.png" alt="">
+		<div>
+			<h1>{{'pokemon-crystal'|trans}}</h1>
+			<p class="game-head__tagline">{{'pokemon-pages.index-description'|trans}}</p>
+		</div>
+	</header>
+
+	{# Duas abas, não dois hubs: o Stadium não tem Mobile Adapter próprio --
+	   tudo o que ele mostra chega num cartucho de Crystal que teve um. Uma
+	   página separada diria que são dois caminhos independentes, e não são.
+	   O Crystal é a aba padrão porque é por onde se entra. #}
+	{% if stadium_html %}
+		<div class="game-tabs" role="tablist" data-game-tabs
+		     aria-label="{{'pokemon-crystal'|trans}}">
+			<button type="button" class="game-tab" role="tab" data-tab="crystal"
+			        aria-selected="true" aria-controls="tab-crystal">{{'pokemon-crystal'|trans}}</button>
+			<button type="button" class="game-tab" role="tab" data-tab="stadium"
+			        aria-selected="false" aria-controls="tab-stadium">{{'pokemon-stadium'|trans}}</button>
+		</div>
+	{% endif %}
+
+	<nav class="game-nav" data-sections-nav="crystal" hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+	{% if stadium_html %}
+		<nav class="game-nav" data-sections-nav="stadium" hidden aria-label="{{'game-page.on-this-page'|trans}}"><ol></ol></nav>
+	{% endif %}
+
+	<div id="tab-crystal" data-tab-panel="crystal">
+		<div class="game-sections" data-sections="crystal">
+			{% if doc_html %}
+				<div class="game-doc">{{ doc_html|raw }}</div>
+			{% endif %}
+
+			<section class="game-section">
+				<h2>{{'game-page.services'|trans}}</h2>
+				<div class="game-services">
+					<a href="rankings.php"><strong>{{'rankings'|trans}}</strong>{{'pokemon-pages.rankings-description'|trans}}</a>
+					<a href="tradecorner.php"><strong>{{'trade-corner'|trans}}</strong>{{'pokemon-pages.trade-corner-description'|trans}}</a>
+					<a href="battletower.php"><strong>{{'battle-tower'|trans}}</strong>{{'pokemon-pages.battle-tower-description'|trans}}</a>
+					<a href="saveconverter.php"><strong>{{'bxt-save-converter'|trans}}</strong>{{'pokemon-pages.bxt-save-converter-description'|trans}}</a>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	{# Sem os serviços: rankings, Trade Corner e Battle Tower são do Crystal.
+	   Repeti-los aqui faria parecer que o Stadium fala com o servidor. #}
+	{% if stadium_html %}
+		<div id="tab-stadium" data-tab-panel="stadium" hidden>
+			<div class="game-sections" data-sections="stadium">
+				<div class="game-doc">{{ stadium_html|raw }}</div>
+			</div>
+		</div>
+	{% endif %}
+{% endblock %}
+
+{% block body %}
+<script src="{{ asset('/js/page-sections.js') }}"></script>
+{% if stadium_html %}<script src="{{ asset('/js/game-tabs.js') }}"></script>{% endif %}
 {% endblock %}

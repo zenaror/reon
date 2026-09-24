@@ -244,24 +244,26 @@
     else if (e.key === 'Backspace' || e.key === 'b' || e.key === 's') { back(); e.preventDefault(); }
   });
 
-  // timer: real MM:SS drawn with the glyph sprites. Minute pair is zero-padded,
-  // seconds roll at 60, and it freezes once it reaches 99:59.
+  // clock: the visitor's own wall time as HH:MM, drawn with the glyph sprites.
+  // 24-hour, so the hour always fits the two digits the box has room for (a
+  // 12-hour reading would need an AM/PM marker the sprite atlas doesn't have).
   var glyphs = document.getElementById('timer').querySelectorAll('i');
-  function setTimer(mm, ss) {
+  function setClock(hh, mm) {
     // atlas: digits 0-9 at x=0..72 (y=176), separator at x=80
-    var seq = [Math.floor(mm / 10), mm % 10, -1, Math.floor(ss / 10), ss % 10];
+    var seq = [Math.floor(hh / 10), hh % 10, -1, Math.floor(mm / 10), mm % 10];
     for (var i = 0; i < 5; i++) {
       var x = seq[i] === -1 ? 80 : seq[i] * 8;
       glyphs[i].style.backgroundPosition = (-x) + 'px -176px';
     }
   }
-  var secs = 0, MAX = 99 * 60 + 59;       // 99:59
-  setTimer(0, 0);
-  setInterval(function () {
-    if (secs >= MAX) return;
-    secs++;
-    setTimer(Math.floor(secs / 60), secs % 60);
-  }, 1000);
+  function tick() {
+    var now = new Date();
+    setClock(now.getHours(), now.getMinutes());
+  }
+  tick();
+  // Ticking every second rather than every minute so the display flips within
+  // a second of the real minute boundary instead of drifting up to 59s behind.
+  setInterval(tick, 1000);
 
   fit(); render('home');
 })();

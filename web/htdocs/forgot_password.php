@@ -1,9 +1,11 @@
 <?php
 	require_once("../classes/SessionUtil.php");
+	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/UserUtil.php");
 	session_start();
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		CsrfUtil::check();
 		if (!isset($_POST["email"])) return;
 		$result = UserUtil::getInstance()->sendPasswordResetEmail($_POST["email"]);
 		$result = 0;

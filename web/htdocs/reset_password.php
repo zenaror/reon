@@ -1,9 +1,11 @@
 <?php
 	require_once("../classes/SessionUtil.php");
+	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/UserUtil.php");
 	session_start();
 	
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		CsrfUtil::check();
 		if (isset($_POST["id"]) && isset($_POST["key"]) && isset($_POST["password"]) && isset($_POST["passwordConfirm"])) {
 			$result = UserUtil::getInstance()->resetPassword($_POST["id"], $_POST["key"], $_POST["password"], $_POST["passwordConfirm"]);
 			echo TemplateUtil::render("reset_password", [

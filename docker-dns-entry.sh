@@ -8,6 +8,8 @@ fi
 cat >/etc/dnsmasq.conf <<EOF
 no-resolv
 no-hosts
+server=1.1.1.3
+server=1.0.0.3
 address=/*.dion.ne.jp/${EXTERNAL_IP}
 address=/gameboy.datacenter.ne.jp/${EXTERNAL_IP}
 EOF

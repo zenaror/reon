@@ -28,11 +28,14 @@
 .battle-honor-roll-label {
   grid-area: honor;
   justify-self: start;
+  margin-top: 4px;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0;
 }
 
+/* 1x / 2x, chosen by the player: 2x by default on a desktop, 1x by default
+   on phones and tablets, where 2x scrolls sideways inside the box. */
 .battle-control-zoom {
   grid-area: zoom;
   justify-self: end;
@@ -92,18 +95,33 @@
   z-index: 3;
 }
 
+/* Three slices of the original 980px art -- 20px left corner, 20px right
+   corner, a 2px strip of its uniform middle repeated between them -- instead
+   of stretching the whole thing to the box. Stretching widened the corners
+   while the side borders kept their width, so they stopped meeting; this way
+   the corners are native at any box width. */
 .battle-table-shell::before {
   top: 0;
   height: var(--bt-frame-top);
-  background: url("/images/crystal/HonorRollBorderTop.png") no-repeat left top;
-  background-size: 100% var(--bt-frame-top);
+  background-image:
+    url("/images/crystal/HonorRollBorderTopLeft.png"),
+    url("/images/crystal/HonorRollBorderTopRight.png"),
+    url("/images/crystal/HonorRollBorderTopMid.png");
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-position: left top, right top, left top;
+  background-size: 20px var(--bt-frame-top), 20px var(--bt-frame-top), 2px var(--bt-frame-top);
 }
 
 .battle-table-shell::after {
   bottom: 0;
   height: var(--bt-frame-bottom);
-  background: url("/images/crystal/HonorRollBorderBottom.png") no-repeat left bottom;
-  background-size: 100% var(--bt-frame-bottom);
+  background-image:
+    url("/images/crystal/HonorRollBorderBottomLeft.png"),
+    url("/images/crystal/HonorRollBorderBottomRight.png"),
+    url("/images/crystal/HonorRollBorderBottomMid.png");
+  background-repeat: no-repeat, no-repeat, repeat-x;
+  background-position: left bottom, right bottom, left bottom;
+  background-size: 15px var(--bt-frame-bottom), 15px var(--bt-frame-bottom), 2px var(--bt-frame-bottom);
 }
 
 /* The framed box now wraps the title + controls + table. The left/right
@@ -116,6 +134,12 @@
   /* padding-top keeps the white backdrop flush under the top frame border
      (blocks the title's margin from collapsing out and exposing the wall). */
   padding-top: 6px;
+  /* The side art is 30px on the left and 37px on the right, but both draw
+     a 15px border and the rest is white, so the visible white box is
+     symmetric while this content box is not: everything centred in it sat
+     3.5px left of the frame's centre. Pad the difference on the left so the
+     content is centred between the two visible borders. */
+  padding-left: calc(var(--bt-frame-right) - var(--bt-frame-left));
 }
 
 .battle-table-grid {
@@ -203,15 +227,18 @@
   font-weight: 600;
 }
 
-.battle-honor-table th:nth-child(1) {
+/* Addressed by class, not position: the LV and ROOM columns appear and
+   disappear with the filters, and nth-child rules silently slid onto the
+   wrong columns whenever they did. */
+.battle-honor-table th.bt-col-leader {
   width: auto;
 }
 
-.battle-honor-table th:nth-child(2) {
+.battle-honor-table th.bt-col-pokemon {
   width: 24%;
 }
 
-.battle-honor-table th:nth-child(3) {
+.battle-honor-table th.bt-col-message {
   width: 159px;
   min-width: 159px;
   max-width: 159px;
@@ -235,6 +262,10 @@
 .bt-leader-name-col {
   border-left: 1px solid #c6c6c6;
   padding: 5px 6px 5px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 56px;
 }
 
 .bt-trainer-sprite {
@@ -244,15 +275,15 @@
   flex: 0 0 auto;
 }
 
-.bt-leader-name-col {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 56px;
-}
-
 .bt-player-name {
   margin-top: 2px;
+}
+
+/* COOLTRAINER♀ and friends are longer than the name column when the LV/ROOM
+   columns are open; wrapping mid-word beats spilling into the next cell. */
+.bt-trainer-class,
+.bt-player-name {
+  overflow-wrap: anywhere;
 }
 
 .bt-pokemon-list {
@@ -310,8 +341,10 @@
   background: url("/images/crystal/MessageBox.png") no-repeat left top;
   background-size: 155px 44px;
   image-rendering: pixelated;
-  padding: 13px 6px 0 6px;
-  white-space: pre-line;
+  /* 5px sides: an 18-character game line is 144px and must not re-wrap
+     here -- the PHP already broke the text exactly where the ROM does. */
+  padding: 13px 5px 0 5px;
+  white-space: pre;
   line-height: 1;
   overflow: hidden;
 }
@@ -349,7 +382,7 @@
 
 @media (max-width: 991.98px) {
   .battle-tower-page {
-    --bt-mobile-panel-base-width: min(440px, calc(100vw - 12px));
+    --bt-mobile-panel-base-width: min(440px, 100%);
     width: 100%;
     max-width: 100%;
     padding-left: 0;
@@ -391,34 +424,42 @@
     line-height: 16px !important;
   }
 
-  .battle-tower-controls .trade-region-filter {
-    min-width: min(220px, calc(50vw - 14px));
-    width: min(220px, calc(50vw - 14px));
+  /* The grid cells must stretch: a percentage width on a select inside a
+     shrink-to-fit cell is circular and collapses to a few pixels. */
+  .battle-control-level,
+  .battle-control-room {
+    justify-self: stretch;
+    min-width: 0;
   }
 
+  .battle-tower-controls .trade-region-filter {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    max-width: 244px;
+  }
+
+  .battle-control-room .trade-region-filter {
+    margin-left: auto;
+  }
+
+  /* The honor-roll frame stays: its borders are 30-48px of pixel art and
+     cost nothing on a phone. The table scrolls inside the grid. */
   .battle-table-shell {
     width: 100%;
     max-width: 100%;
-    padding: 0;
-    overflow-x: auto;
-    overflow-y: visible;
-  }
-
-  .battle-table-shell::before,
-  .battle-table-shell::after,
-  .battle-table-grid::before,
-  .battle-table-grid::after {
-    display: none;
+    overflow: visible;
   }
 
   .battle-table-grid {
-    min-width: 100%;
-    width: max-content;
+    width: 100%;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr;
     gap: 14px;
-    justify-content: flex-start;
+    /* Centred while it fits, start-aligned once it overflows (phones), so
+       the scroll can still reach the first column. */
+    justify-items: safe center;
   }
 
   .battle-table-panel {
@@ -443,7 +484,7 @@
     min-width: 440px;
   }
 
-  .battle-tower-page[data-battle-zoom="2"] .battle-honor-table th:nth-child(3),
+  .battle-tower-page[data-battle-zoom="2"] .battle-honor-table th.bt-col-message,
   .battle-tower-page[data-battle-zoom="2"] .bt-message-cell {
     width: 159px;
     min-width: 159px;
@@ -457,7 +498,7 @@
     height: 44px;
     min-height: 44px;
     background-size: 155px 44px;
-    padding: 13px 6px 0 6px;
+    padding: 13px 5px 0 5px;
   }
 
   .battle-honor-table {
@@ -468,11 +509,11 @@
     min-width: 0;
   }
 
-  .battle-honor-table th:nth-child(2) {
+  .battle-honor-table th.bt-col-pokemon {
     width: 22%;
   }
 
-  .battle-honor-table th:nth-child(3),
+  .battle-honor-table th.bt-col-message,
   .bt-message-cell {
     width: var(--bt-mobile-msg-cell-width);
     min-width: var(--bt-mobile-msg-cell-width);
@@ -525,13 +566,15 @@
     line-height: 1.15 !important;
   }
 
+  /* The sprite art is 56x56 and stays 1:1; the row is two lines here
+     (message below), so the leader column has the room. */
   .bt-trainer-sprite {
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
   }
 
   .bt-leader-subcols {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 60px minmax(0, 1fr);
     column-gap: 6px;
   }
 
@@ -540,7 +583,7 @@
     padding-left: 6px;
   }
 
-  .battle-honor-table th:nth-child(3),
+  .battle-honor-table th.bt-col-message,
   .bt-message-cell {
     width: min(145px, max(110px, calc(100vw - 186px)));
     min-width: min(145px, max(110px, calc(100vw - 186px)));
@@ -557,4 +600,463 @@
     padding: clamp(10px, calc(min(145px, max(110px, calc(100vw - 186px))) * 0.08), 12px) 4px 0 4px;
     line-height: 1.15 !important;
   }
+}
+
+/* Level and room columns, shown only when their filter is set to ALL. The
+   table is table-layout:fixed, so these need a real width -- a shrink-to-fit
+   value leaves the column at nearly zero and the text spills over its
+   neighbour instead of widening the column. */
+.battle-honor-table th.bt-col-level,
+.battle-honor-table td.bt-col-level {
+  width: 34px;
+  min-width: 34px;
+}
+
+.battle-honor-table th.bt-col-room,
+.battle-honor-table td.bt-col-room {
+  width: 44px;
+  min-width: 44px;
+}
+
+.battle-honor-table th.bt-col-level,
+.battle-honor-table th.bt-col-room,
+.battle-honor-table td.bt-col-level,
+.battle-honor-table td.bt-col-room {
+  white-space: nowrap;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* With one of LV/ROOM shown, the panel grows by that column (440 -> 484px,
+   one column, no split) so the leader, POKéMON and message columns keep
+   their widths. The sprite is 56x56 pixel art and is never scaled by a
+   fraction: an earlier version shrank it to 44px to make room, which
+   blurred it. Placed after the media queries on purpose so the zoom-2
+   rules there don't win over these. */
+.battle-table-grid[data-bt-extra="1"] {
+  overflow-x: auto;
+  justify-content: flex-start;
+}
+
+.battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"] {
+  justify-items: start;
+}
+
+.battle-table-grid[data-bt-extra="1"] .battle-table-panel {
+  width: 484px;
+  min-width: 484px;
+  max-width: 484px;
+  margin: 0 auto;
+}
+
+.battle-table-grid[data-bt-extra="1"] .battle-honor-table th.bt-col-pokemon {
+  width: 105px;
+}
+
+/* At 2x that panel is 968px; widen the framed box as for the overview. */
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="1"],
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="1"] .battle-table-shell {
+  /* 968px table + 24px of air on each side + the 34/42px side borders. */
+  width: min(1092px, 100%);
+}
+
+
+/* The overview (LV and ROOM both shown) is a single, wider panel: the two
+   extra columns are added to the 440px the reference layout needs, so the
+   leader, POKéMON and message columns keep their widths, and the message
+   stays on the leader's row. At 2x it scrolls inside the white box. */
+.battle-table-grid[data-bt-extra="2"] {
+  overflow-x: auto;
+  /* Centre with auto margins, not justify-*: when the 2x panel (1036px) is
+     wider than the box, centring would push both ends out of reach, and no
+     scroll position shows the LV column. Auto margins fall back to the start. */
+  justify-content: flex-start;
+}
+
+.battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] {
+  justify-items: start;
+}
+
+/* At 2x the overview panel is 1036px; widen the framed box to hold it (the
+   frame art stretches) instead of cropping or scrolling. Below that width
+   the scroll above is the fallback. */
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"],
+.battle-tower-page[data-battle-zoom="2"][data-bt-extra="2"] .battle-table-shell {
+  /* 1036px table + 24px of air on each side + the 34/42px side borders. */
+  width: min(1160px, 100%);
+}
+
+.battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+  width: 518px;
+  min-width: 518px;
+  max-width: 518px;
+  margin: 0 auto;
+}
+
+.battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-pokemon {
+  width: 105px;
+}
+
+.battle-table-grid[data-bt-extra="2"] .bt-trainer-sprite {
+  width: 56px;
+  height: 56px;
+}
+
+.battle-table-grid[data-bt-extra="2"] .bt-leader-subcols {
+  grid-template-columns: 60px minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.battle-table-grid[data-bt-extra="2"] .bt-leader-sprite-col {
+  padding-left: 6px;
+}
+
+.battle-table-grid[data-bt-extra="2"] .bt-leader-name-col {
+  min-height: 56px;
+  padding-left: 8px;
+  padding-right: 6px;
+}
+
+/* Pager: same pill buttons as the zoom control. */
+.battle-pager {
+  width: min(900px, 100%);
+  margin: 14px auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.battle-pager-nav {
+  order: 1;
+}
+
+.battle-pager-status {
+  order: 2;
+}
+
+.battle-pager-size {
+  order: 3;
+}
+
+.battle-pager-size,
+.battle-pager-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.battle-pager-label,
+.battle-pager-status,
+.battle-pager-gap {
+  font-size: 16px !important;
+  line-height: 16px !important;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.battle-pager-status {
+  text-align: center;
+}
+
+.battle-pager .trade-size-buttons {
+  display: inline-flex;
+}
+
+.battle-pager .trade-size-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 0.75ch;
+  font-size: 16px !important;
+  line-height: 16px !important;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.battle-pager-nav .trade-size-btn {
+  border-radius: 3px;
+}
+
+.battle-pager-nav .trade-size-btn + .trade-size-btn {
+  border-left: 1px solid #a6a6a6;
+}
+
+.battle-pager .trade-size-btn.is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+
+/* Phones: the table keeps its designed width and scrolls sideways inside
+   the white box -- squeezing the leader column any further leaves no room
+   for a name, and the message cannot leave the leader's row. */
+@media (max-width: 575.98px) {
+  .battle-tower-controls .trade-region-filter {
+    width: 100%;
+    max-width: none;
+  }
+
+  .battle-honor-roll-label {
+    white-space: nowrap;
+  }
+
+  .battle-tower-page .battle-zoom-label {
+    display: none !important;
+  }
+
+  /* Controls one under the other: side by side, ROOM:ALL at 16px did not fit
+     half of a 345px box. The zoom buttons share the HONOR ROLL row. */
+  .battle-tower-controls {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "level level"
+      "room room"
+      "honor zoom";
+  }
+
+  .battle-control-zoom {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+
+  .battle-control-room .trade-region-filter {
+    margin-left: 0;
+  }
+
+  /* Two lines per leader, one group. A 412px phone leaves 345px inside the
+     frame borders and the five columns need 440-518px, so the row wraps:
+     LV, ROOM, the leader (sprite + class/name) and the POKéMON list on the
+     first line, the message box on the second, spanning the row. A table
+     row cannot wrap, so rows become flex boxes and the cell borders are
+     redrawn as flex gaps -- a light line inside the group, the darker row
+     border around it -- so the message reads as this leader's and not as a
+     row of its own. Nothing scrolls, in any filter state, down to 360px. */
+  .battle-table-panel,
+  .battle-table-grid[data-bt-extra="1"] .battle-table-panel,
+  .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* 2x on a phone: the panel keeps the box's width in its own units (under
+     zoom:2 a percentage halves, so double it back), renders at twice the
+     box and scrolls sideways inside the grid. Same two-line rows. */
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"],
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-panel,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="1"] .battle-table-panel,
+  .battle-tower-page[data-battle-zoom="2"] .battle-table-grid[data-bt-extra="2"] .battle-table-panel {
+    width: calc(100% * 2);
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  .battle-tower-page .battle-honor-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border-top: 1px solid #b4b4b4;
+  }
+
+  .battle-honor-table thead,
+  .battle-honor-table tbody {
+    display: block;
+  }
+
+  .battle-honor-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 1px;
+    background: #e2e2e2;
+    border: 1px solid #b4b4b4;
+    border-top: 0;
+  }
+
+  .battle-honor-table th,
+  .battle-honor-table td {
+    box-sizing: border-box;
+    border: 0;
+    background: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .battle-honor-table th {
+    background: #dfdfdf;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-level,
+  .battle-tower-page .battle-honor-table td.bt-col-level {
+    flex: 0 0 28px;
+    width: 28px;
+    min-width: 28px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-room,
+  .battle-tower-page .battle-honor-table td.bt-col-room {
+    flex: 0 0 30px;
+    width: 30px;
+    min-width: 30px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    justify-content: stretch;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-leader-cell > .bt-leader-subcols {
+    width: 100%;
+  }
+
+  /* A 10-character name (AERODACTYL) is 80px, plus the 15px bullet and
+     the cell padding. */
+  .battle-tower-page .battle-honor-table th.bt-col-pokemon,
+  .battle-tower-page .battle-honor-table td.bt-pokemon-cell {
+    flex: 0 0 102px;
+    width: 102px;
+    min-width: 102px;
+    padding: 3px;
+    justify-content: flex-start;
+  }
+
+  /* The MESSAGE header has no column of its own any more. */
+  .battle-tower-page .battle-honor-table th.bt-col-message {
+    display: none;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-message-cell {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 3px 0 !important;
+  }
+
+  .battle-honor-table .bt-empty-row td {
+    flex: 0 0 100%;
+  }
+
+  .bt-message-box {
+    width: 155px;
+    min-width: 155px;
+    max-width: 155px;
+    height: 44px;
+    min-height: 44px;
+    background-size: 155px 44px;
+    padding: 13px 5px 0 5px;
+    line-height: 1 !important;
+  }
+
+  /* The grid no longer needs to scroll; the title and controls stay put. */
+  .battle-table-grid {
+    width: 100%;
+    min-width: 0;
+    overflow-x: visible;
+    justify-content: flex-start;
+  }
+
+  .battle-tower-page .battle-table-shell {
+    overflow-x: visible;
+  }
+
+  .battle-pager {
+    gap: 8px;
+  }
+}
+
+/* Three lines per leader instead of two, wherever two would break a class
+   name mid-word (COOLTRAINERF is 96px): with LV and ROOM both open on any
+   phone, and with either open on a 360px phone. The leader alone fills the
+   first line after LV/ROOM; the POKéMON list and the message box share the
+   second (102 + 159 = 261px). */
+@media (max-width: 575.98px) {
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 calc(100% - 64px);
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table th.bt-col-pokemon {
+    display: none;
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-pokemon-cell {
+    flex: 1 1 102px;
+    width: auto;
+  }
+
+  .battle-tower-page .battle-table-grid[data-bt-extra="2"] .battle-honor-table td.bt-message-cell {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 3px 4px !important;
+  }
+}
+
+@media (max-width: 379.98px) {
+  .battle-tower-page .battle-honor-table th.bt-col-leader,
+  .battle-tower-page .battle-honor-table td.bt-leader-cell {
+    flex: 1 1 calc(100% - 64px);
+  }
+
+  .battle-tower-page .battle-honor-table th.bt-col-pokemon {
+    display: none;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-pokemon-cell {
+    flex: 1 1 102px;
+    width: auto;
+  }
+
+  .battle-tower-page .battle-honor-table td.bt-message-cell {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 3px 4px !important;
+  }
+}
+
+/* Gold, silver and bronze for the top three -- only with both filters set,
+   where the rows really are one room's ranking (with either filter on ALL
+   the list spans rooms or levels and a podium would be meaningless). The
+   tint sits on the cells, not the row, because a table row's background
+   loses to the cells' own. */
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-1 > td {
+  background: #f6ecc9;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-2 > td {
+  background: #e3e4ea;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-3 > td {
+  background: #edd9c1;
+}
+
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-1 .bt-leader-name-col,
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-2 .bt-leader-name-col,
+.battle-honor-table[data-bt-extra="0"] tr.bt-rank-3 .bt-leader-name-col {
+  border-left-color: #b9b9b9;
 }
