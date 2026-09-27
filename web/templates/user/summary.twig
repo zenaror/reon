@@ -272,6 +272,40 @@
                             {% endif %}
                         </div>
                         
+                        {# Entrar ou não no ranking. Fica no cartão do Pokémon
+                           Crystal porque é o jogo que manda estes dados; o
+                           site não tem campo para nenhum deles. #}
+                        <div class="mb-3">
+                            <label for="rankingsOptIn">{{ "account.rankings-opt-in"|trans }}</label>
+                            <small><p>{{ "account.rankings-opt-in-blurb"|trans }}</p></small>
+                            {# Desabilitado, não escondido: a pessoa tem direito
+                               de saber que a opção existe e por que ela não
+                               está disponível. Um controle que desaparece
+                               parece defeito. O servidor recusa de todo jeito
+                               (ver summary.php) -- `disabled` é o aviso, não a
+                               tranca. #}
+                            <select id="rankingsOptIn" name="rankingsOptIn"{% if rankings_blocked|default(false) %} disabled{% endif %}>
+                                <option value="1"{% if rankings_opt_in %} selected{% endif %}>{{ "account.rankings-opt-in-on"|trans }}</option>
+                                <option value="0"{% if not rankings_opt_in %} selected{% endif %}>{{ "account.rankings-opt-in-off"|trans }}</option>
+                            </select>
+                            {% if rankings_blocked|default(false) %}
+                                <small><p>{{ "account.rankings-blocked-age"|trans({'%age%': rankings_min_age|default(13)}) }}</p></small>
+                            {% else %}
+                                <small><p>{{ "account.rankings-opt-in-note"|trans }}</p></small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="birthDate">{{ "account.birth-date"|trans }}</label>
+                            <small><p>{{ "account.birth-date-blurb"|trans }}</p></small>
+                            <input id="birthDate" type="date" name="birthDate"
+                                   max="{{ "now"|date("Y-m-d") }}"
+                                   value="{{ birth_date|default('')|e }}">
+                            {% if ("birthDateValue" in errors) %}
+                            <small><p>{{ "account.birth-date-invalid"|trans }}</p></small>
+                            {% endif %}
+                        </div>
+
                         <div class="mb-3">
                             <label for="pokemonNewsCustomOptIn">{{ "account.pokemon-news-custom-opt-in"|trans }}</label>
                             <small><p>{{ "account.pokemon-news-custom-opt-in-blurb"|trans }}</p></small>

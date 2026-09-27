@@ -1,4 +1,5 @@
 <?php
+	require_once("../../classes/UserUtil.php");
 	require_once("../../classes/TemplateUtil.php");
 	require_once("../../classes/CsrfUtil.php");
 	require_once("../../classes/SessionUtil.php");
@@ -39,6 +40,10 @@
 	if ($page === 1) $notify->markAllRead($userId);
 
 	echo TemplateUtil::render("/user/notifications", [
+		// Mesmo lembrete da página de rankings, pelo mesmo motivo: quem
+		// desligou pode ter esquecido, e é aqui que a pessoa vem ver o que
+		// aconteceu com ela.
+		"rankings_reminder" => (UserUtil::rankingsOptIn($userId) === false),
 		"items" => $items,
 		"page" => $page,
 		"pages" => $pages,

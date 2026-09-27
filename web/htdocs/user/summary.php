@@ -83,6 +83,44 @@
                 exit;
             }
         }
+        // Ranking: entrar ou não. O dado continua sendo recebido e guardado
+        // -- o que esta preferência governa é a PUBLICAÇÃO, que é a página
+        // aberta e a tabela que o jogo mostra aos outros jogadores.
+        //
+        // Não apaga nada ao desligar, e isso é deliberado: quem desliga hoje
+        // e religa amanhã volta com o histórico, em vez de descobrir que a
+        // escolha custou o que já tinha. Quem quiser que o dado suma tem o
+        // botão de apagar a conta, que apaga mesmo.
+        // A data de nascimento, que a pessoa pode informar aqui se não
+        // informou no cadastro -- sem isso o campo opcional seria uma porta que
+        // fecha para sempre. Vazio APAGA a data: é dado dela, e retirar tem de
+        // ser possível pelo mesmo caminho que informar.
+        if (array_key_exists("birthDate", $_POST)) {
+            $nasc = UserUtil::normalizeBirthDate($_POST["birthDate"]);
+            if ($nasc === null) {
+                $errors[] = "birthDateValue";
+            } else {
+                $db = DBUtil::getInstance()->getDB();
+                $valor = ($nasc === "") ? null : $nasc;
+                $stmt = $db->prepare("update sys_users set birth_date = ? where id = ?");
+                $stmt->bind_param("si", $valor, $_SESSION["user_id"]);
+                $stmt->execute();
+            }
+        }
+
+        if (array_key_exists("rankingsOptIn", $_POST)) {
+            // A idade manda, e ela é conferida AQUI e não só na criação da
+            // conta: um POST direto nesta tela é o caminho óbvio para
+            // contornar uma checagem que só rodasse no cadastro. Quem está
+            // bloqueado não liga -- e não recebe erro tampouco, porque o
+            // controle já chega desabilitado; um POST assim é feito à mão.
+            $bloqueado = UserUtil::rankingsBlockedByAge($_SESSION["user_id"]) === true;
+            $db = DBUtil::getInstance()->getDB();
+            $stmt = $db->prepare("update sys_users set rankings_opt_in = ? where id = ?");
+            $opt = (!$bloqueado && ($_POST["rankingsOptIn"] ?? "") === "1") ? 1 : 0;
+            $stmt->bind_param("ii", $opt, $_SESSION["user_id"]);
+            $stmt->execute();
+        }
         if (array_key_exists("timeZone", $_POST)) {
             // Identifiers only; the default is Asia/Tokyo (the game's own
             // time zone). "+0900" was the old spelling of that default.
@@ -99,7 +137,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone, adapter_device, adapter_unmetered from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -132,6 +170,12 @@
 			// na conta quer dizer "não escolhi": o formulário abre no que o
 			// painel está mandando hoje, e é isso que a pessoa recebe se
 			// nunca salvar.
+			"rankings_opt_in" => ((int)$result["rankings_opt_in"] === 1),
+			"birth_date" => ($result["birth_date"] ?? ""),
+			// true só quando há data E ela diz menos de 13. Sem data é null,
+			// e a tela trata null como "pode escolher".
+			"rankings_blocked" => (UserUtil::rankingsBlockedByAge($_SESSION["user_id"]) === true),
+			"rankings_min_age" => UserUtil::RANKINGS_MIN_AGE,
 			"adapter_choice_allowed" => SettingsUtil::getInstance()->getValid("bin_user_choice") === "1",
 			"adapter_device" => $result["adapter_device"] !== null
 				? (string)(int)$result["adapter_device"]

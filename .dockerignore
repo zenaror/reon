@@ -6,3 +6,11 @@ web/tmp
 web/vendor
 docker-compose*
 Dockerfile
+
+# Configuração com credencial. Nada aqui é copiado para uma imagem hoje -- os
+# COPY do Dockerfile são de web/, db/, app/, maint/ e mail/, nenhum da raiz --
+# mas isto é a rede embaixo: no dia em que alguém escrever `COPY . .`, a senha
+# do MySQL entra numa camada e não sai mais nem apagando o arquivo depois.
+# O config chega por volume ou por ambiente; ver docker-compose.example.yml.
+config.json
+config.ini

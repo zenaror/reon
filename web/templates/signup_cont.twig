@@ -98,6 +98,59 @@
 								<option value="1" {% if pokemon_news_custom_opt_in is defined and pokemon_news_custom_opt_in == 1 %}selected{% endif %}>{{ "account.pokemon-news-custom-opt-in-on"|trans }}</option>
 							</select>
 						</div>
+						{# Opcional, e o formulário diz isso em vez de deixar a
+						   pessoa descobrir clicando em enviar. `max` é hoje:
+						   data no futuro não é nascimento. Não há `min` --
+						   quem digitar 1850 recebe o aviso do servidor, que é
+						   quem valida de verdade. #}
+						<div class="mb-3">
+							<label for="birthDate" class="form-label">{{ "account.birth-date"|trans }}</label>
+
+							<small>
+							<details>
+								<summary>{{ "what-is-this"|trans }}</summary>
+								<p>{{ "auth.birth-date-explanation-para1"|trans }}</p>
+								<p>{{ "auth.birth-date-explanation-para2"|trans }}</p>
+							</details>
+							</small>
+
+							<input id="birthDate" type="date" name="birthDate"
+							       max="{{ "now"|date("Y-m-d") }}"
+							       class="form-control{% if birth_date_invalid|default(false) %}{{ " is-invalid" }}{% endif %}"
+							       value="{{ birth_date|default('')|e }}">
+							<div class="form-text">{{ "account.birth-date-optional"|trans }}</div>
+							{% if birth_date_invalid|default(false) %}
+								<div class="invalid-feedback d-block">{{ "account.birth-date-invalid"|trans }}</div>
+							{% endif %}
+						</div>
+
+						{# Opcional de verdade: sem `required`, e o nome só é enviado
+						   quando marcada. O cadastro fecha do mesmo jeito com ela
+						   vazia -- ela existe para a escolha ser feita aqui, à
+						   vista, em vez de ficar só no painel, onde quem nunca
+						   abrir a tela nunca escolhe. #}
+						<div class="mb-3">
+							<label class="form-label">{{ "account.rankings-opt-in"|trans }}</label>
+
+							<small>
+							<details>
+								<summary>{{ "what-is-this"|trans }}</summary>
+								<p>{{ "auth.rankings-explanation-para1"|trans }}</p>
+								<p>{{ "auth.rankings-explanation-para2"|trans }}</p>
+								<p>{{ "auth.rankings-explanation-para3"|trans }}</p>
+							</details>
+							</small>
+
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" value="1"
+								       id="rankingsOptIn" name="rankingsOptIn"
+								       {% if rankings_opt_in is not defined or rankings_opt_in == 1 %}checked{% endif %}>
+								<label class="form-check-label" for="rankingsOptIn">
+									{{ "auth.rankings-opt-in-check"|trans }}
+								</label>
+							</div>
+							<div class="form-text">{{ "auth.rankings-opt-in-optional"|trans }}</div>
+						</div>
 						<button type="submit" class="btn btn-primary">{{'signup'|trans}}</button>
 					</fieldset>
 					<input type="hidden" name="id" value="{{ id|e }}" />

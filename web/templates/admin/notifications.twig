@@ -73,6 +73,24 @@
 	</form>
 
 	<section class="admin-section">
+		<h2 class="admin-section__title">{{ 'admin.notify-auto'|trans }}</h2>
+		<p class="admin-form__hint">{{ 'admin.notify-auto-intro'|trans }}</p>
+
+		<form method="post" action="/admin/notifications.php">
+			<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+			<input type="hidden" name="action" value="auto">
+			<label class="admin-form__row">
+				<span>{{ 'admin.notify-auto-rankings'|trans }}</span>
+				<input type="checkbox" name="rankings_reminder" value="1"{{ rankings_reminder_on ? ' checked' : '' }}>
+			</label>
+			<p class="admin-form__hint">{{ 'admin.notify-auto-rankings-note'|trans }}</p>
+			<div class="admin-form__row">
+				<button class="btn btn-primary" type="submit">{{ 'admin.notify-auto-save'|trans }}</button>
+			</div>
+		</form>
+	</section>
+
+	<section class="admin-section">
 		<h2 class="admin-section__title">{{ 'admin.notify-recent'|trans }}</h2>
 		{% if recent is empty %}
 			<p>{{ 'notify.none'|trans }}</p>

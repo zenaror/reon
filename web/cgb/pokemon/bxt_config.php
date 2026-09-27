@@ -160,6 +160,55 @@ if (!function_exists('bxt_debug_log')) {
     }
 }
 
+// -------- Preferência de ranking, por conta --------
+//
+// O padrão mora AQUI e em UserUtil::RANKINGS_OPT_IN_DEFAULT, e os dois
+// comentários dizem isso um do outro: é o valor que decide se uma conta
+// aparece no ranking quando ninguém abriu a tela para escolher.
+//
+// DESLIGADO. É a divergência 14 do registro: o Children's Code pede que a
+// configuração de privacidade já comece fechada em serviço que criança
+// acessa, e "ligado até alguém reclamar" não é começar fechada.
+//
+// Custou nada trocar porque a tabela de ranking estava vazia quando a coluna
+// nasceu: ninguém foi escondido, todo mundo começa junto. Se um dia isto
+// voltar a ser `true`, lembrar que a troca não é mais simétrica -- as contas
+// já existentes carregam o valor na coluna e não seguem este padrão.
+if (!defined('BXT_RANKINGS_OPT_IN_DEFAULT')) {
+    define('BXT_RANKINGS_OPT_IN_DEFAULT', false);
+}
+
+if (!function_exists('bxt_account_rankings_opt_in')) {
+    function bxt_account_rankings_opt_in($db, $accountId): bool {
+        $id = (int)$accountId;
+        if ($id <= 0) {
+            // Sem conta identificada não há preferência a respeitar, e
+            // gravar em nome de ninguém seria pior que não gravar.
+            return false;
+        }
+        static $cache = [];
+        if (array_key_exists($id, $cache)) {
+            return $cache[$id];
+        }
+        try {
+            $stmt = $db->prepare(
+                "select rankings_opt_in from sys_users where id = ? limit 1");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $linha = $stmt->get_result()->fetch_assoc();
+        } catch (\Throwable $e) {
+            // Instalação sem a coluna ainda (migração não rodada): vale o
+            // padrão, para o ranking não parar de funcionar por causa disto.
+            error_log("rankings_opt_in indisponível, usando o padrão: " . $e->getMessage());
+            return $cache[$id] = BXT_RANKINGS_OPT_IN_DEFAULT;
+        }
+        if ($linha === null) {
+            return $cache[$id] = false;
+        }
+        return $cache[$id] = ((int)$linha["rankings_opt_in"] === 1);
+    }
+}
+
 // Generic accessor, in case other code expects it.
 if (!function_exists('bxt_get_config_array')) {
     function bxt_get_config_array(): array {

@@ -56,6 +56,12 @@
 			// linha a CADA sessão, então ligar aqui faz efeito na partida
 			// seguinte, sem reiniciar o serviço.
 			"relay_capture" => "0",
+
+			// O lembrete automático de quem está fora dos rankings. Sai
+			// quando um resultado chega e não vai ser publicado, no
+			// máximo uma vez a cada 30 dias por conta. Desligar aqui cala
+			// o lembrete sem mexer na preferência de ninguém.
+			"rankings_reminder" => "1",
 		];
 
 		// O que cada chave aceita. Isto não é zelo: o valor vai para dentro
@@ -76,6 +82,7 @@
 			"bin_unmetered" => "bool",
 			"bin_user_choice" => "bool",
 			"relay_capture" => "bool",
+			"rankings_reminder" => "bool",
 		];
 
 		// Devolve true quando o valor serve para a chave.

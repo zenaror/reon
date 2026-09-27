@@ -35,6 +35,190 @@
 			return 0;
 		}
 		
+		// O padrão de quem nunca escolheu. Vive aqui e em
+		// BXT_RANKINGS_OPT_IN_DEFAULT (web/cgb/pokemon/bxt_config.php), e os
+		// dois comentários apontam um para o outro: é o valor que decide se
+		// uma conta aparece no ranking sem ninguém ter dito nada.
+		//
+		// DESLIGADO, que é o que a divergência 14 do registro pedia: o
+		// Children's Code quer a configuração começando fechada, não
+		// começando aberta com um jeito de fechar.
+		//
+		// Quem quiser aparecer diz que quer -- na caixa do cadastro ou na
+		// tela da conta -- e o lembrete automático existe justamente para
+		// isto não virar "ninguém aparece porque ninguém soube".
+		const RANKINGS_OPT_IN_DEFAULT = false;
+
+		// -------------------------------- Bloqueio de e-mail após exclusão
+		//
+		// Quanto tempo um endereço fica impedido de cadastrar de novo depois de
+		// a conta dele ser apagada. Pedido do dono em 25/09/2026, contra apagar
+		// e recriar em curto intervalo.
+		//
+		// Seis meses é um meio: o alvo é rotatividade, não punição, e o prazo
+		// tem custo dos dois lados -- curto demais não atrapalha quem quer
+		// reciclar conta, longo demais é guardar o rastro de alguém que pediu
+		// para ser esquecido. Mudar é mudar esta linha.
+		const EMAIL_BLOCK_MONTHS = 6;
+
+		// O hash que vai para sys_email_block. Nunca o endereço.
+		//
+		// Temperado com `email_block_pepper` do config.json, que fica FORA do
+		// banco de propósito: um tempero no mesmo dump que os hashes não
+		// protege de nada. Sem a chave configurada, ainda funciona -- só fica
+		// mais fraco, e avisa uma vez no log em vez de falhar calado.
+		private static function emailBlockHash($email) {
+			$normal = strtolower(trim((string)$email));
+			$pepper = "";
+			try {
+				$cfg = ConfigUtil::getInstance()->getConfig();
+				$pepper = (string)($cfg["email_block_pepper"] ?? "");
+			} catch (\Throwable $e) {
+				$pepper = "";
+			}
+			if ($pepper === "") {
+				static $avisado = false;
+				if (!$avisado) {
+					$avisado = true;
+					error_log("email_block_pepper ausente do config.json: os hashes de bloqueio ficam sem tempero");
+				}
+			}
+			return hash("sha256", $normal . "\0" . $pepper);
+		}
+
+		// O endereço está bloqueado? Devolve a data em que o bloqueio termina,
+		// ou null quando não está. Data em vez de booleano porque quem chama
+		// precisa dizer à pessoa até quando.
+		public static function emailBlockedUntil($email) {
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare(
+					"select blocked_until from sys_email_block
+					  where email_hash = ? and blocked_until > now() limit 1");
+				$h = self::emailBlockHash($email);
+				$stmt->bind_param("s", $h);
+				$stmt->execute();
+				$linha = $stmt->get_result()->fetch_assoc();
+			} catch (\Throwable $e) {
+				// Instalação sem a tabela ainda: não bloqueia ninguém por causa
+				// de uma migração que não rodou.
+				return null;
+			}
+			return $linha ? $linha["blocked_until"] : null;
+		}
+
+		// Registra o bloqueio. Chamado pela exclusão de conta, com o endereço
+		// ainda em mãos -- depois de apagar não há mais de onde tirar.
+		//
+		// REPLACE e não INSERT: se o mesmo endereço voltar a ser apagado, o
+		// prazo recomeça em vez de dar erro de chave duplicada.
+		public static function blockEmailAfterDeletion($email) {
+			$email = trim((string)$email);
+			if ($email === "") return false;
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare(
+					"replace into sys_email_block (email_hash, blocked_until)
+					 values (?, date_add(now(), interval " . (int)self::EMAIL_BLOCK_MONTHS . " month))");
+				$h = self::emailBlockHash($email);
+				$stmt->bind_param("s", $h);
+				return $stmt->execute();
+			} catch (\Throwable $e) {
+				error_log("blockEmailAfterDeletion falhou: " . $e->getMessage());
+				return false;
+			}
+		}
+
+		// A idade a partir da qual uma conta pode aparecer no ranking.
+		//
+		// 13 porque é o limiar da COPPA, o mais citado dos cinco que as leis
+		// usam, e porque publicar uma entrada de ranking publica **idade,
+		// gênero, estado e nome** juntos para os outros jogadores -- o jogo
+		// imprime os três numa linha só (ver ranking_table_common.asm:880, o
+		// offset $000A é este byte de idade). Não é só uma pontuação.
+		const RANKINGS_MIN_AGE = 13;
+
+		// A idade em anos completos hoje, a partir da data declarada. null
+		// quando a pessoa não informou -- e "não informou" não é zero: zero
+		// seria menor de idade, e faria o silêncio bloquear.
+		public static function ageFromBirthDate($birthDate) {
+			if ($birthDate === null || $birthDate === "" || $birthDate === "0000-00-00") return null;
+			try {
+				$nasc = new \DateTimeImmutable((string)$birthDate);
+			} catch (\Throwable $e) {
+				return null;
+			}
+			$hoje = new \DateTimeImmutable("today");
+			if ($nasc > $hoje) return null;   // data no futuro: dado inválido, não idade negativa
+			return (int)$nasc->diff($hoje)->y;
+		}
+
+		// A conta está impedida de aparecer no ranking pela idade declarada?
+		//
+		// Três respostas, e elas não são duas: true (impedida), false (pode
+		// escolher) e null (não informou a data). O null é o que preserva o
+		// comportamento de quem se cadastrou antes disto existir: sem data,
+		// vale a regra antiga -- o filtro pela idade que o cartucho manda, que
+		// vive na view bxt_ranking_shared.
+		public static function rankingsBlockedByAge($userId) {
+			$id = (int)$userId;
+			if ($id <= 0) return null;
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select birth_date from sys_users where id = ? limit 1");
+				$stmt->bind_param("i", $id);
+				$stmt->execute();
+				$linha = $stmt->get_result()->fetch_assoc();
+			} catch (\Throwable $e) {
+				// Instalação sem a coluna ainda: não bloqueia ninguém por
+				// causa de uma migração que não rodou.
+				return null;
+			}
+			if ($linha === null) return null;
+			$idade = self::ageFromBirthDate($linha["birth_date"]);
+			if ($idade === null) return null;
+			return $idade < self::RANKINGS_MIN_AGE;
+		}
+
+		// A data serve para validar, então o que não é data não entra. Devolve
+		// a data normalizada (Y-m-d), "" para campo vazio (opcional, e vazio é
+		// uma resposta válida), ou null quando o que veio não é uma data que
+		// se possa usar.
+		//
+		// O limite de 120 anos não é zelo: uma pessoa que digita 1899 errou o
+		// ano, e gravar isso como verdade faz a conta passar por adulta para
+		// sempre com um dado que ninguém mais vai reler.
+		public static function normalizeBirthDate($valor) {
+			$valor = trim((string)$valor);
+			if ($valor === "") return "";
+			if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $valor, $m)) return null;
+			if (!checkdate((int)$m[2], (int)$m[3], (int)$m[1])) return null;
+			$idade = self::ageFromBirthDate($valor);
+			if ($idade === null || $idade > 120) return null;
+			return $valor;
+		}
+
+		// A conta entra no ranking? null quando não há conta identificada,
+		// para quem chama poder distinguir "não quer" de "não sei quem é" --
+		// um aviso mostrado a visitante anônimo não teria o que pedir.
+		public static function rankingsOptIn($userId) {
+			$id = (int)$userId;
+			if ($id <= 0) return null;
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select rankings_opt_in from sys_users where id = ? limit 1");
+				$stmt->bind_param("i", $id);
+				$stmt->execute();
+				$linha = $stmt->get_result()->fetch_assoc();
+			} catch (\Throwable $e) {
+				// Instalação sem a coluna ainda: vale o padrão, em vez de a
+				// página quebrar por causa de um aviso.
+				return self::RANKINGS_OPT_IN_DEFAULT;
+			}
+			if ($linha === null) return null;
+			return ((int)$linha["rankings_opt_in"] === 1);
+		}
+
 		private function verifyPassword($password) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("select password from sys_users where id = ?");
@@ -313,6 +497,17 @@
 				return 0;
 			}
 
+			// Endereço de conta apagada há pouco. Devolve 0, como os dois casos
+			// acima, e a razão é a mesma que rege este método inteiro: dizer
+			// "este endereço está bloqueado" na tela contaria a um estranho que
+			// já existiu conta ali. Quem precisa saber é o dono da caixa, então
+			// a explicação vai por e-mail, para onde só ele lê.
+			$until = self::emailBlockedUntil($email);
+			if ($until !== null) {
+				self::$instance->sendSignupBlockedEmail($email, $until);
+				return 0;
+			}
+
 			$stmt = $db->prepare("select count(*) from sys_signup where email = ? and timestamp > date_sub(now(), interval " . self::EMAIL_THROTTLE_MINUTES . " minute)");
 			$stmt->bind_param("s", $email);
 			$stmt->execute();
@@ -371,10 +566,10 @@
 			return $email;
 		}
 		
-		public function completeSignupAction($id, $key, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn) {
+		public function completeSignupAction($id, $key, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn, $rankingsOptIn = self::RANKINGS_OPT_IN_DEFAULT, $birthDate = "") {
 			$email = self::$instance->verifySignupRequest($id, $key);
 
-			$result = self::$instance->createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn);
+			$result = self::$instance->createUser($email, $reonEmail, $password, $passwordConfirm, $tradeRegions, $customPokemonNewsOptIn, $rankingsOptIn, $birthDate);
 			if ($result > 0) {
 				return $result;
 			}
@@ -390,6 +585,25 @@
 			self::$instance->sendWelcomeEmail($email, $reonEmail);
 
 			return 0;
+		}
+
+		// Conta a quem é dono da caixa por que o cadastro dele não andou.
+		//
+		// Existe porque a tela não pode contar: um endereço bloqueado é um
+		// endereço que já teve conta, e revelar isso na página entregaria a
+		// qualquer um a existência de uma conta apagada. A caixa de entrada é o
+		// único lugar onde essa informação encontra só a pessoa certa.
+		private function sendSignupBlockedEmail($email, $until) {
+			$cfg = ConfigUtil::getInstance()->getConfig();
+			$message = TemplateUtil::render("/email/signup_blocked", [
+				"hostname" => $cfg["hostname"],
+				"until" => date("j F Y", strtotime((string)$until)),
+				"months" => self::EMAIL_BLOCK_MONTHS,
+			]);
+			// Falha aqui não propaga, igual aos outros avisos deste fluxo: o
+			// bloqueio vale de todo jeito, e a pessoa vê a mesma tela.
+			self::$instance->sendUtf8Email($email, "noreply@".$cfg["email_domain"],
+				"REON registration unavailable for this address", $message);
 		}
 
 		// Confirms the registration landed and, more usefully, tells the person
@@ -494,7 +708,7 @@
 			return implode(",", $pools);
 		}
 
-		public function createUser($email, $username, $password, $passwordConfirm, $tradeRegions = self::TRADE_REGION_DEFAULT, $customPokemonNewsOptIn = 0) {
+		public function createUser($email, $username, $password, $passwordConfirm, $tradeRegions = self::TRADE_REGION_DEFAULT, $customPokemonNewsOptIn = 0, $rankingsOptIn = self::RANKINGS_OPT_IN_DEFAULT, $birthDate = "") {
 			if (!isset($email)) return 1;
 			if (!self::$instance->isUsernameValidAndFree($username)) return 2;
 			if ($password != $passwordConfirm) return 3;
@@ -504,6 +718,28 @@
             if ($tradeRegions === null) $tradeRegions = self::TRADE_REGION_DEFAULT;
 			
 			$opt_in = ($customPokemonNewsOptIn == 1) ? 1 : 0;
+
+			// A escolha da caixa do cadastro. Quem chama sem passar nada --
+			// o seeder, um teste, qualquer coisa que não seja o formulário --
+			// cai no mesmo padrão que a coluna usa, para uma conta criada por
+			// fora não nascer diferente de uma criada pela tela.
+			$rankings = $rankingsOptIn ? 1 : 0;
+
+			// Campo opcional: vazio grava NULL, e NULL quer dizer "não
+			// informou". Data inválida também vira NULL em vez de reprovar o
+			// cadastro -- reprovar por causa de um campo que a pessoa não era
+			// obrigada a preencher seria pior que não ter o campo.
+			$nascimento = self::normalizeBirthDate($birthDate);
+			if ($nascimento === null || $nascimento === "") $nascimento = null;
+
+			// Menor de 13 pela data que ela mesma deu: a conta nasce com o
+			// ranking desligado e sem poder ligar. Aqui é só o valor inicial;
+			// quem impede de ligar depois é rankingsBlockedByAge(), porque uma
+			// checagem só na criação seria contornável abrindo a tela da conta.
+			if ($nascimento !== null) {
+				$idade = self::ageFromBirthDate($nascimento);
+				if ($idade !== null && $idade < self::RANKINGS_MIN_AGE) $rankings = 0;
+			}
 
 			$password_hash = self::$instance->getPasswordHash($password);
 			$dion_ppp_id = self::$instance->generatePPPId();
@@ -516,8 +752,8 @@
 			$dion_email_local = self::$instance->deriveDionLocal($username);
 			if ($dion_email_local === "") return 2;
 
-			$stmt = $db->prepare("insert into sys_users (email, username, password, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in) values (?,?,?,?,?,?,0,?,?)");
-			$stmt->bind_param("sssssssi", $email, $username, $password_hash, $dion_ppp_id, $dion_email_local, $log_in_password, $tradeRegions, $opt_in);
+			$stmt = $db->prepare("insert into sys_users (email, username, password, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, rankings_opt_in, birth_date) values (?,?,?,?,?,?,0,?,?,?,?)");
+			$stmt->bind_param("sssssssiis", $email, $username, $password_hash, $dion_ppp_id, $dion_email_local, $log_in_password, $tradeRegions, $opt_in, $rankings, $nascimento);
 			$stmt->execute();
 
 			require_once("RelayUtil.php");

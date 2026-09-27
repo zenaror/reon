@@ -1,0 +1,18 @@
+# Tarefas PHP. Espelha os timers systemd da produção, como o docker.crontab.
+#
+#   reon-mail-trash-purge    OnCalendar=*-*-* 04:30:00
+#   reon-seed-touch          OnCalendar=*-*-* 23:00:00
+#   reon-service-status      OnCalendar=*-*-* *:0/5:00
+#
+# Rodam numa imagem separada porque precisam do PHP e das dependências do
+# composer -- a imagem do cron Node não tem nenhum dos dois. Eram invisíveis
+# aqui até 24/09/2026: existiam na produção e em lugar nenhum do Docker.
+#
+# O seed-touch só atualiza o carimbo das linhas que o seeder já criou, para o
+# dado de demonstração não expirar. Numa instalação sem dado semeado ele não
+# faz nada. Se você não quer dado falso, comente a linha em vez de apagá-la:
+# apagar esconde que a produção tem esse timer.
+
+30 4 * * * php /var/www/reon/web/scripts/purge_mail_trash.php
+*/5 * * * * php /var/www/reon/web/scripts/check_service_status.php
+0 23 * * * php /var/www/reon/maint/seed_pokemon_fake_data.php --touch

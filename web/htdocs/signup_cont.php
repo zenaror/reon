@@ -18,6 +18,20 @@
 				$optIn = ($_POST["pokemonNewsCustomOptIn"] == "1") ? 1 : 0;
 			}
 
+			// A caixa dos rankings, e ela é opcional de verdade: não entra no
+			// isset() acima, porque caixa desmarcada não é enviada pelo
+			// navegador -- se entrasse, desmarcar reprovaria o cadastro com
+			// um 400 e ninguém entenderia por quê.
+			$rankingsOptIn = isset($_POST["rankingsOptIn"]) ? 1 : 0;
+
+			// Data de nascimento, opcional. Também fora do isset() obrigatório
+			// acima, pelo mesmo motivo da caixa: campo que a pessoa não precisa
+			// preencher não pode reprovar o cadastro.
+			$birthDate = (string)($_POST["birthDate"] ?? "");
+			// Normaliza aqui só para devolver ao formulário o que foi digitado
+			// sem propagar lixo; quem decide o que grava é o createUser.
+			$birthDateOk = UserUtil::normalizeBirthDate($birthDate);
+
 			$result = UserUtil::getInstance()->completeSignupAction(
 				$_POST["id"],
 				$_POST["key"],
@@ -25,7 +39,9 @@
 				$_POST["password"],
 				$_POST["passwordConfirm"],
 				$_POST["tradeRegions"],
-				$optIn
+				$optIn,
+				$rankingsOptIn,
+				$birthDate
 			);
 			echo TemplateUtil::render("signup_cont", [
 				"result" => $result,
@@ -36,7 +52,12 @@
 				"email_domain" => $config["email_domain"],
 				"email_domain_dion" => $config["email_domain_dion"],
 				"trade_regions" => $_POST["tradeRegions"],
-				"pokemon_news_custom_opt_in" => $optIn
+				"pokemon_news_custom_opt_in" => $optIn,
+				"rankings_opt_in" => $rankingsOptIn,
+				// Só devolve o que é data; se a pessoa digitou algo que não é,
+				// o campo volta vazio em vez de repetir o erro dela.
+				"birth_date" => ($birthDateOk === null ? "" : $birthDateOk),
+				"birth_date_invalid" => ($birthDateOk === null && trim($birthDate) !== "")
 			]);
 		} else {
 			http_response_code(400);
@@ -56,7 +77,13 @@
 					"email_domain" => $config["email_domain"],
 					"email_domain_dion" => $config["email_domain_dion"],
 					"trade_regions" => "efdsipuj",
-					"pokemon_news_custom_opt_in" => 0
+					"pokemon_news_custom_opt_in" => 0,
+					"birth_date" => "",
+					"birth_date_invalid" => false,
+					// A caixa começa no mesmo padrão que a coluna usa. São o
+					// mesmo valor de propósito: se o padrão virar desligado,
+					// a tela de cadastro acompanha sem ninguém lembrar dela.
+					"rankings_opt_in" => UserUtil::RANKINGS_OPT_IN_DEFAULT ? 1 : 0
 				]);
 			} else {
 				echo TemplateUtil::render("signup_cont", [

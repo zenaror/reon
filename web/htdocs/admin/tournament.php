@@ -60,6 +60,7 @@
 	$nomes = $loja->usernames($sessoes);
 
 	echo TemplateUtil::render("admin/tournament", [
+		"retention_days" => CaptureStoreUtil::RETENTION_DAYS,
 		"notice" => $notice,
 		"notice_kind" => $noticeKind,
 		"on" => $loja->isOn(),

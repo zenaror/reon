@@ -23,5 +23,6 @@
 	"mobile_center_numb": "#9677",
 	"amoj_regist": "h200",
 	"agtj_email": "system@xxxx.dion.ne.jp",
-	"agtj_track": "system@xxxx.dion.ne.jp"
+	"agtj_track": "system@xxxx.dion.ne.jp",
+	"email_block_pepper": "CHANGE-ME-openssl-rand-hex-32"
 }

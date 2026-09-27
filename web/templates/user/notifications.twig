@@ -21,6 +21,15 @@
 			   apontava continua onde estava. #}
 			<p class="mt-summary">{{ 'notify.history-note'|trans }}</p>
 
+			{# Mesmo aviso da página de rankings, no lugar onde a pessoa vem
+			   ver o que o sistema tem a dizer para ela. #}
+			{% if rankings_reminder|default(false) %}
+				<p class="mt-summary">
+					{{ 'account.rankings-reminder'|trans }}
+					<a href="/user/summary.php">{{ 'account.rankings-reminder-link'|trans }}</a>.
+				</p>
+			{% endif %}
+
 			{% if items is empty %}
 				<p class="mt-empty">{{ 'notify.none'|trans }}</p>
 			{% else %}
