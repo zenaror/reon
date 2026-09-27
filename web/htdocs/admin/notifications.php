@@ -5,6 +5,7 @@
 	require_once("../../classes/AdminUtil.php");
 	require_once("../../classes/NotificationUtil.php");
 	require_once("../../classes/DBUtil.php");
+	require_once("../../classes/SettingsUtil.php");
 	session_start();
 
 	AdminUtil::guard();
@@ -17,7 +18,24 @@
 	$blank = ["to" => "all", "users" => [], "category" => "admin", "title" => "", "body" => "", "link" => ""];
 	$form = $blank;
 
-	if ($_SERVER["REQUEST_METHOD"] === "POST") {
+	$cfg = SettingsUtil::getInstance();
+
+	// Duas coisas postam para esta página: o formulário de escrever um aviso
+	// e a caixa dos avisos automáticos. O `action` separa as duas, porque
+	// salvar a caixa não é enviar nada -- sem isso, mexer na caixa cairia no
+	// caminho do envio e reclamaria de título vazio.
+	if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "auto") {
+		CsrfUtil::check();
+		// Caixa desmarcada não chega no POST: a ausência é "0", e não "não
+		// mexeu" -- que deixaria ligado para sempre depois da primeira vez.
+		$novo = (($_POST["rankings_reminder"] ?? "") === "1") ? "1" : "0";
+		$ok = $cfg->set("rankings_reminder", $novo);
+		$admin->log($ok ? "notify.auto" : "notify.auto-failed",
+			"rankings_reminder", $novo === "1" ? "on" : "off");
+		$notice = TemplateUtil::translate($ok
+			? "admin.notify-auto-saved" : "admin.notify-auto-failed");
+		$noticeKind = $ok ? "ok" : "bad";
+	} elseif ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
 
 		$form["to"] = ($_POST["to"] ?? "all") === "user" ? "user" : "all";
@@ -131,4 +149,5 @@
 		"users" => $users,
 		"categories" => NotificationUtil::CATEGORIES,
 		"recent" => $recent,
+		"rankings_reminder_on" => ($cfg->getValid("rankings_reminder") === "1"),
 	]);

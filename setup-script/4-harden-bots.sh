@@ -15,15 +15,23 @@
 #     known bots (search, AI scraping, scanners) -- whether the request came
 #     through the real hostname or straight to the IP, since reon.conf's
 #     "server_name _" block answers both.
-#   - Neither effect applies to /cgb/, /api/ or /01/: those routes are
-#     fetched by the Game Boy itself (Mobile Adapter GB, a minimal ~2001
-#     HTTP client) that expects no extra response headers, and whose game
-#     User-Agent (e.g. CGB-BXTE-00) must never be judged by the bot
-#     heuristic.
+#   - Neither effect applies to /cgb/, /api/ or the /NN/ game content: those
+#     routes are fetched by the Game Boy itself (Mobile Adapter GB, a minimal
+#     ~2001 HTTP client) that expects no extra response headers, and whose
+#     game User-Agent (e.g. CGB-BXTE-00) must never be judged by the bot
+#     heuristic. The exemption is matched on $uri, the decoded and normalised
+#     path -- see the comment at the injection site: matching the raw
+#     $request_uri let a bot claim the exemption with /cgb/%2e%2e/ and be
+#     served the page anyway.
 #
-# IMPORTANT -- does not survive a "sudo bash setup-reon.sh": that script
-# regenerates the site from scratch. Run this one again afterwards, every
-# time you run setup-reon.sh.
+# IMPORTANT -- the User-Agent rules live INSIDE sites-enabled/reon.conf, and
+# "sudo bash 1-setup-reon.sh" regenerates that file from scratch, which takes
+# them with it. That script now calls this one at the end for exactly that
+# reason (reapply_bot_hardening), so the normal path is covered. This note used
+# to say "run this one again afterwards" and be the only protection -- it
+# wasn't: the site was regenerated on 08/09/2026 and the blocking was missing,
+# unnoticed, until 24/09. If you edit the nginx config by any other means,
+# run this again yourself.
 set -euo pipefail
 
 if [[ $EUID -ne 0 ]]; then
@@ -72,10 +80,41 @@ awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v regex="$BOT_UA_REGEX" '
         print "    if ($http_user_agent ~* \"" regex "\") {"
         print "        set $reon_bot_block 1;"
         print "    }"
-        print "    # Never block /cgb/, /api/ or /01/ -- the Game Boy itself hits those"
-        print "    # routes, and game User-Agents (e.g. CGB-BXTE-00) are short and unusual"
-        print "    # enough to collide, in theory, with one of the patterns above."
-        print "    if ($request_uri ~ \"^/(cgb|api|01)/\") {"
+        print "    # Never block /cgb/, /api/ or the /NN/ game content -- the Game Boy"
+        print "    # itself hits those routes, and game User-Agents (e.g. CGB-BXTE-00) are"
+        print "    # short and unusual enough to collide, in theory, with one of the"
+        print "    # patterns above."
+        print "    #"
+        print "    # $uri, NOT $request_uri, and that distinction was a real bypass:"
+        print "    # $request_uri is the raw line the client sent, while $uri is decoded"
+        print "    # and normalised, and it is $uri that decides what gets served. With"
+        print "    # $request_uri here, a blocked bot asking for"
+        print "    #     /cgb/%2e%2e/pokemon/rankings.php"
+        print "    # claimed the exemption on a path starting with /cgb/ and was then"
+        print "    # served /pokemon/rankings.php -- measured, byte for byte the same page"
+        print "    # a browser gets. Deciding the exemption and the response from the same"
+        print "    # variable is what closes that whole class of trick, not any one pattern."
+        print "    #"
+        print "    # [0-9]{2} rather than a literal 01, to match the redirect rule below:"
+        print "    # game content lives under /01/ today, and a second game would be the"
+        print "    # kind of change nobody thinks to come back here for."
+        print "    if ($uri ~ \"^/(cgb|api|[0-9]{2})/\") {"
+        print "        set $reon_bot_block 0;"
+        print "    }"
+        print "    # robots.txt is served to EVERYONE, blocked agents included, and that"
+        print "    # is not an inconsistency. RFC 9309 says a crawler that gets a 4xx on"
+        print "    # robots.txt may treat the site as having no restrictions -- so hiding"
+        print "    # the file from the very agents it is written for is backwards. Let them"
+        print "    # read the ban and leave on their own; the 403 on everything else is"
+        print "    # what actually enforces it."
+        print "    if ($uri = \"/robots.txt\") {"
+        print "        set $reon_bot_block 0;"
+        print "    }"
+        print "    # And the ACME challenge, for the same reason the redirect below exempts"
+        print "    # it: certbot renews by webroot over HTTP, and a renewal that starts"
+        print "    # failing does so silently, 90 days from now. [.] instead of an escaped"
+        print "    # dot to keep the quoting through awk readable."
+        print "    if ($uri ~ \"^/[.]well-known/\") {"
         print "        set $reon_bot_block 0;"
         print "    }"
         print "    if ($reon_bot_block) {"

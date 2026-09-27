@@ -29,6 +29,7 @@
 			["sys_email_change",         "user_id"],
 			["sys_password_reset",       "user_id"],
 			["sys_web_outbound_log",     "user_id"],
+			["sys_reminder_log",         "user_id"],
 			["amk_user_map",             "user_id"],
 			["bxt_battle_tower_honor_roll", "account_id"],
 			["bxt_battle_tower_records",    "account_id"],
@@ -249,6 +250,21 @@
 
 			$n = $this->linhasRelay($userId, true);
 			if ($n) $feito["tabelas"]["relay_users"] = $n;
+
+			// O bloqueio do endereço, ANTES de apagar o cadastro: é a última
+			// chance de ter o e-mail em mãos. Depois do delete não há de onde
+			// tirar, e um bloqueio que depende de ler a conta apagada nunca
+			// aconteceria.
+			//
+			// Só o hash é guardado -- ver a migração de sys_email_block para o
+			// porquê. E a falha não impede a exclusão: se o bloqueio não
+			// entrar, a pessoa consegue recadastrar antes do prazo, o que é um
+			// incômodo; abortar a exclusão por causa disso seria negar um
+			// direito por causa de uma conveniência.
+			if (!empty($conta["email"])) {
+				require_once(__DIR__ . "/UserUtil.php");
+				$feito["email_bloqueado"] = UserUtil::blockEmailAfterDeletion($conta["email"]);
+			}
 
 			// O cadastro por último: enquanto ele existir, o que sobrou tem
 			// dono e pode ser apagado numa segunda tentativa.

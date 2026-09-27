@@ -31,6 +31,40 @@
 		// se transforma "baixar log" em "ler qualquer coisa do disco".
 		const NAME = '/^[0-9]{8}T[0-9]{6}-[A-Za-z0-9]+-[A-Za-z0-9]+-(caller|receiver|peer)\.jsonl$/';
 
+		// Quantos dias uma gravação fica no disco antes de ser apagada.
+		//
+		// Decisão do dono em 25/09/2026, e o número vem do fluxo pretendido:
+		// assim que a partida acaba, baixa-se o arquivo para converter em
+		// replay. Quinze dias é folga para isso, não arquivo morto.
+		//
+		// Quem apaga é o purge_retention.php, e o prazo vive AQUI porque aqui
+		// mora a definição de onde os arquivos estão -- duas constantes em dois
+		// arquivos é como uma das duas fica velha.
+		const RETENTION_DAYS = 15;
+
+		// Apaga as gravações além da janela. Devolve quantas foram.
+		//
+		// Anda por readdir e não por glob para casar o mesmo NAME que o
+		// download usa: um arquivo que não é gravação nossa não é nosso para
+		// apagar, e um diretório de estado do systemd pode ter outras coisas.
+		public function purgeOld($dias = self::RETENTION_DAYS) {
+			if (!$this->readable()) return 0;
+			$limite = time() - ((int)$dias * 86400);
+			$n = 0;
+			$dh = @opendir(self::DIRECTORY);
+			if ($dh === false) return 0;
+			while (($nome = readdir($dh)) !== false) {
+				if (!preg_match(self::NAME, $nome)) continue;
+				$caminho = self::DIRECTORY . "/" . $nome;
+				if (!is_file($caminho)) continue;
+				$mtime = @filemtime($caminho);
+				if ($mtime === false || $mtime > $limite) continue;
+				if (@unlink($caminho)) $n++;
+			}
+			closedir($dh);
+			return $n;
+		}
+
 		private static $instance;
 
 		public static function getInstance() {

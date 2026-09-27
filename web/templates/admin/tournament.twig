@@ -83,5 +83,11 @@
 			</table>
 			<p class="admin-form__hint">{{ 'admin.tournament-merge'|trans }}</p>
 		{% endif %}
+
+		{# FORA do if acima, de propósito: quem liga o modo precisa saber a
+		   janela ANTES de gravar, não depois de ter uma gravação na lista.
+		   Estava dentro do ramo "existem gravações" e não aparecia na tela
+		   vazia, que é justamente onde o administrador começa. #}
+		<p class="admin-form__hint">{{ 'admin.tournament-retention'|trans({'%days%': retention_days}) }}</p>
 	</section>
 {% endblock %}

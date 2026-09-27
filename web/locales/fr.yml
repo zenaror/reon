@@ -123,6 +123,13 @@ auth:
   reon-username-mail-truncated: "La Game Boy ne retient que 8 caractères : l'adresse dans le jeu est donc votre nom d'utilisateur abrégé — les deux arrivent dans la même boîte."
   region-explanation-para1: REON permet l'échange international pour les joueurs de Pokémon Cristal, via la fonctionnalité en jeu appelée le Coin Troc. Cela inclut les échanges entre jeux japonais et non-japonais, normalement incompatibles à cause de jeux de caractères différents. Pour rendre ces échanges possibles, le service modifie les surnoms des Pokémon, les noms des Dresseurs, et les messages écrits sur le Courrier lors de la mise en relation entre jeux japonais et non-japonais (par exemple, en changeant « A » en « ア », et vice-versa). Ces changements sont irréversibles, mais ils visent à imiter aussi fidèlement que possible l'écriture de la langue d'origine.
   region-explanation-para2: Choisissez le pool de régions avec lesquelles vous êtes d'accord d'échanger. Ce réglage peut aussi être modifié après l'inscription.
+  rankings-explanation-para1: "Quand tu joues à Pokémon Cristal avec l'adaptateur, le jeu nous envoie ton score avec le nom, l'âge et la région que tu as saisis dans le jeu, plus un court message composé à partir de la liste de mots du jeu lui-même. Cette partie n'est pas facultative : le jeu en a besoin pour fonctionner, et nous la conservons de toute façon."
+  rankings-explanation-para2: "Cette case concerne les autres joueurs. Cochée, ton nom, ta région et ton message apparaissent dans les classements — ceux de ce site et ceux que le jeu affiche lui-même. Laissée vide, ton score compte toujours pour toi, mais personne d'autre ne voit qui tu es."
+  rankings-explanation-para3: "Tu peux changer d'avis quand tu veux, sur la page de ton compte, et cela marche dans les deux sens : désactiver masque ce qui est déjà là, activer le fait revenir. Une exception : si l'âge défini dans ton jeu est inférieur à 13 ans, tu restes hors des classements quoi que dise cette case."
+  rankings-opt-in-check: "Oui, montrez-moi dans les classements"
+  rankings-opt-in-optional: "Facultatif — l'inscription se termine dans les deux cas."
+  birth-date-explanation-para1: "Nous la demandons pour savoir si tu as l'âge d'apparaître dans les classements publics. Y apparaître montre ton âge, ton genre, ta région et ton nom d'un coup à tous les autres joueurs — le jeu les affiche sur une seule ligne — ce n'est donc pas quelque chose à activer pour un enfant."
+  birth-date-explanation-para2: "Elle n'est jamais montrée à personne, et rien d'autre sur le site ne l'utilise. Tu peux la laisser vide et terminer ton inscription quand même : les classements restent simplement fermés jusqu'à ce que tu la remplisses, ce que tu peux faire plus tard sur la page de ton compte. Ce n'est pas non plus l'âge que tu saisis dans le jeu : celui-là, la cartouche l'envoie toute seule, et personne ne le vérifie."
 password-reset:
   title: Réinitialiser votre mot de passe
   this-email-not-registered: Cet addresse ne s'est pas enregistré
@@ -191,6 +198,18 @@ account:
   adapter-blurb: "Quel adaptateur les jeux voient en lisant votre mobile_config.bin. Cela change la couleur et le nom affichés par le jeu, rien d'autre."
   adapter-unmetered: "Hors forfait (pas de facturation à la minute)"
   adapter-unmetered-explanation: "Indique au jeu que l'appel n'est pas facturé à la minute. Dans Pokémon Cristal japonais, cela supprime la limite de temps des combats par mobile. Ce que cela fait dans les autres jeux n'est pas connu — personne ne l'a documenté — donc si un jeu se comporte bizarrement avec cette option activée, la désactiver est la première chose à essayer."
+  rankings-opt-in: "Classements"
+  rankings-opt-in-blurb: "Si ce que votre jeu envoie peut être montré à d'autres — sur les pages de classement et dans le tableau que les jeux affichent. L'envoi lui-même ne change pas : la cartouche envoie ce qu'elle envoie, et le serveur le conserve dans les deux cas."
+  rankings-opt-in-on: "M'afficher dans les classements"
+  rankings-opt-in-off: "Me laisser hors des classements"
+  rankings-opt-in-note: "Ce qui s'affiche est le nom envoyé par votre jeu, votre état ou province, et le message que le jeu vous a laissé composer à partir de sa propre liste de mots. Désactiver masque aussi ce qui est déjà là ; réactiver le fait revenir."
+  birth-date: "Date de naissance"
+  birth-date-blurb: "Elle sert à une seule chose : décider si tes résultats peuvent apparaître dans les classements. Elle n'est jamais montrée à personne, et ce n'est pas ce que le jeu envoie — le jeu a son propre champ d'âge, que tu saisis dedans. Laisse vide pour la retirer."
+  birth-date-optional: "Facultatif — l'inscription se termine sans elle."
+  birth-date-invalid: "Cette date ne convient pas. Vérifie l'année."
+  rankings-blocked-age: "Les classements sont fermés pour ce compte : la date de naissance indique moins de %age% ans. Une entrée de classement montre ton âge, ton genre, ta région et ton nom à tous les autres joueurs — c'est pourquoi ce n'est pas un choix ici."
+  rankings-reminder: "Vous n'êtes pas dans les classements. Ce que votre jeu envoie est conservé, mais montré à personne — vous pouvez changer cela sur"
+  rankings-reminder-link: "la page de votre compte"
   download-my-data: "Télécharger mes données"
   data-rights-note: "Le téléchargement contient tout ce que le serveur conserve sur ce compte, dans un seul fichier JSON, courrier compris. Les clés d'appareil et le jeton de relais sont mentionnés mais non écrits : ce sont des identifiants en service, et une copie dans un fichier que vous emportez est une copie qui n'existait pas avant."
   delete-account: "Supprimer le compte"
@@ -1125,6 +1144,7 @@ devices:
   ago-days: "il y a %n% jours"
 
 notify:
+  rankings-off: "Le résultat de votre jeu a été conservé mais pas affiché : vous n'êtes pas dans les classements. Vous pouvez y entrer depuis la page de votre compte."
   title: "Notifications"
   bell: "Notifications"
   none: "Rien pour l'instant."
@@ -1168,6 +1188,25 @@ admin:
   adapter-save: "Enregistrer"
   adapter-footer: "Une modification enregistrée vaut pour le prochain téléchargement. Personne n'a besoin de retélécharger : un fichier déjà en service continue de fonctionner, et ces valeurs décident seulement vers quoi pointe un nouveau."
   nav-tournament: "Mode tournoi"
+  nav-stadium: "Mobile Stadium"
+  stadium-title: "Mobile Stadium"
+  stadium-intro: "Ce que le mode mobile de Pokémon Stadium 2 télécharge via une cartouche Crystal. Construit à partir de la base de données, comme les Pokémon News."
+  stadium-no-generator: "Cette page liste et active/désactive des distributions. Elle ne construit pas le bloc de 0xFFE octets — cela vient de qui assemble les données de combat, et s'importe."
+  stadium-empty: "Aucune distribution enregistrée pour cette région pour l'instant."
+  stadium-when: "Ajoutée"
+  stadium-slug: "Slug"
+  stadium-cost: "Coût"
+  stadium-size: "Taille (octets)"
+  stadium-title-col: "Titre"
+  stadium-active: "État"
+  stadium-cost-none: "gratuit, sans connexion"
+  stadium-active-yes: "Active"
+  stadium-active-no: "Inactive"
+  stadium-activate: "Activer"
+  stadium-deactivate: "Désactiver"
+  stadium-order-note: "Le jeu ne télécharge que la première entrée éligible par session. Activer plusieurs entrées pour la même région n'a de sens que comme des fenêtres temporelles disjointes — jamais du contenu ancien après du nouveau, sinon un joueur qui a déjà le plus récent se voit reproposer l'ancien, en alternance."
+  stadium-saved: "Enregistré."
+  stadium-failed: "Impossible d'enregistrer."
   tournament-title: "Mode tournoi"
   tournament-intro: "Activé, le relais enregistre ce qui passe entre les deux consoles pendant une session de liaison, pour qu'une partie puisse devenir un replay ensuite. Seule la conversation entre les consoles est enregistrée : ni poignée de main, ni jeton, ni connexion, rien du compte."
   tournament-mode: "Mode"
@@ -1191,6 +1230,7 @@ admin:
   tournament-download-peer: "Télécharger l'autre côté"
   tournament-no-peer: "l'autre côté manque"
   tournament-merge: "Une partie fait deux fichiers, un par console, car chaque côté n'enregistre que ce que sa propre console a envoyé. capture_merge.py, dans le dépôt mobile-relay, les fusionne par horodatage et rend la séquence ordonnée."
+  tournament-retention: "Les enregistrements sont supprimés au bout de %days% jours. Téléchargez la paire qui vous intéresse avant : une fois les fichiers partis, le match ne se rejoue pas depuis le serveur."
   adapter-saved: "Enregistré. Les nouveaux téléchargements utilisent ces valeurs."
   adapter-failed: "Enregistrement impossible."
   adapter-invalid: "Rien n'a été enregistré. Vérifiez les champs signalés ci-dessous : une adresse ou un port incohérent produirait un fichier illisible pour la cartouche."
@@ -1353,6 +1393,13 @@ admin:
   notify-need-title: Un titre est obligatoire.
   notify-no-user: Choisissez un compte destinataire.
   notify-recent: Envoyées récemment
+  notify-auto: "Avis automatiques"
+  notify-auto-intro: "Messages que le système envoie tout seul, sans que personne ne les écrive ici."
+  notify-auto-rankings: "Rappeler aux joueurs absents des classements"
+  notify-auto-rankings-note: "Envoyé aux comptes dont les résultats sont conservés mais pas affichés, pour leur dire qu'ils peuvent rejoindre les classements. Renvoyé au plus tous les 30 jours, et seulement tant que l'avis n'a pas été lu — le lire ou l'écarter empêche le suivant."
+  notify-auto-save: "Enregistrer"
+  notify-auto-saved: "Avis automatiques mis à jour."
+  notify-auto-failed: "Impossible d'enregistrer le réglage des avis automatiques."
   notify-when: Quand
   notify-who: À
   users-title: Comptes

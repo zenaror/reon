@@ -1,6 +1,10 @@
-ARG NODE_VERSION=25.2-trixie
-ARG NODE_VERSION2=25.2-alpine
-ARG PHP_VERSION=8.3
+# Versões alinhadas com a produção em 24/09/2026. Conferidas na máquina, não
+# escolhidas aqui: PHP 8.5.4, Node 22.11.0, .NET 9.0.317, MySQL 8.4.11,
+# nginx 1.28.3. O Dockerfile estava em PHP 8.3 e Node 25.2, que não existem
+# em lugar nenhum da operação.
+ARG NODE_VERSION=22-trixie
+ARG NODE_VERSION2=22-alpine
+ARG PHP_VERSION=8.5
 ARG DOTNET_VERSION=9.0
 
 ### Legality checker
@@ -78,10 +82,30 @@ FROM node:${NODE_VERSION2} AS mail
 WORKDIR /app
 COPY --from=mail-deps /app/node_modules ./node_modules
 COPY mail /app
-EXPOSE 25
-EXPOSE 110
+# 10046, e não 25/110. O serviço deixou de ser servidor de correio em
+# 12/09/2026: o Postfix atende a 25 e o Dovecot a 110, e o `disable_pop3`
+# desligou o POP3 próprio. O que sobrou aqui são os efeitos colaterais que não
+# têm dono do lado do Dovecot -- a cópia em Enviados e a linha no sino --, e
+# eles escutam em 10046 (mail/sideEffects.js).
+#
+# Postfix e Dovecot NÃO estão containerizados. Numa instalação Docker pura,
+# este alvo não entrega correio nenhum sozinho; ver setup-script/2-setup-postfix-bridge.sh.
+EXPOSE 10046
 
 ENTRYPOINT ["/app/entrypoint.sh"]
+
+### Outbound relay policy
+#
+# Delegação de política do Postfix: ele pergunta, em 10045, se aquele envio
+# pode sair. Mesma base do mail, outro ponto de entrada. Estava ausente do
+# Docker inteiro, embora seja serviço ativo em produção
+# (reon-relay-policy.service).
+FROM node:${NODE_VERSION2} AS relay-policy
+WORKDIR /app
+COPY --from=mail-deps /app/node_modules ./node_modules
+COPY mail /app
+EXPOSE 10045
+CMD ["node", "relayPolicy.js", "-c", "/app/config.json", "-p", "10045"]
 
 
 ### Cron jobs
@@ -108,7 +132,15 @@ RUN npm ci
 
 # Based on https://github.com/AnalogJ/docker-cron
 FROM node:${NODE_VERSION} AS cron
-RUN 
+# Havia um `RUN` sem argumento nesta linha, e ele quebra o build inteiro --
+# "RUN requires at least one argument". O alvo cron não montava desde que
+# apareceu.
+# libicu76 é o soname do Debian trixie, que é a base do node:22-trixie. Ele
+# existe por causa do binário self-contained do verificador de legalidade
+# (.NET), não do Node. Trocar a base muda o número e o build quebra -- se isso
+# acontecer, a saída sem ICU é
+# ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, que remove a dependência ao
+# preço de comparação de string sensível a cultura.
 RUN apt-get -y update \
     && apt-get install -y --no-install-recommends curl tzdata libicu76 \
     && rm -rf /var/lib/apt/lists/*
@@ -148,6 +180,41 @@ COPY --from=pokemon-legality /app/pokemon-legality /app/pokemon-legality
 ENV POKEMON_LEGALITY_BIN=/app/pokemon-legality/LegalityCheckerConsole
 
 COPY app/bxt_config_loader.js /app/
+
+CMD ["/usr/local/bin/supercronic", "/etc/cron.d/crontab"]
+
+### Cron jobs (PHP)
+#
+# Três dos sete timers da produção são PHP, não Node: a limpeza da lixeira do
+# correio, o verificador de status dos serviços e o toque no dado semeado.
+# Estavam ausentes do Docker inteiro -- o alvo cron acima só sabe rodar Node.
+#
+# Imagem separada em vez de PHP enfiado na imagem do Node: são duas cadeias de
+# dependência que não se misturam, e juntá-las faria cada uma carregar a outra.
+FROM php:${PHP_VERSION}-cli AS cron-php
+RUN apt-get -y update \
+    && apt-get install -y --no-install-recommends curl tzdata \
+    && docker-php-ext-install mysqli \
+    && docker-php-ext-enable mysqli \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.41/supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=f70ad28d0d739a96dc9e2087ae370c257e79b8d7 \
+    SUPERCRONIC=supercronic-linux-amd64
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+    && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+    && chmod +x "$SUPERCRONIC" \
+    && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+    && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+WORKDIR /var/www/reon
+# O web inteiro, com o vendor do composer: o purge_mail_trash e o
+# check_service_status carregam as classes de web/classes.
+COPY --from=web-deps /app /var/www/reon/web
+COPY maint/ /var/www/reon/maint/
+COPY app/docker-php.crontab /etc/cron.d/crontab
+RUN chmod 0644 /etc/cron.d/crontab
 
 CMD ["/usr/local/bin/supercronic", "/etc/cron.d/crontab"]
 

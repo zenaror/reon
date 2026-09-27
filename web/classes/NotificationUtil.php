@@ -101,6 +101,78 @@
 			return $id > 0 ? $id : null;
 		}
 
+		// Um lembrete automático: o sistema decide quando mandar, ninguém
+		// dispara à mão.
+		//
+		// Três coisas o impedem de virar praga, e cada uma responde a um
+		// comportamento diferente da pessoa:
+		//
+		//   - já existe um NÃO LIDO? não manda outro. Dois lembretes iguais
+		//     no sino não avisam duas vezes, só enchem.
+		//   - ela LEU ou DISPENSOU? espera $dias antes de falar de novo.
+		//     Ler não é o mesmo que resolver, então insistir uma vez por mês
+		//     é razoável; insistir toda entrega não é.
+		//   - ela RESOLVEU? aí a condição que gera o lembrete deixa de ser
+		//     verdadeira e quem chama simplesmente não chama mais.
+		//
+		// O "dispensou" é o caso que exige o sys_reminder_log: dispensar
+		// APAGA a linha do sino, e sem um registro à parte o lembrete
+		// voltaria na entrega seguinte -- punindo justamente quem organizou
+		// a própria caixa.
+		//
+		// Devolve o id quando escreveu, e null quando não era hora. Quem
+		// chama é caminho de entrega: a diferença não deve interessar a ele.
+		public function addReminder($userId, $category, $opts = [], $dias = 30) {
+			$userId = (int)$userId;
+			$key = isset($opts["key"]) ? (string)$opts["key"] : "";
+			if ($userId <= 0 || $key === "") return null;
+			$dias = max(1, (int)$dias);
+
+			try {
+				$db = DBUtil::getInstance()->getDB();
+
+				$stmt = $db->prepare(
+					"select 1 from sys_notifications
+					  where user_id = ? and message_key = ? and read_at is null
+					  limit 1");
+				$stmt->bind_param("is", $userId, $key);
+				$stmt->execute();
+				$pendente = $stmt->get_result()->fetch_assoc() !== null;
+				$stmt->close();
+				if ($pendente) return null;
+
+				$stmt = $db->prepare(
+					"select 1 from sys_reminder_log
+					  where user_id = ? and message_key = ?
+					    and sent_at > date_sub(now(), interval ? day)
+					  limit 1");
+				$stmt->bind_param("isi", $userId, $key, $dias);
+				$stmt->execute();
+				$recente = $stmt->get_result()->fetch_assoc() !== null;
+				$stmt->close();
+				if ($recente) return null;
+
+				$id = $this->add($userId, $category, $opts);
+				if ($id === null) return null;
+
+				// Só depois de escrever. Marcar antes e falhar no insert
+				// calaria o lembrete por um mês sem a pessoa ter visto nada.
+				$stmt = $db->prepare(
+					"insert into sys_reminder_log (user_id, message_key)
+					 values (?, ?)
+					 on duplicate key update sent_at = now()");
+				$stmt->bind_param("is", $userId, $key);
+				$stmt->execute();
+				$stmt->close();
+				return $id;
+			} catch (\Throwable $e) {
+				// Instalação sem a tabela, ou banco fora: lembrete é
+				// acessório e não pode derrubar quem chama.
+				error_log("addReminder(" . $key . "): " . $e->getMessage());
+				return null;
+			}
+		}
+
 		// The same notification to every account, as one row each. Returns
 		// how many were written, and the batch id they share.
 		public function addForAll($category, $opts = []) {

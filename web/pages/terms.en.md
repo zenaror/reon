@@ -30,7 +30,14 @@ You need an account to use the service. When you create one:
 - Give a working e-mail address. It is how your account is recovered.
 - Keep your password to yourself. Anything done through your account is
   treated as done by you.
-- One account per person. [Decision: whether more than one is allowed.]
+- **One account per e-mail address, and you may have more than one.** REON asks
+  for no document and has no way to tell two people apart from one person with
+  two addresses, so pretending otherwise would be a rule nobody could enforce.
+  What is not allowed is using extra accounts to get around something — a block,
+  or a ranking you were kept out of.
+- **An address whose account was deleted waits six months before it can register
+  again.** It stops accounts being cycled, and it is not a penalty: nothing from
+  the old account comes back either way. Another address works immediately.
 
 Your account carries a second, separate password that the **game** uses to
 log in — the one written into your `mobile_config.bin`. It is not your
@@ -58,8 +65,15 @@ original service: the ranking pages, the Trade Corner, and the Battle Tower
 show the name your game uploaded, your sub-region, and any message the game
 let you write — to anyone, without signing in.
 
-Treat anything your game uploads as public. Do not put a real name, an
-address, or anything private into an in-game name or message.
+The rankings are the exception in one respect: **your account is not in them
+until you say so**, at sign-up or on your account page. The Trade Corner and
+the Battle Tower are public as they always were, because being seen is what
+they are for — a trade nobody can find is not a trade.
+
+The message is not free text. The game builds it from a fixed word list of
+its own, so there is no way to put a real name, an address or a phone number
+into it. The in-game name is the part you type, so treat that one as public
+and keep anything private out of it.
 
 ## Mail
 
@@ -80,8 +94,9 @@ your own backups of anything you care about, including your save files.
 ## Changes to these terms
 
 These terms will change — this is a first draft and it is meant to. When
-they do, the date below changes. [Decision: whether existing accounts are
-notified in-service when the terms change.]
+they do, the date below changes, and **existing accounts are notified in
+service** through the notifications page. Expect it to be rare: what changes here
+is content and game support, not the rules.
 
 ## Contact
 
@@ -91,4 +106,4 @@ account.] Questions about personal data are answered in the
 
 ---
 
-*Draft of 11 September 2026.*
+*Draft of 25 September 2026.*

@@ -1,7 +1,21 @@
+# Atualizado em 24/09/2026 contra a produção, serviço por serviço. O que estava
+# aqui descrevia um sistema de agosto: sem mobile-relay, sem política de relay,
+# com o correio próprio atendendo 25 e 110, e sem as três tarefas PHP.
+#
+# ATENÇÃO, e isto vale para o arquivo inteiro: a produção NÃO roda em
+# contêiner. Ela é nativa, com systemd, e é a referência -- este compose é a
+# tradução dela, não o contrário. Quando divergirem, a produção está certa.
+#
+# Duas peças de propósito FORA daqui: o Postfix e o Dovecot. Eles atendem 25 e
+# 110 na produção desde 12/09/2026, montados pelo
+# setup-script/2-setup-postfix-bridge.sh, e containerizá-los seria reescrever a
+# entrega de correio, não empacotá-la. Num ambiente só-Docker o correio entre
+# jogadores não funciona.
+
 services:
 
   db:
-    image: mysql:8.4.0
+    image: mysql:8.4.11
     ports:
       - 3306:3306
     volumes:
@@ -30,6 +44,7 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # Tarefas Node. Ver app/docker.crontab: espelha quatro timers systemd.
   cron:
     build:
       dockerfile: Dockerfile
@@ -37,6 +52,18 @@ services:
     volumes:
     - "./config.json:/app/config.json"
     - ./web:/web
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Tarefas PHP. Ver app/docker-php.crontab: espelha os outros três timers, que
+  # não existiam em nenhum lugar do Docker antes de 24/09/2026.
+  cron-php:
+    build:
+      dockerfile: Dockerfile
+      target: cron-php
+    volumes:
+      - ./config.json:/var/www/reon/config.json:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -58,12 +85,16 @@ services:
         condition: service_completed_successfully
 
   nginx:
-    image: nginx:1.27.0
+    image: nginx:1.28.3
     volumes:
       - ./examples/nginx/default.conf.template:/etc/nginx/templates/default.conf.template
       - ./web/:/var/www/reon/web
     ports:
       - 80:80
+      # A produção também atende 443, com certificado Let's Encrypt renovado
+      # por webroot. Não está aqui porque certificado não se empacota: para
+      # servir TLS em contêiner é preciso montar /etc/letsencrypt de fora.
+      #- 443:443
     environment:
       - NGINX_PORT=80
       - NGINX_HOST="_"
@@ -71,15 +102,38 @@ services:
       - WEB_URL=web:9000
     depends_on:
       - web
+    # FALTA AQUI, e é diferença real com a produção: o bloqueio de robôs. Na
+    # produção são três camadas -- robots.txt, o cabeçalho X-Robots-Tag e um
+    # 403 por User-Agent no nginx, montados pelo setup-script/4-harden-bots.sh.
+    # Só a primeira vem no repositório; as outras duas o template deste compose
+    # não tem. Ver o script para o que precisa ser gerado.
 
+  # Efeitos colaterais do correio: cópia em Enviados e linha no sino. NÃO é
+  # servidor de correio -- ver o comentário do alvo `mail` no Dockerfile.
   mail:
     build:
       dockerfile: Dockerfile
       target: mail
-    ports:
-      - 25:25
-      - 110:110
-      - 587:25
+    # Sem `ports`: 10046 é interno, o Postfix é que fala com ele. Antes daqui
+    # estavam publicadas 25, 110 e 587, que hoje pertencem ao Postfix e ao
+    # Dovecot -- publicá-las daria conflito de porta com eles.
+    expose:
+      - 10046
+    volumes:
+      - ./config.json:/app/config.json:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Delegação de política do Postfix: ele pergunta se um envio pode sair.
+  # Serviço ativo em produção (reon-relay-policy.service) e ausente deste
+  # arquivo até 24/09/2026.
+  relay-policy:
+    build:
+      dockerfile: Dockerfile
+      target: relay-policy
+    expose:
+      - 10045
     volumes:
       - ./config.json:/app/config.json:ro
     depends_on:
@@ -95,6 +149,37 @@ services:
     environment:
       - EXTERNAL_IP
 
+  # O relay do adaptador: é ele que o Game Boy chama. Vive em OUTRO
+  # repositório, ao lado deste, com Dockerfile e compose próprios -- então este
+  # serviço só sobe se o irmão estiver no lugar. Descomente se estiver.
+  #
+  # Na produção ele roda como reon-mobile-relay.service, em venv Python, e o
+  # modo torneio grava as sessões num diretório de estado (StateDirectory=,
+  # /var/lib/reon-captures). O volume abaixo é o equivalente disso: sem ele, as
+  # gravações morrem com o contêiner e o painel de admin não acha nada.
+  #mobile-relay:
+  #  build:
+  #    context: ../mobile-relay
+  #  ports:
+  #    - 31227:31227/tcp
+  #  volumes:
+  #    - ../mobile-relay/config.ini:/app/config.ini:ro
+  #    - reon_captures:/var/lib/reon-captures
+  #  environment:
+  #    - PYTHONUNBUFFERED=1
+  #    # Obrigatório, e a falha sem ele é silenciosa: o relay resolve o
+  #    # diretório de gravação por $STATE_DIRECTORY, que o systemd define na
+  #    # produção e o Docker não. Sem isto ele grava dentro da imagem e o
+  #    # volume acima fica vazio.
+  #    - STATE_DIRECTORY=/var/lib/reon-captures
+  #  depends_on:
+  #    migrate:
+  #      condition: service_completed_successfully
+
 volumes:
   reon_db:
     name: reon_db
+  # Gravações do modo torneio. Nomeado para sobreviver a `docker compose down`:
+  # é conversa de dois consoles que alguém vai converter em replay depois.
+  reon_captures:
+    name: reon_captures

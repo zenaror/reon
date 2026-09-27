@@ -829,10 +829,10 @@ if ($region == "j") {
         );
 
 // Look up any existing score for this account/trainer/secret in this category and region
-// Look up any existing score for this account/trainer/secret in this category and region
         $stmt = $db->prepare(
             "select score
-               from bxt_ranking
+               from bxt_ranking   -- a tabela, não a view: é a linha da própria pessoa,
+               --                  para decidir entre inserir e atualizar
               where game_region = ?
                 and news_id      = ?
                 and category_id  = ?
@@ -958,6 +958,25 @@ if ($region == "j") {
         }
     }
 
+    // O resultado chegou e foi guardado, mas não vai aparecer para ninguém:
+    // esta conta está fora do ranking. O momento de dizer isso é agora, e
+    // não numa tela que a pessoa talvez nunca abra -- ela acabou de jogar.
+    //
+    // addOnce, com janela de 30 dias: isto roda a cada envio, e um lembrete
+    // por partida transformaria o sino em ruído. E vem depois da gravação,
+    // nunca antes: avisar é o acessório, guardar é o trabalho.
+    if (!bxt_account_rankings_opt_in($db, $userId)) {
+        require_once(dirname(__DIR__, 2) . "/classes/SettingsUtil.php");
+        require_once(dirname(__DIR__, 2) . "/classes/NotificationUtil.php");
+        if (SettingsUtil::getInstance()->getValid("rankings_reminder") === "1") {
+            NotificationUtil::getInstance()->addReminder($userId, "system", [
+                "key"  => "notify.rankings-off",
+                "game" => "pokemon-crystal",
+                "link" => "/user/summary.php",
+            ], 30);
+        }
+    }
+
     return pack("N", $userId);
 }
 
@@ -1025,7 +1044,7 @@ function get_ranking($region, $post_string) {
             if ($ignoreNewsIdForPool) {
                 $stmt = $db->prepare(
                     "select count(*)
-                       from bxt_ranking
+                       from bxt_ranking_shared
                       where game_region = ?
                         and category_id = ?"
                 );
@@ -1037,7 +1056,7 @@ function get_ranking($region, $post_string) {
             } else {
                 $stmt = $db->prepare(
                     "select count(*)
-                       from bxt_ranking
+                       from bxt_ranking_shared
                       where game_region = ?
                         and news_id     = ?
                         and category_id = ?"
@@ -1071,7 +1090,7 @@ function get_ranking($region, $post_string) {
             foreach ($gameRegions as $gr) {
                 $stmt = $db->prepare(
                     "select score, timestamp
-                       from bxt_ranking
+                       from bxt_ranking_shared
                       where game_region = ?
                         and news_id     = ?
                         and category_id = ?
@@ -1108,7 +1127,7 @@ function get_ranking($region, $post_string) {
                 foreach ($gameRegions as $gr) {
                     $stmt = $db->prepare(
                         "select count(*)
-                           from bxt_ranking
+                           from bxt_ranking_shared
                           where game_region = ?
                             and news_id     = ?
                             and category_id = ?
@@ -1152,7 +1171,7 @@ function get_ranking($region, $post_string) {
                         player_message,
                         score,
                         timestamp
-                   from bxt_ranking
+                   from bxt_ranking_shared
                   where category_id = ?
                   order by score desc, timestamp
                   limit 10"
@@ -1178,7 +1197,7 @@ function get_ranking($region, $post_string) {
                             player_message,
                             score,
                             timestamp
-                       from bxt_ranking
+                       from bxt_ranking_shared
                       where game_region = ?
                         and news_id     = ?
                         and category_id = ?
@@ -1252,7 +1271,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                 if ($ignoreNewsIdForPool) {
                     $stmt = $db->prepare(
                         "select count(*)
-                           from bxt_ranking
+                           from bxt_ranking_shared
                           where game_region  = ?
                             and category_id  = ?
                             and player_region = ?"
@@ -1265,7 +1284,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                 } else {
                     $stmt = $db->prepare(
                         "select count(*)
-                           from bxt_ranking
+                           from bxt_ranking_shared
                           where game_region  = ?
                             and news_id      = ?
                             and category_id  = ?
@@ -1298,7 +1317,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                                 player_message,
                                 score,
                                 timestamp
-                           from bxt_ranking
+                           from bxt_ranking_shared
                           where game_region  = ?
                             and category_id  = ?
                             and player_region = ?
@@ -1321,7 +1340,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                                 player_message,
                                 score,
                                 timestamp
-                           from bxt_ranking
+                           from bxt_ranking_shared
                           where game_region  = ?
                             and news_id      = ?
                             and category_id  = ?
@@ -1386,7 +1405,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                     if ($ignoreNewsIdForPool) {
                         $stmt = $db->prepare(
                             "select count(*)
-                               from bxt_ranking
+                               from bxt_ranking_shared
                               where game_region   = ?
                                 and category_id   = ?
                                 and player_region = ?
@@ -1400,7 +1419,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                     } else {
                         $stmt = $db->prepare(
                             "select count(*)
-                               from bxt_ranking
+                               from bxt_ranking_shared
                               where game_region   = ?
                                 and news_id       = ?
                                 and category_id   = ?
@@ -1434,7 +1453,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                                     player_message,
                                     score,
                                     timestamp
-                               from bxt_ranking
+                               from bxt_ranking_shared
                               where game_region   = ?
                                 and category_id   = ?
                                 and player_region = ?
@@ -1458,7 +1477,7 @@ if (function_exists('bxt_transform_ranking_row_for_download')) {
                                     player_message,
                                     score,
                                     timestamp
-                               from bxt_ranking
+                               from bxt_ranking_shared
                               where game_region   = ?
                                 and news_id       = ?
                                 and category_id   = ?

@@ -21,11 +21,21 @@ jobs:
   
     strategy:
       matrix:
+        # Um alvo do Dockerfile por imagem. Revisado em 24/09/2026 contra a
+        # produção: faltavam `mail` (que existe desde sempre), `relay-policy` e
+        # `cron-php` (serviços ativos na produção que não tinham imagem).
+        #
+        # E vale registrar: o alvo `cron` não podia estar passando. Havia um
+        # `RUN` sem argumento no Dockerfile, que é erro de parse -- então esta
+        # matriz vinha falhando nesse item, e ninguém olhou.
         image:
           - name: dns
           - name: cron
+          - name: cron-php
           - name: web
           - name: migrate
+          - name: mail
+          - name: relay-policy
 
     runs-on: ubuntu-latest
     permissions:

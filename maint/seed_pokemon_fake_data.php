@@ -265,7 +265,11 @@ foreach (BOT_ACCOUNTS as $spec) {
             echo "[dry-run] would create sys_users row username={$spec['username']} allowlist={$spec['allowlist']}\n";
             $row = ['id' => 0];
         } else {
-            $stmt = $db->prepare('insert into sys_users (email, username, password, dion_email_local, trade_region_allowlist, timezone, is_admin, passport_seen_at) values (NULL, ?, NULL, ?, ?, ?, 0, now())');
+            // rankings_opt_in = 1, explícito: a conta de verdade nasce
+            // desligada, e esta não pode -- a razão de existir destas linhas
+            // é aparecer na página, para conferir layout e paginação. Uma
+            // conta inventada não tem privacidade para proteger.
+            $stmt = $db->prepare('insert into sys_users (email, username, password, dion_email_local, trade_region_allowlist, timezone, is_admin, passport_seen_at, rankings_opt_in) values (NULL, ?, NULL, ?, ?, ?, 0, now(), 1)');
             $tz = '+0000';
             $stmt->bind_param('ssss', $spec['username'], $spec['local'], $spec['allowlist'], $tz);
             $stmt->execute();

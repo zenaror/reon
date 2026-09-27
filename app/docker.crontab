@@ -1,5 +1,19 @@
-# BusyBox cron doesn't support 0/15, so we have to list each minute
+# Tarefas Node. Espelha os timers systemd da produção -- se um lado mudar, o
+# outro tem de mudar junto, e não há nada que force isso além deste comentário.
+#
+# Equivalências (systemd  ->  cron):
+#   OnCalendar=*-*-* *:0/15:00   ->   */15 * * * *
+#   OnCalendar=*-*-* 00:00:00    ->   0 0 * * *
+#
+# O comentário antigo aqui dizia que "BusyBox cron não suporta 0/15, então
+# temos de listar cada minuto". Não se aplica: quem executa isto é o
+# supercronic (Go), que entende passo. A lista explícita era herança de uma
+# imagem que não usamos mais.
+#
+# As tarefas PHP moram no docker-php.crontab, porque a imagem do cron Node não
+# tem PHP -- e são três na produção, não zero.
+
+*/15 * * * * node /app/auto-schedule/index.js -c /app/config.json
+*/15 * * * * node /app/pokemon-exchange/index.js -c /app/config.json
+*/15 * * * * node /app/mail-bottle/index.js -c /app/config.json
 0 0 * * * node /app/pokemon-battle/index.js -c /app/config.json
-0,15,30,45 * * * * node /app/pokemon-exchange/index.js -c /app/config.json
-0,15,30,45 * * * * node /app/auto-schedule/index.js -c /app/config.json
-0,15,30,45 * * * * node /app/mail-bottle/index.js -c /app/config.json

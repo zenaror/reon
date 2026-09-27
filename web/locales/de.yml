@@ -96,6 +96,13 @@ auth:
   reon-username-mail-truncated: "Der Game Boy fasst nur 8 Zeichen, deshalb ist die Adresse im Spiel Ihr gekürzter Benutzername — beide erreichen dasselbe Postfach."
   region-explanation-para1: REON ermöglicht internationalen Tausch für Pokémon-Kristall-Spieler über die Spielfunktion namens Trade Corner. Das schließt Tausche zwischen japanischen und nicht-japanischen Spielen ein, die normalerweise wegen unterschiedlicher Zeichensätze inkompatibel sind. Um solche Tausche zu ermöglichen, ändert der Dienst Pokémon-Spitznamen, Trainernamen und auf Post geschriebene Nachrichten beim Zusammenführen von Pokémon zwischen japanischen und nicht-japanischen Spielen (zum Beispiel wird "A" zu "ア" geändert, und umgekehrt). Diese Änderungen sind unumkehrbar, versuchen aber, die Schreibweise der Originalsprache so originalgetreu wie möglich nachzuahmen.
   region-explanation-para2: Wähle die Region-Gruppe, mit der du tauschen möchtest. Diese Einstellung kann auch nach der Registrierung geändert werden.
+  rankings-explanation-para1: "Wenn du Pokémon Kristall über den Adapter spielst, schickt uns das Spiel deine Punktzahl zusammen mit dem Namen, dem Alter und der Region, die du im Spiel eingetragen hast, dazu eine kurze Nachricht, die du aus der Wortliste des Spiels zusammengestellt hast. Dieser Teil ist nicht optional: das Spiel braucht ihn, und wir speichern ihn so oder so."
+  rankings-explanation-para2: "Dieses Kästchen betrifft die anderen Spieler. Angehakt erscheinen dein Name, deine Region und deine Nachricht in den Ranglisten — denen auf dieser Seite und denen, die das Spiel selbst anzeigt. Leer gelassen zählt deine Punktzahl weiterhin für dich, aber niemand sonst sieht, wer du bist."
+  rankings-explanation-para3: "Du kannst es jederzeit auf deiner Kontoseite ändern, und zwar in beide Richtungen: Ausschalten verbirgt auch das, was schon da ist, Einschalten holt es zurück. Eine Ausnahme: Steht das Alter in deinem Spiel unter 13, bleibst du aus den Ranglisten heraus, egal was hier angehakt ist."
+  rankings-opt-in-check: "Ja, zeigt mich in den Ranglisten"
+  rankings-opt-in-optional: "Optional — die Registrierung geht so oder so zu Ende."
+  birth-date-explanation-para1: "Wir fragen danach, um zu wissen, ob du alt genug bist, in den öffentlichen Ranglisten zu erscheinen. Dort zu erscheinen zeigt allen anderen Spielern auf einmal dein Alter, dein Geschlecht, deine Region und deinen Namen — das Spiel schreibt das in eine Zeile — und das schaltet man für ein Kind nicht ein."
+  birth-date-explanation-para2: "Es wird niemandem gezeigt, und nichts anderes auf der Seite verwendet es. Du kannst es leer lassen und die Registrierung trotzdem abschließen: die Ranglisten bleiben dann einfach zu, bis du es ausfüllst, was du später auf deiner Kontoseite tun kannst. Es ist auch nicht dasselbe wie das Alter, das du im Spiel eingibst — das schickt das Modul von selbst, und niemand prüft es."
 
 password-reset:
   title: Setze dein Passwort zurück
@@ -966,6 +973,18 @@ account:
   adapter-blurb: "Welchen Adapter die Spiele sehen, wenn sie deine mobile_config.bin lesen. Das ändert Farbe und Namen, die das Spiel anzeigt — sonst nichts."
   adapter-unmetered: "Pauschal (keine Abrechnung pro Minute)"
   adapter-unmetered-explanation: "Teilt dem Spiel mit, dass die Verbindung nicht pro Minute abgerechnet wird. In Pokémon Kristall (japanisch) entfällt dadurch das Zeitlimit bei Mobil-Kämpfen. Was es in den anderen Spielen bewirkt, ist nicht bekannt — niemand hat es dokumentiert — wenn sich also ein Spiel damit seltsam verhält, ist Ausschalten das Erste, was man versuchen sollte."
+  rankings-opt-in: "Ranglisten"
+  rankings-opt-in-blurb: "Ob das, was dein Spiel hochlädt, anderen gezeigt werden darf — auf den Ranglistenseiten und in der Ranglistentabelle, die die Spiele anzeigen. Am Hochladen selbst ändert sich nichts: Das Modul sendet, was es sendet, und der Server bewahrt es so oder so auf."
+  rankings-opt-in-on: "In den Ranglisten zeigen"
+  rankings-opt-in-off: "Aus den Ranglisten heraushalten"
+  rankings-opt-in-note: "Gezeigt werden der von deinem Spiel übermittelte Name, dein Bundesland bzw. deine Provinz und die Nachricht, die das Spiel dich aus seiner eigenen Wortliste zusammensetzen ließ. Ausschalten verbirgt auch das bereits Vorhandene; Wiedereinschalten holt es zurück."
+  birth-date: "Geburtsdatum"
+  birth-date-blurb: "Es dient nur einem Zweck: zu entscheiden, ob deine Ergebnisse in den Ranglisten erscheinen dürfen. Es wird niemandem gezeigt, und es ist nicht das, was das Spiel sendet — das Spiel hat ein eigenes Altersfeld, das du dort eingibst. Leer lassen, um es zu entfernen."
+  birth-date-optional: "Optional — die Registrierung geht auch ohne."
+  birth-date-invalid: "Dieses Datum lässt sich nicht verwenden. Prüfe das Jahr."
+  rankings-blocked-age: "Die Ranglisten sind für dieses Konto geschlossen: das Geburtsdatum liegt unter %age%. Ein Ranglisteneintrag zeigt allen anderen Spielern dein Alter, dein Geschlecht, deine Region und deinen Namen — deshalb ist das hier keine Wahl."
+  rankings-reminder: "Du stehst nicht in den Ranglisten. Was dein Spiel hochlädt, wird aufbewahrt, aber niemandem gezeigt — ändern kannst du das auf"
+  rankings-reminder-link: "deiner Kontoseite"
   download-my-data: "Meine Daten herunterladen"
   data-rights-note: "Der Download enthält alles, was der Server über dieses Konto speichert, in einer einzigen JSON-Datei, einschließlich deiner Post. Geräteschlüssel und Relay-Token werden genannt, aber nicht ausgeschrieben: Das sind aktive Zugangsdaten, und eine Kopie davon in einer Datei, die du mit dir herumträgst, ist eine Kopie, die es vorher nicht gab."
   delete-account: "Konto löschen"
@@ -1061,6 +1080,7 @@ devices:
   ago-days: "vor %n% Tagen"
 
 notify:
+  rankings-off: "Dein Spielergebnis wurde aufbewahrt, aber nicht gezeigt: Du stehst nicht in den Ranglisten. Auf deiner Kontoseite kannst du beitreten."
   title: "Benachrichtigungen"
   bell: "Benachrichtigungen"
   none: "Hier ist noch nichts."
@@ -1104,6 +1124,25 @@ admin:
   adapter-save: "Speichern"
   adapter-footer: "Eine gespeicherte Änderung gilt ab dem nächsten Download. Niemand muss deshalb neu herunterladen: eine bereits genutzte Datei funktioniert weiter, und diese Werte bestimmen nur, wohin eine neue zeigt."
   nav-tournament: "Turniermodus"
+  nav-stadium: "Mobile Stadium"
+  stadium-title: "Mobile Stadium"
+  stadium-intro: "Was der Mobilmodus von Pokémon Stadium 2 über ein Crystal-Modul herunterlädt. Aus der Datenbank aufgebaut, genau wie die Pokémon News."
+  stadium-no-generator: "Diese Seite listet Distributionen auf und schaltet sie ein/aus. Sie erzeugt nicht den 0xFFE-Byte-Block selbst — der kommt von der Seite, die die Kampfdaten zusammenstellt, und wird importiert."
+  stadium-empty: "Für diese Region ist noch keine Distribution erfasst."
+  stadium-when: "Hinzugefügt"
+  stadium-slug: "Slug"
+  stadium-cost: "Kosten"
+  stadium-size: "Größe (Bytes)"
+  stadium-title-col: "Titel"
+  stadium-active: "Status"
+  stadium-cost-none: "kostenlos, ohne Login"
+  stadium-active-yes: "Aktiv"
+  stadium-active-no: "Inaktiv"
+  stadium-activate: "Aktivieren"
+  stadium-deactivate: "Deaktivieren"
+  stadium-order-note: "Das Spiel lädt pro Sitzung nur den ersten passenden Eintrag herunter. Mehr als einen für dieselbe Region zu aktivieren, ergibt nur als disjunkte Zeitfenster Sinn — nie älteren Inhalt nach neuerem, sonst bekommt ein Spieler, der schon das Neueste hat, abwechselnd das Alte angeboten."
+  stadium-saved: "Gespeichert."
+  stadium-failed: "Konnte nicht gespeichert werden."
   tournament-title: "Turniermodus"
   tournament-intro: "Ist dies aktiv, speichert das Relay, was während einer Link-Sitzung zwischen den beiden Konsolen läuft, damit ein Match später zu einem Replay werden kann. Gespeichert wird nur das Gespräch zwischen den Konsolen — kein Handshake, kein Token, keine Anmeldung, nichts vom Konto."
   tournament-mode: "Modus"
@@ -1127,6 +1166,7 @@ admin:
   tournament-download-peer: "Andere Seite herunterladen"
   tournament-no-peer: "die andere Seite fehlt"
   tournament-merge: "Ein Match sind zwei Dateien, eine pro Konsole, denn jede Seite zeichnet nur auf, was ihre eigene Konsole gesendet hat. capture_merge.py im mobile-relay-Repository führt sie zeitlich zusammen und liefert die geordnete Abfolge."
+  tournament-retention: "Aufnahmen werden nach %days% Tagen gelöscht. Lade das gewünschte Paar vorher herunter — sind die Dateien weg, lässt sich das Match vom Server nicht mehr wiedergeben."
   adapter-saved: "Gespeichert. Neue Downloads verwenden diese Werte."
   adapter-failed: "Speichern nicht möglich."
   adapter-invalid: "Es wurde nichts gespeichert. Prüfen Sie die unten markierten Felder — eine unsinnige Adresse oder ein unsinniger Port ergäbe eine Datei, die das Modul nicht lesen kann."
@@ -1289,6 +1329,13 @@ admin:
   notify-need-title: Eine Schlagzeile ist erforderlich.
   notify-no-user: Wählen Sie ein Konto als Empfänger.
   notify-recent: Kürzlich gesendet
+  notify-auto: "Automatische Hinweise"
+  notify-auto-intro: "Nachrichten, die das System von selbst verschickt, ohne dass sie hier jemand schreibt."
+  notify-auto-rankings: "Spieler erinnern, die nicht in den Ranglisten stehen"
+  notify-auto-rankings-note: "Geht an Konten, deren Spielergebnisse gespeichert, aber nicht angezeigt werden, mit dem Hinweis, dass sie in die Ranglisten können. Wird höchstens alle 30 Tage wiederholt, und nur solange der Hinweis ungelesen ist — Lesen oder Wegklicken verhindert den nächsten."
+  notify-auto-save: "Speichern"
+  notify-auto-saved: "Automatische Hinweise aktualisiert."
+  notify-auto-failed: "Die Einstellung für automatische Hinweise konnte nicht gespeichert werden."
   notify-when: Wann
   notify-who: An
   users-title: Konten
