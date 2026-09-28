@@ -251,16 +251,17 @@
 			$n = $this->linhasRelay($userId, true);
 			if ($n) $feito["tabelas"]["relay_users"] = $n;
 
-			// O bloqueio do endereço, ANTES de apagar o cadastro: é a última
-			// chance de ter o e-mail em mãos. Depois do delete não há de onde
-			// tirar, e um bloqueio que depende de ler a conta apagada nunca
-			// aconteceria.
+			// The address block, BEFORE the account row is deleted: this is
+			// the last chance to have the e-mail in hand. After the delete
+			// there is nowhere left to get it from, and a block that
+			// depended on reading the deleted account would never happen.
 			//
-			// Só o hash é guardado -- ver a migração de sys_email_block para o
-			// porquê. E a falha não impede a exclusão: se o bloqueio não
-			// entrar, a pessoa consegue recadastrar antes do prazo, o que é um
-			// incômodo; abortar a exclusão por causa disso seria negar um
-			// direito por causa de uma conveniência.
+			// Only the hash is stored -- see the sys_email_block migration
+			// for why. And a failure here does not stop the deletion: if the
+			// block does not get written, the person can sign up again
+			// before the window ends, which is a nuisance; aborting the
+			// deletion over that would deny a right for the sake of a
+			// convenience.
 			if (!empty($conta["email"])) {
 				require_once(__DIR__ . "/UserUtil.php");
 				$feito["email_bloqueado"] = UserUtil::blockEmailAfterDeletion($conta["email"]);

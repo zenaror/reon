@@ -8,85 +8,92 @@ final class AddStadiumDistributions extends AbstractMigration
 {
     public function change(): void
     {
-        // As distribuições do Mobile Stadium, que o Pokémon Stadium 2 lê de um
-        // bloco que o Crystal baixou.
+        // Mobile Stadium distributions, which Pokémon Stadium 2 reads from a
+        // block Crystal downloaded.
         //
-        // Nasce porque o dono pediu (27/09/2026) que o Stadium seja montado a
-        // partir do banco, como as Pokémon News já são: lá o binário mora em
-        // bxt_news.news_binary e um .php de duas linhas o serve. Mesmo desenho
-        // aqui.
+        // Born because the owner asked (2026-09-27) for the Stadium to be
+        // assembled from the database, the way the Pokémon News already
+        // are: there the binary lives in bxt_news.news_binary and a
+        // two-line .php serves it. Same design here.
         //
-        // O que existia antes eram dois arquivos estáticos herdados do upstream
-        // em 2023, e um deles era pior que inútil: o jogo o aceitava, cobrava
-        // 20 do jogador e sobrescrevia o bloco que ele tinha, e o Stadium não
-        // listava nada. Saiu do ar em 27/09.
+        // What existed before were two static files inherited from upstream
+        // in 2023, and one of them was worse than useless: the game
+        // accepted it, charged the player 20, and overwrote the block they
+        // already had, and the Stadium listed nothing. Taken offline on
+        // 2026-09-27.
         //
-        // A especificação do formato está em docs/mobile-stadium/spec.md, lida
-        // do disassembly pela sessão do PKHeX. Os offsets citados aqui vêm de lá.
+        // The format's specification is in docs/mobile-stadium/spec.md,
+        // read out of the disassembly by the PKHeX session. Every offset
+        // cited here comes from there.
         $this->table('bxt_stadium_distributions')
-             // Uma letra, como app/auto-schedule/files/bxt/<letra>/ das news:
-             // j, e, p, u, d, f, i, s. O código do caminho (CGB-BXTJ) é
-             // derivado dela, para não haver duas fontes de verdade.
+             // A single letter, the way app/auto-schedule/files/bxt/<letter>/
+             // uses it for the news: j, e, p, u, d, f, i, s. The path code
+             // (CGB-BXTJ) is derived from it, so there is no second source
+             // of truth.
              ->addColumn('game_region', 'char', ['limit' => 1, 'null' => false])
 
-             // Os 16 bytes que o jogo compara. O payload carrega os mesmos em
-             // 0xFEA, e a entrada do menu os repete -- é assim que o jogo sabe
-             // se já tem aquele bloco. NUNCA reutilizar um valor: quem já tem
-             // aquele File ID nunca recebe o bloco novo.
+             // The 16 bytes the game compares. The payload carries the same
+             // ones at 0xFEA, and the menu entry repeats them -- that is how
+             // the game knows whether it already has that block. NEVER
+             // reuse a value: whoever already has that File ID never
+             // receives the new block.
              ->addColumn('file_id', 'binary', ['limit' => 16, 'null' => false])
 
-             // Os 6 bytes de agenda: primeiro dia, último dia, hora e minuto de
-             // início, hora e minuto de fim. FF = qualquer, e FF x6 = sempre.
+             // The 6 schedule bytes: first day, last day, start hour, start
+             // minute, end hour, end minute. FF = any, and FF x6 = always.
              //
-             // Default FF x6 de propósito: a especificação só rastreou esse
-             // caso ponta a ponta. Janela personalizada é possível e não foi
-             // exercitada, então quem usar assume o risco conscientemente.
+             // Default FF x6 on purpose: the specification only traced that
+             // case end to end. A custom window is possible and was not
+             // exercised, so whoever uses one takes on that risk knowingly.
              ->addColumn('schedule', 'binary', ['limit' => 6, 'null' => false,
                  'default' => "\xFF\xFF\xFF\xFF\xFF\xFF"])
 
-             // O custo, que o JOGO lê do nome do arquivo servido -- não daqui.
-             // Esta coluna é a intenção; quem compõe o nome é o servidor, para
-             // os dois não poderem divergir.
+             // The cost, which the GAME reads from the served file's name --
+             // not from here. This column is the intent; the server is what
+             // composes the name, so the two can never disagree.
              //
-             //   null = sem dígito no nome: grátis e SEM LOGIN NENHUM
-             //      0 = "0.": exige login e não cobra   <- o recomendado
-             //      N = "N.": cobra N
+             //   null = no digit in the name: free and NO LOGIN AT ALL
+             //      0 = "0.": requires login, charges nothing   <- recommended
+             //      N = "N.": charges N
              //
-             // Recomendado 0 porque o payload carrega nome de treinador e time:
-             // não é coisa para servir sem sessão autenticada. 4 dígitos ou mais
-             // no nome dão erro D3 no jogo, antes do download.
+             // Recommended 0 because the payload carries a trainer name and
+             // team: not something to serve without an authenticated
+             // session. 4 or more digits in the name give error D3 in the
+             // game, before the download.
              ->addColumn('cost', 'integer', ['null' => true, 'default' => 0])
 
-             // Parte do nome servido, sem o prefixo de custo e sem extensão.
-             // Só [a-z0-9-]: entra numa URL de tamanho limitado (<= 0xA5).
+             // Part of the served name, without the cost prefix and without
+             // an extension. [a-z0-9-] only: it goes into a URL with a size
+             // limit (<= 0xA5).
              ->addColumn('slug', 'string', ['limit' => 40, 'null' => false])
 
-             // O bloco, exatamente 0xFFE = 4094 bytes.
+             // The block, exactly 0xFFE = 4094 bytes.
              //
-             // varbinary e não blob: o limite faz parte do contrato -- o jogo
-             // exige esse tamanho exato e recusa com erro D3 qualquer outro.
-             // Deixar o tipo impor o teto é uma checagem de graça.
+             // varbinary, not blob: the limit is part of the contract -- the
+             // game requires that exact size and refuses anything else with
+             // error D3. Letting the type enforce the ceiling is a free
+             // check.
              ->addColumn('payload', 'varbinary', ['limit' => 4094, 'null' => false])
 
              ->addColumn('active', 'boolean', ['null' => false, 'default' => false])
 
-             // Para o painel. Nunca servido ao jogo.
+             // For the panel. Never served to the game.
              ->addColumn('title', 'string', ['limit' => 120, 'null' => true])
 
-             // Qual leitura do formato gerou este bloco. Se a especificação for
-             // corrigida, isto diz quais blocos foram feitos contra a versão
-             // antiga -- e é a diferença entre reconferir tudo e reconferir o
-             // que precisa.
+             // Which reading of the format produced this block. If the
+             // specification is later corrected, this says which blocks
+             // were made against the old version -- the difference between
+             // re-checking everything and re-checking only what needs it.
              ->addColumn('spec_version', 'string', ['limit' => 60, 'null' => true])
 
              ->addColumn('created_at', 'timestamp', [
                  'default' => 'CURRENT_TIMESTAMP', 'null' => false])
 
-             // Único por REGIÃO, não global: as sete regiões ocidentais
-             // compartilham o mesmo payload e portanto o mesmo File ID, uma
-             // linha cada.
+             // Unique per REGION, not globally: the seven western regions
+             // share the same payload and therefore the same File ID, one
+             // row each.
              ->addIndex(['game_region', 'file_id'], ['unique' => true])
-             // O menu lê por região e só as ativas.
+             // The menu reads by region, and only the active ones.
              ->addIndex(['game_region', 'active'])
              ->create();
     }

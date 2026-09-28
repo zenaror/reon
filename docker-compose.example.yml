@@ -1,16 +1,17 @@
-# Atualizado em 24/09/2026 contra a produção, serviço por serviço. O que estava
-# aqui descrevia um sistema de agosto: sem mobile-relay, sem política de relay,
-# com o correio próprio atendendo 25 e 110, e sem as três tarefas PHP.
+# Updated on 2026-09-24 against production, service by service. What was
+# here before described an August system: no mobile-relay, no relay policy,
+# the built-in mail server answering 25 and 110, and none of the PHP jobs.
 #
-# ATENÇÃO, e isto vale para o arquivo inteiro: a produção NÃO roda em
-# contêiner. Ela é nativa, com systemd, e é a referência -- este compose é a
-# tradução dela, não o contrário. Quando divergirem, a produção está certa.
+# WARNING, and this applies to the whole file: production does NOT run in a
+# container. It is native, under systemd, and it is the reference -- this
+# compose file is a translation of it, not the other way around. When they
+# diverge, production is right.
 #
-# Duas peças de propósito FORA daqui: o Postfix e o Dovecot. Eles atendem 25 e
-# 110 na produção desde 12/09/2026, montados pelo
-# setup-script/2-setup-postfix-bridge.sh, e containerizá-los seria reescrever a
-# entrega de correio, não empacotá-la. Num ambiente só-Docker o correio entre
-# jogadores não funciona.
+# Two pieces deliberately left OUT of here: Postfix and Dovecot. They have
+# answered 25 and 110 in production since 2026-09-12, set up by
+# setup-script/2-setup-postfix-bridge.sh, and containerising them would mean
+# rewriting mail delivery, not packaging it. In a Docker-only environment,
+# mail between players does not work.
 
 services:
 
@@ -44,7 +45,7 @@ services:
         condition: service_healthy
     restart: "no"
 
-  # Tarefas Node. Ver app/docker.crontab: espelha quatro timers systemd.
+  # Node jobs. See app/docker.crontab: mirrors four systemd timers.
   cron:
     build:
       dockerfile: Dockerfile
@@ -56,8 +57,8 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # Tarefas PHP. Ver app/docker-php.crontab: espelha os outros três timers, que
-  # não existiam em nenhum lugar do Docker antes de 24/09/2026.
+  # PHP jobs. See app/docker-php.crontab: mirrors the other four timers,
+  # which existed nowhere in Docker before 2026-09-24.
   cron-php:
     build:
       dockerfile: Dockerfile
@@ -91,9 +92,10 @@ services:
       - ./web/:/var/www/reon/web
     ports:
       - 80:80
-      # A produção também atende 443, com certificado Let's Encrypt renovado
-      # por webroot. Não está aqui porque certificado não se empacota: para
-      # servir TLS em contêiner é preciso montar /etc/letsencrypt de fora.
+      # Production also answers 443, with a Let's Encrypt certificate
+      # renewed by webroot. Not here because a certificate does not get
+      # packaged: serving TLS in a container needs /etc/letsencrypt mounted
+      # from outside.
       #- 443:443
     environment:
       - NGINX_PORT=80
@@ -102,21 +104,23 @@ services:
       - WEB_URL=web:9000
     depends_on:
       - web
-    # FALTA AQUI, e é diferença real com a produção: o bloqueio de robôs. Na
-    # produção são três camadas -- robots.txt, o cabeçalho X-Robots-Tag e um
-    # 403 por User-Agent no nginx, montados pelo setup-script/4-harden-bots.sh.
-    # Só a primeira vem no repositório; as outras duas o template deste compose
-    # não tem. Ver o script para o que precisa ser gerado.
+    # MISSING HERE, and it is a real gap against production: bot blocking.
+    # In production it is three layers -- robots.txt, the X-Robots-Tag
+    # header, and a 403 by User-Agent in nginx, set up by
+    # setup-script/4-harden-bots.sh. Only the first ships in the
+    # repository; this compose's template has neither of the other two.
+    # See the script for what needs to be generated.
 
-  # Efeitos colaterais do correio: cópia em Enviados e linha no sino. NÃO é
-  # servidor de correio -- ver o comentário do alvo `mail` no Dockerfile.
+  # Mail's side effects: the Sent copy and the bell entry. NOT a mail
+  # server -- see the comment on the `mail` target in the Dockerfile.
   mail:
     build:
       dockerfile: Dockerfile
       target: mail
-    # Sem `ports`: 10046 é interno, o Postfix é que fala com ele. Antes daqui
-    # estavam publicadas 25, 110 e 587, que hoje pertencem ao Postfix e ao
-    # Dovecot -- publicá-las daria conflito de porta com eles.
+    # No `ports`: 10046 is internal, Postfix is the one that talks to it.
+    # 25, 110 and 587 used to be published here; today they belong to
+    # Postfix and Dovecot -- publishing them would conflict on port with
+    # them.
     expose:
       - 10046
     volumes:
@@ -125,9 +129,9 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # Delegação de política do Postfix: ele pergunta se um envio pode sair.
-  # Serviço ativo em produção (reon-relay-policy.service) e ausente deste
-  # arquivo até 24/09/2026.
+  # Postfix's policy delegation: it asks whether a send may go out. Active
+  # service in production (reon-relay-policy.service) and missing from this
+  # file until 2026-09-24.
   relay-policy:
     build:
       dockerfile: Dockerfile
@@ -149,14 +153,16 @@ services:
     environment:
       - EXTERNAL_IP
 
-  # O relay do adaptador: é ele que o Game Boy chama. Vive em OUTRO
-  # repositório, ao lado deste, com Dockerfile e compose próprios -- então este
-  # serviço só sobe se o irmão estiver no lugar. Descomente se estiver.
+  # The adapter's relay: this is what the Game Boy calls. Lives in ANOTHER
+  # repository, next to this one, with its own Dockerfile and compose file --
+  # so this service only comes up if its sibling is in place. Uncomment if
+  # it is.
   #
-  # Na produção ele roda como reon-mobile-relay.service, em venv Python, e o
-  # modo torneio grava as sessões num diretório de estado (StateDirectory=,
-  # /var/lib/reon-captures). O volume abaixo é o equivalente disso: sem ele, as
-  # gravações morrem com o contêiner e o painel de admin não acha nada.
+  # In production it runs as reon-mobile-relay.service, in a Python venv,
+  # and tournament mode records sessions into a state directory
+  # (StateDirectory=, /var/lib/reon-captures). The volume below is the
+  # equivalent of that: without it, recordings die with the container and
+  # the admin panel finds nothing.
   #mobile-relay:
   #  build:
   #    context: ../mobile-relay
@@ -167,10 +173,10 @@ services:
   #    - reon_captures:/var/lib/reon-captures
   #  environment:
   #    - PYTHONUNBUFFERED=1
-  #    # Obrigatório, e a falha sem ele é silenciosa: o relay resolve o
-  #    # diretório de gravação por $STATE_DIRECTORY, que o systemd define na
-  #    # produção e o Docker não. Sem isto ele grava dentro da imagem e o
-  #    # volume acima fica vazio.
+  #    # Required, and the failure without it is silent: the relay resolves
+  #    # the recording directory through $STATE_DIRECTORY, which systemd
+  #    # sets in production and Docker does not. Without it, it writes
+  #    # inside the image and the volume above stays empty.
   #    - STATE_DIRECTORY=/var/lib/reon-captures
   #  depends_on:
   #    migrate:
@@ -179,7 +185,8 @@ services:
 volumes:
   reon_db:
     name: reon_db
-  # Gravações do modo torneio. Nomeado para sobreviver a `docker compose down`:
-  # é conversa de dois consoles que alguém vai converter em replay depois.
+  # Tournament-mode recordings. Named so it survives `docker compose down`:
+  # this is the conversation between two consoles that someone will convert
+  # into a replay later.
   reon_captures:
     name: reon_captures

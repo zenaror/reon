@@ -160,20 +160,22 @@ if (!function_exists('bxt_debug_log')) {
     }
 }
 
-// -------- Preferência de ranking, por conta --------
+// -------- Per-account ranking preference --------
 //
-// O padrão mora AQUI e em UserUtil::RANKINGS_OPT_IN_DEFAULT, e os dois
-// comentários dizem isso um do outro: é o valor que decide se uma conta
-// aparece no ranking quando ninguém abriu a tela para escolher.
+// The default lives HERE and in UserUtil::RANKINGS_OPT_IN_DEFAULT, and the
+// two comments say this about each other: it is the value that decides
+// whether an account appears in the rankings when nobody opened the screen
+// to choose.
 //
-// DESLIGADO. É a divergência 14 do registro: o Children's Code pede que a
-// configuração de privacidade já comece fechada em serviço que criança
-// acessa, e "ligado até alguém reclamar" não é começar fechada.
+// OFF. This is data-protection register finding 14: the Children's Code
+// asks that a privacy setting already start closed in a service children
+// access, and "on until someone complains" is not starting closed.
 //
-// Custou nada trocar porque a tabela de ranking estava vazia quando a coluna
-// nasceu: ninguém foi escondido, todo mundo começa junto. Se um dia isto
-// voltar a ser `true`, lembrar que a troca não é mais simétrica -- as contas
-// já existentes carregam o valor na coluna e não seguem este padrão.
+// Switching it cost nothing because the ranking table was empty when the
+// column was born: nobody was hidden, everybody starts together. If this
+// ever goes back to `true`, remember the switch is no longer symmetric --
+// existing accounts carry the value in the column and do not follow this
+// default.
 if (!defined('BXT_RANKINGS_OPT_IN_DEFAULT')) {
     define('BXT_RANKINGS_OPT_IN_DEFAULT', false);
 }
@@ -182,8 +184,9 @@ if (!function_exists('bxt_account_rankings_opt_in')) {
     function bxt_account_rankings_opt_in($db, $accountId): bool {
         $id = (int)$accountId;
         if ($id <= 0) {
-            // Sem conta identificada não há preferência a respeitar, e
-            // gravar em nome de ninguém seria pior que não gravar.
+            // No identified account means no preference to respect, and
+            // recording one on nobody's behalf would be worse than not
+            // recording at all.
             return false;
         }
         static $cache = [];
@@ -197,9 +200,10 @@ if (!function_exists('bxt_account_rankings_opt_in')) {
             $stmt->execute();
             $linha = $stmt->get_result()->fetch_assoc();
         } catch (\Throwable $e) {
-            // Instalação sem a coluna ainda (migração não rodada): vale o
-            // padrão, para o ranking não parar de funcionar por causa disto.
-            error_log("rankings_opt_in indisponível, usando o padrão: " . $e->getMessage());
+            // Installation without the column yet (migration not run): the
+            // default applies, so the rankings do not stop working over
+            // this.
+            error_log("rankings_opt_in unavailable, using the default: " . $e->getMessage());
             return $cache[$id] = BXT_RANKINGS_OPT_IN_DEFAULT;
         }
         if ($linha === null) {

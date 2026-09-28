@@ -8,22 +8,23 @@ final class AddReminderLog extends AbstractMigration
 {
     public function change(): void
     {
-        // Quando um lembrete automático foi enviado pela última vez.
+        // When an automatic reminder was last sent.
         //
-        // Existe porque o sino não serve de memória para isto. Ler marca
-        // `read_at`, mas DISPENSAR apaga a linha -- e com a linha some a
-        // prova de que já avisamos. Sem este registro, limpar as
-        // notificações faria o lembrete voltar na entrega seguinte, que é
-        // exatamente o contrário do que dispensar deveria significar.
+        // Exists because the notification bell does not serve as memory for
+        // this. Reading one sets `read_at`, but DISMISSING deletes the row
+        // -- and with the row goes the proof that we already warned them.
+        // Without this record, clearing notifications would bring the
+        // reminder back on the next delivery, which is exactly the
+        // opposite of what dismissing is supposed to mean.
         //
-        // Uma linha por conta e chave, sobrescrita a cada envio. Não é
-        // histórico: é "a última vez que falamos disto com esta pessoa", e é
-        // só o que a decisão de reenviar precisa saber.
+        // One row per account and key, overwritten on every send. It is not
+        // history: it is "the last time we told this person about this",
+        // which is all the resend decision needs to know.
         //
-        // Nunca aparece para ninguém. Mas é dado ligado a uma conta, então
-        // entra na lista do AccountDataUtil, que governa a exportação e a
-        // exclusão -- uma tabela esquecida ali é dado que sobrevive à
-        // exclusão da conta.
+        // Never shown to anyone. But it is data tied to an account, so it
+        // goes on AccountDataUtil's list, which governs export and
+        // deletion -- a table forgotten there is data that survives the
+        // account's deletion.
         $this->table('sys_reminder_log', ['id' => false, 'primary_key' => ['user_id', 'message_key']])
              ->addColumn('user_id', 'integer', ['signed' => false, 'null' => false])
              ->addColumn('message_key', 'string', ['limit' => 64, 'null' => false])

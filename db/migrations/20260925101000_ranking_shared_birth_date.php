@@ -8,27 +8,29 @@ final class RankingSharedBirthDate extends AbstractMigration
 {
     public function up(): void
     {
-        // Acrescenta a data de nascimento da conta ao filtro de publicação.
+        // Adds the account's date of birth to the publication filter.
         //
-        // Já havia um corte por idade aqui, mas pela idade que o CARTUCHO
-        // manda (r.player_age). Ela é fraca por dois motivos conhecidos: é
-        // atualizada à mão e envelhece parada, e só existe depois da primeira
-        // transmissão. A data de nascimento da conta é melhor nos dois pontos.
+        // There was already an age cutoff here, but based on the age the
+        // CARTRIDGE sends (r.player_age). It is weak for two known reasons:
+        // it is updated by hand and ages in place, and it only exists after
+        // the first upload. The account's date of birth is better on both
+        // counts.
         //
-        // Os dois cortes ficam, e isso não é redundância: são fontes
-        // diferentes, e a pessoa pode ter informado uma e não a outra. Quem
-        // informa a data no site mas nunca tocou na idade do jogo fica coberta
-        // pelo primeiro; quem se cadastrou antes de a data existir fica
-        // coberta pelo segundo.
+        // Both cutoffs stay, and this is not redundancy: they are different
+        // sources, and a person may have provided one and not the other.
+        // Someone who gives the date on the site but never touched the
+        // in-game age is covered by the first; someone who signed up before
+        // the date field existed is covered by the second.
         //
-        // NULL passa, de propósito: é "não informou", e não "criança". As
-        // contas que existiam quando esta coluna nasceu estão todas assim, e
-        // bloqueá-las seria interromper quem já usava por causa de um campo
-        // que não existia quando elas se cadastraram.
+        // NULL passes through, on purpose: it means "did not provide", not
+        // "a child". Every account that existed when this column was born
+        // is in that state, and blocking them would mean interrupting
+        // people who were already using the service over a field that did
+        // not exist when they signed up.
         //
-        // CURDATE() num `WHERE` de view é avaliado a cada consulta, então
-        // alguém que faz 13 anos amanhã passa a poder aparecer amanhã, sem
-        // nada precisar rodar.
+        // CURDATE() in a view's WHERE clause is evaluated on every query, so
+        // someone who turns 13 tomorrow becomes eligible tomorrow, with
+        // nothing needing to run.
         $this->execute(
             "CREATE OR REPLACE VIEW bxt_ranking_shared AS
              SELECT r.*

@@ -21,13 +21,15 @@ jobs:
   
     strategy:
       matrix:
-        # Um alvo do Dockerfile por imagem. Revisado em 24/09/2026 contra a
-        # produção: faltavam `mail` (que existe desde sempre), `relay-policy` e
-        # `cron-php` (serviços ativos na produção que não tinham imagem).
+        # One Dockerfile target per image. Reviewed on 2026-09-24 against
+        # production: `mail` (which has existed all along), `relay-policy`
+        # and `cron-php` were missing -- active services in production with
+        # no image at all.
         #
-        # E vale registrar: o alvo `cron` não podia estar passando. Havia um
-        # `RUN` sem argumento no Dockerfile, que é erro de parse -- então esta
-        # matriz vinha falhando nesse item, e ninguém olhou.
+        # And worth recording: the `cron` target could not have been
+        # passing. The Dockerfile had a `RUN` with no argument, which is a
+        # parse error -- so this matrix had been failing on that item, and
+        # nobody looked.
         image:
           - name: dns
           - name: cron

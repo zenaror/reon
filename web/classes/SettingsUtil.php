@@ -57,10 +57,11 @@
 			// seguinte, sem reiniciar o serviço.
 			"relay_capture" => "0",
 
-			// O lembrete automático de quem está fora dos rankings. Sai
-			// quando um resultado chega e não vai ser publicado, no
-			// máximo uma vez a cada 30 dias por conta. Desligar aqui cala
-			// o lembrete sem mexer na preferência de ninguém.
+			// The automatic reminder for accounts left out of the
+			// rankings. Sent when a result arrives and will not be
+			// published, at most once every 30 days per account. Turning
+			// this off silences the reminder without touching anyone's
+			// preference.
 			"rankings_reminder" => "1",
 		];
 

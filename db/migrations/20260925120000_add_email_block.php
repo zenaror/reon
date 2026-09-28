@@ -8,32 +8,35 @@ final class AddEmailBlock extends AbstractMigration
 {
     public function change(): void
     {
-        // Endereços que não podem cadastrar de novo por um tempo, depois de a
-        // conta deles ter sido apagada.
+        // Addresses that cannot sign up again for a while, after their
+        // account has been deleted.
         //
-        // Pedido do dono em 25/09/2026: evitar apagar e recriar em curto
-        // intervalo. O alvo é a rotatividade, não a punição -- daí um prazo, e
-        // não um bloqueio permanente.
+        // Requested by the owner on 2026-09-25: to stop an account being
+        // deleted and recreated in short order. The target is churn, not
+        // punishment -- hence a window, not a permanent block.
         //
-        // AQUI MORA UMA TENSÃO, e ela é o desenho inteiro desta tabela:
-        // guardar o endereço de quem pediu exclusão é retenção de dado pessoal
-        // DEPOIS do pedido de apagamento, que é exatamente o que o direito de
-        // exclusão existe para impedir. A saída é guardar **hash** e não o
-        // endereço: dá para responder "este endereço está bloqueado?" na hora
-        // do cadastro, e não dá para ler a lista e saber de quem era.
+        // THIS IS WHERE A TENSION LIVES, and it is this table's whole
+        // design: storing the address of someone who asked for deletion is
+        // retaining personal data AFTER the deletion request, which is
+        // exactly what the right to erasure exists to prevent. The way out
+        // is to store a **hash**, not the address: it can answer "is this
+        // address blocked?" at sign-up time, and it cannot be read back as
+        // a list of who it was.
         //
-        // O hash é temperado com um segredo do config.json, fora do banco. Sem
-        // tempero, hash de e-mail é adivinhável por força bruta -- endereço tem
-        // pouca entropia e listas de endereços existem aos milhões. E o
-        // tempero só serve se estiver em outro lugar que não a tabela: um
-        // segredo no mesmo dump que os hashes não protege de nada.
+        // The hash is peppered with a secret from config.json, outside the
+        // database. Without a pepper, an e-mail hash is guessable by brute
+        // force -- an address has little entropy, and lists of addresses
+        // exist by the millions. And the pepper only helps if it lives
+        // somewhere other than the table: a secret in the same dump as the
+        // hashes protects nothing.
         //
-        // Esta tabela NÃO entra no AccountDataUtil, e isso é deliberado apesar
-        // de a regra de lá ser "uma lista só governa exportação e exclusão".
-        // Ela é o que SOBREVIVE à exclusão, de propósito; e não há conta a que
-        // ligá-la, porque a conta deixou de existir. Não há o que exportar (um
-        // hash não é informação para a pessoa) nem o que apagar (apagar seria
-        // desfazer o bloqueio).
+        // This table does NOT go on AccountDataUtil's list, and that is
+        // deliberate even though that list's own rule is "one list governs
+        // both export and deletion". It is what SURVIVES deletion, on
+        // purpose; there is no account left to tie it to, because the
+        // account has stopped existing. There is nothing to export (a hash
+        // is not information for the person) and nothing to delete
+        // (deleting it would undo the block).
         $this->table('sys_email_block', ['id' => false, 'primary_key' => ['email_hash']])
              ->addColumn('email_hash', 'char', [
                  'limit' => 64,
@@ -45,7 +48,7 @@ final class AddEmailBlock extends AbstractMigration
                  'default' => 'CURRENT_TIMESTAMP',
                  'null' => false,
              ])
-             // Para o expurgo achar as expiradas sem varrer a tabela.
+             // So the purge job can find expired rows without scanning the table.
              ->addIndex(['blocked_until'])
              ->create();
     }

@@ -101,27 +101,29 @@
 			return $id > 0 ? $id : null;
 		}
 
-		// Um lembrete automático: o sistema decide quando mandar, ninguém
-		// dispara à mão.
+		// An automatic reminder: the system decides when to send it, nobody
+		// fires it by hand.
 		//
-		// Três coisas o impedem de virar praga, e cada uma responde a um
-		// comportamento diferente da pessoa:
+		// Three things keep it from turning into spam, each answering a
+		// different thing the person may have done:
 		//
-		//   - já existe um NÃO LIDO? não manda outro. Dois lembretes iguais
-		//     no sino não avisam duas vezes, só enchem.
-		//   - ela LEU ou DISPENSOU? espera $dias antes de falar de novo.
-		//     Ler não é o mesmo que resolver, então insistir uma vez por mês
-		//     é razoável; insistir toda entrega não é.
-		//   - ela RESOLVEU? aí a condição que gera o lembrete deixa de ser
-		//     verdadeira e quem chama simplesmente não chama mais.
+		//   - already an UNREAD one? does not send another. Two identical
+		//     reminders in the bell do not warn twice, they just clutter.
+		//   - they READ or DISMISSED it? wait $days before speaking again.
+		//     Reading is not the same as resolving, so insisting once a
+		//     month is reasonable; insisting on every delivery is not.
+		//   - they RESOLVED it? then the condition that triggers the
+		//     reminder stops being true and the caller simply stops
+		//     calling.
 		//
-		// O "dispensou" é o caso que exige o sys_reminder_log: dispensar
-		// APAGA a linha do sino, e sem um registro à parte o lembrete
-		// voltaria na entrega seguinte -- punindo justamente quem organizou
-		// a própria caixa.
+		// "dismissed" is the case that needs sys_reminder_log: dismissing
+		// DELETES the row in the bell, and without a separate record the
+		// reminder would come back on the next delivery -- punishing
+		// exactly the person who tidied up their own inbox.
 		//
-		// Devolve o id quando escreveu, e null quando não era hora. Quem
-		// chama é caminho de entrega: a diferença não deve interessar a ele.
+		// Returns the id when it wrote one, and null when it was not time.
+		// The caller is a delivery path: the difference should not concern
+		// it.
 		public function addReminder($userId, $category, $opts = [], $dias = 30) {
 			$userId = (int)$userId;
 			$key = isset($opts["key"]) ? (string)$opts["key"] : "";
@@ -155,8 +157,9 @@
 				$id = $this->add($userId, $category, $opts);
 				if ($id === null) return null;
 
-				// Só depois de escrever. Marcar antes e falhar no insert
-				// calaria o lembrete por um mês sem a pessoa ter visto nada.
+				// Only after writing. Marking it before and failing on the
+				// insert would silence the reminder for a month without the
+				// person ever having seen it.
 				$stmt = $db->prepare(
 					"insert into sys_reminder_log (user_id, message_key)
 					 values (?, ?)
@@ -166,8 +169,8 @@
 				$stmt->close();
 				return $id;
 			} catch (\Throwable $e) {
-				// Instalação sem a tabela, ou banco fora: lembrete é
-				// acessório e não pode derrubar quem chama.
+				// Installation without the table, or the database down: a
+				// reminder is a nice-to-have and cannot crash the caller.
 				error_log("addReminder(" . $key . "): " . $e->getMessage());
 				return null;
 			}

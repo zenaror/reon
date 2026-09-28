@@ -670,9 +670,9 @@
 	$db_util = DBUtil::getInstance();
 	$db = $db_util->getDB();
 	$session_util = SessionUtil::getInstance();
-	// Lembrete para quem está fora do ranking por escolha. Só para quem tem
-	// sessão: visitante anônimo não tem o que ligar, e um aviso que ele não
-	// pode atender é só ruído.
+	// A reminder for whoever is out of the rankings by choice. Only for
+	// someone with a session: an anonymous visitor has nothing to turn on,
+	// and a notice they cannot act on is just noise.
 	$rankings_reminder = ($session_util->isSessionActive() && isset($_SESSION["user_id"]))
 		? (UserUtil::rankingsOptIn($_SESSION["user_id"]) === false)
 		: false;
@@ -859,11 +859,12 @@
 		}
 		$category_name = bxt_rankings_to_fullwidth_caps($category_name);
 
-		// A view, e não a tabela: ela deixa de fora quem desligou o ranking
-		// na conta. A regra mora na view porque os pontos de leitura são
-		// quinze entre esta página e o que o jogo vê, e repetir a condição
-		// em quinze lugares é garantir que um dia falte num -- publicando
-		// dado de quem pediu para não publicar, em silêncio.
+		// The view, not the table: it leaves out whoever turned the
+		// rankings off on their account. The rule lives in the view
+		// because there are fifteen read sites between this page and what
+		// the game sees, and repeating the condition in fifteen places is
+		// guaranteeing that one will eventually be missed -- silently
+		// publishing the data of someone who asked not to be published.
 		$from_clause = " from bxt_ranking_shared r ";
 		if ($can_join_news) {
 			$from_clause .= "inner join bxt_news n on n.id = r.news_id ";

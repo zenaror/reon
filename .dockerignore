@@ -7,10 +7,11 @@ web/vendor
 docker-compose*
 Dockerfile
 
-# Configuração com credencial. Nada aqui é copiado para uma imagem hoje -- os
-# COPY do Dockerfile são de web/, db/, app/, maint/ e mail/, nenhum da raiz --
-# mas isto é a rede embaixo: no dia em que alguém escrever `COPY . .`, a senha
-# do MySQL entra numa camada e não sai mais nem apagando o arquivo depois.
-# O config chega por volume ou por ambiente; ver docker-compose.example.yml.
+# Configuration holding credentials. Nothing here is copied into an image
+# today -- the Dockerfile's COPY instructions come from web/, db/, app/,
+# maint/ and mail/, none from the root -- but this is the safety net: the
+# day someone writes `COPY . .`, the MySQL password enters a layer and does
+# not come back out even by deleting the file afterwards. Config arrives by
+# volume or by environment; see docker-compose.example.yml.
 config.json
 config.ini

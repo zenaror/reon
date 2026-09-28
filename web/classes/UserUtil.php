@@ -35,38 +35,41 @@
 			return 0;
 		}
 		
-		// O padrão de quem nunca escolheu. Vive aqui e em
-		// BXT_RANKINGS_OPT_IN_DEFAULT (web/cgb/pokemon/bxt_config.php), e os
-		// dois comentários apontam um para o outro: é o valor que decide se
-		// uma conta aparece no ranking sem ninguém ter dito nada.
+		// The default for whoever never chose. Lives here and in
+		// BXT_RANKINGS_OPT_IN_DEFAULT (web/cgb/pokemon/bxt_config.php), and
+		// the two comments point at each other: it is the value that decides
+		// whether an account shows up in the rankings with nobody having
+		// said anything.
 		//
-		// DESLIGADO, que é o que a divergência 14 do registro pedia: o
-		// Children's Code quer a configuração começando fechada, não
-		// começando aberta com um jeito de fechar.
+		// OFF, which is what data-protection register finding 14 asked for:
+		// the Children's Code wants the setting starting closed, not
+		// starting open with a way to close it.
 		//
-		// Quem quiser aparecer diz que quer -- na caixa do cadastro ou na
-		// tela da conta -- e o lembrete automático existe justamente para
-		// isto não virar "ninguém aparece porque ninguém soube".
+		// Whoever wants to appear says so -- in the sign-up box or on the
+		// account page -- and the automatic reminder exists precisely so
+		// this does not turn into "nobody appears because nobody knew".
 		const RANKINGS_OPT_IN_DEFAULT = false;
 
-		// -------------------------------- Bloqueio de e-mail após exclusão
+		// -------------------------------- E-mail block after deletion
 		//
-		// Quanto tempo um endereço fica impedido de cadastrar de novo depois de
-		// a conta dele ser apagada. Pedido do dono em 25/09/2026, contra apagar
-		// e recriar em curto intervalo.
+		// How long an address stays unable to sign up again after its
+		// account has been deleted. Requested by the owner on 2026-09-25,
+		// against deleting and recreating an account in short order.
 		//
-		// Seis meses é um meio: o alvo é rotatividade, não punição, e o prazo
-		// tem custo dos dois lados -- curto demais não atrapalha quem quer
-		// reciclar conta, longo demais é guardar o rastro de alguém que pediu
-		// para ser esquecido. Mudar é mudar esta linha.
+		// Six months is a middle ground: the target is churn, not
+		// punishment, and the window has a cost on both sides -- too short
+		// does not deter someone recycling an account, too long is
+		// retaining the trace of someone who asked to be forgotten.
+		// Changing it means changing this line.
 		const EMAIL_BLOCK_MONTHS = 6;
 
-		// O hash que vai para sys_email_block. Nunca o endereço.
+		// The hash that goes into sys_email_block. Never the address.
 		//
-		// Temperado com `email_block_pepper` do config.json, que fica FORA do
-		// banco de propósito: um tempero no mesmo dump que os hashes não
-		// protege de nada. Sem a chave configurada, ainda funciona -- só fica
-		// mais fraco, e avisa uma vez no log em vez de falhar calado.
+		// Peppered with `email_block_pepper` from config.json, which lives
+		// OUTSIDE the database on purpose: a pepper in the same dump as the
+		// hashes protects nothing. Without the key configured, it still
+		// works -- just weaker, and it warns once in the log instead of
+		// failing silently.
 		private static function emailBlockHash($email) {
 			$normal = strtolower(trim((string)$email));
 			$pepper = "";
@@ -80,15 +83,15 @@
 				static $avisado = false;
 				if (!$avisado) {
 					$avisado = true;
-					error_log("email_block_pepper ausente do config.json: os hashes de bloqueio ficam sem tempero");
+					error_log("email_block_pepper missing from config.json: block hashes are unpeppered");
 				}
 			}
 			return hash("sha256", $normal . "\0" . $pepper);
 		}
 
-		// O endereço está bloqueado? Devolve a data em que o bloqueio termina,
-		// ou null quando não está. Data em vez de booleano porque quem chama
-		// precisa dizer à pessoa até quando.
+		// Is the address blocked? Returns the date the block ends, or null
+		// when it is not blocked. A date rather than a boolean because
+		// whoever calls this needs to tell the person until when.
 		public static function emailBlockedUntil($email) {
 			try {
 				$db = DBUtil::getInstance()->getDB();
@@ -100,18 +103,19 @@
 				$stmt->execute();
 				$linha = $stmt->get_result()->fetch_assoc();
 			} catch (\Throwable $e) {
-				// Instalação sem a tabela ainda: não bloqueia ninguém por causa
-				// de uma migração que não rodou.
+				// Installation without the table yet: does not block anyone
+				// because a migration has not run.
 				return null;
 			}
 			return $linha ? $linha["blocked_until"] : null;
 		}
 
-		// Registra o bloqueio. Chamado pela exclusão de conta, com o endereço
-		// ainda em mãos -- depois de apagar não há mais de onde tirar.
+		// Records the block. Called by account deletion, with the address
+		// still in hand -- after deleting there is nowhere left to get it
+		// from.
 		//
-		// REPLACE e não INSERT: se o mesmo endereço voltar a ser apagado, o
-		// prazo recomeça em vez de dar erro de chave duplicada.
+		// REPLACE, not INSERT: if the same address gets deleted again, the
+		// window restarts instead of hitting a duplicate-key error.
 		public static function blockEmailAfterDeletion($email) {
 			$email = trim((string)$email);
 			if ($email === "") return false;
@@ -124,23 +128,24 @@
 				$stmt->bind_param("s", $h);
 				return $stmt->execute();
 			} catch (\Throwable $e) {
-				error_log("blockEmailAfterDeletion falhou: " . $e->getMessage());
+				error_log("blockEmailAfterDeletion failed: " . $e->getMessage());
 				return false;
 			}
 		}
 
-		// A idade a partir da qual uma conta pode aparecer no ranking.
+		// The age from which an account may appear in the rankings.
 		//
-		// 13 porque é o limiar da COPPA, o mais citado dos cinco que as leis
-		// usam, e porque publicar uma entrada de ranking publica **idade,
-		// gênero, estado e nome** juntos para os outros jogadores -- o jogo
-		// imprime os três numa linha só (ver ranking_table_common.asm:880, o
-		// offset $000A é este byte de idade). Não é só uma pontuação.
+		// 13 because it is COPPA's threshold, the most-cited of the five
+		// the various laws use, and because publishing a ranking entry
+		// publishes **age, gender, state and name** together to other
+		// players -- the game prints the three on one line (see
+		// ranking_table_common.asm:880, offset $000A is this age byte). It
+		// is not just a score.
 		const RANKINGS_MIN_AGE = 13;
 
-		// A idade em anos completos hoje, a partir da data declarada. null
-		// quando a pessoa não informou -- e "não informou" não é zero: zero
-		// seria menor de idade, e faria o silêncio bloquear.
+		// The age in full years as of today, from the declared date. null
+		// when the person did not provide one -- and "not provided" is not
+		// zero: zero would mean a minor, and would make silence block.
 		public static function ageFromBirthDate($birthDate) {
 			if ($birthDate === null || $birthDate === "" || $birthDate === "0000-00-00") return null;
 			try {
@@ -149,17 +154,19 @@
 				return null;
 			}
 			$hoje = new \DateTimeImmutable("today");
-			if ($nasc > $hoje) return null;   // data no futuro: dado inválido, não idade negativa
+			if ($nasc > $hoje) return null;   // future date: invalid data, not a negative age
 			return (int)$nasc->diff($hoje)->y;
 		}
 
-		// A conta está impedida de aparecer no ranking pela idade declarada?
+		// Is the account blocked from appearing in the rankings by its
+		// declared age?
 		//
-		// Três respostas, e elas não são duas: true (impedida), false (pode
-		// escolher) e null (não informou a data). O null é o que preserva o
-		// comportamento de quem se cadastrou antes disto existir: sem data,
-		// vale a regra antiga -- o filtro pela idade que o cartucho manda, que
-		// vive na view bxt_ranking_shared.
+		// Three answers, and they are not two: true (blocked), false (may
+		// choose), and null (did not provide the date). The null is what
+		// preserves the behaviour of accounts that signed up before this
+		// existed: with no date, the old rule applies -- the filter on the
+		// age the cartridge sends, which lives in the bxt_ranking_shared
+		// view.
 		public static function rankingsBlockedByAge($userId) {
 			$id = (int)$userId;
 			if ($id <= 0) return null;
@@ -170,8 +177,8 @@
 				$stmt->execute();
 				$linha = $stmt->get_result()->fetch_assoc();
 			} catch (\Throwable $e) {
-				// Instalação sem a coluna ainda: não bloqueia ninguém por
-				// causa de uma migração que não rodou.
+				// Installation without the column yet: does not block
+				// anyone because a migration has not run.
 				return null;
 			}
 			if ($linha === null) return null;
@@ -180,14 +187,14 @@
 			return $idade < self::RANKINGS_MIN_AGE;
 		}
 
-		// A data serve para validar, então o que não é data não entra. Devolve
-		// a data normalizada (Y-m-d), "" para campo vazio (opcional, e vazio é
-		// uma resposta válida), ou null quando o que veio não é uma data que
-		// se possa usar.
+		// The date exists to validate, so whatever is not a date does not
+		// get in. Returns the normalised date (Y-m-d), "" for an empty
+		// field (optional, and empty is a valid answer), or null when what
+		// arrived is not a usable date.
 		//
-		// O limite de 120 anos não é zelo: uma pessoa que digita 1899 errou o
-		// ano, e gravar isso como verdade faz a conta passar por adulta para
-		// sempre com um dado que ninguém mais vai reler.
+		// The 120-year limit is not fussiness: someone who types 1899 got
+		// the year wrong, and storing that as true makes the account read
+		// as an adult forever, with data nobody will ever re-read.
 		public static function normalizeBirthDate($valor) {
 			$valor = trim((string)$valor);
 			if ($valor === "") return "";
@@ -198,9 +205,10 @@
 			return $valor;
 		}
 
-		// A conta entra no ranking? null quando não há conta identificada,
-		// para quem chama poder distinguir "não quer" de "não sei quem é" --
-		// um aviso mostrado a visitante anônimo não teria o que pedir.
+		// Does the account appear in the rankings? null when there is no
+		// identified account, so the caller can tell "does not want to"
+		// apart from "does not know who" -- a notice shown to an anonymous
+		// visitor would have nothing to ask for.
 		public static function rankingsOptIn($userId) {
 			$id = (int)$userId;
 			if ($id <= 0) return null;
@@ -211,8 +219,8 @@
 				$stmt->execute();
 				$linha = $stmt->get_result()->fetch_assoc();
 			} catch (\Throwable $e) {
-				// Instalação sem a coluna ainda: vale o padrão, em vez de a
-				// página quebrar por causa de um aviso.
+				// Installation without the column yet: the default applies,
+				// instead of the page breaking over a reminder.
 				return self::RANKINGS_OPT_IN_DEFAULT;
 			}
 			if ($linha === null) return null;
@@ -497,11 +505,13 @@
 				return 0;
 			}
 
-			// Endereço de conta apagada há pouco. Devolve 0, como os dois casos
-			// acima, e a razão é a mesma que rege este método inteiro: dizer
-			// "este endereço está bloqueado" na tela contaria a um estranho que
-			// já existiu conta ali. Quem precisa saber é o dono da caixa, então
-			// a explicação vai por e-mail, para onde só ele lê.
+			// An address from a recently deleted account. Returns 0, like
+			// the two cases above, and the reason is the same one that
+			// governs this whole method: saying "this address is blocked"
+			// on the page would tell a stranger that an account once
+			// existed there. Whoever needs to know is the owner of the
+			// mailbox, so the explanation goes by e-mail, where only they
+			// read it.
 			$until = self::emailBlockedUntil($email);
 			if ($until !== null) {
 				self::$instance->sendSignupBlockedEmail($email, $until);
@@ -587,12 +597,13 @@
 			return 0;
 		}
 
-		// Conta a quem é dono da caixa por que o cadastro dele não andou.
+		// Tells whoever owns the mailbox why their sign-up did not go
+		// through.
 		//
-		// Existe porque a tela não pode contar: um endereço bloqueado é um
-		// endereço que já teve conta, e revelar isso na página entregaria a
-		// qualquer um a existência de uma conta apagada. A caixa de entrada é o
-		// único lugar onde essa informação encontra só a pessoa certa.
+		// Exists because the page cannot say: a blocked address is an
+		// address that once had an account, and revealing that on the page
+		// would hand anyone the existence of a deleted account. The inbox
+		// is the one place that information reaches only the right person.
 		private function sendSignupBlockedEmail($email, $until) {
 			$cfg = ConfigUtil::getInstance()->getConfig();
 			$message = TemplateUtil::render("/email/signup_blocked", [
@@ -600,8 +611,9 @@
 				"until" => date("j F Y", strtotime((string)$until)),
 				"months" => self::EMAIL_BLOCK_MONTHS,
 			]);
-			// Falha aqui não propaga, igual aos outros avisos deste fluxo: o
-			// bloqueio vale de todo jeito, e a pessoa vê a mesma tela.
+			// A failure here does not propagate, like the other notices in
+			// this flow: the block applies either way, and the person sees
+			// the same screen.
 			self::$instance->sendUtf8Email($email, "noreply@".$cfg["email_domain"],
 				"REON registration unavailable for this address", $message);
 		}
@@ -719,23 +731,26 @@
 			
 			$opt_in = ($customPokemonNewsOptIn == 1) ? 1 : 0;
 
-			// A escolha da caixa do cadastro. Quem chama sem passar nada --
-			// o seeder, um teste, qualquer coisa que não seja o formulário --
-			// cai no mesmo padrão que a coluna usa, para uma conta criada por
-			// fora não nascer diferente de uma criada pela tela.
+			// The sign-up box's choice. Whoever calls without passing
+			// anything -- the seeder, a test, anything that is not the
+			// form -- falls back to the same default the column uses, so an
+			// account created from outside is not born different from one
+			// created through the screen.
 			$rankings = $rankingsOptIn ? 1 : 0;
 
-			// Campo opcional: vazio grava NULL, e NULL quer dizer "não
-			// informou". Data inválida também vira NULL em vez de reprovar o
-			// cadastro -- reprovar por causa de um campo que a pessoa não era
-			// obrigada a preencher seria pior que não ter o campo.
+			// Optional field: empty stores NULL, and NULL means "did not
+			// provide". An invalid date also becomes NULL instead of
+			// failing sign-up -- failing over a field the person was not
+			// required to fill in would be worse than not having the field.
 			$nascimento = self::normalizeBirthDate($birthDate);
 			if ($nascimento === null || $nascimento === "") $nascimento = null;
 
-			// Menor de 13 pela data que ela mesma deu: a conta nasce com o
-			// ranking desligado e sem poder ligar. Aqui é só o valor inicial;
-			// quem impede de ligar depois é rankingsBlockedByAge(), porque uma
-			// checagem só na criação seria contornável abrindo a tela da conta.
+			// Under 13 by the date she herself gave: the account is born
+			// with the rankings off and unable to be turned on. This is
+			// only the initial value; what stops it from being turned on
+			// afterwards is rankingsBlockedByAge(), because a check only at
+			// creation time would be bypassable by opening the account
+			// page.
 			if ($nascimento !== null) {
 				$idade = self::ageFromBirthDate($nascimento);
 				if ($idade !== null && $idade < self::RANKINGS_MIN_AGE) $rankings = 0;

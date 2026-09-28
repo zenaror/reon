@@ -20,14 +20,16 @@
 
 	$cfg = SettingsUtil::getInstance();
 
-	// Duas coisas postam para esta página: o formulário de escrever um aviso
-	// e a caixa dos avisos automáticos. O `action` separa as duas, porque
-	// salvar a caixa não é enviar nada -- sem isso, mexer na caixa cairia no
-	// caminho do envio e reclamaria de título vazio.
+	// Two things POST to this page: the form for writing a notice, and the
+	// automatic-notices checkbox. `action` tells them apart, because saving
+	// the checkbox is not sending anything -- without this, touching the
+	// checkbox would fall into the send path and complain about an empty
+	// title.
 	if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["action"] ?? "") === "auto") {
 		CsrfUtil::check();
-		// Caixa desmarcada não chega no POST: a ausência é "0", e não "não
-		// mexeu" -- que deixaria ligado para sempre depois da primeira vez.
+		// An unchecked box does not arrive in the POST: its absence is "0",
+		// not "did not touch it" -- which would leave it on forever after
+		// the first time.
 		$novo = (($_POST["rankings_reminder"] ?? "") === "1") ? "1" : "0";
 		$ok = $cfg->set("rankings_reminder", $novo);
 		$admin->log($ok ? "notify.auto" : "notify.auto-failed",
