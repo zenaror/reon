@@ -41,11 +41,13 @@
 							{% endif %}
 						</td>
 						<td>
-							<a class="admin-btn admin-btn--small" href="/admin/gbwars_mbox.php?edit_region={{ m.game_region }}&edit_mailbox={{ m.mailbox_id }}">{{ 'admin.gbwars-mbox-edit'|trans }}</a>
-							<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.game_region }}-{{ m.mailbox_id }}">
-								{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
-							</button>
-							<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ m.game_region }}-{{ m.mailbox_id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+							<div class="admin-table__actions">
+								<a class="admin-btn admin-btn--small" href="/admin/gbwars_mbox.php?edit_region={{ m.game_region }}&edit_mailbox={{ m.mailbox_id }}">{{ 'admin.gbwars-mbox-edit'|trans }}</a>
+								<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.game_region }}-{{ m.mailbox_id }}">
+									{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
+								</button>
+								<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ m.game_region }}-{{ m.mailbox_id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+							</div>
 						</td>
 					</tr>
 				{% endfor %}
