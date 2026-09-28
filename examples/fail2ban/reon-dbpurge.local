@@ -1,0 +1,6 @@
+# fail2ban keeps its bans in a database and, after a restart, restores only the
+# ones that database still holds. The default purge age is one day, which would
+# forget a 30-day manual ban (reon-manual) on the first restart. This keeps them
+# for 31 days. Install as /etc/fail2ban/fail2ban.d/reon-dbpurge.local.
+[Definition]
+dbpurgeage = 31d

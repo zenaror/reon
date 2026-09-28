@@ -10,8 +10,9 @@
 #     connection abuse and SASL auth failures) — this server gets constant
 #     scanner/bot traffic on 22/25/110, confirmed in its own logs. Also
 #     installs REON's own jails from examples/fail2ban/: web scanners probing
-#     for .env/.git/phpunit/WordPress files (reon-web-scan) and POP3 auth
-#     failures (reon-pop3).
+#     for .env/.git/phpunit/WordPress files (reon-web-scan), POP3 auth
+#     failures (reon-pop3) and the bans an administrator adds by hand from the
+#     admin panel (reon-manual).
 #   - SSH: no root login, no password auth (key-only), no X11 forwarding.
 #     Only applied if at least one user already has a key in
 #     authorized_keys, specifically to avoid locking out remote access —
@@ -69,7 +70,7 @@ EOF
     install_reon_jails
     systemctl enable --now fail2ban
     systemctl restart fail2ban
-    log_info "fail2ban active -- jails: sshd, postfix, postfix-sasl, reon-web-scan, reon-pop3."
+    log_info "fail2ban active -- jails: sshd, postfix, postfix-sasl, reon-web-scan, reon-manual, reon-pop3."
 }
 
 # REON's own jails live in examples/fail2ban/ (with the reasoning for every
@@ -89,7 +90,17 @@ install_reon_jails() {
     install -m 644 "$src/reon-web-scan.filter.conf" /etc/fail2ban/filter.d/reon-web-scan.conf
     install -m 644 "$src/reon-web-scan.jail.conf"   /etc/fail2ban/jail.d/reon-web-scan.conf
     install -m 644 "$src/reon-pop3.jail.conf"       /etc/fail2ban/jail.d/reon-pop3.conf
-    log_info "Installed the reon-web-scan and reon-pop3 jails from $src"
+
+    # The jail for bans an administrator adds by hand (admin panel -> Banned
+    # IPs). It watches an empty log that never matches anything; the file has
+    # to exist before fail2ban starts. dbpurgeage keeps bans in fail2ban's
+    # database long enough for a 30-day manual ban to survive a restart.
+    install -m 644 "$src/reon-manual.filter.conf"   /etc/fail2ban/filter.d/reon-manual.conf
+    install -m 644 "$src/reon-manual.jail.conf"     /etc/fail2ban/jail.d/reon-manual.conf
+    mkdir -p /etc/fail2ban/fail2ban.d /var/log/reon
+    install -m 644 "$src/reon-dbpurge.local"        /etc/fail2ban/fail2ban.d/reon-dbpurge.local
+    [[ -e /var/log/reon/manual-bans.log ]] || install -m 644 -o root -g root /dev/null /var/log/reon/manual-bans.log
+    log_info "Installed the reon-web-scan, reon-manual and reon-pop3 jails from $src"
 }
 
 harden_ssh() {

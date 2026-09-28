@@ -1,0 +1,87 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.bans-title'|trans }} <span class="admin-form__hint">({{ rows|length }})</span>{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint">{{ 'admin.bans-intro'|trans }}</p>
+
+	{% if not available %}
+		<p class="admin-notice admin-notice--bad">{{ 'admin.bans-unavailable'|trans }}</p>
+	{% else %}
+		<form class="admin-form" method="post" action="/admin/bans.php">
+			<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+			<input type="hidden" name="action" value="ban">
+			<h4 class="h6">{{ 'admin.bans-add-title'|trans }}</h4>
+			<label for="ban-ip">{{ 'admin.bans-ip'|trans }}
+				<input type="text" id="ban-ip" name="ip" maxlength="45" autocomplete="off" required placeholder="203.0.113.7">
+			</label>
+			<label for="ban-reason">{{ 'admin.bans-reason'|trans }}
+				<input type="text" id="ban-reason" name="reason" minlength="3" maxlength="300" autocomplete="off" required>
+				<small class="admin-form__hint">{{ 'admin.bans-reason-hint'|trans }}</small>
+			</label>
+			<p class="admin-form__hint">{{ 'admin.bans-yours'|trans({'%ip%': your_ip}) }}</p>
+			<div><button class="btn btn-outline-danger" type="submit">{{ 'admin.bans-add'|trans }}</button></div>
+		</form>
+
+		{% if problem %}
+			<p class="admin-notice admin-notice--bad">{{ problem }}</p>
+		{% endif %}
+
+		{% if rows is empty %}
+			<p class="admin-form__hint">{{ 'admin.bans-empty'|trans }}</p>
+		{% else %}
+			<div class="admin-scroll">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>{{ 'admin.bans-ip'|trans }}</th>
+							<th>{{ 'admin.bans-source'|trans }}</th>
+							<th>{{ 'admin.bans-reason'|trans }}</th>
+							<th>{{ 'admin.bans-since'|trans }}</th>
+							<th>{{ 'admin.bans-until'|trans }}</th>
+							<th class="admin-table__num">{{ 'admin.bans-times'|trans }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for r in rows %}
+							<tr>
+								<td><code>{{ r.ip }}</code></td>
+								<td>
+									{% if r.manual %}
+										<span class="admin-badge">{{ 'admin.bans-manual'|trans }}</span>
+									{% else %}
+										<span class="admin-badge admin-badge--ok">{{ 'admin.bans-auto'|trans }}</span>
+									{% endif %}
+									<div class="admin-form__hint"><code>{{ r.jail }}</code></div>
+								</td>
+								<td>
+									{% if r.reason %}
+										{{ r.reason }}
+										{% if r.by %}<div class="admin-form__hint">— {{ r.by }}</div>{% endif %}
+									{% elseif r.matches %}
+										{{ 'admin.bans-detected'|trans({'%jail%': r.jail}) }}
+										{% for m in r.matches %}<div class="admin-form__hint"><code>{{ m }}</code></div>{% endfor %}
+									{% else %}
+										{{ 'admin.bans-detected'|trans({'%jail%': r.jail}) }}
+									{% endif %}
+								</td>
+								<td>{{ r.since }}</td>
+								<td>{{ r.until|default('—') }}</td>
+								<td class="admin-table__num">{{ r.count }}</td>
+								<td>
+									<form method="post" action="/admin/bans.php" onsubmit="return confirm('{{ 'admin.bans-unban-confirm'|trans|e('js') }}');">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="action" value="unban">
+										<input type="hidden" name="ip" value="{{ r.ip }}">
+										<button class="admin-btn admin-btn--small" type="submit">{{ 'admin.bans-unban'|trans }}</button>
+									</form>
+								</td>
+							</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
+	{% endif %}
+{% endblock %}
