@@ -45,6 +45,21 @@
                 $errors[] = "pokemonNewsValue";
             }
         }
+        // Same shape as the Pokémon News opt-in just above -- Mobile
+        // Stadium content is entirely fan-made/reconstructed too, so it
+        // needs the same explicit per-account consent (owner's request,
+        // 2026-09-28).
+        if (array_key_exists("mobileStadiumCustomOptIn", $_POST)) {
+            if (in_array($_POST["mobileStadiumCustomOptIn"], array("0", "1"), true)) {
+                $db = DBUtil::getInstance()->getDB();
+                $stmt = $db->prepare("update sys_users set custom_mobile_stadium_opt_in = ? where id = ?");
+                $opt_in = intval($_POST["mobileStadiumCustomOptIn"]);
+                $stmt->bind_param("ii", $opt_in, $_SESSION["user_id"]);
+                $stmt->execute();
+            } else {
+                $errors[] = "mobileStadiumValue";
+            }
+        }
         // Cor do adaptador e marca de não-tarifado, quando o painel libera.
         //
         // A checagem de `bin_user_choice` acontece AQUI, e não só no
@@ -83,18 +98,11 @@
                 exit;
             }
         }
-        // Ranking: entrar ou não. O dado continua sendo recebido e guardado
-        // -- o que esta preferência governa é a PUBLICAÇÃO, que é a página
-        // aberta e a tabela que o jogo mostra aos outros jogadores.
-        //
-        // Não apaga nada ao desligar, e isso é deliberado: quem desliga hoje
-        // e religa amanhã volta com o histórico, em vez de descobrir que a
-        // escolha custou o que já tinha. Quem quiser que o dado suma tem o
-        // botão de apagar a conta, que apaga mesmo.
-        // A data de nascimento, que a pessoa pode informar aqui se não
-        // informou no cadastro -- sem isso o campo opcional seria uma porta que
-        // fecha para sempre. Vazio APAGA a data: é dado dela, e retirar tem de
-        // ser possível pelo mesmo caminho que informar.
+        // The date of birth, which the person can provide here if they did
+        // not at sign-up -- without this the optional field would be a
+        // door that closes forever. Empty CLEARS the date: it is their
+        // data, and removing it has to be possible through the same path
+        // as providing it.
         if (array_key_exists("birthDate", $_POST)) {
             $nasc = UserUtil::normalizeBirthDate($_POST["birthDate"]);
             if ($nasc === null) {
@@ -108,12 +116,22 @@
             }
         }
 
+        // Rankings: opt in or out. The data keeps being received and
+        // stored -- what this preference governs is PUBLICATION, which is
+        // the open page and the table the game shows other players.
+        //
+        // Turning it off deletes nothing, and that is deliberate: someone
+        // who turns it off today and back on tomorrow gets their history
+        // back, instead of discovering the choice cost them what they
+        // already had. Whoever wants the data gone has the delete-account
+        // button, which genuinely deletes.
         if (array_key_exists("rankingsOptIn", $_POST)) {
-            // A idade manda, e ela é conferida AQUI e não só na criação da
-            // conta: um POST direto nesta tela é o caminho óbvio para
-            // contornar uma checagem que só rodasse no cadastro. Quem está
-            // bloqueado não liga -- e não recebe erro tampouco, porque o
-            // controle já chega desabilitado; um POST assim é feito à mão.
+            // The age rules, and it is checked HERE, not only at account
+            // creation: a direct POST to this screen is the obvious way to
+            // bypass a check that only ran at sign-up. Someone blocked
+            // does not get to turn it on -- and gets no error either,
+            // because the control already arrives disabled; a POST like
+            // this is made by hand.
             $bloqueado = UserUtil::rankingsBlockedByAge($_SESSION["user_id"]) === true;
             $db = DBUtil::getInstance()->getDB();
             $stmt = $db->prepare("update sys_users set rankings_opt_in = ? where id = ?");
@@ -137,7 +155,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, custom_mobile_stadium_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -161,6 +179,7 @@
 			"money_spent" => $result["money_spent"],
             "trade_region_allowlist" => $result["trade_region_allowlist"],
             "pokemon_news_custom_opt_in" => intval($result["custom_pokemon_news_opt_in"]),
+            "mobile_stadium_custom_opt_in" => intval($result["custom_mobile_stadium_opt_in"]),
             "time_zone" => $result["timezone"],
             "all_time_zones" => timezone_identifiers_list(),
 			"relay_token" => $relay !== null ? bin2hex($relay["token"]) : null,
@@ -172,8 +191,8 @@
 			// nunca salvar.
 			"rankings_opt_in" => ((int)$result["rankings_opt_in"] === 1),
 			"birth_date" => ($result["birth_date"] ?? ""),
-			// true só quando há data E ela diz menos de 13. Sem data é null,
-			// e a tela trata null como "pode escolher".
+			// true only when there is a date AND it says under 13. With no
+			// date it is null, and the page treats null as "may choose".
 			"rankings_blocked" => (UserUtil::rankingsBlockedByAge($_SESSION["user_id"]) === true),
 			"rankings_min_age" => UserUtil::RANKINGS_MIN_AGE,
 			"adapter_choice_allowed" => SettingsUtil::getInstance()->getValid("bin_user_choice") === "1",

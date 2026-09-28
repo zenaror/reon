@@ -213,6 +213,28 @@
   align-items: center;
 }
 
+/* Several inputs that belong to ONE field (e.g. up to 3 replay slot
+   pickers) stacked one under the other, instead of the browser's default
+   inline-block flow, which packs <select>s side by side until they run
+   out of width and wrap unpredictably. */
+.admin-form__stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+
+/* The "charge N" amount box only makes sense once "charges an amount" is
+   actually the selected cost option -- shown for free/no-charge options
+   it read as an amount nobody was going to charge. Same :has() pattern
+   already used above for .news-region. */
+#cost_kind ~ input[name="cost_n"] {
+  display: none;
+}
+#cost_kind:has(option[value="n"]:checked) ~ input[name="cost_n"] {
+  display: inline-block;
+}
+
 /* The console output of a log or a service command: fixed width, dark, and
    scrolling in both directions so a long line is not wrapped into nonsense. */
 .admin-console {

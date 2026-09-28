@@ -1,0 +1,45 @@
+/* Game picker cards for /admin/games.php -- the SAME .reon-pickupgrid /
+   .reon-pickupcard component the homepage uses for its "games and
+   services" picker (web/templates/index.twig, styled in home-v2.css).
+   Copied here rather than loading the whole home-v2.css file: that file's
+   other rules are scoped under body.home-v2 and would do nothing on an
+   admin page, but auditing all of it for admin-safety was not worth it
+   just to reuse four rules. The custom properties these rules read
+   (--reon-line, --reon-ink, --reon-shadow-hard, --reon-font-display,
+   --mt-1, --reon-blue-deep) already come from reon-theme.css, loaded on
+   every page via main.twig -- nothing here needed re-declaring.
+   Owner's request, 2026-09-28: reuse the site's own graphical resources
+   instead of inventing new ones for the admin panel. */
+
+.reon-pickupgrid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 10px;
+}
+
+.reon-pickupcard {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 8px;
+	text-decoration: none;
+	text-align: center;
+	border: 1px solid var(--reon-line);
+	border-top: 4px solid var(--pc, var(--reon-blue-deep));
+	background: #fff;
+	color: var(--reon-ink);
+	font-family: var(--reon-font-display);
+	font-size: var(--mt-1);
+	box-shadow: 2px 2px 0 rgba(26, 28, 38, 0.22);
+}
+
+.reon-pickupcard:hover { background: #fff8dc; color: var(--reon-ink); }
+.reon-pickupcard img { height: 40px; width: auto; image-rendering: pixelated; }
+
+/* A card for a game section that has no admin management built yet
+   (GB Wars, for now). Same shape, muted, and not a link. */
+.reon-pickupcard--soon {
+	opacity: 0.55;
+	cursor: default;
+}

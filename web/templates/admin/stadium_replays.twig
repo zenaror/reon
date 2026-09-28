@@ -1,0 +1,97 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.stadium-replays-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint">{{ 'admin.stadium-replays-intro'|trans }}</p>
+	<p class="admin-form__hint"><a href="/admin/stadium.php">{{ 'admin.stadium-replays-compose-link'|trans }}</a></p>
+
+	<nav class="admin-tabs">
+		<a class="admin-tabs__link{{ format == 'j' ? ' is-here' : '' }}" href="/admin/stadium_replays.php?format=j">{{ 'admin.stadium-compose-format-j'|trans }}</a>
+		<a class="admin-tabs__link{{ format == 'w' ? ' is-here' : '' }}" href="/admin/stadium_replays.php?format=w">{{ 'admin.stadium-compose-format-w'|trans }}</a>
+	</nav>
+
+	{% if notice %}
+		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
+	{% endif %}
+
+	<h3>{{ 'admin.stadium-compose-upload-title'|trans }}</h3>
+	<p class="admin-form__hint">{{ 'admin.stadium-compose-upload-intro'|trans }}</p>
+	<form method="post" action="/admin/stadium_replays.php?format={{ format }}" enctype="multipart/form-data">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="form_action" value="upload">
+
+		<div class="admin-form__field">
+			<label for="record">{{ 'admin.stadium-compose-upload-file'|trans }}</label>
+			<input type="file" id="record" name="record" accept=".bin,.cgb" required>
+			<p class="admin-form__hint">
+				{{ (format == 'j' ? 'admin.stadium-compose-upload-file-hint-j' : 'admin.stadium-compose-upload-file-hint-w')|trans }}
+			</p>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="upload_label">{{ 'admin.stadium-compose-upload-label'|trans }}</label>
+			<input type="text" id="upload_label" name="upload_label" maxlength="80" required>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="upload_source_note">{{ 'admin.stadium-compose-upload-source-note'|trans }}</label>
+			<input type="text" id="upload_source_note" name="upload_source_note" maxlength="160">
+		</div>
+
+		<div class="admin-form__field">
+			<label><input type="checkbox" id="upload_is_custom" name="upload_is_custom" value="1"> {{ 'admin.stadium-compose-upload-is-custom'|trans }}</label>
+			<p class="admin-form__hint">{{ 'admin.stadium-compose-is-custom-hint'|trans }}</p>
+		</div>
+
+		<button class="admin-btn" type="submit">{{ 'admin.stadium-compose-upload-submit'|trans }}</button>
+	</form>
+
+	<hr>
+
+	<h3>{{ 'admin.stadium-compose-manage-title'|trans }}</h3>
+	{% if replays is empty %}
+		<p class="admin-form__hint">{{ 'admin.stadium-compose-empty'|trans }}</p>
+	{% else %}
+		{# A <form> cannot legally wrap <td>s inside a <tr> -- HTML5 would
+		   silently hoist it out and break the layout. Each row's rename
+		   form lives OUTSIDE the table instead, associated with its inputs
+		   purely by the "form" attribute; the delete form is the same
+		   shape, one per row. #}
+		<table class="admin-table">
+			<thead>
+				<tr>
+					<th>{{ 'admin.stadium-track'|trans }}</th>
+					<th>{{ 'admin.stadium-compose-upload-label'|trans }}</th>
+					<th>{{ 'admin.stadium-compose-upload-source-note'|trans }}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for r in replays %}
+					<tr>
+						<td><label><input type="checkbox" name="rename_is_custom" value="1" form="rename-form-{{ r.id }}"{% if r.is_custom %} checked{% endif %}> {{ 'admin.stadium-track-custom'|trans }}</label></td>
+						<td><input type="text" name="rename_label" value="{{ r.label }}" maxlength="80" required form="rename-form-{{ r.id }}"></td>
+						<td><input type="text" name="rename_source_note" value="{{ r.source_note|default('') }}" maxlength="160" form="rename-form-{{ r.id }}"></td>
+						<td>
+							<button class="admin-btn admin-btn--small" type="submit" form="rename-form-{{ r.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
+							<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ r.id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% for r in replays %}
+			<form id="rename-form-{{ r.id }}" method="post" action="/admin/stadium_replays.php?format={{ format }}">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="rename_replay">
+				<input type="hidden" name="replay_id" value="{{ r.id }}">
+			</form>
+			<form id="delete-form-{{ r.id }}" method="post" action="/admin/stadium_replays.php?format={{ format }}">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="delete_replay">
+				<input type="hidden" name="replay_id" value="{{ r.id }}">
+			</form>
+		{% endfor %}
+	{% endif %}
+{% endblock %}

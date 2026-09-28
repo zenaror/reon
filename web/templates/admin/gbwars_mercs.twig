@@ -1,0 +1,26 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.gbwars-mercs-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint"><a href="/admin/games.php?game=gbwars">{{ 'admin.games-back-to-gbwars'|trans }}</a></p>
+	<p class="admin-form__hint">{{ 'admin.gbwars-mercs-intro'|trans }}</p>
+
+	{% if notice %}
+		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
+	{% endif %}
+
+	<form method="post" action="/admin/gbwars_mercs.php">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<div class="admin-form__stacked">
+			{% for unit in units %}
+				<div class="admin-form__field">
+					<label for="price{{ loop.index0 }}">{{ unit }}</label>
+					<input type="number" id="price{{ loop.index0 }}" name="price{{ loop.index0 }}"
+					       value="{{ prices[loop.index0] }}" min="0" max="9999" required>
+				</div>
+			{% endfor %}
+		</div>
+		<button class="admin-btn" type="submit">{{ 'admin.gbwars-mercs-submit'|trans }}</button>
+	</form>
+{% endblock %}

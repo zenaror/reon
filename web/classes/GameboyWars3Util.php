@@ -1,8 +1,16 @@
 <?php
+	require_once("DBUtil.php");
 /**
  * Utility class for Game Boy Wars 3 (CGB-BWWJ/CGB-BWWE) operations
  */
 class GameboyWars3Util {
+
+    // The 5 mercenary units youhei_menu.php prices, in the fixed order the
+    // game reads them (spec comment already on that file: 0=Infantry,
+    // 1=AA Tank, 2=Tank, 3=Bomber, 4=Frigate). Not region-specific: the
+    // route never branched on region for this endpoint before today, and
+    // pricing is game balance, not language.
+    const MERCENARY_UNITS = ["Infantry", "AA Tank", "Tank", "Bomber", "Frigate"];
 
     /**
      * Map header bytes for each game version
@@ -671,5 +679,332 @@ class GameboyWars3Util {
             $lines[] = $serials[$i] ?? '0000';
         }
         return implode("\n", $lines);
+    }
+
+    // ---- Admin: custom maps (bww_maps) ----------------------------------
+    //
+    // Added 2026-09-28 for the admin panel. Everything above this point
+    // (header bytes, checksum math, parsing) already existed and is used
+    // by the live routes (map.php, map_menu.php); these methods are the
+    // panel's own read/write layer on top of it, the same split
+    // StadiumUtil keeps between "how the format works" and "how the
+    // panel manages it".
+
+    // For the panel's list: every map, newest id first within each
+    // range (official maps sort together, then REON ones).
+    public static function listMaps() {
+        $db = DBUtil::getInstance()->getDB();
+        $stmt = $db->prepare(
+            "select id, map_id, map_name_j, map_name_e, category_j, category_e,
+                    width, height, price_yen, download_count, is_active, timestamp,
+                    length(map_data) as data_size
+               from bww_maps
+              order by map_id asc");
+        $stmt->execute();
+        return DBUtil::fancy_get_result($stmt);
+    }
+
+    // The next free id in the REON range (2000-9999). Never reuses a
+    // retired id within a session -- always the current max + 1 -- so a
+    // deactivated (but not deleted) map's id is never handed to a
+    // different map later, the same "never reuse a File ID" reasoning
+    // Mobile Stadium's spec gives for its own identifiers.
+    public static function nextReonMapId() {
+        $db = DBUtil::getInstance()->getDB();
+        $row = $db->query(
+            "select max(cast(map_id as unsigned)) as m from bww_maps
+              where cast(map_id as unsigned) >= " . self::MAP_ID_REON_MIN . "
+                and cast(map_id as unsigned) <= " . self::MAP_ID_REON_MAX
+        )->fetch_assoc();
+        $max = $row["m"] !== null ? (int)$row["m"] : (self::MAP_ID_REON_MIN - 1);
+        $next = $max + 1;
+        if ($next > self::MAP_ID_REON_MAX) return null; // range exhausted
+        return $next;
+    }
+
+    // Validates and imports a full map file (WITH its 2-byte header, the
+    // same shape as the seeder's own input files and what a map editor
+    // would export) as a new REON map. Assigns the next free REON id --
+    // an admin never types one by hand, the same way Mobile Stadium's
+    // File ID is generated, not entered. Returns [id, ""] or [null, reason].
+    public static function importMap($fullFileData, $priceYen, $mapNameE = null, $categoryE = null) {
+        if (!is_string($fullFileData) || strlen($fullFileData) < 0x2E) {
+            return [null, "file is too short to be a map"];
+        }
+        if (!self::validateMap($fullFileData, true)) {
+            return [null, "checksum in the file does not match its own contents -- not a valid map file"];
+        }
+        try {
+            $parsed = self::parseMapFile($fullFileData, true);
+        } catch (\Throwable $e) {
+            return [null, "could not parse the map: " . $e->getMessage()];
+        }
+        if ($parsed["width"] < 20 || $parsed["width"] > 50 || $parsed["height"] < 20 || $parsed["height"] > 50) {
+            return [null, "map dimensions ({$parsed['width']}x{$parsed['height']}) must be 20-50"];
+        }
+        if ($priceYen !== null && (!is_int($priceYen) || $priceYen < 0 || $priceYen > 9999)) {
+            return [null, "price must be null or an integer from 0 to 9999 yen"];
+        }
+
+        $mapId = self::nextReonMapId();
+        if ($mapId === null) return [null, "no free map id left in the REON range (2000-9999)"];
+        $mapIdStr = str_pad((string)$mapId, 4, "0", STR_PAD_LEFT);
+
+        $nameJ = self::decodeMapName(substr($fullFileData, 0x20, 8));
+        if ($nameJ === "") $nameJ = "Map $mapIdStr";
+        $categoryJ = $parsed["category"] ?: self::getMapCategory("j");
+        $mapData = self::stripMapHeader($fullFileData);
+
+        $db = DBUtil::getInstance()->getDB();
+        $stmt = $db->prepare(
+            "insert into bww_maps
+               (map_id, map_name, map_name_j, map_name_e, category_j, category_e,
+                width, height, price_yen, map_data, is_active)
+             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
+        // 's' for map_data (binary), not 'b' -- the same mysqli pitfall
+        // StadiumUtil::storeOne() documents: 'b' silently writes 0 bytes
+        // without an explicit send_long_data() call.
+        $priceOrDefault = $priceYen ?? 10;
+        $stmt->bind_param("ssssssiiis", $mapIdStr, $nameJ, $nameJ, $mapNameE, $categoryJ, $categoryE,
+            $parsed["width"], $parsed["height"], $priceOrDefault, $mapData);
+        try {
+            $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            return [null, "database error: " . $e->getMessage()];
+        }
+        return [$db->insert_id, ""];
+    }
+
+    // Price, English name and English category are the only fields an
+    // admin edits after import -- everything else (the map's actual
+    // layout, tiles, units) comes from the file, and editing it here
+    // would silently diverge the DB from what the checksum in map_data
+    // actually covers.
+    public static function updateMapMeta($id, $priceYen, $mapNameE, $categoryE) {
+        if ($priceYen !== null && (!is_int($priceYen) || $priceYen < 0 || $priceYen > 9999)) {
+            return "price must be null or an integer from 0 to 9999 yen";
+        }
+        $db = DBUtil::getInstance()->getDB();
+        $id = (int)$id;
+        $priceOrDefault = $priceYen ?? 10;
+        $stmt = $db->prepare("update bww_maps set price_yen = ?, map_name_e = ?, category_e = ? where id = ?");
+        $stmt->bind_param("issi", $priceOrDefault, $mapNameE, $categoryE, $id);
+        try {
+            $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            return "database error: " . $e->getMessage();
+        }
+        return "";
+    }
+
+    public static function setMapActive($id, $active) {
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $stmt = $db->prepare("update bww_maps set is_active = ? where id = ?");
+            $a = $active ? 1 : 0;
+            $id = (int)$id;
+            $stmt->bind_param("ii", $a, $id);
+            return $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            error_log("GameboyWars3Util::setMapActive($id) failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ---- Admin: mailbox messages (bww_messages) --------------------------
+    //
+    // Called "News" inside the game itself (gbwars3-en disassembly,
+    // data/news.asm: `News_Menu_Message_Service`, coord_text "MESSAGES",
+    // the delete-confirmation prompt "このメッセージを さくじょしますか?"
+    // -- "Delete this message?"). REON's own "mbox" naming (mbox.php,
+    // bww_messages) is this server's label for the same feature, not the
+    // game's. Confirmed 2026-09-28 against github.com/REONTeam/gbwars3-en.
+    //
+    // ENCODING WARNING, not resolved, read before changing this: mbox.php's
+    // own doc comment claims Shift-JIS, and createMboxMessage() above
+    // converts to SJIS -- but every message actually live in production
+    // right now does NOT match that. Checked directly: mailbox e/0's
+    // stored bytes for "！" are EF BC 81, which is UTF-8 for U+FF01: a
+    // Shift-JIS encoder would have written 81 49. The disassembly's own
+    // "News" charmap (charmaps/char_news.inc) doesn't match either --
+    // there 'W' is $27, not the $57 every live message actually stores.
+    // So the real, already-serving data is plain UTF-8/ASCII bytes under
+    // a 7-space legacy header, not SJIS and not that charmap. These
+    // methods match the REAL data instead of trusting the unverified
+    // SJIS assumption above -- but nothing here has been confirmed on a
+    // console either. If a newly composed message renders wrong in
+    // game, this paragraph is the first thing to revisit.
+    const MAILBOX_MIN = 0;
+    const MAILBOX_MAX = 15;
+
+    private static function buildMessageData($title, $body) {
+        $crlf = "\r\n";
+        $header = str_repeat(" ", 7); // legacy format -- see the encoding warning above
+        $bodyLines = preg_split('/\r?\n/', (string)$body);
+        $formattedBody = implode($crlf, $bodyLines);
+        return $header . $title . $crlf . $crlf . $formattedBody . $crlf;
+    }
+
+    // Reverses buildMessageData() (and reads existing legacy-header
+    // messages the same way) for pre-filling the edit form. Falls back
+    // to a best-effort split for anything with a BD=xx header instead --
+    // none exist in production today, but a future message created
+    // through some other path could still have one.
+    public static function decodeMessage($data) {
+        $legacyHeader = str_repeat(" ", 7);
+        if (substr($data, 0, 7) === $legacyHeader) {
+            $rest = substr($data, 7);
+            $parts = explode("\r\n\r\n", $rest, 2);
+            $title = $parts[0] ?? "";
+            $body = isset($parts[1]) ? rtrim(str_replace("\r\n", "\n", $parts[1]), "\n") : "";
+            return [$title, $body];
+        }
+        $lines = explode("\r\n", $data, 3);
+        $title = $lines[1] ?? "";
+        $body = isset($lines[2]) ? rtrim(str_replace("\r\n", "\n", $lines[2]), "\n") : "";
+        return [$title, $body];
+    }
+
+    public static function listMessages() {
+        $db = DBUtil::getInstance()->getDB();
+        $stmt = $db->prepare(
+            "select id, game_region, mailbox_id, serial_number, subject, is_active, timestamp
+               from bww_messages
+              order by game_region asc, mailbox_id asc");
+        $stmt->execute();
+        return DBUtil::fancy_get_result($stmt);
+    }
+
+    public static function getMessage($region, $mailboxId) {
+        $db = DBUtil::getInstance()->getDB();
+        $mailboxId = (int)$mailboxId;
+        $stmt = $db->prepare("select * from bww_messages where game_region = ? and mailbox_id = ?");
+        $stmt->bind_param("si", $region, $mailboxId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    // Creates or overwrites the message in one (region, mailbox) slot.
+    // The serial number always changes on a write -- mbox_serial.txt is
+    // how the game decides which mailboxes to re-download (its own doc
+    // comment: "only downloads mailboxes with changed serial numbers"),
+    // so leaving it the same on an edit would mean consoles that already
+    // have the old text never see the new one, the exact bug class
+    // Mobile Stadium's File ID exists to prevent. Returns "" or the
+    // reason for the refusal.
+    public static function setMessage($region, $mailboxId, $title, $body, $isActive) {
+        $region = strtolower((string)$region);
+        if ($region !== "j" && $region !== "e") return "region must be 'j' or 'e'";
+        $mailboxId = (int)$mailboxId;
+        if ($mailboxId < self::MAILBOX_MIN || $mailboxId > self::MAILBOX_MAX) {
+            return "mailbox id must be " . self::MAILBOX_MIN . "-" . self::MAILBOX_MAX;
+        }
+        $title = trim((string)$title);
+        if ($title === "") return "title must not be empty";
+
+        $db = DBUtil::getInstance()->getDB();
+        $existing = self::getMessage($region, $mailboxId);
+        $currentSerial = $existing !== null ? (int)$existing["serial_number"] : 0;
+        $nextSerial = $currentSerial + 1;
+        if ($nextSerial > 9999) $nextSerial = 1; // char(4); wrap rather than overflow
+        $serialStr = str_pad((string)$nextSerial, 4, "0", STR_PAD_LEFT);
+
+        $messageData = self::buildMessageData($title, $body);
+        $isActiveInt = $isActive ? 1 : 0;
+
+        $stmt = $db->prepare(
+            "insert into bww_messages (game_region, mailbox_id, serial_number, subject, message_data, is_active)
+             values (?, ?, ?, ?, ?, ?)
+             on duplicate key update
+               serial_number = values(serial_number),
+               subject = values(subject),
+               message_data = values(message_data),
+               is_active = values(is_active)");
+        $stmt->bind_param("sisssi", $region, $mailboxId, $serialStr, $title, $messageData, $isActiveInt);
+        try {
+            $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            return "database error: " . $e->getMessage();
+        }
+        return "";
+    }
+
+    public static function setMessageActive($region, $mailboxId, $active) {
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $mailboxId = (int)$mailboxId;
+            $a = $active ? 1 : 0;
+            $stmt = $db->prepare("update bww_messages set is_active = ? where game_region = ? and mailbox_id = ?");
+            $stmt->bind_param("isi", $a, $region, $mailboxId);
+            return $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            error_log("GameboyWars3Util::setMessageActive($region, $mailboxId) failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public static function deleteMessage($region, $mailboxId) {
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $mailboxId = (int)$mailboxId;
+            $stmt = $db->prepare("delete from bww_messages where game_region = ? and mailbox_id = ?");
+            $stmt->bind_param("si", $region, $mailboxId);
+            return $stmt->execute();
+        } catch (\mysqli_sql_exception $e) {
+            error_log("GameboyWars3Util::deleteMessage($region, $mailboxId) failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ---- Admin: mercenary prices (bww_mercenary_prices) -----------------
+    //
+    // youhei_menu.php shipped with 5 prices hardcoded in the route file
+    // itself, with no database table and no admin control at all --
+    // unlike maps and messages, which already had one before this
+    // session. getPrices() falls back to those SAME hardcoded defaults
+    // on a database error or an empty table, so a broken read never
+    // breaks the game: the mercenary menu simply serves what it always
+    // served.
+    const MERCENARY_DEFAULT_PRICES = [30, 50, 50, 50, 50];
+
+    public static function getMercenaryPrices() {
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $result = $db->query("select unit_index, price_yen from bww_mercenary_prices order by unit_index asc");
+            $prices = self::MERCENARY_DEFAULT_PRICES;
+            while ($row = $result->fetch_assoc()) {
+                $i = (int)$row["unit_index"];
+                if ($i >= 0 && $i < count($prices)) $prices[$i] = (int)$row["price_yen"];
+            }
+            return $prices;
+        } catch (\mysqli_sql_exception $e) {
+            error_log("GameboyWars3Util::getMercenaryPrices() failed, serving hardcoded defaults: " . $e->getMessage());
+            return self::MERCENARY_DEFAULT_PRICES;
+        }
+    }
+
+    // Replaces all 5 prices at once -- the form always submits all 5, so
+    // there is no partial-update case to support. Returns "" or the
+    // reason for the refusal.
+    public static function setMercenaryPrices(array $prices) {
+        if (count($prices) !== 5) return "expected exactly 5 prices";
+        foreach ($prices as $i => $p) {
+            if (!is_int($p) || $p < 0 || $p > 9999) {
+                return "price for unit $i must be an integer from 0 to 9999 yen";
+            }
+        }
+        $db = DBUtil::getInstance()->getDB();
+        try {
+            $stmt = $db->prepare(
+                "insert into bww_mercenary_prices (unit_index, price_yen) values (?, ?)
+                 on duplicate key update price_yen = values(price_yen)");
+            foreach ($prices as $i => $p) {
+                $stmt->bind_param("ii", $i, $p);
+                $stmt->execute();
+            }
+        } catch (\mysqli_sql_exception $e) {
+            return "database error: " . $e->getMessage();
+        }
+        return "";
     }
 }
