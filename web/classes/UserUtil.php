@@ -434,6 +434,11 @@
 			
 			if (!self::$instance->setPassword($id, $password)) return 3;
 			
+			// $db was never defined here (an upstream slip): the new password
+			// was saved, then the request died with a fatal error before the
+			// reset link was spent -- a 500 page for the person, and a link
+			// that kept working for another 24 hours.
+			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("delete from sys_password_reset where user_id = ? and secret = ?");
 			$stmt->bind_param("is", $id, $key);
 			$stmt->execute();
