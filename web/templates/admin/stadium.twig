@@ -62,24 +62,26 @@
 							{% endif %}
 						</td>
 						<td>
-							<a class="admin-btn admin-btn--small" href="/admin/stadium_details.php?id={{ d.id }}">{{ 'admin.stadium-details-link'|trans }}</a>
-							<form method="post" action="/admin/stadium.php?region={{ region }}" style="display:inline">
-								<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
-								<input type="hidden" name="form_action" value="activate">
-								<input type="hidden" name="id" value="{{ d.id }}">
-								<input type="hidden" name="action" value="{{ d.active ? 'deactivate' : 'activate' }}">
-								<button class="admin-btn admin-btn--small" type="submit">
-									{{ (d.active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
-								</button>
-							</form>
-							{% if not d.active %}
-								<form method="post" action="/admin/stadium.php?region={{ region }}" style="display:inline">
+							<div class="admin-table__actions">
+								<a class="admin-btn admin-btn--small" href="/admin/stadium_details.php?id={{ d.id }}">{{ 'admin.stadium-details-link'|trans }}</a>
+								<form method="post" action="/admin/stadium.php?region={{ region }}">
 									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
-									<input type="hidden" name="form_action" value="delete">
+									<input type="hidden" name="form_action" value="activate">
 									<input type="hidden" name="id" value="{{ d.id }}">
-									<button class="admin-btn admin-btn--small" type="submit">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+									<input type="hidden" name="action" value="{{ d.active ? 'deactivate' : 'activate' }}">
+									<button class="admin-btn admin-btn--small" type="submit">
+										{{ (d.active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
+									</button>
 								</form>
-							{% endif %}
+								{% if not d.active %}
+									<form method="post" action="/admin/stadium.php?region={{ region }}">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="form_action" value="delete">
+										<input type="hidden" name="id" value="{{ d.id }}">
+										<button class="admin-btn admin-btn--small" type="submit">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+									</form>
+								{% endif %}
+							</div>
 						</td>
 					</tr>
 				{% endfor %}

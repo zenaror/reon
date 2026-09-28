@@ -86,10 +86,12 @@
 							{% endif %}
 						</td>
 						<td>
-							<button class="admin-btn admin-btn--small" type="submit" form="edit-form-{{ m.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
-							<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.id }}">
-								{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
-							</button>
+							<div class="admin-table__actions">
+								<button class="admin-btn admin-btn--small" type="submit" form="edit-form-{{ m.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
+								<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.id }}">
+									{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
+								</button>
+							</div>
 						</td>
 					</tr>
 				{% endfor %}

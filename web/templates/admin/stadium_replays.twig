@@ -74,8 +74,10 @@
 						<td><input type="text" name="rename_label" value="{{ r.label }}" maxlength="80" required form="rename-form-{{ r.id }}"></td>
 						<td><input type="text" name="rename_source_note" value="{{ r.source_note|default('') }}" maxlength="160" form="rename-form-{{ r.id }}"></td>
 						<td>
-							<button class="admin-btn admin-btn--small" type="submit" form="rename-form-{{ r.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
-							<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ r.id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+							<div class="admin-table__actions">
+								<button class="admin-btn admin-btn--small" type="submit" form="rename-form-{{ r.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
+								<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ r.id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+							</div>
 						</td>
 					</tr>
 				{% endfor %}
