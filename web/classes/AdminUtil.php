@@ -2,6 +2,8 @@
 	require_once("DBUtil.php");
 	require_once("MailStoreUtil.php");
 	require_once("SessionUtil.php");
+	require_once("AccountDataUtil.php");
+	require_once("UserUtil.php");
 
 	// The administration panel's own layer: who may be here, what was done,
 	// and the account-level actions the modules share.
@@ -193,6 +195,47 @@
 
 		// Granting and revoking the panel itself. Revoking is refused on the
 		// account in use for the same reason banning is.
+		// Deletes an account and everything attached to it -- the same path as
+		// the person's own delete button (AccountDataUtil::erase), so mail,
+		// game data, devices and the relay token all go, and there is one
+		// list of what an account is made of, not two.
+		//
+		// Three refusals, each because the action is irreversible:
+		//  - never the account you are signed in with;
+		//  - never an administrator (revoke the admin first, so deleting one
+		//    is two deliberate steps and not one misclick);
+		//  - the typed name must match, the same guard the person's own
+		//    button uses (a name is typed reading the screen, a click is not).
+		//
+		// $freeEmail: the person's own deletion blocks the address from
+		// signing up again for six months. When the operator deletes a test
+		// account or an address that is their own, that block is a side
+		// effect nobody wants, so it can be lifted here.
+		//
+		// The audit line is written BEFORE the erase: once the account is
+		// gone there is no username left to record, and a failed erase must
+		// still show that someone tried.
+		public function deleteAccount($userId, $typedName, $freeEmail) {
+			$userId = (int)$userId;
+			$user = $this->getUser($userId);
+			if ($user === null) return "no-such-user";
+			if ($userId === self::currentAdminId()) return "not-yourself";
+			if ((int)$user["is_admin"] === 1) return "delete-admin";
+			if (trim((string)$typedName) !== $user["username"]) return "delete-name-mismatch";
+
+			$this->log("user.delete", $user["username"], "started; id=" . $userId);
+			$email = $user["email"] ?? "";
+			$done = AccountDataUtil::getInstance()->erase($userId);
+			if ($done === null) return "no-such-user";
+			if ($freeEmail && $email !== "") UserUtil::unblockEmail($email);
+
+			$rows = 0;
+			foreach ($done["tabelas"] as $n) $rows += (int)$n;
+			$this->log("user.deleted", $user["username"],
+				"mail=" . (int)$done["correio"] . " rows=" . $rows . " email-block=" . ($freeEmail ? "lifted" : "kept"));
+			return null;
+		}
+
 		public function setAdmin($userId, $isAdmin) {
 			$userId = (int)$userId;
 			$user = $this->getUser($userId);

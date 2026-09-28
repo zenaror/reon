@@ -3,6 +3,11 @@
 {% block admin_title %}{{ 'admin.users-title'|trans }} <span class="admin-form__hint">({{ total }})</span>{% endblock %}
 
 {% block admin_body %}
+	<nav class="admin-tabs">
+		<a class="admin-tabs__link is-here" href="/admin/users.php">{{ 'admin.users-tab-accounts'|trans }}</a>
+		<a class="admin-tabs__link" href="/admin/reserved_names.php">{{ 'admin.users-tab-reserved'|trans }}</a>
+	</nav>
+
 	<form class="admin-form__row mb-3" method="get">
 		<input type="search" name="q" value="{{ q }}" placeholder="{{ 'admin.users-search'|trans }}" aria-label="{{ 'admin.users-search'|trans }}">
 		<button class="btn btn-outline-primary" type="submit">{{ 'admin.users-search-go'|trans }}</button>

@@ -133,6 +133,25 @@
 			}
 		}
 
+		// Lifts the block above. Used by the admin panel when it deletes an
+		// account and the operator says the address should stay free to
+		// register again (a test account, an address that is the operator's
+		// own).
+		public static function unblockEmail($email) {
+			$email = trim((string)$email);
+			if ($email === "") return false;
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("delete from sys_email_block where email_hash = ?");
+				$h = self::emailBlockHash($email);
+				$stmt->bind_param("s", $h);
+				return $stmt->execute();
+			} catch (\Throwable $e) {
+				error_log("unblockEmail failed: " . $e->getMessage());
+				return false;
+			}
+		}
+
 		// The age from which an account may appear in the rankings.
 		//
 		// 13 because it is COPPA's threshold, the most-cited of the five
@@ -777,6 +796,7 @@
 			$stmt->execute();
 
 			require_once("RelayUtil.php");
+	require_once("ReservedNamesUtil.php");
 			RelayUtil::getInstance()->provisionForUser($db->insert_id);
 
 			return 0;
@@ -793,6 +813,8 @@
 			$len = strlen($username);
 			if ($len < self::USERNAME_MIN || $len > self::USERNAME_MAX) return false;
 			if (!preg_match("/^[a-z0-9]+$/", $username)) return false;
+			// The reserved-names list (admin panel: Users -> Reserved names).
+			if (ReservedNamesUtil::isReserved($username)) return false;
 
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("select count(*) from sys_users where username = ?");

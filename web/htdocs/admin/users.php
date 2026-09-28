@@ -31,6 +31,13 @@
 			$error = $admin->setAdmin($userId, true);
 		} elseif ($action === "admin-revoke") {
 			$error = $admin->setAdmin($userId, false);
+		} elseif ($action === "delete-account") {
+			$error = $admin->deleteAccount($userId, $_POST["confirm_name"] ?? "", ($_POST["free_email"] ?? "") === "1");
+			// A deleted account has no page to come back to: go to the list.
+			if ($error === null) {
+				header("Location: /admin/users.php?deleted=1");
+				return;
+			}
 		} elseif ($action === "device-block" || $action === "device-unblock") {
 			$target = $admin->getUser($userId);
 			if ($target === null) {
@@ -72,6 +79,10 @@
 			"devices" => $devices->listDevices($user["id"]),
 		]);
 		return;
+	}
+
+	if (isset($_GET["deleted"])) {
+		$notice = TemplateUtil::translate("admin.user-deleted");
 	}
 
 	$q = trim((string)($_GET["q"] ?? ""));

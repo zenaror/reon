@@ -108,4 +108,28 @@
 			</div>
 		{% endif %}
 	</section>
+
+	<section class="admin-section admin-danger">
+		<h2 class="admin-section__title">{{ 'admin.user-delete-title'|trans }}</h2>
+		<p>{{ 'admin.user-delete-intro'|trans }}</p>
+		{% if user.is_admin %}
+			<p class="admin-form__hint">{{ 'admin.err-delete-admin'|trans }}</p>
+		{% else %}
+			<form class="admin-form" method="post" onsubmit="return confirm('{{ 'admin.user-delete-confirm'|trans|e('js') }}');">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="user" value="{{ user.id }}">
+				<input type="hidden" name="action" value="delete-account">
+				<label for="confirm_name">{{ 'admin.user-delete-type'|trans({'%name%': user.username}) }}
+					<input type="text" id="confirm_name" name="confirm_name" autocomplete="off" required>
+				</label>
+				<label for="free_email" class="admin-danger__check">
+					<input type="checkbox" id="free_email" name="free_email" value="1">
+					<span>{{ 'admin.user-delete-free-email'|trans }}</span>
+				</label>
+				<div class="admin-form__row">
+					<button class="btn btn-outline-danger" type="submit">{{ 'admin.user-delete'|trans }}</button>
+				</div>
+			</form>
+		{% endif %}
+	</section>
 {% endblock %}

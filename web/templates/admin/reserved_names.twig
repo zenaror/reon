@@ -1,0 +1,85 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.users-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<nav class="admin-tabs">
+		<a class="admin-tabs__link" href="/admin/users.php">{{ 'admin.users-tab-accounts'|trans }}</a>
+		<a class="admin-tabs__link is-here" href="/admin/reserved_names.php">{{ 'admin.users-tab-reserved'|trans }}</a>
+	</nav>
+
+	<h3>{{ 'admin.reserved-title'|trans }} <span class="admin-form__hint">({{ total }})</span></h3>
+	<p class="admin-form__hint">{{ 'admin.reserved-intro'|trans }}</p>
+
+	<form class="admin-form" method="post" action="/admin/reserved_names.php">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="action" value="add">
+		<h4 class="h6">{{ 'admin.reserved-add-title'|trans }}</h4>
+		<label for="rn-name">{{ 'admin.reserved-name'|trans }}
+			<input type="text" id="rn-name" name="name" minlength="3" maxlength="20" pattern="[a-z0-9]+" autocomplete="off" required>
+		</label>
+		<label for="rn-comment">{{ 'admin.reserved-comment'|trans }}
+			<input type="text" id="rn-comment" name="comment" maxlength="160" autocomplete="off">
+		</label>
+		<div><button class="admin-btn" type="submit">{{ 'admin.reserved-add'|trans }}</button></div>
+	</form>
+
+	<details class="admin-form" style="margin-bottom:20px">
+		<summary><strong>{{ 'admin.reserved-bulk-title'|trans }}</strong></summary>
+		<form method="post" action="/admin/reserved_names.php">
+			<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+			<input type="hidden" name="action" value="bulk">
+			<label for="rn-bulk">
+				<span class="admin-form__hint">{{ 'admin.reserved-bulk-hint'|trans }}</span>
+				<textarea id="rn-bulk" name="bulk" rows="6" placeholder="billing # would look like a payment address"></textarea>
+			</label>
+			<div><button class="admin-btn" type="submit">{{ 'admin.reserved-bulk-add'|trans }}</button></div>
+		</form>
+	</details>
+
+	{% if rows is empty %}
+		<p class="admin-form__hint">{{ 'admin.reserved-empty'|trans }}</p>
+	{% else %}
+		<div class="admin-scroll">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>{{ 'admin.reserved-name'|trans }}</th>
+						<th>{{ 'admin.reserved-comment'|trans }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for r in rows %}
+						<tr>
+							<td>
+								<code>{{ r.username }}</code>
+								{% if r.in_use %}<span class="admin-badge" title="{{ 'admin.reserved-in-use'|trans }}">{{ 'admin.reserved-in-use-short'|trans }}</span>{% endif %}
+							</td>
+							<td><input type="text" name="comment" value="{{ r.comment|default('') }}" maxlength="160" form="rn-edit-{{ loop.index }}" style="width:100%;min-width:22em" aria-label="{{ 'admin.reserved-comment'|trans }}"></td>
+							<td>
+								<div class="admin-table__actions">
+									<button class="admin-btn admin-btn--small" type="submit" form="rn-edit-{{ loop.index }}">{{ 'admin.reserved-save'|trans }}</button>
+									<button class="admin-btn admin-btn--small" type="submit" form="rn-del-{{ loop.index }}"
+										onclick="return confirm('{{ 'admin.reserved-remove-confirm'|trans|e('js') }}')">{{ 'admin.reserved-remove'|trans }}</button>
+								</div>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% for r in rows %}
+			<form id="rn-edit-{{ loop.index }}" method="post" action="/admin/reserved_names.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="action" value="comment">
+				<input type="hidden" name="name" value="{{ r.username }}">
+			</form>
+			<form id="rn-del-{{ loop.index }}" method="post" action="/admin/reserved_names.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="action" value="remove">
+				<input type="hidden" name="name" value="{{ r.username }}">
+			</form>
+		{% endfor %}
+	{% endif %}
+{% endblock %}
