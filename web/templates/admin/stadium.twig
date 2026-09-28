@@ -13,10 +13,6 @@
 		{% endfor %}
 	</nav>
 
-	{% if notice %}
-		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
-	{% endif %}
-
 	{% if distributions is empty %}
 		<p class="admin-form__hint">{{ 'admin.stadium-empty'|trans }}</p>
 	{% else %}

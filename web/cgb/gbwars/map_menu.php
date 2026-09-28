@@ -12,24 +12,29 @@
  */
 
 require_once dirname(__DIR__, 2) . '/classes/DBUtil.php';
+require_once dirname(__DIR__, 2) . '/classes/GameboyWars3Util.php';
 
-$db = DBUtil::getInstance()->getDB();
+// Who is asking: "0.map_menu.txt" carries a cost prefix, so download.php has
+// already authenticated this request and left the account in the session.
+// No account (should not happen) is treated as not opted in -- official maps
+// only, never an error.
+$userId = 0;
+if (isset($_SESSION['userId']) && ($_SESSION['type'] ?? '') === 'cgb') {
+    $userId = (int)$_SESSION['userId'];
+}
 
-// Get all active maps ordered by map_id
-$stmt = $db->prepare(
-    "SELECT CAST(map_id AS UNSIGNED) as map_num, price_yen
-     FROM bww_maps
-     WHERE is_active = 1
-     ORDER BY map_num"
-);
-$stmt->execute();
-$result = $stmt->get_result();
+// Custom maps (ids 2000-9999) are listed only to accounts that opted in
+// (sys_users.custom_gbwars_opt_in). This gates the MENU, not map.php: the
+// map file requests carry no cost prefix, so they are never authenticated
+// and cannot tell who is asking -- and the game only requests numbers its
+// own menu listed.
+$maps = GameboyWars3Util::menuMaps(GameboyWars3Util::userOptedInCustom($userId));
 
 // Build contiguous ranges with same price
 $ranges = [];
 $currentRange = null;
 
-while ($row = $result->fetch_assoc()) {
+foreach ($maps as $row) {
     $mapNum = (int)$row['map_num'];
     $price = (int)$row['price_yen'];
 

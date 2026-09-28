@@ -60,6 +60,20 @@
                 $errors[] = "mobileStadiumValue";
             }
         }
+        // Same shape again for Game Boy Wars 3: custom maps (ids 2000-9999)
+        // are only listed to accounts that opted in (owner's request,
+        // 2026-09-28).
+        if (array_key_exists("gbwarsCustomOptIn", $_POST)) {
+            if (in_array($_POST["gbwarsCustomOptIn"], array("0", "1"), true)) {
+                $db = DBUtil::getInstance()->getDB();
+                $stmt = $db->prepare("update sys_users set custom_gbwars_opt_in = ? where id = ?");
+                $opt_in = intval($_POST["gbwarsCustomOptIn"]);
+                $stmt->bind_param("ii", $opt_in, $_SESSION["user_id"]);
+                $stmt->execute();
+            } else {
+                $errors[] = "gbwarsValue";
+            }
+        }
         // Cor do adaptador e marca de não-tarifado, quando o painel libera.
         //
         // A checagem de `bin_user_choice` acontece AQUI, e não só no
@@ -98,21 +112,34 @@
                 exit;
             }
         }
-        // The date of birth, which the person can provide here if they did
-        // not at sign-up -- without this the optional field would be a
-        // door that closes forever. Empty CLEARS the date: it is their
-        // data, and removing it has to be possible through the same path
-        // as providing it.
+        // The date of birth: the person can provide it here if they did not
+        // at sign-up, and after that it is FIXED (owner's decision,
+        // 2026-09-28). It is the age gate for the public rankings, and a
+        // gate the person can reopen by editing the date is not a gate --
+        // someone under 13 would only have to type another year. The stored
+        // value is checked HERE, not only by the template hiding the field:
+        // a POST made by hand is the obvious way around a control that is
+        // merely absent. Once set, whatever arrives is ignored in silence,
+        // like the adapter fields when the panel turns them off; the
+        // update itself also refuses a row that already has a date, so two
+        // racing requests cannot overwrite each other. What stays possible
+        // is deleting the account, which removes it with everything else.
         if (array_key_exists("birthDate", $_POST)) {
-            $nasc = UserUtil::normalizeBirthDate($_POST["birthDate"]);
-            if ($nasc === null) {
-                $errors[] = "birthDateValue";
-            } else {
-                $db = DBUtil::getInstance()->getDB();
-                $valor = ($nasc === "") ? null : $nasc;
-                $stmt = $db->prepare("update sys_users set birth_date = ? where id = ?");
-                $stmt->bind_param("si", $valor, $_SESSION["user_id"]);
-                $stmt->execute();
+            $db = DBUtil::getInstance()->getDB();
+            $stmt = $db->prepare("select birth_date from sys_users where id = ? limit 1");
+            $stmt->bind_param("i", $_SESSION["user_id"]);
+            $stmt->execute();
+            $guardada = $stmt->get_result()->fetch_assoc()["birth_date"] ?? null;
+            $jaTemData = ($guardada !== null && $guardada !== "" && $guardada !== "0000-00-00");
+            if (!$jaTemData) {
+                $nasc = UserUtil::normalizeBirthDate($_POST["birthDate"]);
+                if ($nasc === null) {
+                    $errors[] = "birthDateValue";
+                } elseif ($nasc !== "") {
+                    $stmt = $db->prepare("update sys_users set birth_date = ? where id = ? and birth_date is null");
+                    $stmt->bind_param("si", $nasc, $_SESSION["user_id"]);
+                    $stmt->execute();
+                }
             }
         }
 
@@ -155,7 +182,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, custom_mobile_stadium_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, custom_mobile_stadium_opt_in, custom_gbwars_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -180,6 +207,9 @@
             "trade_region_allowlist" => $result["trade_region_allowlist"],
             "pokemon_news_custom_opt_in" => intval($result["custom_pokemon_news_opt_in"]),
             "mobile_stadium_custom_opt_in" => intval($result["custom_mobile_stadium_opt_in"]),
+            "gbwars_custom_opt_in" => intval($result["custom_gbwars_opt_in"]),
+            "game_tab" => in_array((string)($_POST["gameTab"] ?? ""), array("crystal", "gbwars"), true) ? (string)$_POST["gameTab"] : "crystal",
+            "birth_date_locked" => (($result["birth_date"] ?? "") !== "" && $result["birth_date"] !== "0000-00-00"),
             "time_zone" => $result["timezone"],
             "all_time_zones" => timezone_identifiers_list(),
 			"relay_token" => $relay !== null ? bin2hex($relay["token"]) : null,

@@ -1,0 +1,134 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.gbwars-editor-title'|trans }}{% endblock %}
+
+{% block admin_head %}
+	<link href="{{ asset('/css/admin-mapeditor.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint"><a href="/admin/gbwars_maps.php?tab=drafts">{{ 'admin.gbwars-editor-back'|trans }}</a></p>
+
+	{% if draft_json is not null %}
+	<div class="me">
+		{# Above the name/save bar so it is the first thing seen. Always there, with a
+		   steady height: a banner that appeared and vanished while painting would
+		   push the map and the palettes out from under the cursor. #}
+		<div class="me-banner" id="me-warnings-box" role="status">
+			<strong class="me-banner__title">{{ 'admin.gbwars-editor-check'|trans }}</strong>
+			<ul id="me-warnings"></ul>
+		</div>
+
+		<div class="me-bar">
+			<label class="me-bar__name" for="me-map-name">
+				<span>{{ 'admin.gbwars-editor-field-map-name'|trans }}</span>
+				<input type="text" id="me-map-name" maxlength="16" autocomplete="off">
+				<small>{{ 'admin.gbwars-editor-field-map-name-hint'|trans }}</small>
+			</label>
+			<div class="me-bar__buttons">
+				<button type="button" class="admin-btn" id="me-undo" title="Ctrl+Z">{{ 'admin.gbwars-editor-undo'|trans }}</button>
+				<button type="button" class="admin-btn" id="me-redo" title="Ctrl+Y">{{ 'admin.gbwars-editor-redo'|trans }}</button>
+				<button type="button" class="admin-btn" id="me-save" title="Ctrl+S">{{ 'admin.gbwars-editor-save'|trans }}</button>
+				<button type="button" class="admin-btn" id="me-download">{{ 'admin.gbwars-editor-download'|trans }}</button>
+				<button type="button" class="admin-btn" id="me-publish">{{ 'admin.gbwars-editor-publish'|trans }}</button>
+			</div>
+			<span id="me-published" class="admin-badge admin-badge--ok" hidden></span>
+			<span id="me-status" class="me-status" role="status" aria-live="polite"></span>
+		</div>
+
+		<div class="me-work">
+			<div class="me-main">
+				<div class="me-tools">
+					<div class="me-toolgroup" role="group" aria-label="{{ 'admin.gbwars-editor-tools'|trans }}">
+						<button type="button" class="admin-btn admin-btn--small me-tool" data-tool="paint">{{ 'admin.gbwars-editor-tool-paint'|trans }} (P)</button>
+						<button type="button" class="admin-btn admin-btn--small me-tool" data-tool="fill">{{ 'admin.gbwars-editor-tool-fill'|trans }} (F)</button>
+						<button type="button" class="admin-btn admin-btn--small me-tool" data-tool="unit">{{ 'admin.gbwars-editor-tool-unit'|trans }} (U)</button>
+						<button type="button" class="admin-btn admin-btn--small me-tool" data-tool="erase">{{ 'admin.gbwars-editor-tool-erase'|trans }} (E)</button>
+						<button type="button" class="admin-btn admin-btn--small me-tool" data-tool="pick">{{ 'admin.gbwars-editor-tool-pick'|trans }} (I)</button>
+					</div>
+					<div class="me-toolgroup" role="group" aria-label="{{ 'admin.gbwars-editor-zoom'|trans }}">
+						<span class="me-toollabel">{{ 'admin.gbwars-editor-zoom'|trans }}</span>
+						<button type="button" class="admin-btn admin-btn--small me-zoom" data-zoom="1">1×</button>
+						<button type="button" class="admin-btn admin-btn--small me-zoom" data-zoom="2">2×</button>
+						<button type="button" class="admin-btn admin-btn--small me-zoom" data-zoom="3">3×</button>
+					</div>
+					<label class="me-check" for="me-grid">
+						<input type="checkbox" id="me-grid"> {{ 'admin.gbwars-editor-grid'|trans }} (G)
+					</label>
+				</div>
+
+				<div class="me-stage" id="me-stage">
+					<div class="me-stack" id="me-stack">
+						<canvas id="me-base"></canvas>
+						<canvas id="me-over"></canvas>
+					</div>
+				</div>
+				<p class="me-hover" id="me-hover" aria-live="off"></p>
+				<p class="admin-form__hint">{{ 'admin.gbwars-editor-hint-keys'|trans }}</p>
+			</div>
+
+			<aside class="me-side">
+				<section class="me-box">
+					<div class="me-palette-head">
+						<label for="me-palette-kind" class="me-palette-head__label">{{ 'admin.gbwars-editor-palette'|trans }}</label>
+						<select id="me-palette-kind">
+							<option value="terrain">{{ 'admin.gbwars-editor-terrain'|trans }}</option>
+							<option value="units">{{ 'admin.gbwars-editor-units'|trans }}</option>
+						</select>
+						<span class="me-count" id="me-count-wrap" hidden>(<span id="me-unit-count">0</span> {{ 'admin.gbwars-editor-placed'|trans }})</span>
+					</div>
+					<p class="me-current" id="me-current-tile-line">{{ 'admin.gbwars-editor-current'|trans }}: <strong id="me-current-tile"></strong></p>
+					<p class="me-current" id="me-current-unit-line" hidden>{{ 'admin.gbwars-editor-current'|trans }}: <strong id="me-current-unit"></strong></p>
+					<div id="me-terrain-palette"></div>
+					<div id="me-unit-palette" hidden></div>
+				</section>
+
+				<section class="me-box">
+					<h3>{{ 'admin.gbwars-editor-settings'|trans }}</h3>
+					<div class="me-fields">
+						<label for="me-category">{{ 'admin.gbwars-editor-field-category'|trans }}
+							<input type="text" id="me-category" maxlength="16" autocomplete="off">
+						</label>
+						<div class="me-fields__pair">
+							<label for="me-width">{{ 'admin.gbwars-editor-width'|trans }}
+								<input type="number" id="me-width" min="20" max="50">
+							</label>
+							<label for="me-height">{{ 'admin.gbwars-editor-height'|trans }}
+								<input type="number" id="me-height" min="20" max="50">
+							</label>
+						</div>
+						<div class="me-fields__pair">
+							<label for="me-player-gold">{{ 'admin.gbwars-editor-player-gold'|trans }}
+								<input type="number" id="me-player-gold" min="0" max="255000" step="1000">
+							</label>
+							<label for="me-enemy-gold">{{ 'admin.gbwars-editor-enemy-gold'|trans }}
+								<input type="number" id="me-enemy-gold" min="0" max="255000" step="1000">
+							</label>
+						</div>
+						<div class="me-fields__pair">
+							<label for="me-player-mat">{{ 'admin.gbwars-editor-player-materials'|trans }}
+								<input type="number" id="me-player-mat" min="0" max="2550" step="10">
+							</label>
+							<label for="me-enemy-mat">{{ 'admin.gbwars-editor-enemy-materials'|trans }}
+								<input type="number" id="me-enemy-mat" min="0" max="2550" step="10">
+							</label>
+						</div>
+						<label for="me-price">{{ 'admin.gbwars-maps-price'|trans }}
+							<input type="number" id="me-price" min="0" max="9999">
+						</label>
+						<label for="me-name-e">{{ 'admin.gbwars-maps-name-e'|trans }}
+							<input type="text" id="me-name-e" maxlength="12" autocomplete="off">
+						</label>
+						<label for="me-category-e">{{ 'admin.gbwars-maps-category-e'|trans }}
+							<input type="text" id="me-category-e" maxlength="9" autocomplete="off">
+						</label>
+					</div>
+				</section>
+			</aside>
+		</div>
+	</div>
+
+	<script type="application/json" id="editor-config">{{ draft_json|raw }}</script>
+	<script src="{{ asset('/js/gbwars/map-editor.js') }}"></script>
+	{% endif %}
+{% endblock %}

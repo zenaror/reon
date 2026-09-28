@@ -1,0 +1,303 @@
+/* GB Wars map creator (admin/gbwars_map_editor.php). Same rule as admin.css:
+   borrowed palette and hard square edges, none of the decoration. The one
+   deliberate exception is the map itself, which is drawn the way the game
+   draws it. */
+
+.me {
+  display: grid;
+  gap: 14px;
+}
+
+.me-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+}
+
+.me-bar__name {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 260px;
+  max-width: 380px;
+  font-weight: bold;
+}
+
+.me-bar__name small {
+  font-weight: normal;
+}
+
+.me-bar__name input,
+.me-fields input {
+  padding: 5px 7px;
+  border: 2px solid var(--reon-line);
+  border-radius: 0;
+  background: #fff;
+  font: inherit;
+  font-weight: normal;
+  min-width: 0;
+}
+
+.me-bar__buttons,
+.me-toolgroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  box-shadow: none;
+}
+
+.admin-btn.is-picked {
+  background: var(--reon-blue-deep);
+  border-color: var(--reon-blue-deep);
+  color: #fff;
+}
+
+.me-status {
+  flex: 1 1 200px;
+  min-height: 1.2em;
+  font-weight: bold;
+}
+.me-status--ok { color: #2d5f0f; }
+.me-status--warn { color: #8a5a00; }
+.me-status--bad { color: var(--reon-red); }
+
+.me-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.me-main {
+  min-width: 0;
+}
+
+.me-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-bottom: 8px;
+}
+
+.me-toollabel {
+  font-size: 0.82em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.me-check {
+  font-weight: bold;
+}
+
+/* The map scrolls inside its own frame, so a 50x50 map at 3x never pushes
+   the page sideways. */
+.me-stage {
+  overflow: auto;
+  max-height: 72vh;
+  border: 2px solid var(--reon-line);
+  background: #000;
+  box-shadow: var(--reon-shadow-hard);
+}
+
+.me-stack {
+  position: relative;
+}
+
+.me-stack canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#me-over {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.me-hover {
+  min-height: 1.3em;
+  margin: 6px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.me-side {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.me-box {
+  padding: 10px 12px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-panel);
+}
+
+.me-box h3 {
+  margin: 0 0 6px;
+  font-size: var(--mt-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.me-box h4 {
+  margin: 10px 0 4px;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.me-count {
+  font-weight: normal;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.me-current {
+  margin: 0 0 4px;
+  font-size: 0.9em;
+}
+
+.me-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.me-swatch {
+  padding: 0;
+  border: 2px solid transparent;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.me-swatch canvas {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.me-swatch:hover {
+  border-color: var(--reon-line);
+}
+
+.me-swatch.is-picked {
+  border-color: #ffd400;
+  outline: 2px solid var(--reon-line);
+  outline-offset: -1px;
+}
+
+.me-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.me-fields label {
+  display: grid;
+  gap: 3px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.me-fields small {
+  font-weight: normal;
+}
+
+.me-fields__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* The map check, as a banner across the top, above the name and save bar.
+   Always present and tall enough for three messages (the usual most), so
+   editing does not make the page jump under the cursor as they come and go. */
+.me-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: center;
+  gap: 4px 14px;
+  min-height: 6.4em;
+  padding: 8px 12px;
+  border: 2px solid #8a5a00;
+  background: #fff8e6;
+}
+
+.me-banner.is-ok {
+  border-color: var(--reon-green);
+  background: #f0f8e6;
+}
+
+.me-banner__title {
+  font-size: 0.82em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.me-banner ul {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.me-banner li::before {
+  content: "\2022\00a0";
+}
+
+@media (max-width: 1000px) {
+  .me-work {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .me-side {
+    position: static;
+    max-height: none;
+  }
+}
+
+.me-palette-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.me-palette-head__label {
+  font-size: 0.82em;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.me-palette-head select {
+  padding: 4px 8px;
+  border: 2px solid var(--reon-line);
+  border-radius: 0;
+  background: #fff;
+  font: inherit;
+  font-weight: bold;
+}

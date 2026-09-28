@@ -208,6 +208,38 @@
   color: #2d5f0f;
 }
 
+/* Tabs: the region/format switch on the Mobile Stadium pages and the
+   Maps / Upload / Map creator switch on GB Wars Maps. Plain links (one page
+   load per tab, no script), so the markup already in those templates only
+   needed the rules. Like the sidebar, the tab you are on is filled. */
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 16px;
+  border-bottom: 2px solid var(--reon-line);
+}
+
+.admin-tabs__link {
+  margin-bottom: -2px;
+  padding: 6px 14px;
+  border: 2px solid var(--reon-line);
+  background: var(--reon-paper);
+  color: var(--reon-ink);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.admin-tabs__link:hover {
+  background: #fff;
+}
+
+.admin-tabs__link.is-here {
+  border-bottom-color: var(--reon-blue-deep);
+  background: var(--reon-blue-deep);
+  color: #fff;
+}
+
 /* Every action a row offers (a details link, activate/deactivate,
    delete...) inline and evenly spaced, instead of an unstyled <a> and
    several one-off <form>s wrapping into a ragged stack. Put this class
@@ -218,6 +250,10 @@
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+.admin-table__actions .admin-btn {
+  white-space: nowrap;
 }
 
 .admin-table__num {

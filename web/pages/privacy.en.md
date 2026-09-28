@@ -64,9 +64,11 @@ The website does ask for one thing of its own: an **optional date of birth**, at
 sign-up or later on your account page. It exists for a single purpose, stated
 plainly because a date of birth is a strong identifier and deserves the
 explanation: it decides whether your results may appear in the public rankings.
-It is never displayed to anyone, nothing else on the site reads it, you can
-finish signing up without it, and you can remove it at any time by clearing the
-field. It is **not** the age the game sends — that one you type inside the
+It is never displayed to anyone, nothing else on the site reads it, and you
+can finish signing up without it. Once it is saved it **cannot be changed or
+removed from your account page** — a date that could be retyped at will would
+not keep anyone out of the rankings — and it is deleted, with everything else,
+when you delete your account. It is **not** the age the game sends — that one you type inside the
 cartridge, and nobody checks it.
 
 None of it is checked. Nothing verifies that the postcode exists, that it
@@ -265,4 +267,4 @@ change to this page is an event, not a routine.
 
 ---
 
-*Draft of 25 September 2026.*
+*Draft of 28 September 2026.*

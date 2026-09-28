@@ -6,10 +6,6 @@
 	<p class="admin-form__hint"><a href="/admin/games.php?game=gbwars">{{ 'admin.games-back-to-gbwars'|trans }}</a></p>
 	<p class="admin-form__hint">{{ 'admin.gbwars-mercs-intro'|trans }}</p>
 
-	{% if notice %}
-		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
-	{% endif %}
-
 	<form method="post" action="/admin/gbwars_mercs.php">
 		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 		<div class="admin-form__stacked">
