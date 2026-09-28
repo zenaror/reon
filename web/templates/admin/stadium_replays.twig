@@ -11,10 +11,6 @@
 		<a class="admin-tabs__link{{ format == 'w' ? ' is-here' : '' }}" href="/admin/stadium_replays.php?format=w">{{ 'admin.stadium-compose-format-w'|trans }}</a>
 	</nav>
 
-	{% if notice %}
-		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
-	{% endif %}
-
 	<h3>{{ 'admin.stadium-compose-upload-title'|trans }}</h3>
 	<p class="admin-form__hint">{{ 'admin.stadium-compose-upload-intro'|trans }}</p>
 	<form method="post" action="/admin/stadium_replays.php?format={{ format }}" enctype="multipart/form-data">

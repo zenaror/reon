@@ -5,6 +5,12 @@
 {% block head %}
 	<script src="/js/user/summary.js"></script>
 	<style>
+		/* The game name above each Game Settings pane only matters when the
+		   tabs are not there to name it (no JavaScript, see the noscript
+		   rule below). */
+		.game-pane-title {
+			display: none;
+		}
 		/* A moldura. Mesma linguagem do resto do site (.reon-panel): borda
 		   dura, canto reto, sombra deslocada sem desfoque. O fundo é o campo
 		   cinza claro e não o branco do cartão, para a caixa ler como um
@@ -47,6 +53,16 @@
 			.js-only {
 				display: none !important;
 			}
+			.game-settings-nav {
+				display: none !important;
+			}
+			.game-pane-title {
+				display: block !important;
+			}
+			.tab-content > .tab-pane {
+				display: block !important;
+				opacity: 1 !important;
+			}
 		</style>
 	</noscript>
 {% endblock %}
@@ -71,6 +87,43 @@
 						<label for="email" class="form-label">{{'email-addr'|trans}}</label>
 						<input id="email" type="text" readonly class="form-control" value="{{ email|e }}">
 					</div>
+					<form method="post">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<div class="mb-3">
+							<label for="birthDate" class="form-label">{{ "account.birth-date"|trans }}</label>
+							<div class="form-text mb-2">{{ "account.birth-date-blurb"|trans }}</div>
+							{# Once a date is saved the field is only shown: no name, so
+							   it is not even posted. summary.php refuses the change on
+							   its own as well -- this is the notice, not the lock. #}
+							{% if birth_date_locked %}
+								<input id="birthDate" type="date" readonly disabled class="form-control" value="{{ birth_date|default('')|e }}">
+								<div class="form-text">{{ "account.birth-date-locked"|trans }}</div>
+							{% else %}
+								<input id="birthDate" type="date" name="birthDate" class="form-control"
+									max="{{ "now"|date("Y-m-d") }}"
+									value="{{ birth_date|default('')|e }}">
+							{% endif %}
+							{% if ("birthDateValue" in errors) %}
+								<div class="form-text text-danger">{{ "account.birth-date-invalid"|trans }}</div>
+							{% endif %}
+						</div>
+						<div class="mb-3">
+							<label for="timeZone" class="form-label">{{ "account.time-zone"|trans }}</label>
+							<div class="form-text mb-2">{{ "account.time-zone-blurb"|trans }}</div>
+							<select id="timeZone" name="timeZone" class="form-select">
+								<option value="Asia/Tokyo"{% if (time_zone == "Asia/Tokyo" or time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
+								{% for zone in all_time_zones %}
+									{% if zone != "Asia/Tokyo" %}
+										<option value="{{ zone|e }}"{% if (zone == time_zone) %} selected{% endif %}>{{ zone }}</option>
+									{% endif %}
+								{% endfor %}
+							</select>
+							{% if ("timeZoneValue" in errors) %}
+								<div class="form-text text-danger">{{ "invalid-time-zone-setting"|trans }}</div>
+							{% endif %}
+						</div>
+						<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
+					</form>
 					<hr>
 					<a href="change_email.php" class="btn btn-primary">{{'account.change-email'|trans}}</a>
 					<a href="change_password.php" class="btn btn-primary">{{'account.change-password'|trans}}</a>
@@ -248,11 +301,29 @@
 				</div>
 			</div>
 			{% endif %}
+			{# One card, one tab per game. It stays ONE form: the panes are only
+			   a way to look at it, so a single Save keeps every game's
+			   choices. gameTab remembers which pane was open, so the page that
+			   comes back after saving is on the same one. Without JavaScript
+			   the tabs cannot switch, so the panes simply stack (see the
+			   noscript rule in the head). #}
 			<div class="card mb-4">
-				<div class="card-header">{{ "account.pokemon-crystal-settings"|trans }}</div>
+				<div class="card-header">{{ "account.game-settings"|trans }}</div>
 				<div class="card-body">
-                    <form method="post">
-                    	<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+					<form method="post">
+						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+						<input type="hidden" name="gameTab" id="gameTabField" value="{{ game_tab }}">
+						<ul class="nav nav-tabs mb-3 game-settings-nav" role="tablist">
+							<li class="nav-item" role="presentation">
+								<button type="button" class="nav-link{{ game_tab == 'crystal' ? ' active' : '' }}" id="tabCrystal" data-bs-toggle="tab" data-bs-target="#paneCrystal" data-game="crystal" role="tab" aria-controls="paneCrystal" aria-selected="{{ game_tab == 'crystal' ? 'true' : 'false' }}">{{ "pokemon-crystal"|trans }}</button>
+							</li>
+							<li class="nav-item" role="presentation">
+								<button type="button" class="nav-link{{ game_tab == 'gbwars' ? ' active' : '' }}" id="tabGbwars" data-bs-toggle="tab" data-bs-target="#paneGbwars" data-game="gbwars" role="tab" aria-controls="paneGbwars" aria-selected="{{ game_tab == 'gbwars' ? 'true' : 'false' }}">{{ "gameboy-wars"|trans }}</button>
+							</li>
+						</ul>
+						<div class="tab-content">
+							<div class="tab-pane fade{{ game_tab == 'crystal' ? ' show active' : '' }}" id="paneCrystal" role="tabpanel" aria-labelledby="tabCrystal">
+								<h3 class="h6 game-pane-title">{{ "pokemon-crystal"|trans }}</h3>
                         <div class="mb-3">
                             <label for="tradeRegions">{{ "account.trade-corner-region-allowlist"|trans }}</label>
                             <small><p>{{ "account.trade-region-allowlist-blurb"|trans }}</p></small>
@@ -296,17 +367,6 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="birthDate">{{ "account.birth-date"|trans }}</label>
-                            <small><p>{{ "account.birth-date-blurb"|trans }}</p></small>
-                            <input id="birthDate" type="date" name="birthDate"
-                                   max="{{ "now"|date("Y-m-d") }}"
-                                   value="{{ birth_date|default('')|e }}">
-                            {% if ("birthDateValue" in errors) %}
-                            <small><p>{{ "account.birth-date-invalid"|trans }}</p></small>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
                             <label for="pokemonNewsCustomOptIn">{{ "account.pokemon-news-custom-opt-in"|trans }}</label>
                             <small><p>{{ "account.pokemon-news-custom-opt-in-blurb"|trans }}</p></small>
                             <select id="pokemonNewsCustomOptIn" name="pokemonNewsCustomOptIn">
@@ -329,25 +389,24 @@
                             <small><p>{{ "invalid-mobile-stadium-setting"|trans }}</p></small>
                             {% endif %}
                         </div>
-
+							</div>
+							<div class="tab-pane fade{{ game_tab == 'gbwars' ? ' show active' : '' }}" id="paneGbwars" role="tabpanel" aria-labelledby="tabGbwars">
+								<h3 class="h6 game-pane-title">{{ "gameboy-wars"|trans }}</h3>
                         <div class="mb-3">
-                            <label for="timeZone">{{ "account.time-zone"|trans }}</label>
-                            <small><p>{{ "account.time-zone-blurb"|trans }}</p></small>
-                            <select id="timeZone" name="timeZone">
-                                <option value="Asia/Tokyo"{% if (time_zone == "Asia/Tokyo" or time_zone == "+0900") %} selected{% endif %}>{{ "default-time-zone"|trans }}</option>
-                                {% for zone in all_time_zones %}
-                                {% if zone != "Asia/Tokyo" %}
-                                <option value="{{ zone|e }}"{% if (zone == time_zone) %} selected{% endif %}>{{ zone }}</option>
-                                {% endif %}
-                                {% endfor %}
+                            <label for="gbwarsCustomOptIn">{{ "account.gbwars-custom-opt-in"|trans }}</label>
+                            <small><p>{{ "account.gbwars-custom-opt-in-blurb"|trans }}</p></small>
+                            <select id="gbwarsCustomOptIn" name="gbwarsCustomOptIn">
+                                <option value="0"{% if gbwars_custom_opt_in == 0 %} selected{% endif %}>{{ "account.gbwars-custom-opt-in-off"|trans }}</option>
+                                <option value="1"{% if gbwars_custom_opt_in == 1 %} selected{% endif %}>{{ "account.gbwars-custom-opt-in-on"|trans }}</option>
                             </select>
-                            {% if ("timeZoneValue" in errors) %}
-                            <small><p>{{ "invalid-time-zone-setting"|trans }}</p></small>
+                            {% if ("gbwarsValue" in errors) %}
+                            <small><p>{{ "invalid-gbwars-setting"|trans }}</p></small>
                             {% endif %}
                         </div>
-
-<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
-                    </form>
+							</div>
+						</div>
+						<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
+					</form>
 				</div>
 			</div>
 		</div>

@@ -4,6 +4,7 @@ window.addEventListener("DOMContentLoaded", event => {
 	initRevealPasswordButton();
 	initRevealRelayTokenButton();
 	initAdapterArt();
+	initGameTabs();
 });
 
 function initRevealPasswordButton() {
@@ -40,6 +41,18 @@ function initAdapterArt() {
 	menu.addEventListener("change", () => {
 		desenhos.forEach(img => {
 			img.hidden = img.dataset["adapter"] !== menu.value;
+		});
+	});
+}
+
+// Remembers which Game Settings tab is open, so that saving brings the page
+// back on the same one. Absent buttons (nothing to remember) are not an error.
+function initGameTabs() {
+	const field = document.getElementById("gameTabField");
+	if (!field) return;
+	document.querySelectorAll(".game-settings-nav [data-game]").forEach(tab => {
+		tab.addEventListener("shown.bs.tab", () => {
+			field.value = tab.dataset["game"];
 		});
 	});
 }

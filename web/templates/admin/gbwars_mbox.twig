@@ -7,10 +7,6 @@
 	<p class="admin-form__hint">{{ 'admin.gbwars-mbox-intro'|trans }}</p>
 	<p class="admin-form__hint admin-form__hint--bad">{{ 'admin.gbwars-mbox-encoding-warning'|trans }}</p>
 
-	{% if notice %}
-		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
-	{% endif %}
-
 	<h3>{{ 'admin.gbwars-mbox-manage-title'|trans }}</h3>
 	{% if messages is empty %}
 		<p class="admin-form__hint">{{ 'admin.gbwars-mbox-empty'|trans }}</p>

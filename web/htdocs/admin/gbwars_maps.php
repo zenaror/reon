@@ -13,6 +13,11 @@
 	$notice = null;
 	$noticeKind = "ok";
 
+	// Three tabs, one page load each: the published maps, a file upload, and
+	// the map creator's drafts. Every form posts back to its own tab.
+	$tab = (string)($_GET["tab"] ?? "maps");
+	if (!in_array($tab, ["maps", "upload", "drafts"], true)) $tab = "maps";
+
 	function gbwars_maps_parse_price($raw) {
 		$raw = trim((string)$raw);
 		if ($raw === "") return null; // null -> importMap()/updateMapMeta() apply the 10-yen default
@@ -77,6 +82,34 @@
 		$noticeKind = $ok ? "ok" : "bad";
 	}
 
+	if ($_SERVER["REQUEST_METHOD"] === "POST" && (string)($_POST["form_action"] ?? "") === "publish_draft") {
+		CsrfUtil::check();
+		$draftId = (int)($_POST["draft_id"] ?? 0);
+		[$newId, $number, $erro] = GameboyWars3Util::publishDraft($draftId);
+		$admin->log($erro === "" ? "gbwars.draft-publish" : "gbwars.draft-publish-failed", "draft=$draftId", $erro !== "" ? $erro : "map=$number");
+		if ($erro === "") {
+			$notice = sprintf(TemplateUtil::translate("admin.gbwars-drafts-published"), $number);
+			$noticeKind = "ok";
+		} else {
+			$notice = TemplateUtil::translate("admin.gbwars-drafts-publish-failed") . " ($erro)";
+			$noticeKind = "bad";
+		}
+	}
+
+	if ($_SERVER["REQUEST_METHOD"] === "POST" && (string)($_POST["form_action"] ?? "") === "delete_draft") {
+		CsrfUtil::check();
+		$draftId = (int)($_POST["draft_id"] ?? 0);
+		$erro = GameboyWars3Util::deleteDraft($draftId);
+		$admin->log($erro === "" ? "gbwars.draft-delete" : "gbwars.draft-delete-failed", "draft=$draftId", $erro);
+		if ($erro === "") {
+			$notice = TemplateUtil::translate("admin.gbwars-drafts-deleted");
+			$noticeKind = "ok";
+		} else {
+			$notice = TemplateUtil::translate("admin.gbwars-drafts-delete-failed") . " ($erro)";
+			$noticeKind = "bad";
+		}
+	}
+
 	$maps = GameboyWars3Util::listMaps();
 	// Pre-computed here, not compared in the template: Twig comparing a
 	// zero-padded CHAR(4) map_id ("1001") against an int is exactly the
@@ -91,4 +124,6 @@
 		"notice" => $notice,
 		"notice_kind" => $noticeKind,
 		"maps" => $maps,
+		"tab" => $tab,
+		"drafts" => $tab === "drafts" ? GameboyWars3Util::listDrafts() : [],
 	]);

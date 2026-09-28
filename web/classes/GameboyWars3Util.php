@@ -727,7 +727,12 @@ class GameboyWars3Util {
     // would export) as a new REON map. Assigns the next free REON id --
     // an admin never types one by hand, the same way Mobile Stadium's
     // File ID is generated, not entered. Returns [id, ""] or [null, reason].
-    public static function importMap($fullFileData, $priceYen, $mapNameE = null, $categoryE = null) {
+    // $expectMapId, when given, is the id the caller already wrote into the
+    // file's own map-number field (the creator does, so the number inside the
+    // file matches the id it is served under, like every official map); if
+    // another map took that id in the meantime the import is refused rather
+    // than storing a file whose number disagrees with its id.
+    public static function importMap($fullFileData, $priceYen, $mapNameE = null, $categoryE = null, $expectMapId = null) {
         if (!is_string($fullFileData) || strlen($fullFileData) < 0x2E) {
             return [null, "file is too short to be a map"];
         }
@@ -748,6 +753,9 @@ class GameboyWars3Util {
 
         $mapId = self::nextReonMapId();
         if ($mapId === null) return [null, "no free map id left in the REON range (2000-9999)"];
+        if ($expectMapId !== null && $mapId !== (int)$expectMapId) {
+            return [null, "the next free map id changed while publishing -- try again"];
+        }
         $mapIdStr = str_pad((string)$mapId, 4, "0", STR_PAD_LEFT);
 
         $nameJ = self::decodeMapName(substr($fullFileData, 0x20, 8));
@@ -809,6 +817,333 @@ class GameboyWars3Util {
             error_log("GameboyWars3Util::setMapActive($id) failed: " . $e->getMessage());
             return false;
         }
+    }
+
+    // Per-account preference for custom maps (ids 2000-9999), same shape
+    // as StadiumUtil::userOptedInCustom(). Fails closed (false) on a
+    // database error or a missing/invalid user id.
+    public static function userOptedInCustom($userId) {
+        $userId = (int)$userId;
+        if ($userId <= 0) return false;
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $stmt = $db->prepare("select custom_gbwars_opt_in from sys_users where id = ? limit 1");
+            $stmt->bind_param("i", $userId);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            return $row !== null && (int)$row["custom_gbwars_opt_in"] === 1;
+        } catch (\mysqli_sql_exception $e) {
+            error_log("GameboyWars3Util::userOptedInCustom($userId) failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Active maps for the download menu, by number. Maps are a list, not a
+    // single slot like News/Stadium, so the opt-in is additive: everyone
+    // gets the official maps, and only an opted-in account also gets the
+    // REON-range ones. NOT opting in still returns the official maps, never
+    // nothing (the same correction the owner made to the Stadium opt-in).
+    public static function menuMaps($includeCustom) {
+        $db = DBUtil::getInstance()->getDB();
+        $sql = "select cast(map_id as unsigned) as map_num, price_yen
+                  from bww_maps
+                 where is_active = 1";
+        if (!$includeCustom) {
+            $sql .= " and cast(map_id as unsigned) <= " . self::MAP_ID_OFFICIAL_MAX;
+        }
+        $sql .= " order by map_num";
+        return $db->query($sql)->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // ---- Map creator: drafts (bww_map_drafts) ----------------------------
+    //
+    // The creator (admin/gbwars_map_editor.php) works on a draft in its own
+    // logical form -- tile grid, unit list, metadata -- and only builds the
+    // game's checksummed file (createMapData(), verified byte-identical
+    // against four of the five official maps on 2026-09-28) when a draft is
+    // downloaded or published. A draft may therefore be incomplete; a file
+    // never is.
+
+    // Terrain ids the editor can place: 0x01-0x2A. 0x00 is the game's
+    // "outside the map" marker and never appears inside an official map.
+    // Unit ids 2-103: 0-1 are None/Invalid, and 104-105 (Dummy) have no
+    // sprite in units_16x16.png, so the creator cannot show them.
+    const TILE_ID_MIN = 0x01;
+    const TILE_ID_MAX = 0x2A;
+    const UNIT_ID_MIN = 2;
+    const UNIT_ID_MAX = 103;
+    const DRAFT_DEFAULT_TILE = 0x29; // Sea, by far the most common tile in the official maps
+
+    // Every character the game's map-name font can show, for the creator's
+    // client-side check (lowercase ASCII is accepted too: the encoder folds
+    // it to uppercase).
+    public static function encodableChars(): string {
+        self::buildEncodeLookup();
+        return implode('', array_keys(self::$charMapEncode));
+    }
+
+    // "" when $text fits $maxChars game characters, else the reason.
+    private static function gameTextProblem(string $text, int $maxChars): string {
+        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
+        if ($chars === false) return "is not valid text";
+        if (count($chars) > $maxChars) return "is longer than $maxChars characters";
+        $encoded = rtrim(self::encodeMapName($text, $maxChars), "\x00");
+        if (strlen($encoded) < count($chars)) return "has characters the game's font cannot show";
+        return "";
+    }
+
+    // Validates and normalises what the creator sends. Returns [clean, ""]
+    // or [null, reason]. Nothing is trusted from the browser: sizes, tile
+    // and unit ids, positions and text are all rechecked here.
+    public static function normalizeDraft(array $in): array {
+        $w = (int)($in["width"] ?? 0);
+        $h = (int)($in["height"] ?? 0);
+        if ($w < 20 || $w > 50 || $h < 20 || $h > 50) {
+            return [null, "size must be 20 to 50 in each direction"];
+        }
+
+        $tiles = base64_decode((string)($in["tiles"] ?? ""), true);
+        if ($tiles === false || strlen($tiles) !== $w * $h) {
+            return [null, "the tile grid does not match the map size"];
+        }
+        for ($i = 0, $n = strlen($tiles); $i < $n; $i++) {
+            $t = ord($tiles[$i]);
+            if ($t < self::TILE_ID_MIN || $t > self::TILE_ID_MAX) {
+                return [null, sprintf("unknown terrain id 0x%02X at (%d, %d)", $t, $i % $w, intdiv($i, $w))];
+            }
+        }
+
+        $units = [];
+        $seen = [];
+        $rawUnits = $in["units"] ?? [];
+        if (!is_array($rawUnits)) return [null, "invalid unit list"];
+        foreach ($rawUnits as $u) {
+            if (!is_array($u)) return [null, "invalid unit list"];
+            $x = (int)($u["x"] ?? -1);
+            $y = (int)($u["y"] ?? -1);
+            $id = (int)($u["unit_id"] ?? -1);
+            if ($x < 0 || $x >= $w || $y < 0 || $y >= $h) return [null, "a unit is outside the map ($x, $y)"];
+            if ($id < self::UNIT_ID_MIN || $id > self::UNIT_ID_MAX) return [null, "unknown unit id $id"];
+            if (isset($seen["$x,$y"])) return [null, "two units on the same tile ($x, $y)"];
+            $seen["$x,$y"] = true;
+            $units[] = ["x" => $x, "y" => $y, "unit_id" => $id];
+        }
+        // Row by row then left to right: the order every official map with
+        // more than one unit uses.
+        usort($units, fn($a, $b) => [$a["y"], $a["x"]] <=> [$b["y"], $b["x"]]);
+        $unitBytes = "";
+        foreach ($units as $u) $unitBytes .= chr($u["x"]) . chr($u["y"]) . chr($u["unit_id"]);
+
+        $name = trim((string)($in["map_name"] ?? ""));
+        $problem = self::gameTextProblem($name, 8);
+        if ($problem !== "") return [null, "the map name $problem"];
+
+        // The draft has no name of its own: what the list shows is the
+        // map's in-game name (owner's decision, 2026-09-28 -- a separate
+        // label only ever repeated it).
+        $title = $name !== "" ? $name : "Untitled map";
+
+        $category = trim((string)($in["category"] ?? ""));
+        if ($category === "") $category = "REON";
+        $problem = self::gameTextProblem($category, 9);
+        if ($problem !== "") return [null, "the category $problem"];
+
+        $pg = intdiv(max(0, min(255000, (int)($in["player_gold"] ?? 10000))), 1000) * 1000;
+        $eg = intdiv(max(0, min(255000, (int)($in["enemy_gold"] ?? 10000))), 1000) * 1000;
+        $pm = intdiv(max(0, min(2550, (int)($in["player_materials"] ?? 100))), 10) * 10;
+        $em = intdiv(max(0, min(2550, (int)($in["enemy_materials"] ?? 100))), 10) * 10;
+
+        $price = (int)($in["price_yen"] ?? 10);
+        if ($price < 0 || $price > 9999) return [null, "price must be 0 to 9999 yen"];
+
+        $nameE = trim((string)($in["name_e"] ?? ""));
+        if (mb_strlen($nameE) > 12) return [null, "the English name is longer than 12 characters"];
+        $categoryE = trim((string)($in["category_e"] ?? ""));
+        if (mb_strlen($categoryE) > 9) return [null, "the English category is longer than 9 characters"];
+
+        return [[
+            "title" => $title, "width" => $w, "height" => $h,
+            "tiles" => $tiles, "units" => $unitBytes,
+            "map_name" => $name, "category" => $category,
+            "player_gold" => $pg, "enemy_gold" => $eg,
+            "player_materials" => $pm, "enemy_materials" => $em,
+            "price_yen" => $price,
+            "name_e" => $nameE !== "" ? $nameE : null,
+            "category_e" => $categoryE !== "" ? $categoryE : null,
+        ], ""];
+    }
+
+    // Inserts (id null/0) or updates a draft from normalizeDraft()'s output.
+    // 's' for the blobs, not 'b' -- the mysqli pitfall documented on
+    // importMap().
+    public static function saveDraft($id, array $c): array {
+        $db = DBUtil::getInstance()->getDB();
+        $id = (int)$id;
+        try {
+            if ($id > 0) {
+                $stmt = $db->prepare(
+                    "update bww_map_drafts set title=?, width=?, height=?, tiles=?, units=?, map_name=?, category=?,
+                            player_gold=?, enemy_gold=?, player_materials=?, enemy_materials=?, price_yen=?, name_e=?, category_e=?
+                      where id=?");
+                $stmt->bind_param("siissssiiiiissi", $c["title"], $c["width"], $c["height"], $c["tiles"], $c["units"],
+                    $c["map_name"], $c["category"], $c["player_gold"], $c["enemy_gold"], $c["player_materials"],
+                    $c["enemy_materials"], $c["price_yen"], $c["name_e"], $c["category_e"], $id);
+                $stmt->execute();
+                if ($stmt->affected_rows === 0 && self::getDraft($id) === null) return [null, "that draft no longer exists"];
+                return [$id, ""];
+            }
+            $stmt = $db->prepare(
+                "insert into bww_map_drafts (title, width, height, tiles, units, map_name, category,
+                        player_gold, enemy_gold, player_materials, enemy_materials, price_yen, name_e, category_e)
+                 values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param("siissssiiiiiss", $c["title"], $c["width"], $c["height"], $c["tiles"], $c["units"],
+                $c["map_name"], $c["category"], $c["player_gold"], $c["enemy_gold"], $c["player_materials"],
+                $c["enemy_materials"], $c["price_yen"], $c["name_e"], $c["category_e"]);
+            $stmt->execute();
+            return [$db->insert_id, ""];
+        } catch (\mysqli_sql_exception $e) {
+            return [null, "database error: " . $e->getMessage()];
+        }
+    }
+
+    public static function getDraft($id) {
+        $db = DBUtil::getInstance()->getDB();
+        $id = (int)$id;
+        $stmt = $db->prepare(
+            "select d.*, m.map_id as published_map_num
+               from bww_map_drafts d left join bww_maps m on m.id = d.published_map_id
+              where d.id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        return $row ?: null;
+    }
+
+    public static function listDrafts() {
+        $db = DBUtil::getInstance()->getDB();
+        return $db->query(
+            "select d.id, d.title, d.width, d.height, d.map_name, length(d.units) div 3 as unit_count,
+                    d.published_map_id, d.publish_count, d.updated_at, m.map_id as published_map_num
+               from bww_map_drafts d left join bww_maps m on m.id = d.published_map_id
+              order by d.updated_at desc, d.id desc")->fetch_all(MYSQLI_ASSOC);
+    }
+
+    public static function deleteDraft($id): string {
+        try {
+            $db = DBUtil::getInstance()->getDB();
+            $id = (int)$id;
+            $stmt = $db->prepare("delete from bww_map_drafts where id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            return $stmt->affected_rows > 0 ? "" : "that draft no longer exists";
+        } catch (\mysqli_sql_exception $e) {
+            return "database error: " . $e->getMessage();
+        }
+    }
+
+    // The creator's own JSON shape for a draft row.
+    public static function draftForClient(array $d): array {
+        $units = [];
+        for ($i = 0; $i + 2 < strlen($d["units"]); $i += 3) {
+            $units[] = ["x" => ord($d["units"][$i]), "y" => ord($d["units"][$i + 1]), "unit_id" => ord($d["units"][$i + 2])];
+        }
+        return [
+            "id" => (int)$d["id"],
+            "width" => (int)$d["width"], "height" => (int)$d["height"],
+            "tiles" => base64_encode($d["tiles"]), "units" => $units,
+            "map_name" => $d["map_name"], "category" => $d["category"],
+            "player_gold" => (int)$d["player_gold"], "enemy_gold" => (int)$d["enemy_gold"],
+            "player_materials" => (int)$d["player_materials"], "enemy_materials" => (int)$d["enemy_materials"],
+            "price_yen" => (int)$d["price_yen"], "name_e" => $d["name_e"] ?? "", "category_e" => $d["category_e"] ?? "",
+            "published_map_num" => $d["published_map_num"] ?? null, "publish_count" => (int)$d["publish_count"],
+        ];
+    }
+
+    // A blank draft: all sea, the way most of every official map is.
+    public static function blankDraft(): array {
+        return [
+            "id" => 0, "width" => 32, "height" => 32,
+            "tiles" => base64_encode(str_repeat(chr(self::DRAFT_DEFAULT_TILE), 32 * 32)), "units" => [],
+            "map_name" => "", "category" => "REON",
+            "player_gold" => 10000, "enemy_gold" => 10000, "player_materials" => 100, "enemy_materials" => 100,
+            "price_yen" => 10, "name_e" => "", "category_e" => "",
+            "published_map_num" => null, "publish_count" => 0,
+        ];
+    }
+
+    // Copies an existing map (official or REON) into a new draft, so it can
+    // be edited and published as a NEW REON map -- an official map is never
+    // overwritten. Returns [draftId, ""] or [null, reason].
+    public static function draftFromMap($mapDbId): array {
+        $db = DBUtil::getInstance()->getDB();
+        $mapDbId = (int)$mapDbId;
+        $stmt = $db->prepare("select map_id, map_name_j, map_name_e, category_e, price_yen, map_data from bww_maps where id = ?");
+        $stmt->bind_param("i", $mapDbId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        if (!$row) return [null, "that map no longer exists"];
+
+        try {
+            $p = self::parseMapFile($row["map_data"], false);
+        } catch (\Throwable $e) {
+            return [null, "could not read the map: " . $e->getMessage()];
+        }
+        $official = self::isOfficialMap((int)$row["map_id"]);
+        [$clean, $err] = self::normalizeDraft([
+            "width" => $p["width"], "height" => $p["height"],
+            "tiles" => base64_encode(implode('', array_map('chr', $p["tiles"]))),
+            "units" => $p["units"],
+            "map_name" => self::decodeMapName($p["name"]),
+            // An official map's category line says "Official Map"; a copy
+            // published from here is not one.
+            "category" => $official ? "REON" : ($p["category"] ?? "REON"),
+            "player_gold" => $p["player_gold"], "enemy_gold" => $p["enemy_gold"],
+            "player_materials" => $p["player_materials"], "enemy_materials" => $p["enemy_materials"],
+            "price_yen" => $row["price_yen"],
+            "name_e" => $row["map_name_e"] ?? "", "category_e" => $official ? "" : ($row["category_e"] ?? ""),
+        ]);
+        if ($clean === null) return [null, "this map cannot be opened in the creator: $err"];
+        return self::saveDraft(null, $clean);
+    }
+
+    // The game's own file (2-byte header included) for a draft. $mapNumber
+    // goes into the file's map-number field; a real publish passes the id it
+    // is about to be stored under.
+    public static function buildDraftFile(array $d, int $mapNumber): string {
+        $tiles = array_values(unpack("C*", $d["tiles"]));
+        $units = [];
+        for ($i = 0; $i + 2 < strlen($d["units"]); $i += 3) {
+            $units[] = ["x" => ord($d["units"][$i]), "y" => ord($d["units"][$i + 1]), "unit_id" => ord($d["units"][$i + 2])];
+        }
+        $data = self::createMapData(
+            'j', self::encodeMapName($d["map_name"], 8), (int)$d["width"], (int)$d["height"], $tiles, $units,
+            (int)$d["player_gold"], (int)$d["enemy_gold"], (int)$d["player_materials"], (int)$d["enemy_materials"],
+            $mapNumber, $d["category"] !== "" ? $d["category"] : "REON");
+        return self::getMapHeader('j') . $data;
+    }
+
+    // Builds the file from a saved draft and stores it as a new, INACTIVE
+    // REON map (activating stays a separate, deliberate click). Publishing
+    // again creates another new map; it never overwrites one players may
+    // already have downloaded. Returns [bww_maps.id, mapNumber, ""] or
+    // [null, null, reason].
+    public static function publishDraft($id): array {
+        $d = self::getDraft($id);
+        if ($d === null) return [null, null, "that draft no longer exists"];
+        if ($d["map_name"] === "") return [null, null, "give the map a name before publishing"];
+        $next = self::nextReonMapId();
+        if ($next === null) return [null, null, "no free map id left in the REON range (2000-9999)"];
+
+        $file = self::buildDraftFile($d, $next);
+        [$newId, $err] = self::importMap($file, (int)$d["price_yen"], $d["name_e"], $d["category_e"], $next);
+        if ($newId === null) return [null, null, $err];
+
+        $db = DBUtil::getInstance()->getDB();
+        $stmt = $db->prepare("update bww_map_drafts set published_map_id = ?, publish_count = publish_count + 1 where id = ?");
+        $draftId = (int)$id;
+        $stmt->bind_param("ii", $newId, $draftId);
+        $stmt->execute();
+        return [$newId, $next, ""];
     }
 
     // ---- Admin: mailbox messages (bww_messages) --------------------------
