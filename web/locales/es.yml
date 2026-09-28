@@ -1284,7 +1284,7 @@ admin:
   news-upload-failed: La subida falló.
   panel: Administración
   nav-dashboard: Panel
-  nav-game-content: "Contenido de juegos"
+  nav-game-content: "DLCs"
   games-intro: "Elige un juego y luego qué gestionar."
   games-mobile-trainer: "Mobile Trainer"
   games-back: "← Todos los juegos"

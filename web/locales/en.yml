@@ -2044,7 +2044,7 @@ admin:
   news-upload-failed: Upload failed.
   panel: "Admin"
   nav-dashboard: "Dashboard"
-  nav-game-content: "Game Content"
+  nav-game-content: "DLCs"
   games-intro: "Pick a game, then pick what to manage."
   games-mobile-trainer: "Mobile Trainer"
   games-back: "← All games"
