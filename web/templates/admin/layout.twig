@@ -19,23 +19,37 @@
 			<h2 class="admin-nav__title">{{ 'admin.panel'|trans }}</h2>
 			<nav>
 				<ul class="admin-nav__list">
+					{# "Game Content" replaces separate top-level items for each
+					   game's own pages (Pokémon News, Mobile Stadium, Mobile
+					   Stadium Replays, Mobile Trainer) with one entry that opens
+					   a game picker (admin/games.php) -- owner's request,
+					   2026-09-28: "Crystal já tem 2 telas só dele... ainda tem o
+					   GB Wars também". Tournament and every other non-per-game
+					   page stays exactly where it was; only the per-game pages
+					   moved. "News" (news.php) does NOT belong here even though
+					   its old nav label sat right next to "Pokémon News" --
+					   it manages the SITE's own news (NewsUtil, the homepage
+					   ticker), not anything Crystal-specific (owner's
+					   correction, 2026-09-28: it was wrongly filed under
+					   Crystal with Pokémon News' own description on the first
+					   pass). match is a list here because the item should stay
+					   highlighted on every page that belongs under it, not only
+					   on games.php itself. #}
 					{% set items = [
-						{ href: '/admin/index.php',         key: 'admin.nav-dashboard',     match: '/admin/index.php' },
-						{ href: '/admin/news.php',          key: 'admin.nav-news',          match: '/admin/news.php' },
-						{ href: '/admin/news_maker.php',    key: 'admin.nav-news-maker',    match: '/admin/news_maker.php' },
-						{ href: '/admin/notifications.php', key: 'admin.nav-notifications', match: '/admin/notifications.php' },
-						{ href: '/admin/users.php',         key: 'admin.nav-users',         match: '/admin/users.php' },
-						{ href: '/admin/services.php',      key: 'admin.nav-services',      match: '/admin/services.php' },
-						{ href: '/admin/adapter.php',       key: 'admin.nav-adapter',       match: '/admin/adapter.php' },
-						{ href: '/admin/tournament.php',    key: 'admin.nav-tournament',    match: '/admin/tournament.php' },
-						{ href: '/admin/stadium.php',       key: 'admin.nav-stadium',       match: '/admin/stadium.php' },
-						{ href: '/admin/logs.php',          key: 'admin.nav-logs',          match: '/admin/logs.php' },
-						{ href: '/admin/trainer.php',       key: 'admin.nav-trainer',       match: '/admin/trainer.php' },
-						{ href: '/admin/log.php',           key: 'admin.nav-audit',         match: '/admin/log.php' }
+						{ href: '/admin/index.php',         key: 'admin.nav-dashboard',     match: ['/admin/index.php'] },
+						{ href: '/admin/news.php',          key: 'admin.nav-news',          match: ['/admin/news.php'] },
+						{ href: '/admin/games.php',         key: 'admin.nav-game-content',  match: ['/admin/games.php', '/admin/news_maker.php', '/admin/stadium.php', '/admin/stadium_replays.php', '/admin/trainer.php', '/admin/gbwars_maps.php', '/admin/gbwars_mercs.php', '/admin/gbwars_mbox.php'] },
+						{ href: '/admin/notifications.php', key: 'admin.nav-notifications', match: ['/admin/notifications.php'] },
+						{ href: '/admin/users.php',         key: 'admin.nav-users',         match: ['/admin/users.php'] },
+						{ href: '/admin/services.php',      key: 'admin.nav-services',      match: ['/admin/services.php'] },
+						{ href: '/admin/adapter.php',       key: 'admin.nav-adapter',       match: ['/admin/adapter.php'] },
+						{ href: '/admin/tournament.php',    key: 'admin.nav-tournament',    match: ['/admin/tournament.php'] },
+						{ href: '/admin/logs.php',          key: 'admin.nav-logs',          match: ['/admin/logs.php'] },
+						{ href: '/admin/log.php',           key: 'admin.nav-audit',         match: ['/admin/log.php'] }
 					] %}
 					{% for item in items %}
 						<li>
-							<a class="admin-nav__link{{ path == item.match ? ' is-here' : '' }}" href="{{ item.href }}">{{ item.key|trans }}</a>
+							<a class="admin-nav__link{{ path in item.match ? ' is-here' : '' }}" href="{{ item.href }}">{{ item.key|trans }}</a>
 						</li>
 					{% endfor %}
 				</ul>

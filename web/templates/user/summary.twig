@@ -272,18 +272,18 @@
                             {% endif %}
                         </div>
                         
-                        {# Entrar ou não no ranking. Fica no cartão do Pokémon
-                           Crystal porque é o jogo que manda estes dados; o
-                           site não tem campo para nenhum deles. #}
+                        {# Opt in or out of the rankings. Sits in the Pokémon
+                           Crystal card because it is the game that sends this
+                           data; the site has no field for any of it. #}
                         <div class="mb-3">
                             <label for="rankingsOptIn">{{ "account.rankings-opt-in"|trans }}</label>
                             <small><p>{{ "account.rankings-opt-in-blurb"|trans }}</p></small>
-                            {# Desabilitado, não escondido: a pessoa tem direito
-                               de saber que a opção existe e por que ela não
-                               está disponível. Um controle que desaparece
-                               parece defeito. O servidor recusa de todo jeito
-                               (ver summary.php) -- `disabled` é o aviso, não a
-                               tranca. #}
+                            {# Disabled, not hidden: the person has a right to
+                               know the option exists and why it is not
+                               available. A control that disappears reads as
+                               a bug. The server refuses it either way (see
+                               summary.php) -- `disabled` is the notice, not
+                               the lock. #}
                             <select id="rankingsOptIn" name="rankingsOptIn"{% if rankings_blocked|default(false) %} disabled{% endif %}>
                                 <option value="1"{% if rankings_opt_in %} selected{% endif %}>{{ "account.rankings-opt-in-on"|trans }}</option>
                                 <option value="0"{% if not rankings_opt_in %} selected{% endif %}>{{ "account.rankings-opt-in-off"|trans }}</option>
@@ -317,7 +317,19 @@
                             <small><p>{{ "invalid-pokemon-news-setting"|trans }}</p></small>
                             {% endif %}
                         </div>
-                        
+
+                        <div class="mb-3">
+                            <label for="mobileStadiumCustomOptIn">{{ "account.mobile-stadium-custom-opt-in"|trans }}</label>
+                            <small><p>{{ "account.mobile-stadium-custom-opt-in-blurb"|trans }}</p></small>
+                            <select id="mobileStadiumCustomOptIn" name="mobileStadiumCustomOptIn">
+                                <option value="0"{% if mobile_stadium_custom_opt_in == 0 %} selected{% endif %}>{{ "account.mobile-stadium-custom-opt-in-off"|trans }}</option>
+                                <option value="1"{% if mobile_stadium_custom_opt_in == 1 %} selected{% endif %}>{{ "account.mobile-stadium-custom-opt-in-on"|trans }}</option>
+                            </select>
+                            {% if ("mobileStadiumValue" in errors) %}
+                            <small><p>{{ "invalid-mobile-stadium-setting"|trans }}</p></small>
+                            {% endif %}
+                        </div>
+
                         <div class="mb-3">
                             <label for="timeZone">{{ "account.time-zone"|trans }}</label>
                             <small><p>{{ "account.time-zone-blurb"|trans }}</p></small>

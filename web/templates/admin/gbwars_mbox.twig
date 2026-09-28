@@ -1,0 +1,112 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.gbwars-mbox-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint"><a href="/admin/games.php?game=gbwars">{{ 'admin.games-back-to-gbwars'|trans }}</a></p>
+	<p class="admin-form__hint">{{ 'admin.gbwars-mbox-intro'|trans }}</p>
+	<p class="admin-form__hint admin-form__hint--bad">{{ 'admin.gbwars-mbox-encoding-warning'|trans }}</p>
+
+	{% if notice %}
+		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
+	{% endif %}
+
+	<h3>{{ 'admin.gbwars-mbox-manage-title'|trans }}</h3>
+	{% if messages is empty %}
+		<p class="admin-form__hint">{{ 'admin.gbwars-mbox-empty'|trans }}</p>
+	{% else %}
+		<table class="admin-table">
+			<thead>
+				<tr>
+					<th>{{ 'admin.gbwars-mbox-region'|trans }}</th>
+					<th>{{ 'admin.gbwars-mbox-slot'|trans }}</th>
+					<th>{{ 'admin.gbwars-mbox-subject'|trans }}</th>
+					<th>{{ 'admin.gbwars-mbox-serial'|trans }}</th>
+					<th>{{ 'admin.stadium-active'|trans }}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for m in messages %}
+					<tr>
+						<td>{{ m.game_region|upper }}</td>
+						<td>{{ m.mailbox_id }}</td>
+						<td>{{ m.subject|default('—') }}</td>
+						<td><code>{{ m.serial_number }}</code></td>
+						<td>
+							{% if m.is_active %}
+								<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-active-yes'|trans }}</span>
+							{% else %}
+								<span class="admin-badge">{{ 'admin.stadium-active-no'|trans }}</span>
+							{% endif %}
+						</td>
+						<td>
+							<a class="admin-btn admin-btn--small" href="/admin/gbwars_mbox.php?edit_region={{ m.game_region }}&edit_mailbox={{ m.mailbox_id }}">{{ 'admin.gbwars-mbox-edit'|trans }}</a>
+							<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.game_region }}-{{ m.mailbox_id }}">
+								{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
+							</button>
+							<button class="admin-btn admin-btn--small" type="submit" form="delete-form-{{ m.game_region }}-{{ m.mailbox_id }}">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% for m in messages %}
+			<form id="toggle-form-{{ m.game_region }}-{{ m.mailbox_id }}" method="post" action="/admin/gbwars_mbox.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="toggle">
+				<input type="hidden" name="region" value="{{ m.game_region }}">
+				<input type="hidden" name="mailbox_id" value="{{ m.mailbox_id }}">
+				<input type="hidden" name="action" value="{{ m.is_active ? 'deactivate' : 'activate' }}">
+			</form>
+			<form id="delete-form-{{ m.game_region }}-{{ m.mailbox_id }}" method="post" action="/admin/gbwars_mbox.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="delete">
+				<input type="hidden" name="region" value="{{ m.game_region }}">
+				<input type="hidden" name="mailbox_id" value="{{ m.mailbox_id }}">
+			</form>
+		{% endfor %}
+	{% endif %}
+
+	<hr>
+
+	<h3>{{ (edit_mailbox is not null ? 'admin.gbwars-mbox-edit-title' : 'admin.gbwars-mbox-compose-title')|trans }}</h3>
+	<form method="post" action="/admin/gbwars_mbox.php">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="form_action" value="save">
+
+		<div class="admin-form__field">
+			<label for="region">{{ 'admin.gbwars-mbox-region'|trans }}</label>
+			<select id="region" name="region">
+				<option value="j"{% if edit_region == 'j' %} selected{% endif %}>Japanese</option>
+				<option value="e"{% if edit_region == 'e' %} selected{% endif %}>English</option>
+			</select>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="mailbox_id">{{ 'admin.gbwars-mbox-slot'|trans }}</label>
+			<select id="mailbox_id" name="mailbox_id">
+				{% for i in 0..mailbox_max %}
+					<option value="{{ i }}"{% if edit_mailbox is not null and i == edit_mailbox %} selected{% endif %}>{{ i }}</option>
+				{% endfor %}
+			</select>
+			<p class="admin-form__hint">{{ 'admin.gbwars-mbox-slot-hint'|trans }}</p>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="title">{{ 'admin.gbwars-mbox-title-field'|trans }}</label>
+			<input type="text" id="title" name="title" maxlength="60" value="{{ edit_title }}" required>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="body">{{ 'admin.gbwars-mbox-body'|trans }}</label>
+			<textarea id="body" name="body" rows="10">{{ edit_body }}</textarea>
+		</div>
+
+		<div class="admin-form__field">
+			<label><input type="checkbox" name="is_active" value="1" checked> {{ 'admin.gbwars-mbox-active-checkbox'|trans }}</label>
+		</div>
+
+		<button class="admin-btn" type="submit">{{ 'admin.gbwars-mbox-submit'|trans }}</button>
+	</form>
+{% endblock %}

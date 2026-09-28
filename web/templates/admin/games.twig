@@ -1,0 +1,79 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}
+	{% if game == 'crystal' %}{{ 'pokemon-crystal'|trans }}
+	{% elseif game == 'gbwars' %}{{ 'gameboy-wars'|trans }}
+	{% else %}{{ 'admin.nav-game-content'|trans }}
+	{% endif %}
+{% endblock %}
+
+{% block admin_head %}
+	<link href="{{ asset('/css/admin-games.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block admin_body %}
+	{% if game is null %}
+		<p class="admin-form__hint">{{ 'admin.games-intro'|trans }}</p>
+		<div class="reon-pickupgrid">
+			<a href="/admin/games.php?game=crystal" class="reon-pickupcard" style="--pc:#b80a41">
+				<img src="/images/crystal/logo.png" alt="">
+				<span>{{ 'pokemon-crystal'|trans }}</span>
+			</a>
+			<a href="/admin/games.php?game=gbwars" class="reon-pickupcard" style="--pc:#6eb122">
+				<img src="/images/mobile_adapter/REON_Adapter_Green.svg" alt="">
+				<span>{{ 'gameboy-wars'|trans }}</span>
+			</a>
+			<a href="/admin/trainer.php" class="reon-pickupcard" style="--pc:#1272b0">
+				<img src="/images/mobile_adapter/REON_Adapter_Blue.svg" alt="">
+				<span>{{ 'admin.games-mobile-trainer'|trans }}</span>
+			</a>
+		</div>
+
+	{% elseif game == 'crystal' %}
+		<p class="admin-form__hint"><a href="/admin/games.php">{{ 'admin.games-back'|trans }}</a></p>
+		<h3>{{ 'pokemon-crystal'|trans }}</h3>
+		<table class="admin-table">
+			<tbody>
+				<tr>
+					<td>{{ 'admin.nav-news-maker'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-crystal-news-maker-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/news_maker.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+				<tr>
+					<td>{{ 'admin.stadium-title'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-crystal-stadium-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/stadium.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+				<tr>
+					<td>{{ 'admin.stadium-replays-title'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-crystal-stadium-replays-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/stadium_replays.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+			</tbody>
+		</table>
+
+	{% elseif game == 'gbwars' %}
+		<p class="admin-form__hint"><a href="/admin/games.php">{{ 'admin.games-back'|trans }}</a></p>
+		<h3>{{ 'gameboy-wars'|trans }}</h3>
+		<p class="admin-form__hint">{{ 'admin.games-gbwars-intro'|trans }}</p>
+		<table class="admin-table">
+			<tbody>
+				<tr>
+					<td>{{ 'admin.games-gbwars-maps'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-gbwars-maps-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/gbwars_maps.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+				<tr>
+					<td>{{ 'admin.games-gbwars-mercs'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-gbwars-mercs-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/gbwars_mercs.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+				<tr>
+					<td>{{ 'admin.games-gbwars-mbox'|trans }}</td>
+					<td class="admin-form__hint">{{ 'admin.games-gbwars-mbox-hint'|trans }}</td>
+					<td><a class="admin-btn admin-btn--small" href="/admin/gbwars_mbox.php">{{ 'admin.games-open'|trans }}</a></td>
+				</tr>
+			</tbody>
+		</table>
+	{% endif %}
+{% endblock %}

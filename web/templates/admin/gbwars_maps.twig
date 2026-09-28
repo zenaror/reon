@@ -1,0 +1,112 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.gbwars-maps-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint"><a href="/admin/games.php?game=gbwars">{{ 'admin.games-back-to-gbwars'|trans }}</a></p>
+	<p class="admin-form__hint">{{ 'admin.gbwars-maps-intro'|trans }}</p>
+
+	{% if notice %}
+		<p class="admin-form__hint admin-form__hint--{{ notice_kind }}">{{ notice }}</p>
+	{% endif %}
+
+	<h3>{{ 'admin.gbwars-maps-upload-title'|trans }}</h3>
+	<form method="post" action="/admin/gbwars_maps.php" enctype="multipart/form-data">
+		<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+		<input type="hidden" name="form_action" value="upload">
+
+		<div class="admin-form__field">
+			<label for="map">{{ 'admin.gbwars-maps-upload-file'|trans }}</label>
+			<input type="file" id="map" name="map" accept=".cgb,.bin" required>
+			<p class="admin-form__hint">{{ 'admin.gbwars-maps-upload-file-hint'|trans }}</p>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="upload_price">{{ 'admin.gbwars-maps-price'|trans }}</label>
+			<input type="number" id="upload_price" name="upload_price" min="0" max="9999" placeholder="10">
+		</div>
+
+		<div class="admin-form__field">
+			<label for="upload_name_e">{{ 'admin.gbwars-maps-name-e'|trans }}</label>
+			<input type="text" id="upload_name_e" name="upload_name_e" maxlength="12">
+			<p class="admin-form__hint">{{ 'admin.gbwars-maps-name-e-hint'|trans }}</p>
+		</div>
+
+		<div class="admin-form__field">
+			<label for="upload_category_e">{{ 'admin.gbwars-maps-category-e'|trans }}</label>
+			<input type="text" id="upload_category_e" name="upload_category_e" maxlength="9">
+		</div>
+
+		<button class="admin-btn" type="submit">{{ 'admin.gbwars-maps-upload-submit'|trans }}</button>
+	</form>
+
+	<hr>
+
+	<h3>{{ 'admin.gbwars-maps-manage-title'|trans }}</h3>
+	{% if maps is empty %}
+		<p class="admin-form__hint">{{ 'admin.gbwars-maps-empty'|trans }}</p>
+	{% else %}
+		<table class="admin-table">
+			<thead>
+				<tr>
+					<th>{{ 'admin.stadium-track'|trans }}</th>
+					<th>ID</th>
+					<th>{{ 'admin.gbwars-maps-name-j'|trans }}</th>
+					<th>{{ 'admin.gbwars-maps-name-e'|trans }}</th>
+					<th>{{ 'admin.gbwars-maps-category-e'|trans }}</th>
+					<th>{{ 'admin.gbwars-maps-size'|trans }}</th>
+					<th>{{ 'admin.gbwars-maps-price'|trans }}</th>
+					<th>{{ 'admin.gbwars-maps-downloads'|trans }}</th>
+					<th>{{ 'admin.stadium-active'|trans }}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for m in maps %}
+					<tr>
+						<td>
+							{% if m.is_official %}
+								<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-track-official'|trans }}</span>
+							{% else %}
+								<span class="admin-badge">{{ 'admin.gbwars-maps-track-reon'|trans }}</span>
+							{% endif %}
+						</td>
+						<td><code>{{ m.map_id }}</code></td>
+						<td>{{ m.map_name_j }}</td>
+						<td><input type="text" name="edit_name_e" value="{{ m.map_name_e|default('') }}" maxlength="12" form="edit-form-{{ m.id }}"></td>
+						<td><input type="text" name="edit_category_e" value="{{ m.category_e|default('') }}" maxlength="9" form="edit-form-{{ m.id }}"></td>
+						<td>{{ m.width }}×{{ m.height }}</td>
+						<td><input type="number" name="edit_price" value="{{ m.price_yen }}" min="0" max="9999" style="width:5em" form="edit-form-{{ m.id }}"></td>
+						<td>{{ m.download_count }}</td>
+						<td>
+							{% if m.is_active %}
+								<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-active-yes'|trans }}</span>
+							{% else %}
+								<span class="admin-badge">{{ 'admin.stadium-active-no'|trans }}</span>
+							{% endif %}
+						</td>
+						<td>
+							<button class="admin-btn admin-btn--small" type="submit" form="edit-form-{{ m.id }}">{{ 'admin.stadium-compose-rename-submit'|trans }}</button>
+							<button class="admin-btn admin-btn--small" type="submit" form="toggle-form-{{ m.id }}">
+								{{ (m.is_active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
+							</button>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% for m in maps %}
+			<form id="edit-form-{{ m.id }}" method="post" action="/admin/gbwars_maps.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="edit">
+				<input type="hidden" name="map_id_db" value="{{ m.id }}">
+			</form>
+			<form id="toggle-form-{{ m.id }}" method="post" action="/admin/gbwars_maps.php">
+				<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+				<input type="hidden" name="form_action" value="activate">
+				<input type="hidden" name="map_id_db" value="{{ m.id }}">
+				<input type="hidden" name="action" value="{{ m.is_active ? 'deactivate' : 'activate' }}">
+			</form>
+		{% endfor %}
+	{% endif %}
+{% endblock %}

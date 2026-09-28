@@ -1,19 +1,21 @@
 <?php
 	require_once("DBUtil.php");
 
-	// Distribuições do Mobile Stadium, montadas pelo banco -- mesmo desenho
-	// que as Pokémon News, e nasceu do mesmo pedido do dono (27/09/2026).
+	// Mobile Stadium distributions, assembled from the database -- same
+	// design as the Pokémon News, and born from the same request from the
+	// owner (2026-09-27).
 	//
-	// O que este arquivo NÃO faz, de propósito: gerar o payload de 0xFFE
-	// bytes. Isso é trabalho de quem sabe montar um bloco de batalha do
-	// Crystal (o plugin do PKHeX), e entra aqui já pronto, por INSERT direto
-	// ou por um script de importação que leia o par <slug>.bin/<slug>.json
-	// descrito na conversa com aquela sessão. Este arquivo serve o que já
-	// existe e valida a forma dele -- não inventa conteúdo.
+	// What this file deliberately does NOT do: generate the 0xFFE-byte
+	// payload. That is the job of whoever knows how to assemble a Crystal
+	// battle block (the PKHeX plugin), and it arrives here already built, via
+	// a direct INSERT or an import script reading the <slug>.bin/<slug>.json
+	// pair described in the conversation with that session. This file serves
+	// what already exists and validates its shape -- it does not invent
+	// content.
 	//
-	// Especificação em docs/mobile-stadium/spec.md (lida do disassembly pela
-	// sessão "PKHeX Linux Port", não escrita aqui). Todo offset citado nos
-	// comentários vem de lá.
+	// Specification in docs/mobile-stadium/spec.md (read out of the
+	// disassembly by the "PKHeX Linux Port" session, not written here). Every
+	// offset cited in the comments comes from there.
 	class StadiumUtil {
 
 		private static $instance;
@@ -25,17 +27,75 @@
 
 		const PAYLOAD_SIZE = 4094; // 0xFFE
 
-		// As 8 regiões de jogo, e qual delas compartilha o payload ocidental.
-		// As 7 não-japonesas usam bytes IDÊNTICOS (spec.md §5.2): "the western
-		// payload bytes are identical for all seven western codes". Uma
-		// distribuição ocidental grava 7 linhas (uma por região, cada uma com
-		// seu próprio File ID -- ver o porquê em storeWestern()), não uma só.
+		// Replay-record and rule-record geometry (spec.md §5.2). A replay
+		// record's own trailer is self-contained -- marker at stride-4, LE
+		// sum16 at stride-2, covering [0, stride-2) of THAT record alone --
+		// so a validated record can be dropped into any of the 3 slots
+		// unchanged. Verified by round-trip: splitting a real, live payload
+		// into 3 records + 5 rules + message/flags/File ID and feeding them
+		// back through composePayload() reproduces the original payload
+		// byte for byte (see maint/ scratch test run on 2026-09-28, not
+		// kept -- the assertion is what matters, not the script).
+		const REPLAY_STRIDE = ["j" => 0x480, "w" => 0x490];
+		const REPLAY_SLOTS = 3;
+		const RULE_RECORD_SIZE = 0x48;
+		const RULE_SLOTS = 5;
+
+		// A record's own format: JP is 'j', every western code is 'w' --
+		// same grouping as storeWestern(), because the byte layout (not the
+		// menu URL) is what a replay/rule record has to match.
+		public static function formatFor($region) {
+			return strtolower((string)$region) === "j" ? "j" : "w";
+		}
+
+		// Default rule bank, used by composePayload() when the caller does
+		// not supply rule records of its own. Five 0x48-byte records,
+		// concatenated, each with its own valid P3 trailer.
+		//
+		// 'j': the REAL 5 rule records from the live "stadium-20260927-trailers1"
+		// distribution (region j, id fetched 2026-09-28) -- read out of
+		// production, not invented. Its text bytes are EUC-JP (Japanese
+		// rule names); the fixed parameter bytes after the name are
+		// IDENTICAL across all 5 records in that real block, which is why a
+		// single reused bank is plausible at all.
+		//
+		// 'w': the REAL 5 rule records from block_us.bin, the western
+		// production block with the three actual battles (header 03 05 00
+		// 00, 5 active rule records at 0xDB4) -- sent by the "PKHeX Linux
+		// Port" session on 2026-09-28, same status as the JP bank: real
+		// bytes off a real block, not invented. Same shape confirmed: all
+		// 5 share identical parameter bytes and differ only in an ASCII
+		// name (western text is ASCII, spec.md §3.2).
+		const DEFAULT_RULE_BANK = [
+			"j" => "pLyk86SzpK+ksaTDpLek56SmAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM0AupLik5aTzpLGkxKGhpMCkpKOyAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQMy8upd6k6qWqpbmlr6G8peuhoaSxAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM0kupNukw6SrpKSkyaSmoaGkuKTlAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQMw4upLek3qTNpL+kpKSrpKShoaSxAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM9ot",
+			"w" => "TmludGVuZG8gQ3VwIEZpbmFsAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM0QoTmludGVuZG8gQ3VwIFNlbWlmaQD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM7coTWFyaW8gU2Nob29sIEZpbmFsAAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQMz0oSG9ra2FpZG8gVG91cm5hbWVudAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQMyopU2hpbWFuZSBUb3VybmFtZW50IAD////////////////////////5////////////////AAAKMjcAmwAJAAMALQ//AABQM+Uo",
+		];
+
+		// The trailer for an EMPTY slot -- content zeroed, marker "XX", and
+		// a stored sum that is the ONE'S COMPLEMENT of sum16(zero content +
+		// marker), not the sum itself (confirmed against real hardware
+		// behaviour by the PKHeX session on 2026-09-28: the Stadium's own
+		// "clear slot" menu writes marker 58 58 with stored sum 0x41C0
+		// against a direct content sum of 0xBE3F -- exactly the bitwise
+		// complement). Because the content is zero, only the marker enters
+		// the sum, so the complement comes out IDENTICAL for a replay slot
+		// or a rule slot, any size: sum16("XX") = 0x0058+0x0058 = 0x00B0,
+		// complement (~0x00B0 & 0xFFFF) = 0xFF4F, little-endian = bytes
+		// 4F FF. Never write an unused slot as plain zero -- that was this
+		// class's own bug until this constant existed.
+		const EMPTY_SLOT_TRAILER = "\x58\x58\x4F\xFF";
+
+		// The 8 game regions, and which of them share the western payload.
+		// The 7 non-Japanese ones use IDENTICAL bytes (spec.md §5.2): "the
+		// western payload bytes are identical for all seven western codes".
+		// A western distribution writes 7 rows (one per region, each with
+		// its own File ID -- see why in storeWestern()), not just one.
 		const REGIONS = ["j", "e", "p", "u", "d", "f", "i", "s"];
 		const WESTERN_REGIONS = ["e", "p", "u", "d", "f", "i", "s"];
 
-		// Código de 4 letras a partir da letra de região, como
-		// app/auto-schedule usa (BXTJ, BXTE, ...). Uma fonte de verdade: o
-		// caminho nunca é digitado à mão em dois lugares.
+		// The 4-letter code from the region letter, the same way
+		// app/auto-schedule uses it (BXTJ, BXTE, ...). One source of truth:
+		// the path is never typed by hand in two places.
 		public static function pathCode($region) {
 			$region = strtolower((string)$region);
 			$mapa = [
@@ -45,45 +105,45 @@
 			return $mapa[$region] ?? null;
 		}
 
-		// Valida a FORMA de um payload, sem confiar em quem o gerou. O jogo
-		// confere só tamanho e File ID (spec.md §1.4) -- fora isso, somos nós
-		// ou ninguém, e um bloco malformado publicado hoje só seria notado
-		// quando alguém abrisse o Stadium e visse lista vazia, exatamente como
-		// os stubs de 2023.
+		// Validates the SHAPE of a payload, without trusting whoever
+		// generated it. The game only checks size and File ID (spec.md
+		// §1.4) -- beyond that, it is us or nobody, and a malformed block
+		// published today would only be noticed when someone opened the
+		// Stadium and saw an empty list, exactly like the 2023 stubs.
 		//
-		// Devolve "" quando válido, ou a razão da recusa.
+		// Returns "" when valid, or the reason for the refusal.
 		public static function validatePayload($payload, $fileId) {
 			if (!is_string($payload) || strlen($payload) !== self::PAYLOAD_SIZE) {
-				return "payload deve ter exatamente " . self::PAYLOAD_SIZE . " bytes (0xFFE), tem " . strlen((string)$payload);
+				return "payload must be exactly " . self::PAYLOAD_SIZE . " bytes (0xFFE), got " . strlen((string)$payload);
 			}
 			if (!is_string($fileId) || strlen($fileId) !== 16) {
-				return "file_id deve ter exatamente 16 bytes";
+				return "file_id must be exactly 16 bytes";
 			}
-			// offset 0xFEA..0xFF9 dentro do payload de 0xFFE bytes.
+			// offset 0xFEA..0xFF9 inside the 0xFFE-byte payload.
 			$noPayload = substr($payload, 0xFEA, 16);
 			if ($noPayload !== $fileId) {
-				return "File ID no payload (offset 0xFEA) não bate com o file_id da linha";
+				return "File ID in the payload (offset 0xFEA) does not match the row's file_id";
 			}
-			// 0xFFA-0xFFD: "P3" + soma LE de 0x000..0xFFB. Não é conferido
-			// pelo jogo (spec.md §1.4: "the marker and sum... are not checked
-			// by Crystal"), mas SEM ele o Stadium não lista nada -- foi
-			// exatamente o defeito dos stubs de 2023. Conferir aqui é a única
-			// rede de segurança que existe.
+			// 0xFFA-0xFFD: "P3" + LE sum of 0x000..0xFFB. The game does not
+			// check this (spec.md §1.4: "the marker and sum... are not
+			// checked by Crystal"), but WITHOUT it the Stadium lists
+			// nothing -- that was exactly the 2023 stubs' defect. Checking
+			// it here is the only safety net that exists.
 			$marcador = substr($payload, 0xFFA, 2);
 			if ($marcador !== "P3") {
-				return "sem moldura P3 em 0xFFA -- o Crystal aceitaria, mas o Stadium não listaria nada (era o defeito dos stubs antigos)";
+				return "missing P3 frame at 0xFFA -- Crystal would accept it, but the Stadium would list nothing (this was the old stubs' defect)";
 			}
 			$somaGravada = unpack("v", substr($payload, 0xFFC, 2))[1];
 			$somaCalculada = self::sum16(substr($payload, 0, 0xFFC));
 			if ($somaGravada !== $somaCalculada) {
-				return sprintf("soma em 0xFFC (%04X) não bate com sum16(0x000..0xFFB) calculada (%04X)", $somaGravada, $somaCalculada);
+				return sprintf("sum at 0xFFC (%04X) does not match the calculated sum16(0x000..0xFFB) (%04X)", $somaGravada, $somaCalculada);
 			}
 			return "";
 		}
 
-		// sum16 do jogo: soma de 16 bits, sem carry além de 16 bits -- é
-		// literalmente soma módulo 0x10000, não CRC. spec.md §5.2 confirma:
-		// "LE sum16(payload[0x000..0xFFB])".
+		// The game's sum16: a 16-bit sum with no carry beyond 16 bits -- it
+		// is literally a sum modulo 0x10000, not a CRC. spec.md §5.2
+		// confirms: "LE sum16(payload[0x000..0xFFB])".
 		private static function sum16($bytes) {
 			$soma = 0;
 			foreach (unpack("C*", $bytes) as $b) {
@@ -92,172 +152,460 @@
 			return $soma;
 		}
 
-		// Monta os 4 bytes de menu que replicam o quadro do payload: "P3" +
-		// soma LE. spec.md §5.3: "50 33 <sum lo> <sum hi> = payload[0xFFA..0xFFD]".
-		// Nunca digitar esses bytes à parte do payload -- é dele que eles
-		// vêm, e foi divergência entre os dois que gerou bug antes (ver a
-		// migração desta tabela).
+		// Builds the 4 menu bytes that replicate the payload's frame: "P3" +
+		// LE sum. spec.md §5.3: "50 33 <sum lo> <sum hi> = payload[0xFFA..0xFFD]".
+		// Never type these bytes separately from the payload -- they come
+		// from it, and a divergence between the two produced a bug before
+		// (see this table's migration).
 		public static function frameFromPayload($payload) {
 			return substr($payload, 0xFFA, 4);
 		}
 
-		// Grava uma distribuição japonesa. Uma linha; region 'j' é a única
-		// que não compartilha payload com ninguém.
-		public static function storeJapanese($fileId, $payload, $cost, $slug, $title, $specVersion) {
-			return self::storeOne("j", $fileId, $payload, $cost, $slug, $title, $specVersion);
+		// A record's own trailer, marker at length-4 and LE sum16 at
+		// length-2, the sum covering everything up to and including the
+		// marker (spec.md §5.2: "sum over 0x47E bytes, marker included" for
+		// a 0x480 JP replay record -- generalised here to any record length,
+		// and confirmed against a real rule record too: stride 0x48, sum
+		// over [0,0x46), matches the live bytes exactly). Returns "" when
+		// valid, or the reason for the refusal.
+		private static function validateRecordTrailer($record, $length, $what) {
+			if (!is_string($record) || strlen($record) !== $length) {
+				return "$what must be exactly $length bytes, got " . strlen((string)$record);
+			}
+			$marcador = substr($record, $length - 4, 2);
+			if ($marcador !== "P3") {
+				return "$what is missing its own P3 trailer at +" . ($length - 4);
+			}
+			$somaGravada = unpack("v", substr($record, $length - 2, 2))[1];
+			$somaCalculada = self::sum16(substr($record, 0, $length - 2));
+			if ($somaGravada !== $somaCalculada) {
+				return sprintf("%s trailer sum (%04X) does not match the calculated sum16 (%04X)", $what, $somaGravada, $somaCalculada);
+			}
+			return "";
 		}
 
-		// Ponto de entrada genérico, para quem já sabe a região -- o
-		// importador (maint/import_stadium_distribution.php) usa este, porque
-		// o par <slug>.bin/<slug>.json chega já marcado com a letra da região
-		// dele.
-		public static function store($region, $fileId, $payload, $cost, $slug, $title, $specVersion) {
-			return self::storeOne($region, $fileId, $payload, $cost, $slug, $title, $specVersion);
+		// Validates a single replay record on its own, before it ever
+		// enters the library -- so a broken upload is refused at import
+		// time, not discovered later inside a composed payload.
+		public static function validateReplayRecord($format, $record) {
+			$stride = self::REPLAY_STRIDE[$format] ?? null;
+			if ($stride === null) return "unknown format: '$format' (must be 'j' or 'w')";
+			return self::validateRecordTrailer($record, $stride, "replay record");
 		}
 
-		// Grava uma distribuição ocidental. UMA linha por região (7 linhas),
-		// com o MESMO payload -- porque o payload ocidental é byte-idêntico
-		// nas 7 (spec.md §5.2) -- mas o File ID pode ser o mesmo ou diferente
-		// por região, dependendo de como o plugin numerar. Aceita um File ID
-		// só (aplicado às 7) ou um por região, para não forçar uma decisão
-		// que é do plugin, não nossa.
-		public static function storeWestern($fileIdOuMapa, $payload, $cost, $slug, $title, $specVersion) {
+		public static function validateRuleRecord($record) {
+			return self::validateRecordTrailer($record, self::RULE_RECORD_SIZE, "rule record");
+		}
+
+		// Stores one uploaded replay clip in the library, after validating
+		// its own trailer. Does not touch bxt_stadium_distributions --
+		// composePayload() is what turns library entries into a servable
+		// payload, and that is a separate, later step (the admin panel's
+		// compose form).
+		//
+		// $isCustom is a required editorial call by whoever uploads, not a
+		// default to leave implicit the way bxt_stadium_distributions'
+		// does: the same "Export battle" can capture either a real
+		// historical save or a fan-made one, and composing an OFFICIAL
+		// distribution out of a CUSTOM replay would misrepresent it
+		// (owner's point, 2026-09-28) -- checked in composeIsAllowed()
+		// below before a compose is allowed to claim "official".
+		public static function storeReplay($format, $record, $label, $sourceNote = null, $isCustom = false) {
+			$erro = self::validateReplayRecord($format, $record);
+			if ($erro !== "") return $erro;
+			if ($label === null || trim((string)$label) === "") {
+				return "label must not be empty";
+			}
+
+			$db = DBUtil::getInstance()->getDB();
+			$isCustomInt = $isCustom ? 1 : 0;
+			$stmt = $db->prepare(
+				"insert into bxt_stadium_replays (format, is_custom, record, label, source_note)
+				 values (?, ?, ?, ?, ?)");
+			$stmt->bind_param("sisss", $format, $isCustomInt, $record, $label, $sourceNote);
+			try {
+				$stmt->execute();
+			} catch (\mysqli_sql_exception $e) {
+				return "database error: " . $e->getMessage();
+			}
+			return "";
+		}
+
+		// For the admin panel's picker and manage list: every uploaded
+		// clip for a format, newest first.
+		public static function replaysFor($format) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare(
+				"select id, is_custom, label, source_note, created_at
+				   from bxt_stadium_replays
+				  where format = ?
+				  order by id desc");
+			$stmt->bind_param("s", $format);
+			$stmt->execute();
+			return DBUtil::fancy_get_result($stmt);
+		}
+
+		public static function replayById($id) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("select format, is_custom, record, label, source_note from bxt_stadium_replays where id = ?");
+			$id = (int)$id;
+			$stmt->bind_param("i", $id);
+			$stmt->execute();
+			return $stmt->get_result()->fetch_assoc();
+		}
+
+		// Renames a library entry -- label and source note only, never the
+		// record bytes or the format (uploading again is how you replace
+		// the actual data). Returns "" on success, or the reason for the
+		// refusal.
+		public static function renameReplay($id, $label, $sourceNote, $isCustom) {
+			if ($label === null || trim((string)$label) === "") {
+				return "label must not be empty";
+			}
+			$db = DBUtil::getInstance()->getDB();
+			$id = (int)$id;
+			$isCustomInt = $isCustom ? 1 : 0;
+			$stmt = $db->prepare(
+				"update bxt_stadium_replays set label = ?, source_note = ?, is_custom = ? where id = ?");
+			$stmt->bind_param("ssii", $label, $sourceNote, $isCustomInt, $id);
+			try {
+				$stmt->execute();
+			} catch (\mysqli_sql_exception $e) {
+				return "database error: " . $e->getMessage();
+			}
+			return "";
+		}
+
+		// Removes a library entry. Does not touch any distribution that
+		// was already composed from it -- composePayload() copies the
+		// record bytes into the payload at compose time, so an already-
+		// stored distribution keeps working after its source replay is
+		// deleted from the library.
+		public static function deleteReplay($id) {
+			$db = DBUtil::getInstance()->getDB();
+			$id = (int)$id;
+			$stmt = $db->prepare("delete from bxt_stadium_replays where id = ?");
+			$stmt->bind_param("i", $id);
+			try {
+				return $stmt->execute();
+			} catch (\mysqli_sql_exception $e) {
+				error_log("StadiumUtil::deleteReplay($id) failed: " . $e->getMessage());
+				return false;
+			}
+		}
+
+		// The check the owner asked for, 2026-09-28: composing something
+		// claimed as OFFICIAL out of a CUSTOM replay would misrepresent
+		// it, so refuse instead of allowing the combination silently. A
+		// custom compose has no such restriction -- mixing official
+		// replays into a custom compose is fine, it just cannot claim to
+		// BE official. $replayRows is the array of rows replayById()
+		// returned for each picked slot.
+		public static function composeIsAllowed($isCustom, array $replayRows) {
+			if ($isCustom) return "";
+			foreach ($replayRows as $i => $row) {
+				if ((int)($row["is_custom"] ?? 0) === 1) {
+					return "slot " . ($i + 1) . " (\"" . $row["label"] . "\") is a custom replay -- an official distribution cannot be composed from it";
+				}
+			}
+			return "";
+		}
+
+		// Assembles a full 0xFFE payload out of up to 3 replay records (in
+		// slot order -- slot order is menu/save display order, not chosen by
+		// this function) plus 5 rule records, a message of the day, the
+		// Delibird flags byte and a File ID. Every field is placed at its
+		// absolute offset (spec.md §5.2) rather than concatenated in
+		// sequence, on purpose: an off-by-one in one field would silently
+		// shift every field after it if this were built by concatenation,
+		// and placing by absolute offset makes that class of bug
+		// impossible.
+		//
+		// $replayRecords: 0-3 elements, each already exactly stride bytes
+		// with its own valid trailer (validateReplayRecord). Missing slots
+		// are zero-filled -- the same "not P3" convention spec.md documents
+		// for an empty slot, and the same state a fresh plugin-created block
+		// already uses for an unset File ID (spec.md §5.1).
+		// $ruleRecords: null to use DEFAULT_RULE_BANK for the format (and 0
+		// active rules where no bank exists yet -- see the 'w' comment on
+		// that constant), or 0-5 elements of 0x48 bytes each, own trailer
+		// valid.
+		// $message: plain text, UTF-8. Converted to EUC-JP for 'j', required
+		// ASCII for 'w' (spec.md §3.2: "titles/display names ... ASCII").
+		// $flags: Delibird flags byte, default 0 (spec.md §5.1: bits 0x01/
+		// 0x02 change the player's platform PERMANENTLY -- callers should
+		// default to 0 unless that is explicitly wanted).
+		//
+		// Returns [payload, ""] or [null, reason].
+		public static function composePayload($format, array $replayRecords, $ruleRecords, $message, $flags, $fileId) {
+			$stride = self::REPLAY_STRIDE[$format] ?? null;
+			if ($stride === null) return [null, "unknown format: '$format' (must be 'j' or 'w')"];
+			if (count($replayRecords) > self::REPLAY_SLOTS) {
+				return [null, "at most " . self::REPLAY_SLOTS . " replay records"];
+			}
+			foreach ($replayRecords as $i => $rec) {
+				$erro = self::validateReplayRecord($format, $rec);
+				if ($erro !== "") return [null, "replay slot $i: $erro"];
+			}
+
+			if ($ruleRecords === null) {
+				$banco = self::DEFAULT_RULE_BANK[$format] ?? null;
+				if ($banco === null) {
+					$ruleRecords = []; // no verified bank for this format yet -- 0 active rules
+				} else {
+					$bytes = base64_decode($banco);
+					$ruleRecords = [];
+					for ($i = 0; $i < self::RULE_SLOTS; $i++) {
+						$ruleRecords[] = substr($bytes, $i * self::RULE_RECORD_SIZE, self::RULE_RECORD_SIZE);
+					}
+				}
+			}
+			if (count($ruleRecords) > self::RULE_SLOTS) {
+				return [null, "at most " . self::RULE_SLOTS . " rule records"];
+			}
+			foreach ($ruleRecords as $i => $rec) {
+				$erro = self::validateRuleRecord($rec);
+				if ($erro !== "") return [null, "rule slot $i: $erro"];
+			}
+
+			if (!is_string($fileId) || strlen($fileId) !== 16) {
+				return [null, "file_id must be exactly 16 bytes"];
+			}
+			$flags = (int)$flags & 0xFF;
+
+			$payload = str_repeat("\x00", self::PAYLOAD_SIZE);
+
+			// 0x000/0x001: active counts. 0x002-0x003 stay 00 00.
+			$payload = substr_replace($payload, chr(count($replayRecords)) . chr(count($ruleRecords)), 0x000, 2);
+
+			// 0x004 + i*stride: the 3 replay slots. Past the supplied count,
+			// a slot is EMPTY, not zero: content zeroed, marker "XX",
+			// stored sum = complement (EMPTY_SLOT_TRAILER's own comment
+			// explains why the same 4 bytes work at any record length).
+			// Plain zero-fill (marker 00 00) was this method's own bug
+			// until a real console's "clear slot" behaviour was checked
+			// (PKHeX session, 2026-09-28) -- Crystal never reads a slot's
+			// trailer, but nothing here had confirmed Stadium tolerates it.
+			for ($i = 0; $i < self::REPLAY_SLOTS; $i++) {
+				$conteudo = $replayRecords[$i] ?? (str_repeat("\x00", $stride - 4) . self::EMPTY_SLOT_TRAILER);
+				$payload = substr_replace($payload, $conteudo, 0x004 + $i * $stride, $stride);
+			}
+
+			// The 5 rule slots follow immediately, same empty-slot rule.
+			$rulesOffset = 0x004 + self::REPLAY_SLOTS * $stride;
+			for ($i = 0; $i < self::RULE_SLOTS; $i++) {
+				$conteudo = $ruleRecords[$i] ?? (str_repeat("\x00", self::RULE_RECORD_SIZE - 4) . self::EMPTY_SLOT_TRAILER);
+				$payload = substr_replace($payload, $conteudo, $rulesOffset + $i * self::RULE_RECORD_SIZE, self::RULE_RECORD_SIZE);
+			}
+
+			// Message of the day: fills up to the flags byte at 0xFE1
+			// (spec.md §5.2 -- 0xF5 bytes JP, 0xC5 western, terminator
+			// included), 00-terminated and zero-padded.
+			$messageOffset = $rulesOffset + self::RULE_SLOTS * self::RULE_RECORD_SIZE;
+			$messageMaxLen = 0xFE1 - $messageOffset;
+			if ($format === "j") {
+				$codificada = @mb_convert_encoding((string)$message, "EUC-JP", "UTF-8");
+			} else {
+				if ((string)$message !== "" && !mb_check_encoding((string)$message, "ASCII")) {
+					return [null, "message of the day must be ASCII for a western payload (spec.md §3.2)"];
+				}
+				$codificada = (string)$message;
+			}
+			if (strlen($codificada) + 1 > $messageMaxLen) {
+				return [null, "message of the day is too long: " . (strlen($codificada) + 1) . " bytes encoded, $messageMaxLen available"];
+			}
+			$codificada = str_pad($codificada . "\x00", $messageMaxLen, "\x00");
+			$payload = substr_replace($payload, $codificada, $messageOffset, $messageMaxLen);
+
+			// 0xFE1 flags, 0xFE2-0xFE9 stay 00, 0xFEA-0xFF9 File ID.
+			$payload = substr_replace($payload, chr($flags), 0xFE1, 1);
+			$payload = substr_replace($payload, $fileId, 0xFEA, 16);
+
+			// 0xFFA-0xFFD: the frame. The marker at 0xFFA-0xFFB is INSIDE
+			// the summed range (0x000-0xFFB) -- the same "marker included"
+			// rule as a record's own trailer -- so it has to be written
+			// before the sum is computed, not after. Writing both together
+			// afterwards silently sums two 00 bytes instead of "P3" and
+			// produces a frame that is wrong by exactly ord('P')+ord('3')
+			// (found by round-tripping a real payload through this
+			// function: the composed sum came out 0x0083 short).
+			$payload = substr_replace($payload, "P3", 0xFFA, 2);
+			$soma = self::sum16(substr($payload, 0, 0xFFC));
+			$payload = substr_replace($payload, pack("v", $soma), 0xFFC, 2);
+
+			return [$payload, ""];
+		}
+
+		// Stores a Japanese distribution. One row; region 'j' is the only
+		// one that shares its payload with nobody.
+		//
+		// $isCustom: false (default) = official, a faithful reconstruction
+		// of a real historical Nintendo block -- what
+		// import_stadium_distribution.php has always produced. true =
+		// custom, an admin-curated combination (StadiumUtil::composePayload());
+		// gated by sys_users.custom_mobile_stadium_opt_in the same way
+		// bxt_news.is_custom gates the custom Pokémon News track (owner's
+		// correction, 2026-09-28: a user who does NOT opt in must still
+		// get official content, not nothing).
+		public static function storeJapanese($fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom = false) {
+			return self::storeOne("j", $fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom);
+		}
+
+		// Generic entry point, for callers that already know the region --
+		// the importer (maint/import_stadium_distribution.php) uses this,
+		// because the <slug>.bin/<slug>.json pair arrives already marked
+		// with its region letter.
+		public static function store($region, $fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom = false) {
+			return self::storeOne($region, $fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom);
+		}
+
+		// Stores a western distribution. ONE row per region (7 rows), with
+		// the SAME payload -- because the western payload is byte-identical
+		// across the 7 (spec.md §5.2) -- but the File ID can be the same or
+		// different per region, depending on how the plugin numbers them.
+		// Accepts a single File ID (applied to all 7) or one per region, so
+		// as not to force a decision that belongs to the plugin, not to us.
+		public static function storeWestern($fileIdOuMapa, $payload, $cost, $slug, $title, $specVersion, $isCustom = false) {
 			$falhas = [];
 			foreach (self::WESTERN_REGIONS as $regiao) {
 				$fileId = is_array($fileIdOuMapa) ? ($fileIdOuMapa[$regiao] ?? null) : $fileIdOuMapa;
 				if ($fileId === null) {
-					$falhas[$regiao] = "sem file_id para esta região";
+					$falhas[$regiao] = "no file_id for this region";
 					continue;
 				}
-				$erro = self::storeOne($regiao, $fileId, $payload, $cost, $slug, $title, $specVersion);
+				$erro = self::storeOne($regiao, $fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom);
 				if ($erro !== "") $falhas[$regiao] = $erro;
 			}
-			return $falhas; // vazio = tudo certo
+			return $falhas; // empty = all good
 		}
 
-		private static function storeOne($region, $fileId, $payload, $cost, $slug, $title, $specVersion) {
-			if (self::pathCode($region) === null) return "região desconhecida: '$region'";
+		private static function storeOne($region, $fileId, $payload, $cost, $slug, $title, $specVersion, $isCustom = false) {
+			if (self::pathCode($region) === null) return "unknown region: '$region'";
 
 			$erro = self::validatePayload($payload, $fileId);
 			if ($erro !== "") return $erro;
 
 			if (!preg_match('/^[a-z0-9-]{1,40}$/', (string)$slug)) {
-				return "slug deve ser [a-z0-9-], até 40 caracteres";
+				return "slug must be [a-z0-9-], up to 40 characters";
 			}
 			if ($cost !== null && (!is_int($cost) || $cost < 0 || $cost > 999)) {
-				// 4+ dígitos dá D3 no jogo (spec.md §5.4); 999 é o maior valor
-				// de 3 dígitos.
-				return "cost deve ser null, ou inteiro de 0 a 999";
+				// 4+ digits gives D3 in the game (spec.md §5.4); 999 is the
+				// largest 3-digit value.
+				return "cost must be null, or an integer from 0 to 999";
 			}
 
 			$db = DBUtil::getInstance()->getDB();
-			// 's' para o file_id e o payload binários, e não 'b' -- testado
-			// e o 'b' falha em silêncio: sem uma chamada a send_long_data(),
-			// o mysqli grava 0 bytes para um parâmetro tipo 'b' e o INSERT
-			// "funciona" sem erro nenhum. web/classes/AdminUtil.php já diz
-			// isso sobre news_binary: "a string do PHP é binária-segura e o
-			// mysqli manda o comprimento, então um byte nulo no meio do
-			// binário não termina o valor" -- vale para 's', não para 'b'.
+			// 's' for the binary file_id and payload, not 'b' -- tested,
+			// and 'b' fails silently: without a call to send_long_data(),
+			// mysqli writes 0 bytes for a 'b'-typed parameter and the
+			// INSERT "succeeds" with no error at all. web/classes/AdminUtil.php
+			// already says this about news_binary: "PHP's string is
+			// binary-safe and mysqli sends the length, so a null byte in
+			// the middle of the binary does not terminate the value" --
+			// that holds for 's', not for 'b'.
+			$isCustomInt = $isCustom ? 1 : 0;
 			$stmt = $db->prepare(
 				"insert into bxt_stadium_distributions
-				   (game_region, file_id, cost, slug, payload, title, spec_version)
-				 values (?, ?, ?, ?, ?, ?, ?)");
-			$stmt->bind_param("ssissss", $region, $fileId, $cost, $slug, $payload, $title, $specVersion);
+				   (game_region, is_custom, file_id, cost, slug, payload, title, spec_version)
+				 values (?, ?, ?, ?, ?, ?, ?, ?)");
+			$stmt->bind_param("sissssss", $region, $isCustomInt, $fileId, $cost, $slug, $payload, $title, $specVersion);
 			try {
 				$stmt->execute();
 			} catch (\mysqli_sql_exception $e) {
-				// O mysqli desde o PHP 8.1 LANÇA em erro por padrão --
-				// execute() não devolve false como no PHP antigo. Achado
-				// testando o caminho de re-importação (mesmo File ID duas
-				// vezes): sem este catch, um erro esperado (a unicidade por
-				// região que a migração criou de propósito) derrubava o
-				// script de importação inteiro em vez de virar uma linha de
-				// "FALHA" clara.
+				// mysqli THROWS on error by default since PHP 8.1 --
+				// execute() does not return false the way it did on older
+				// PHP. Found while testing the re-import path (the same
+				// File ID twice): without this catch, an expected error
+				// (the per-region uniqueness this migration created on
+				// purpose) crashed the whole import script instead of
+				// turning into a clean "FAILED" line.
 				if ($e->getCode() === 1062) { // ER_DUP_ENTRY
-					return "já existe uma distribuição com este File ID nesta região (file_id não pode ser reaproveitado -- ver a migração)";
+					return "a distribution with this File ID already exists for this region (a file_id cannot be reused -- see the migration)";
 				}
-				return "erro no banco: " . $e->getMessage();
+				return "database error: " . $e->getMessage();
 			}
 
 			$insertId = $db->insert_id;
 			$erroStub = self::writeStub($region, $cost, $slug);
 			if ($erroStub !== "") {
-				// Desfaz a linha: sem o arquivo físico que o roteador de
-				// download acha, ela é inalcançável -- e uma linha "ativa" no
-				// painel que não serve nada é exatamente o defeito dos stubs
-				// de 2023, só que escondido um nível mais fundo.
+				// Undo the row: without the physical file the download
+				// router looks for, it is unreachable -- and an "active"
+				// row in the panel that serves nothing is exactly the 2023
+				// stubs' defect, just hidden one level deeper.
 				$db->query("delete from bxt_stadium_distributions where id = " . (int)$insertId);
-				return "linha revertida (não gravou o arquivo físico): " . $erroStub;
+				return "row rolled back (could not write the physical file): " . $erroStub;
 			}
 			return "";
 		}
 
-		// Onde os arquivos físicos de uma região moram. web/classes/ -> web/
-		// -> cgb/download/01/CGB-<código>/POKESTA.
+		// Where a region's physical files live. web/classes/ -> web/ ->
+		// cgb/download/01/CGB-<code>/POKESTA.
 		private static function downloadDir($region) {
 			$codigo = self::pathCode($region);
 			if ($codigo === null) return null;
 			return dirname(__DIR__) . "/cgb/download/01/CGB-" . $codigo . "/POKESTA";
 		}
 
-		// O nome do arquivo que o JOGO pede, com o prefixo de custo embutido
-		// -- é assim que getCost() em auth.php:248 o lê, direto do nome, sem
-		// nenhum parâmetro adicional. Não confundir com o "slug" puro, que é
-		// só a parte que StadiumUtil usa para achar a linha no banco.
+		// The file name the GAME requests, with the cost prefix baked in --
+		// that is how getCost() in auth.php:248 reads it, straight off the
+		// name, no extra parameter. Not to be confused with the plain
+		// "slug", which is only the part StadiumUtil uses to find the row
+		// in the database.
 		public static function stubFileName($cost, $slug) {
 			return ($cost === null ? "" : ((int)$cost . ".")) . $slug . ".php";
 		}
 
-		// Gera o roteador físico de um payload, no mesmo padrão que
-		// download/28/AGB-AGTJ/0.ghost.php e 200.ghost.php já usam para
-		// conteúdo com custo: um arquivo por combinação (custo, conteúdo),
-		// pequeno, chamando uma função compartilhada com o dado específico
-		// como argumento literal.
+		// Generates the physical router for a payload, in the same pattern
+		// download/28/AGB-AGTJ/0.ghost.php and 200.ghost.php already use for
+		// costed content: one file per (cost, content) combination, small,
+		// calling a shared function with the specific data as a literal
+		// argument.
 		//
-		// A alternativa que NÃO usamos foi reescrever a URL no nginx (como
-		// a Battle Tower faz para "room0001.cgb" -> "room.php?room=0001").
-		// Não serve aqui: getCost() e a resolução de arquivo em
-		// serveFileOrExecScript() leem a MESMA variável ($_GET['name']) em
-		// download.php, então reescrever o nome para apontar a um script fixo
-		// apagaria o prefixo de custo antes de getCost() vê-lo -- o download
-		// deixaria de exigir autenticação, ao contrário do que se pretende.
-		// Um arquivo físico por (custo, slug) evita o problema porque o
-		// próprio nome do arquivo, sem reescrita nenhuma, já é o que o jogo
-		// pediu.
+		// The alternative we did NOT use was rewriting the URL in nginx (the
+		// way the Battle Tower does for "room0001.cgb" -> "room.php?room=0001").
+		// It does not work here: getCost() and the file resolution in
+		// serveFileOrExecScript() read the SAME variable ($_GET['name']) in
+		// download.php, so rewriting the name to point at a fixed script
+		// would erase the cost prefix before getCost() ever sees it -- the
+		// download would stop requiring authentication, the opposite of
+		// what is intended. One physical file per (cost, slug) avoids the
+		// problem because the file name itself, with no rewriting at all,
+		// is already what the game asked for.
 		//
-		// Idempotente por design: o stub NÃO grava conteúdo, só chama
-		// get_stadium_payload($region, $slug), que lê do banco a cada
-		// requisição. Então dois INSERTs com o mesmo (região, slug) --
-		// coisa que a tabela permite, porque o único índice único é por
-		// file_id -- acabam servidos pelo MESMO arquivo físico sem conflito:
-		// payloadForSlug() sempre busca a linha ativa mais recente daquele
-		// slug. Por isso não sobrescrevemos um stub existente.
+		// Idempotent by design: the stub does NOT write content, it only
+		// calls get_stadium_payload($region, $slug), which reads from the
+		// database on every request. So two INSERTs with the same (region,
+		// slug) -- which the table allows, since the only unique index is
+		// on file_id -- end up served by the SAME physical file with no
+		// conflict: payloadForSlug() always looks up that slug's most
+		// recent active row. That is why an existing stub is never
+		// overwritten.
 		private static function writeStub($region, $cost, $slug) {
 			$dir = self::downloadDir($region);
-			if ($dir === null) return "região desconhecida";
+			if ($dir === null) return "unknown region";
 			if (!is_dir($dir)) {
 				if (!@mkdir($dir, 0775, true) && !is_dir($dir)) {
-					return "não consegui criar o diretório $dir";
+					return "could not create directory $dir";
 				}
 			}
 			$arquivo = $dir . "/" . self::stubFileName($cost, $slug);
-			if (file_exists($arquivo)) return ""; // já serve esse (custo, slug)
+			if (file_exists($arquivo)) return ""; // already serves this (cost, slug)
 
-			// Nowdoc (identificador entre aspas simples): SEM interpolação --
-			// "$payload" e "CORE_PATH" no texto abaixo são PHP literal do arquivo
-			// gerado, não variáveis deste método. Os dois pontos que variam
-			// (região e slug) entram como marcador de texto, substituído por
-			// str_replace depois -- var_export() já produz PHP válido (aspas e
-			// escape inclusos), então o marcador vira código PHP de verdade, não
-			// uma string dentro de uma string.
+			// Nowdoc (single-quoted identifier): NO interpolation -- the
+			// "$payload" and "CORE_PATH" in the text below are literal PHP
+			// for the generated file, not variables of this method. The two
+			// points that vary (region and slug) come in as text markers,
+			// substituted by str_replace afterwards -- var_export() already
+			// produces valid PHP (quotes and escaping included), so the
+			// marker becomes real PHP code, not a string inside a string.
 			$modelo = <<<'PHPEOF'
 <?php
 	// SPDX-License-Identifier: MIT
-	// Gerado por StadiumUtil::writeStub() -- não editar à mão.
-	// A distribuição em si mora no banco (bxt_stadium_distributions);
-	// isto existe só porque o roteador de download precisa achar um
-	// arquivo físico com este nome exato -- mesmo padrão que
-	// download/28/AGB-AGTJ/0.ghost.php já usa para conteúdo com custo.
+	// Generated by StadiumUtil::writeStub() -- do not edit by hand.
+	// The distribution itself lives in the database (bxt_stadium_distributions);
+	// this exists only because the download router needs to find a
+	// physical file with this exact name -- the same pattern
+	// download/28/AGB-AGTJ/0.ghost.php already uses for costed content.
 	require_once(CORE_PATH."/pokemon/stadium.php");
 
 	$payload = get_stadium_payload(%%REGION%%, %%SLUG%%);
@@ -276,46 +624,104 @@ PHPEOF;
 			) . "\n";
 
 			$ok = @file_put_contents($arquivo, $conteudo);
-			return $ok === false ? "não consegui escrever $arquivo" : "";
+			return $ok === false ? "could not write $arquivo" : "";
 		}
 
-		// O que o menu.php de uma região precisa: as distribuições ATIVAS
-		// daquela região, na ordem de inserção -- que é a ordem em que o
-		// Crystal as lê (spec.md §5.3: "never list older distributions after
-		// the current one with overlapping windows"). Quem ativa decide a
-		// ordem ativando na ordem certa; não reordenamos aqui.
-		public static function activeFor($region) {
+		// What a region's menu.php needs: that region's ACTIVE distributions
+		// on ONE track (official or custom -- see is_custom's own comment
+		// on the migration), in insertion order -- which is the order
+		// Crystal reads them in (spec.md §5.3: "never list older
+		// distributions after the current one with overlapping windows").
+		// Whoever activates decides the order by activating in the right
+		// order; we do not reorder here.
+		public static function activeFor($region, $isCustom = false) {
 			try {
 				$db = DBUtil::getInstance()->getDB();
+				$isCustomInt = $isCustom ? 1 : 0;
 				$stmt = $db->prepare(
 					"select file_id, schedule, cost, slug, payload
 					   from bxt_stadium_distributions
-					  where game_region = ? and active = 1
+					  where game_region = ? and is_custom = ? and active = 1
 					  order by id asc");
-				$stmt->bind_param("s", $region);
+				$stmt->bind_param("si", $region, $isCustomInt);
 				$stmt->execute();
 				return DBUtil::fancy_get_result($stmt);
 			} catch (\mysqli_sql_exception $e) {
-				// Este método alimenta menu.php, que um CARTUCHO chama --
-				// não um navegador. Uma exceção aqui (tabela ainda não
-				// migrada, por exemplo) não pode virar página de erro do PHP
-				// no meio de uma requisição de jogo: melhor devolver "sem
-				// distribuição" (lista vazia -> buildMenu() devolve null ->
-				// 404, o mesmo que as outras seis regiões sempre tiveram) do
-				// que travar o download.
-				error_log("StadiumUtil::activeFor($region) falhou: " . $e->getMessage());
+				// This method feeds menu.php, which a CARTRIDGE calls --
+				// not a browser. An exception here (table not migrated yet,
+				// for example) cannot turn into a PHP error page in the
+				// middle of a game request: better to return "no
+				// distribution" (empty list -> buildMenu() returns null ->
+				// 404, the same as the other six regions always had) than
+				// to break the download.
+				error_log("StadiumUtil::activeFor($region) failed: " . $e->getMessage());
 				return [];
 			}
 		}
 
-		// Monta os bytes de menu.cgb para uma região: N + entradas.
-		// spec.md §1.3 e §5.3. host fixo de propósito -- ver o comentário na
-		// função de payload sobre por que não pode ser outro.
+		// Per-account preference, same shape as
+		// bxt_pokemon_news_user_opted_in_custom() in news.php. Fails
+		// closed (false) on a database error or a missing/invalid user id.
+		public static function userOptedInCustom($userId) {
+			$userId = (int)$userId;
+			if ($userId <= 0) return false;
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select custom_mobile_stadium_opt_in from sys_users where id = ? limit 1");
+				$stmt->bind_param("i", $userId);
+				$stmt->execute();
+				$linha = $stmt->get_result()->fetch_assoc();
+				return $linha !== null && (int)$linha["custom_mobile_stadium_opt_in"] === 1;
+			} catch (\mysqli_sql_exception $e) {
+				error_log("StadiumUtil::userOptedInCustom($userId) failed: " . $e->getMessage());
+				return false;
+			}
+		}
+
+		// Whether an ACTIVE custom distribution exists for a region --
+		// same shape as bxt_pokemon_news_custom_row_exists() in news.php.
+		// Checked before switching an opted-in user to the custom track:
+		// opting in with nothing custom active must still show official
+		// content, not an empty menu.
+		public static function customRowExists($region) {
+			try {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare(
+					"select id from bxt_stadium_distributions
+					  where game_region = ? and is_custom = 1 and active = 1
+					  order by id desc limit 1");
+				$stmt->bind_param("s", $region);
+				$stmt->execute();
+				return $stmt->get_result()->fetch_assoc() !== null;
+			} catch (\mysqli_sql_exception $e) {
+				error_log("StadiumUtil::customRowExists($region) failed: " . $e->getMessage());
+				return false;
+			}
+		}
+
+		// The single decision every content-serving call re-derives (menu
+		// AND payload, the same defense-in-depth shape news.php uses at
+		// every one of its own serving points, not just once at an
+		// "index"): official unless the account opted in AND a custom
+		// distribution is actually active for this region. Owner's
+		// correction, 2026-09-28: NOT opting in must still return official
+		// content -- this replaced an earlier version of this class that
+		// treated the opt-in as a hard gate (opt out = nothing at all),
+		// which was wrong and never matched how the Pokémon News opt-in
+		// behaves.
+		public static function isCustomForUser($region, $userId) {
+			if (!self::userOptedInCustom($userId)) return false;
+			return self::customRowExists($region);
+		}
+
+		// Builds the menu.cgb bytes for a region: N + entries. spec.md §1.3
+		// and §5.3. Host is fixed on purpose -- see the comment on the
+		// payload function for why it cannot be anything else.
 		const HOST = "gameboy.datacenter.ne.jp";
 
-		public static function buildMenu($region) {
-			$linhas = self::activeFor($region);
-			if (count($linhas) === 0) return null; // sem distribuição: 404, não menu de N=0
+		public static function buildMenu($region, $isCustom = false) {
+			$linhas = self::activeFor($region, $isCustom);
+			if (count($linhas) === 0) return null; // no distribution: 404, not a menu with N=0
 
 			$codigo = self::pathCode($region);
 			$corpo = "";
@@ -328,57 +734,65 @@ PHPEOF;
 					. $linha["slug"] . ".cgb";
 				$url = "http://" . self::HOST . "/cgb/download?name=/01/CGB-" . $codigo . "/POKESTA/" . $nome;
 				if (strlen($url) > 0xA5) {
-					// spec.md §1.3: L > 0xA5 dá erro D8 no jogo. Não deixamos
-					// uma entrada quebrada entrar no menu; melhor faltar do
-					// que travar quem tentar baixar.
+					// spec.md §1.3: L > 0xA5 gives error D8 in the game. We
+					// do not let a broken entry into the menu; better
+					// missing than crashing whoever tries to download.
 					continue;
 				}
 				$corpo .= $schedule . $fileId . $moldura . pack("v", strlen($url)) . $url;
 			}
 			if ($corpo === "") return null;
 			$n = count($linhas);
-			if ($n > 255) $n = 255; // N é 1 byte; nunca deveria chegar aqui
+			if ($n > 255) $n = 255; // N is 1 byte; should never reach here
 			$menu = chr($n) . $corpo;
 			if (strlen($menu) > self::PAYLOAD_SIZE) {
 				// spec.md §1.3: "the whole menu must be <= 0xFFE bytes".
-				// Isto é sintoma de alguém ativar distribuições demais; não
-				// tentamos cortar sozinhos porque não sabemos qual descartar.
-				error_log("StadiumUtil::buildMenu($region): menu excede 0xFFE bytes com " . count($linhas) . " distribuições ativas");
+				// This is a symptom of someone activating too many
+				// distributions; we do not trim on our own because we do
+				// not know which one to drop.
+				error_log("StadiumUtil::buildMenu($region): menu exceeds 0xFFE bytes with " . count($linhas) . " active distributions");
 				return null;
 			}
 			return $menu;
 		}
 
-		// O payload de uma distribuição, pelo slug servido (sem prefixo de
-		// custo nem extensão) -- é o que o handler do nginx repassa depois de
-		// casar o padrão de nome. null se não achar ou não estiver ativa: um
-		// slug desativado não deve mais ser servido, mesmo que alguém ainda
-		// tenha o link.
-		public static function payloadForSlug($region, $slug) {
-			// Mesmo raciocínio de activeFor(): quem chama isto é o stub
-			// físico que o Crystal baixa, não um navegador. Erro de banco
-			// aqui devolve null (-> 404), não uma exceção não capturada.
+		// A distribution's payload, by the served slug (no cost prefix, no
+		// extension) -- this is what the nginx handler passes through after
+		// matching the name pattern. null if not found or not active: a
+		// deactivated slug should no longer be served, even if someone
+		// still has the link.
+		// $isCustom gates this the same way it gates buildMenu(): a
+		// non-opted-in (or opted-in-but-nothing-custom-active) account
+		// must not be able to fetch a custom payload just by knowing its
+		// slug, even though it was never listed in their menu.
+		public static function payloadForSlug($region, $slug, $isCustom = false) {
+			// Same reasoning as activeFor(): the caller here is the
+			// physical stub that Crystal downloads, not a browser. A
+			// database error here returns null (-> 404), not an uncaught
+			// exception.
 			try {
 				$db = DBUtil::getInstance()->getDB();
+				$isCustomInt = $isCustom ? 1 : 0;
 				$stmt = $db->prepare(
 					"select payload from bxt_stadium_distributions
-					  where game_region = ? and slug = ? and active = 1
+					  where game_region = ? and slug = ? and is_custom = ? and active = 1
 					  order by id desc limit 1");
-				$stmt->bind_param("ss", $region, $slug);
+				$stmt->bind_param("ssi", $region, $slug, $isCustomInt);
 				$stmt->execute();
 				$linha = $stmt->get_result()->fetch_assoc();
 				return $linha ? $linha["payload"] : null;
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::payloadForSlug($region, $slug) falhou: " . $e->getMessage());
+				error_log("StadiumUtil::payloadForSlug($region, $slug) failed: " . $e->getMessage());
 				return null;
 			}
 		}
 
-		// Para o painel: lista tudo, ativo e inativo, mais recente primeiro.
+		// For the panel: lists everything, active and inactive, most
+		// recent first.
 		public static function allFor($region) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(
-				"select id, file_id, cost, slug, title, active, spec_version, created_at,
+				"select id, file_id, is_custom, cost, slug, title, active, spec_version, created_at,
 				        length(payload) as payload_size
 				   from bxt_stadium_distributions
 				  where game_region = ?
@@ -388,19 +802,39 @@ PHPEOF;
 			return DBUtil::fancy_get_result($stmt);
 		}
 
-		// Devolve bool -- o painel usa isto para decidir a mensagem de
-		// sucesso/falha, e um erro de banco aqui deve virar "não salvou",
-		// não uma página de erro do PHP no painel de admin.
+		// Returns bool -- the panel uses this to decide the success/failure
+		// message, and a database error here must turn into "did not
+		// save", not a PHP error page in the admin panel.
+		// Activating a row now deactivates every OTHER row on the same
+		// (region, track) first -- at most one active distribution per
+		// region, owner's request 2026-09-28. This is the exact bug
+		// spec.md §5.3 already warned about (two active entries with
+		// overlapping windows make the game alternate between "new data"
+		// and "you already have this"): the schedule-window use case that
+		// justified allowing several active rows was never exercised
+		// (spec.md §7), so exclusivity is the safer default. Deactivating
+		// never touches other rows.
 		public static function setActive($id, $active) {
 			try {
 				$db = DBUtil::getInstance()->getDB();
-				$stmt = $db->prepare("update bxt_stadium_distributions set active = ? where id = ?");
-				$a = $active ? 1 : 0;
 				$id = (int)$id;
+				$a = $active ? 1 : 0;
+
+				if ($active) {
+					$linha = $db->query("select game_region, is_custom from bxt_stadium_distributions where id = $id")->fetch_assoc();
+					if ($linha === null) return false;
+					$stmt = $db->prepare(
+						"update bxt_stadium_distributions set active = 0
+						  where game_region = ? and is_custom = ? and id != ? and active = 1");
+					$stmt->bind_param("sii", $linha["game_region"], $linha["is_custom"], $id);
+					$stmt->execute();
+				}
+
+				$stmt = $db->prepare("update bxt_stadium_distributions set active = ? where id = ?");
 				$stmt->bind_param("ii", $a, $id);
 				return $stmt->execute();
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::setActive($id) falhou: " . $e->getMessage());
+				error_log("StadiumUtil::setActive($id) failed: " . $e->getMessage());
 				return false;
 			}
 		}
