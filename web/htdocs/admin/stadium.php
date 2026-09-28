@@ -42,6 +42,20 @@
 		}
 	}
 
+	if ($_SERVER["REQUEST_METHOD"] === "POST" && (string)($_POST["form_action"] ?? "") === "delete") {
+		CsrfUtil::check();
+		$id = (int)($_POST["id"] ?? 0);
+		$erro = StadiumUtil::deleteDistribution($id);
+		$admin->log($erro === "" ? "stadium.delete" : "stadium.delete-failed", "id=$id region=$regiao", $erro);
+		if ($erro === "") {
+			$notice = TemplateUtil::translate("admin.stadium-delete-saved");
+			$noticeKind = "ok";
+		} else {
+			$notice = TemplateUtil::translate("admin.stadium-delete-failed") . " ($erro)";
+			$noticeKind = "bad";
+		}
+	}
+
 	if ($_SERVER["REQUEST_METHOD"] === "POST" && (string)($_POST["form_action"] ?? "") === "compose") {
 		CsrfUtil::check();
 

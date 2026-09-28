@@ -62,7 +62,8 @@
 							{% endif %}
 						</td>
 						<td>
-							<form method="post" action="/admin/stadium.php?region={{ region }}">
+							<a class="admin-btn admin-btn--small" href="/admin/stadium_details.php?id={{ d.id }}">{{ 'admin.stadium-details-link'|trans }}</a>
+							<form method="post" action="/admin/stadium.php?region={{ region }}" style="display:inline">
 								<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
 								<input type="hidden" name="form_action" value="activate">
 								<input type="hidden" name="id" value="{{ d.id }}">
@@ -71,6 +72,14 @@
 									{{ (d.active ? 'admin.stadium-deactivate' : 'admin.stadium-activate')|trans }}
 								</button>
 							</form>
+							{% if not d.active %}
+								<form method="post" action="/admin/stadium.php?region={{ region }}" style="display:inline">
+									<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+									<input type="hidden" name="form_action" value="delete">
+									<input type="hidden" name="id" value="{{ d.id }}">
+									<button class="admin-btn admin-btn--small" type="submit">{{ 'admin.stadium-compose-delete-submit'|trans }}</button>
+								</form>
+							{% endif %}
 						</td>
 					</tr>
 				{% endfor %}
@@ -120,6 +129,7 @@
 				<p class="admin-form__hint">
 					{{ (format == 'j' ? 'admin.stadium-compose-message-hint-j' : 'admin.stadium-compose-message-hint-w')|trans }}
 				</p>
+				<p class="admin-form__hint">{{ 'admin.stadium-compose-message-see-example'|trans }}</p>
 			</div>
 
 			<div class="admin-form__field">
