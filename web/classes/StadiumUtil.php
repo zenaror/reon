@@ -787,6 +787,52 @@ PHPEOF;
 			}
 		}
 
+		// Removes a built distribution -- owner's request, 2026-09-28, a
+		// cleanup button for the panel. Refuses an ACTIVE row rather than
+		// silently deactivating it first: deleting something currently
+		// served should be a deliberate two-step (deactivate, then
+		// delete), not one click that also changes what the game sees
+		// right now. Also removes the physical stub file writeStub()
+		// generated, but only if no OTHER row still shares the same
+		// (region, cost, slug) -- the stub is shared by design (its own
+		// comment: "two INSERTs with the same (region, slug)... end up
+		// served by the SAME physical file"), so removing it out from
+		// under a sibling row would 404 something still meant to work.
+		// Returns "" or the reason for the refusal.
+		public static function deleteDistribution($id) {
+			$db = DBUtil::getInstance()->getDB();
+			$id = (int)$id;
+			$stmt = $db->prepare("select game_region, cost, slug, active from bxt_stadium_distributions where id = ?");
+			$stmt->bind_param("i", $id);
+			$stmt->execute();
+			$row = $stmt->get_result()->fetch_assoc();
+			if ($row === null) return "not found";
+			if ((int)$row["active"] === 1) return "active distributions cannot be deleted -- deactivate it first";
+
+			try {
+				$del = $db->prepare("delete from bxt_stadium_distributions where id = ?");
+				$del->bind_param("i", $id);
+				$del->execute();
+			} catch (\mysqli_sql_exception $e) {
+				return "database error: " . $e->getMessage();
+			}
+
+			$stillNeeded = $db->prepare(
+				"select count(*) as c from bxt_stadium_distributions
+				  where game_region = ? and slug = ? and (cost <=> ?)");
+			$stillNeeded->bind_param("ssi", $row["game_region"], $row["slug"], $row["cost"]);
+			$stillNeeded->execute();
+			$count = $stillNeeded->get_result()->fetch_assoc()["c"];
+			if ((int)$count === 0) {
+				$dir = self::downloadDir($row["game_region"]);
+				if ($dir !== null) {
+					$stub = $dir . "/" . self::stubFileName($row["cost"], $row["slug"]);
+					if (file_exists($stub)) @unlink($stub);
+				}
+			}
+			return "";
+		}
+
 		// For the panel: lists everything, active and inactive, most
 		// recent first.
 		public static function allFor($region) {
@@ -800,6 +846,88 @@ PHPEOF;
 			$stmt->bind_param("s", $region);
 			$stmt->execute();
 			return DBUtil::fancy_get_result($stmt);
+		}
+
+		// For the panel's "view details" page: one full row, payload
+		// included. Never sent to the game -- this is the admin reading
+		// what a distribution actually contains, the payloadForSlug()/
+		// activeFor() paths a cartridge calls are separate and unaffected.
+		public static function getById($id) {
+			$db = DBUtil::getInstance()->getDB();
+			$id = (int)$id;
+			$stmt = $db->prepare(
+				"select id, game_region, is_custom, file_id, cost, slug, title, active, spec_version, created_at, payload
+				   from bxt_stadium_distributions
+				  where id = ?");
+			$stmt->bind_param("i", $id);
+			$stmt->execute();
+			return $stmt->get_result()->fetch_assoc();
+		}
+
+		// Decodes a stored payload back into human-readable fields, for
+		// the admin panel's "view details" page. Owner's request,
+		// 2026-09-28: seeing a REAL decoded message (tags and all) is
+		// what actually explains the EUC-JP/markup hint on the compose
+		// form, better than more prose would. Read-only -- never used on
+		// the game-facing serving path, only for display.
+		public static function describePayload($region, $payload) {
+			$format = self::formatFor($region);
+			$stride = self::REPLAY_STRIDE[$format];
+
+			$replayCount = ord($payload[0x000]);
+			$ruleCount = ord($payload[0x001]);
+
+			$replaySlots = [];
+			for ($i = 0; $i < self::REPLAY_SLOTS; $i++) {
+				$offset = 0x004 + $i * $stride;
+				$marker = substr($payload, $offset + $stride - 4, 2);
+				$replaySlots[] = ($marker === "P3") ? "filled" : "empty";
+			}
+
+			$rulesOffset = 0x004 + self::REPLAY_SLOTS * $stride;
+			$ruleSlots = [];
+			for ($i = 0; $i < self::RULE_SLOTS; $i++) {
+				$offset = $rulesOffset + $i * self::RULE_RECORD_SIZE;
+				$marker = substr($payload, $offset + self::RULE_RECORD_SIZE - 4, 2);
+				$ruleSlots[] = ($marker === "P3") ? "filled" : "empty";
+			}
+
+			$messageOffset = $rulesOffset + self::RULE_SLOTS * self::RULE_RECORD_SIZE;
+			$messageMaxLen = 0xFE1 - $messageOffset;
+			$rawMessage = substr($payload, $messageOffset, $messageMaxLen);
+			$terminator = strpos($rawMessage, "\x00");
+			if ($terminator !== false) $rawMessage = substr($rawMessage, 0, $terminator);
+			if ($format === "j") {
+				$messageText = @mb_convert_encoding($rawMessage, "UTF-8", "EUC-JP");
+			} else {
+				$messageText = $rawMessage;
+			}
+
+			$flags = ord($payload[0xFE1]);
+			$flagNames = [];
+			if ($flags & 0x01) $flagNames[] = "Game Boy -> Game Boy Advance";
+			if ($flags & 0x02) $flagNames[] = "Nintendo 64 -> GameCube";
+
+			$fileId = substr($payload, 0xFEA, 16);
+			$fileIdText = ctype_print($fileId) ? $fileId : bin2hex($fileId);
+
+			$frameMarker = substr($payload, 0xFFA, 2);
+			$frameSum = unpack("v", substr($payload, 0xFFC, 2))[1];
+
+			return [
+				"format" => $format,
+				"replay_count" => $replayCount,
+				"rule_count" => $ruleCount,
+				"replay_slots" => $replaySlots,
+				"rule_slots" => $ruleSlots,
+				"message_raw_hex" => bin2hex($rawMessage),
+				"message_text" => $messageText,
+				"flags" => $flags,
+				"flag_names" => $flagNames,
+				"file_id" => $fileIdText,
+				"frame_valid" => $frameMarker === "P3",
+				"frame_sum" => $frameSum,
+			];
 		}
 
 		// Returns bool -- the panel uses this to decide the success/failure

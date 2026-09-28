@@ -1,0 +1,84 @@
+{% extends "admin/layout.twig" %}
+
+{% block admin_title %}{{ 'admin.stadium-details-title'|trans }}{% endblock %}
+
+{% block admin_body %}
+	<p class="admin-form__hint"><a href="/admin/stadium.php?region={{ row.game_region }}">{{ 'admin.stadium-details-back'|trans }}</a></p>
+
+	<table class="admin-table">
+		<tbody>
+			<tr><td>{{ 'admin.gbwars-mbox-region'|trans }}</td><td>{{ row.game_region|upper }} ({{ details.format == 'j' ? 'Japanese' : 'Western' }})</td></tr>
+			<tr>
+				<td>{{ 'admin.stadium-track'|trans }}</td>
+				<td>
+					{% if row.is_custom %}
+						<span class="admin-badge">{{ 'admin.stadium-track-custom'|trans }}</span>
+					{% else %}
+						<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-track-official'|trans }}</span>
+					{% endif %}
+				</td>
+			</tr>
+			<tr><td>{{ 'admin.stadium-slug'|trans }}</td><td><code>{{ row.slug }}</code></td></tr>
+			<tr><td>{{ 'admin.stadium-title-col'|trans }}</td><td>{{ row.title|default('—') }}</td></tr>
+			<tr><td>{{ 'admin.stadium-cost'|trans }}</td><td>{{ row.cost is null ? ('admin.stadium-cost-none'|trans) : row.cost }}</td></tr>
+			<tr>
+				<td>{{ 'admin.stadium-active'|trans }}</td>
+				<td>
+					{% if row.active %}
+						<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-active-yes'|trans }}</span>
+					{% else %}
+						<span class="admin-badge">{{ 'admin.stadium-active-no'|trans }}</span>
+					{% endif %}
+				</td>
+			</tr>
+			<tr><td>{{ 'admin.stadium-details-file-id'|trans }}</td><td><code>{{ details.file_id }}</code></td></tr>
+			<tr>
+				<td>{{ 'admin.stadium-details-frame'|trans }}</td>
+				<td>
+					{% if details.frame_valid %}
+						<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-details-frame-valid'|trans }}</span> (0x{{ '%04X'|format(details.frame_sum) }})
+					{% else %}
+						<span class="admin-badge">{{ 'admin.stadium-details-frame-invalid'|trans }}</span>
+					{% endif %}
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>{{ 'admin.stadium-details-slots-title'|trans }}</h3>
+	<p class="admin-form__hint">{{ 'admin.stadium-details-slots-hint'|trans }} {{ details.replay_count }}/3, {{ details.rule_count }}/5.</p>
+	<table class="admin-table">
+		<thead><tr><th>{{ 'admin.stadium-details-slot-kind'|trans }}</th>
+			{% for n in 1..3 %}<th>{{ n }}</th>{% endfor %}
+			{% for n in 1..5 %}<th>{{ 'admin.stadium-details-rule'|trans }} {{ n }}</th>{% endfor %}
+		</tr></thead>
+		<tbody>
+			<tr>
+				<td>{{ 'admin.stadium-compose-slots'|trans }}</td>
+				{% for s in details.replay_slots %}
+					<td>{% if s == 'filled' %}<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-details-filled'|trans }}</span>{% else %}<span class="admin-badge">{{ 'admin.stadium-details-empty'|trans }}</span>{% endif %}</td>
+				{% endfor %}
+				{% for i in 1..5 %}<td></td>{% endfor %}
+			</tr>
+			<tr>
+				<td>{{ 'admin.stadium-details-rules'|trans }}</td>
+				{% for i in 1..3 %}<td></td>{% endfor %}
+				{% for s in details.rule_slots %}
+					<td>{% if s == 'filled' %}<span class="admin-badge admin-badge--ok">{{ 'admin.stadium-details-filled'|trans }}</span>{% else %}<span class="admin-badge">{{ 'admin.stadium-details-empty'|trans }}</span>{% endif %}</td>
+				{% endfor %}
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>{{ 'admin.stadium-details-flags-title'|trans }}</h3>
+	{% if details.flag_names is empty %}
+		<p class="admin-form__hint">{{ 'admin.stadium-details-flags-none'|trans }}</p>
+	{% else %}
+		<p class="admin-form__hint admin-form__hint--bad">{{ details.flag_names|join(', ') }}</p>
+	{% endif %}
+
+	<h3>{{ 'admin.stadium-details-message-title'|trans }}</h3>
+	<p class="admin-form__hint">{{ 'admin.stadium-details-message-hint'|trans }}</p>
+	<textarea readonly rows="8" style="width:100%;max-width:640px;font-family:monospace">{{ details.message_text }}</textarea>
+	<p class="admin-form__hint">{{ 'admin.stadium-details-message-tags-hint'|trans }}</p>
+{% endblock %}
