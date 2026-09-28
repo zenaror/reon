@@ -98,11 +98,11 @@
 								<option value="1" {% if pokemon_news_custom_opt_in is defined and pokemon_news_custom_opt_in == 1 %}selected{% endif %}>{{ "account.pokemon-news-custom-opt-in-on"|trans }}</option>
 							</select>
 						</div>
-						{# Opcional, e o formulário diz isso em vez de deixar a
-						   pessoa descobrir clicando em enviar. `max` é hoje:
-						   data no futuro não é nascimento. Não há `min` --
-						   quem digitar 1850 recebe o aviso do servidor, que é
-						   quem valida de verdade. #}
+						{# Optional, and the form says so instead of letting the
+						   person find out by clicking submit. `max` is today: a
+						   future date is not a birth date. There is no `min` --
+						   anyone who types 1850 gets the server's warning, which
+						   is what actually validates it. #}
 						<div class="mb-3">
 							<label for="birthDate" class="form-label">{{ "account.birth-date"|trans }}</label>
 
@@ -124,11 +124,11 @@
 							{% endif %}
 						</div>
 
-						{# Opcional de verdade: sem `required`, e o nome só é enviado
-						   quando marcada. O cadastro fecha do mesmo jeito com ela
-						   vazia -- ela existe para a escolha ser feita aqui, à
-						   vista, em vez de ficar só no painel, onde quem nunca
-						   abrir a tela nunca escolhe. #}
+						{# Genuinely optional: no `required`, and the name is only
+						   sent when checked. Sign-up finishes the same way with it
+						   empty -- it exists so the choice is made right here, in
+						   view, instead of only living in the panel, where
+						   whoever never opens that screen never chooses. #}
 						<div class="mb-3">
 							<label class="form-label">{{ "account.rankings-opt-in"|trans }}</label>
 

@@ -1,17 +1,17 @@
-# Tarefas Node. Espelha os timers systemd da produção -- se um lado mudar, o
-# outro tem de mudar junto, e não há nada que force isso além deste comentário.
+# Node jobs. Mirrors production's systemd timers -- if one side changes, the
+# other has to change with it, and nothing enforces that besides this comment.
 #
-# Equivalências (systemd  ->  cron):
+# Equivalences (systemd  ->  cron):
 #   OnCalendar=*-*-* *:0/15:00   ->   */15 * * * *
 #   OnCalendar=*-*-* 00:00:00    ->   0 0 * * *
 #
-# O comentário antigo aqui dizia que "BusyBox cron não suporta 0/15, então
-# temos de listar cada minuto". Não se aplica: quem executa isto é o
-# supercronic (Go), que entende passo. A lista explícita era herança de uma
-# imagem que não usamos mais.
+# The old comment here said "BusyBox cron does not support 0/15, so we have
+# to list every minute". Does not apply: what runs this is supercronic (Go),
+# which understands step syntax. The explicit list was inherited from an
+# image we no longer use.
 #
-# As tarefas PHP moram no docker-php.crontab, porque a imagem do cron Node não
-# tem PHP -- e são três na produção, não zero.
+# The PHP jobs live in docker-php.crontab, because the Node cron image has no
+# PHP -- and there are three of them in production, not zero.
 
 */15 * * * * node /app/auto-schedule/index.js -c /app/config.json
 */15 * * * * node /app/pokemon-exchange/index.js -c /app/config.json

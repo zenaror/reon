@@ -831,8 +831,8 @@ if ($region == "j") {
 // Look up any existing score for this account/trainer/secret in this category and region
         $stmt = $db->prepare(
             "select score
-               from bxt_ranking   -- a tabela, não a view: é a linha da própria pessoa,
-               --                  para decidir entre inserir e atualizar
+               from bxt_ranking   -- the table, not the view: this is the person's own
+               --                  row, to decide between inserting and updating
               where game_region = ?
                 and news_id      = ?
                 and category_id  = ?
@@ -958,13 +958,14 @@ if ($region == "j") {
         }
     }
 
-    // O resultado chegou e foi guardado, mas não vai aparecer para ninguém:
-    // esta conta está fora do ranking. O momento de dizer isso é agora, e
-    // não numa tela que a pessoa talvez nunca abra -- ela acabou de jogar.
+    // The result arrived and was stored, but will not show up for anyone:
+    // this account is out of the rankings. The moment to say so is now, not
+    // on a page the person may never open -- they just finished playing.
     //
-    // addOnce, com janela de 30 dias: isto roda a cada envio, e um lembrete
-    // por partida transformaria o sino em ruído. E vem depois da gravação,
-    // nunca antes: avisar é o acessório, guardar é o trabalho.
+    // addReminder, with a 30-day window: this runs on every upload, and one
+    // reminder per match would turn the bell into noise. And it comes after
+    // the write, never before: telling them is the extra, storing the
+    // result is the job.
     if (!bxt_account_rankings_opt_in($db, $userId)) {
         require_once(dirname(__DIR__, 2) . "/classes/SettingsUtil.php");
         require_once(dirname(__DIR__, 2) . "/classes/NotificationUtil.php");

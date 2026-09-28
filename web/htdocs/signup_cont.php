@@ -18,18 +18,19 @@
 				$optIn = ($_POST["pokemonNewsCustomOptIn"] == "1") ? 1 : 0;
 			}
 
-			// A caixa dos rankings, e ela é opcional de verdade: não entra no
-			// isset() acima, porque caixa desmarcada não é enviada pelo
-			// navegador -- se entrasse, desmarcar reprovaria o cadastro com
-			// um 400 e ninguém entenderia por quê.
+			// The rankings box, and it is genuinely optional: it does not
+			// go into the isset() above, because an unchecked box is not
+			// sent by the browser -- if it did, unchecking it would fail
+			// sign-up with a 400 and nobody would understand why.
 			$rankingsOptIn = isset($_POST["rankingsOptIn"]) ? 1 : 0;
 
-			// Data de nascimento, opcional. Também fora do isset() obrigatório
-			// acima, pelo mesmo motivo da caixa: campo que a pessoa não precisa
-			// preencher não pode reprovar o cadastro.
+			// Date of birth, optional. Also outside the required isset()
+			// above, for the same reason as the box: a field the person
+			// does not have to fill in cannot fail sign-up.
 			$birthDate = (string)($_POST["birthDate"] ?? "");
-			// Normaliza aqui só para devolver ao formulário o que foi digitado
-			// sem propagar lixo; quem decide o que grava é o createUser.
+			// Normalised here only to give the form back what was typed
+			// without propagating garbage; what decides what gets stored is
+			// createUser.
 			$birthDateOk = UserUtil::normalizeBirthDate($birthDate);
 
 			$result = UserUtil::getInstance()->completeSignupAction(
@@ -54,8 +55,9 @@
 				"trade_regions" => $_POST["tradeRegions"],
 				"pokemon_news_custom_opt_in" => $optIn,
 				"rankings_opt_in" => $rankingsOptIn,
-				// Só devolve o que é data; se a pessoa digitou algo que não é,
-				// o campo volta vazio em vez de repetir o erro dela.
+				// Only returns what is actually a date; if the person typed
+				// something that is not one, the field comes back empty
+				// instead of repeating their error.
 				"birth_date" => ($birthDateOk === null ? "" : $birthDateOk),
 				"birth_date_invalid" => ($birthDateOk === null && trim($birthDate) !== "")
 			]);
@@ -80,9 +82,10 @@
 					"pokemon_news_custom_opt_in" => 0,
 					"birth_date" => "",
 					"birth_date_invalid" => false,
-					// A caixa começa no mesmo padrão que a coluna usa. São o
-					// mesmo valor de propósito: se o padrão virar desligado,
-					// a tela de cadastro acompanha sem ninguém lembrar dela.
+					// The box starts at the same default the column uses.
+					// They are the same value on purpose: if the default
+					// ever flips to off, the sign-up screen follows along
+					// with nobody having to remember it.
 					"rankings_opt_in" => UserUtil::RANKINGS_OPT_IN_DEFAULT ? 1 : 0
 				]);
 			} else {

@@ -84,10 +84,11 @@
 			<p class="admin-form__hint">{{ 'admin.tournament-merge'|trans }}</p>
 		{% endif %}
 
-		{# FORA do if acima, de propósito: quem liga o modo precisa saber a
-		   janela ANTES de gravar, não depois de ter uma gravação na lista.
-		   Estava dentro do ramo "existem gravações" e não aparecia na tela
-		   vazia, que é justamente onde o administrador começa. #}
+		{# OUTSIDE the if above, on purpose: whoever turns the mode on needs
+		   to know the window BEFORE recording, not after already having a
+		   recording in the list. This used to sit inside the "recordings
+		   exist" branch and never showed on the empty screen, which is
+		   exactly where an administrator starts. #}
 		<p class="admin-form__hint">{{ 'admin.tournament-retention'|trans({'%days%': retention_days}) }}</p>
 	</section>
 {% endblock %}

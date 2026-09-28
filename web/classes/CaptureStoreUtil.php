@@ -31,22 +31,25 @@
 		// se transforma "baixar log" em "ler qualquer coisa do disco".
 		const NAME = '/^[0-9]{8}T[0-9]{6}-[A-Za-z0-9]+-[A-Za-z0-9]+-(caller|receiver|peer)\.jsonl$/';
 
-		// Quantos dias uma gravação fica no disco antes de ser apagada.
+		// How many days a recording stays on disk before it is deleted.
 		//
-		// Decisão do dono em 25/09/2026, e o número vem do fluxo pretendido:
-		// assim que a partida acaba, baixa-se o arquivo para converter em
-		// replay. Quinze dias é folga para isso, não arquivo morto.
+		// The owner's decision on 2026-09-25, and the number comes from the
+		// intended flow: as soon as the match ends, the file is downloaded
+		// to be converted into a replay. Fifteen days is slack for that, not
+		// a dead archive.
 		//
-		// Quem apaga é o purge_retention.php, e o prazo vive AQUI porque aqui
-		// mora a definição de onde os arquivos estão -- duas constantes em dois
-		// arquivos é como uma das duas fica velha.
+		// purge_retention.php does the deleting, and the window lives HERE
+		// because this is where the definition of where the files are
+		// lives -- two constants in two files is how one of them goes
+		// stale.
 		const RETENTION_DAYS = 15;
 
-		// Apaga as gravações além da janela. Devolve quantas foram.
+		// Deletes recordings past the window. Returns how many.
 		//
-		// Anda por readdir e não por glob para casar o mesmo NAME que o
-		// download usa: um arquivo que não é gravação nossa não é nosso para
-		// apagar, e um diretório de estado do systemd pode ter outras coisas.
+		// Walks readdir rather than glob to match the same NAME pattern the
+		// download uses: a file that is not one of our recordings is not
+		// ours to delete, and a systemd state directory can hold other
+		// things.
 		public function purgeOld($dias = self::RETENTION_DAYS) {
 			if (!$this->readable()) return 0;
 			$limite = time() - ((int)$dias * 86400);

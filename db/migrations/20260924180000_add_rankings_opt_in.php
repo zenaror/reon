@@ -8,26 +8,28 @@ final class AddRankingsOptIn extends AbstractMigration
 {
     public function change(): void
     {
-        // Se o que o jogo manda entra no ranking.
+        // Whether what the game uploads shows up in the rankings.
         //
-        // Até aqui não havia saída: o cartucho mandava, o servidor gravava, e
-        // a página publicava -- sem login para ler e sem lugar nenhum para
-        // desligar. É a divergência 14 do registro de proteção de dados, que
-        // é sobre o PADRÃO e não sobre o campo: o Children's Code britânico
-        // pede que a configuração de privacidade já comece fechada em serviço
-        // que criança acessa.
+        // Until now there was no way out: the cartridge uploaded, the
+        // server stored it, and the page published it -- no login to read
+        // it, and nowhere to turn it off. This is data-protection register
+        // finding 14, which is about the DEFAULT rather than the field: the
+        // UK Children's Code asks that a privacy setting already start
+        // closed in a service children access.
         //
-        // Nasce DESLIGADO, e é isso que fecha a 14: aparecer no ranking passa
-        // a ser uma coisa que a pessoa pede, na caixa do cadastro ou na tela
-        // da conta, em vez de uma coisa que acontece com ela.
+        // Starts OFF, and that is what closes finding 14: appearing in the
+        // rankings becomes something a person asks for, at sign-up or on
+        // the account page, instead of something that happens to them.
         //
-        // Pôde nascer assim sem esconder ninguém porque bxt_ranking estava
-        // VAZIA no dia em que esta coluna chegou ao servidor -- 13 contas,
-        // zero linhas de ranking. Não houve ninguém publicado para sumir.
+        // It could start this way without hiding anyone because bxt_ranking
+        // was EMPTY on the day this column reached the server -- 13
+        // accounts, zero ranking rows. Nobody who was already published
+        // disappeared.
         //
-        // NOT NULL com default: nulo significaria "não sei", e cada leitura
-        // teria de decidir o que fazer com isso. A coluna responde sempre, e
-        // o padrão mora aqui, em UserUtil e em bxt_config -- os três iguais.
+        // NOT NULL with a default: null would mean "don't know", and every
+        // read would have to decide what to do with that. The column always
+        // answers, and the default lives here, in UserUtil and in
+        // bxt_config -- all three the same.
         $this->table('sys_users')
              ->addColumn('rankings_opt_in', 'boolean', [
                  'null' => false,

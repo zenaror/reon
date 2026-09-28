@@ -1,18 +1,26 @@
-# Tarefas PHP. Espelha os timers systemd da produção, como o docker.crontab.
+# PHP jobs. Mirrors production's systemd timers, like docker.crontab.
 #
 #   reon-mail-trash-purge    OnCalendar=*-*-* 04:30:00
+#   reon-retention-purge     OnCalendar=*-*-* 04:45:00
 #   reon-seed-touch          OnCalendar=*-*-* 23:00:00
 #   reon-service-status      OnCalendar=*-*-* *:0/5:00
 #
-# Rodam numa imagem separada porque precisam do PHP e das dependências do
-# composer -- a imagem do cron Node não tem nenhum dos dois. Eram invisíveis
-# aqui até 24/09/2026: existiam na produção e em lugar nenhum do Docker.
+# Run in a separate image because they need PHP and composer's dependencies
+# -- the Node cron image has neither. Were invisible here until 2026-09-24:
+# they existed in production and nowhere in Docker.
 #
-# O seed-touch só atualiza o carimbo das linhas que o seeder já criou, para o
-# dado de demonstração não expirar. Numa instalação sem dado semeado ele não
-# faz nada. Se você não quer dado falso, comente a linha em vez de apagá-la:
-# apagar esconde que a produção tem esse timer.
+# retention-purge was itself missing from this file until 2026-09-28, even
+# though it had already been added to production's systemd timers the day
+# before: the whole point of this file is to mirror production, and it had
+# quietly stopped doing that for one job.
+#
+# seed-touch only refreshes the timestamp on the rows the seeder already
+# created, so the demo data does not expire. On an install with no seeded
+# data it does nothing. If you do not want fake data, comment the line out
+# instead of deleting it: deleting hides the fact that production has this
+# timer.
 
 30 4 * * * php /var/www/reon/web/scripts/purge_mail_trash.php
+45 4 * * * php /var/www/reon/web/scripts/purge_retention.php
 */5 * * * * php /var/www/reon/web/scripts/check_service_status.php
 0 23 * * * php /var/www/reon/maint/seed_pokemon_fake_data.php --touch

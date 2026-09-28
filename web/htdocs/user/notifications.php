@@ -40,9 +40,9 @@
 	if ($page === 1) $notify->markAllRead($userId);
 
 	echo TemplateUtil::render("/user/notifications", [
-		// Mesmo lembrete da página de rankings, pelo mesmo motivo: quem
-		// desligou pode ter esquecido, e é aqui que a pessoa vem ver o que
-		// aconteceu com ela.
+		// Same reminder as the rankings page, for the same reason: whoever
+		// turned it off may have forgotten, and this is where the person
+		// comes to see what happened with them.
 		"rankings_reminder" => (UserUtil::rankingsOptIn($userId) === false),
 		"items" => $items,
 		"page" => $page,

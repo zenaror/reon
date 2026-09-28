@@ -265,10 +265,10 @@ foreach (BOT_ACCOUNTS as $spec) {
             echo "[dry-run] would create sys_users row username={$spec['username']} allowlist={$spec['allowlist']}\n";
             $row = ['id' => 0];
         } else {
-            // rankings_opt_in = 1, explícito: a conta de verdade nasce
-            // desligada, e esta não pode -- a razão de existir destas linhas
-            // é aparecer na página, para conferir layout e paginação. Uma
-            // conta inventada não tem privacidade para proteger.
+            // rankings_opt_in = 1, explicit: a real account is born off, and
+            // this one cannot be -- the whole reason these rows exist is to
+            // show up on the page, to check layout and pagination. A made-up
+            // account has no privacy to protect.
             $stmt = $db->prepare('insert into sys_users (email, username, password, dion_email_local, trade_region_allowlist, timezone, is_admin, passport_seen_at, rankings_opt_in) values (NULL, ?, NULL, ?, ?, ?, 0, now(), 1)');
             $tz = '+0000';
             $stmt->bind_param('ssss', $spec['username'], $spec['local'], $spec['allowlist'], $tz);

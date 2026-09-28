@@ -1,7 +1,7 @@
-# Versões alinhadas com a produção em 24/09/2026. Conferidas na máquina, não
-# escolhidas aqui: PHP 8.5.4, Node 22.11.0, .NET 9.0.317, MySQL 8.4.11,
-# nginx 1.28.3. O Dockerfile estava em PHP 8.3 e Node 25.2, que não existem
-# em lugar nenhum da operação.
+# Versions aligned with production as of 2026-09-24. Checked on the machine,
+# not chosen here: PHP 8.5.4, Node 22.11.0, .NET 9.0.317, MySQL 8.4.11,
+# nginx 1.28.3. The Dockerfile was on PHP 8.3 and Node 25.2, which exist
+# nowhere in the actual operation.
 ARG NODE_VERSION=22-trixie
 ARG NODE_VERSION2=22-alpine
 ARG PHP_VERSION=8.5
@@ -82,23 +82,23 @@ FROM node:${NODE_VERSION2} AS mail
 WORKDIR /app
 COPY --from=mail-deps /app/node_modules ./node_modules
 COPY mail /app
-# 10046, e não 25/110. O serviço deixou de ser servidor de correio em
-# 12/09/2026: o Postfix atende a 25 e o Dovecot a 110, e o `disable_pop3`
-# desligou o POP3 próprio. O que sobrou aqui são os efeitos colaterais que não
-# têm dono do lado do Dovecot -- a cópia em Enviados e a linha no sino --, e
-# eles escutam em 10046 (mail/sideEffects.js).
+# 10046, not 25/110. The service stopped being a mail server on
+# 2026-09-12: Postfix answers 25 and Dovecot answers 110, and `disable_pop3`
+# turned off the built-in POP3. What is left here are the side effects that
+# have no owner on Dovecot's side -- the Sent copy and the bell entry -- and
+# they listen on 10046 (mail/sideEffects.js).
 #
-# Postfix e Dovecot NÃO estão containerizados. Numa instalação Docker pura,
-# este alvo não entrega correio nenhum sozinho; ver setup-script/2-setup-postfix-bridge.sh.
+# Postfix and Dovecot are NOT containerised. In a pure Docker install, this
+# target does not deliver any mail on its own; see setup-script/2-setup-postfix-bridge.sh.
 EXPOSE 10046
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 ### Outbound relay policy
 #
-# Delegação de política do Postfix: ele pergunta, em 10045, se aquele envio
-# pode sair. Mesma base do mail, outro ponto de entrada. Estava ausente do
-# Docker inteiro, embora seja serviço ativo em produção
+# Postfix's policy delegation: it asks, on 10045, whether that send may go
+# out. Same base as mail, a different entry point. Was missing from Docker
+# entirely, even though it is an active service in production
 # (reon-relay-policy.service).
 FROM node:${NODE_VERSION2} AS relay-policy
 WORKDIR /app
@@ -132,15 +132,15 @@ RUN npm ci
 
 # Based on https://github.com/AnalogJ/docker-cron
 FROM node:${NODE_VERSION} AS cron
-# Havia um `RUN` sem argumento nesta linha, e ele quebra o build inteiro --
-# "RUN requires at least one argument". O alvo cron não montava desde que
-# apareceu.
-# libicu76 é o soname do Debian trixie, que é a base do node:22-trixie. Ele
-# existe por causa do binário self-contained do verificador de legalidade
-# (.NET), não do Node. Trocar a base muda o número e o build quebra -- se isso
-# acontecer, a saída sem ICU é
-# ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, que remove a dependência ao
-# preço de comparação de string sensível a cultura.
+# There used to be a `RUN` with no argument on this line, and it broke the
+# whole build -- "RUN requires at least one argument". The cron target had
+# not built since it appeared.
+# libicu76 is the soname from Debian trixie, the base of node:22-trixie. It
+# exists because of the legality checker's self-contained binary (.NET), not
+# because of Node. Changing the base changes the number and the build
+# breaks -- if that happens, the way out without ICU is
+# ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1, which drops the dependency at
+# the cost of culture-sensitive string comparison.
 RUN apt-get -y update \
     && apt-get install -y --no-install-recommends curl tzdata libicu76 \
     && rm -rf /var/lib/apt/lists/*
@@ -185,12 +185,14 @@ CMD ["/usr/local/bin/supercronic", "/etc/cron.d/crontab"]
 
 ### Cron jobs (PHP)
 #
-# Três dos sete timers da produção são PHP, não Node: a limpeza da lixeira do
-# correio, o verificador de status dos serviços e o toque no dado semeado.
-# Estavam ausentes do Docker inteiro -- o alvo cron acima só sabe rodar Node.
+# Four of production's eight timers are PHP, not Node: the mail trash
+# cleanup, the retention purge, the service status check, and the seeded-data
+# touch. They were missing from Docker entirely -- the cron target above only
+# knows how to run Node.
 #
-# Imagem separada em vez de PHP enfiado na imagem do Node: são duas cadeias de
-# dependência que não se misturam, e juntá-las faria cada uma carregar a outra.
+# A separate image instead of PHP squeezed into the Node image: these are two
+# dependency chains that do not mix, and combining them would make each one
+# carry the other.
 FROM php:${PHP_VERSION}-cli AS cron-php
 RUN apt-get -y update \
     && apt-get install -y --no-install-recommends curl tzdata \
@@ -209,8 +211,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
     && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
 WORKDIR /var/www/reon
-# O web inteiro, com o vendor do composer: o purge_mail_trash e o
-# check_service_status carregam as classes de web/classes.
+# The whole web tree, with composer's vendor: purge_mail_trash,
+# purge_retention and check_service_status all load classes from
+# web/classes.
 COPY --from=web-deps /app /var/www/reon/web
 COPY maint/ /var/www/reon/maint/
 COPY app/docker-php.crontab /etc/cron.d/crontab

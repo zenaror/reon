@@ -11,8 +11,9 @@
 {% block content %}
 <div class="trainer-rankings-page">
     <h1 class="trade-corner-title">&#xFF34;&#xFF32;&#xFF21;&#xFF29;&#xFF2E;&#xFF25;&#xFF32;&#x3000;&#xFF32;&#xFF21;&#xFF2E;&#xFF2B;&#xFF29;&#xFF2E;&#xFF27;&#xFF33;</h1>
-    {# Só para quem tem sessão e está de fora: visitante anônimo não tem o
-       que ligar, e quem já está dentro não precisa ouvir isto. #}
+    {# Only for someone with a session who is out: an anonymous visitor
+       has nothing to turn on, and whoever is already in does not need to
+       hear this. #}
     {% if rankings_reminder|default(false) %}
         <div class="alert alert-info trainer-rankings-optin">
             {{ 'account.rankings-reminder'|trans }}

@@ -8,29 +8,31 @@ final class AddBirthDate extends AbstractMigration
 {
     public function change(): void
     {
-        // A data de nascimento da pessoa, dita por ela no cadastro.
+        // The person's date of birth, given by them at sign-up.
         //
-        // Por que existe, já que o servidor recebia uma idade do cartucho: a
-        // idade do jogo é atualizada à mão pela pessoa e envelhece parada, e
-        // chega DEPOIS do cadastro -- tarde para governar qualquer coisa. Uma
-        // data resolve os dois problemas: envelhece sozinha e está disponível
-        // antes da primeira transmissão.
+        // Why it exists, given the server already received an age from the
+        // cartridge: the in-game age is updated by hand by the person and
+        // ages in place, and it arrives AFTER sign-up -- too late to govern
+        // anything. A date solves both problems: it ages on its own and is
+        // available before the first upload.
         //
-        // Por que DATA e não só um sim/não de "tenho 13+", que era a minha
-        // recomendação: decisão do dono em 24/09/2026, para o ranking poder
-        // ser adequado a limiar por país no futuro (12 no Brasil, 13 na COPPA,
-        // 14 no Quebec, 13-16 na GDPR, 18 na Índia). Um booleano de 13 não
-        // responde nenhuma dessas outras perguntas depois.
+        // Why a DATE and not just a yes/no "I am 13+", which was my
+        // recommendation: the owner's decision on 2026-09-24, so the
+        // rankings can be adapted to a per-country threshold in the future
+        // (12 in Brazil, 13 under COPPA, 14 in Quebec, 13-16 under the
+        // GDPR, 18 in India). A 13-only boolean cannot answer any of those
+        // other questions later.
         //
-        // NULL é permitido, e significa "não informou" -- o campo é OPCIONAL
-        // no cadastro, por decisão dele: o registro é livre, o que a data
-        // governa é o ranking. Quem não informar continua sob a regra antiga,
-        // o filtro pela idade que o cartucho manda.
+        // NULL is allowed, and means "did not provide" -- the field is
+        // OPTIONAL at sign-up, by his decision: registration stays free,
+        // what the date governs is the rankings. Whoever does not provide
+        // it stays under the old rule, the filter on the age the cartridge
+        // sends.
         //
-        // Nunca é exibida a ninguém. E não é o mesmo dado que
-        // bxt_ranking.player_age: aquele vem do cartucho, este vem do site, e
-        // confundir os dois já rendeu bug antes com as três identidades da
-        // conta.
+        // Never shown to anyone. And it is not the same data as
+        // bxt_ranking.player_age: that one comes from the cartridge, this
+        // one from the site, and confusing the two has already produced a
+        // bug before, with the account's three identities.
         $this->table('sys_users')
              ->addColumn('birth_date', 'date', [
                  'null' => true,

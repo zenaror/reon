@@ -1,139 +1,139 @@
-# Como subir uma distribuição nova do Mobile Stadium
+# How to ship a new Mobile Stadium distribution
 
-Este é o "como usar". Para o formato de bytes em si e o porquê de cada
-regra, ver `spec.md` — este guia não repete aquilo, só o caminho de ponta a
-ponta.
+This is the "how to use it" guide. For the byte format itself and the
+reasoning behind each rule, see `spec.md` -- this guide doesn't repeat that,
+just the end-to-end path.
 
-## O caminho, em três passos
+## The path, in three steps
 
-1. **Gerar o par `<slug>.bin` + `<slug>.json`** — a partir de um save já
-   testado, com `make_distribution.py` (linha de comando) ou, quando
-   existir, o botão "Compilar dados para REON" do plugin do PKHeX no
-   emulador. Os dois produzem exatamente o mesmo par; o botão é a versão
-   com interface do mesmo script.
-2. **Importar** com `maint/import_stadium_distribution.php`. Valida o
-   formato e grava no banco — **nunca ativa sozinho**.
-3. **Ativar** em `/admin/stadium.php`, por região. É aqui, e só aqui, que o
-   conteúdo passa a ser servido a qualquer console que peça.
+1. **Generate the `<slug>.bin` + `<slug>.json` pair** -- from an
+   already-tested save, with `make_distribution.py` (command line) or,
+   where available, the "Compile data for REON" button in the PKHeX plugin
+   on the emulator. Both produce exactly the same pair; the button is the
+   UI version of the same script.
+2. **Import** with `maint/import_stadium_distribution.php`. Validates the
+   format and writes to the database -- **never activates on its own**.
+3. **Activate** at `/admin/stadium.php`, per region. This is where, and
+   only where, the content starts being served to any console that asks
+   for it.
 
-Nenhum passo pula o anterior: o importador recusa um `.bin` malformado
-antes de chegar ao banco, e uma linha só aparece no painel depois de
-importada.
+No step skips the previous one: the importer rejects a malformed `.bin`
+before it reaches the database, and a row only shows up in the panel after
+it's been imported.
 
-## Passo 1 — gerar o par
+## Step 1 -- generate the pair
 
 ```
-python3 docs/mobile-stadium/make_distribution.py <save.sav> <diretório-de-saída> \
+python3 docs/mobile-stadium/make_distribution.py <save.sav> <output-directory> \
     --slug <slug> \
-    --file-id <16 caracteres> \
+    --file-id <16 characters> \
     [--region j|e|p|u|d|f|i|s] \
-    [--message "<mensagem do dia, com marcação do Stadium>"] \
-    [--flags <byte das flags do Delibird>] \
+    [--message "<message of the day, with Stadium markup>"] \
+    [--flags <Delibird flags byte>] \
     [--cost null|0|N] \
     [--battles N] \
-    [--title "<descrição livre, só para o painel>"]
+    [--title "<free-form description, panel only>"]
 ```
 
-- **`<save.sav>`** precisa ter o bloco de download já montado em `0xF000`
-  (0x1000 bytes) — ou seja, um save que alguém já testou no emulador contra
-  o Mobile Stadium, com as batalhas que se quer distribuir gravadas nele.
-  O script não monta batalha nenhuma; ele só troca os campos de uma
-  distribuição já pronta.
-- **`--slug`** vira o nome do arquivo servido (sem extensão, sem prefixo de
-  custo) e o identificador da linha no banco. `[a-z0-9-]`, até 40
-  caracteres.
-- **`--file-id`** tem que ser **novo** — 16 caracteres ASCII, únicos por
-  região. É assim que o jogo decide "isto é diferente do que eu já tenho" e
-  oferece o download. Reaproveitar um valor faz o jogo dizer "você só tem
-  os mesmos dados de novo" e nunca baixar.
-- **`--message`**, omitido, mantém a mensagem que já estava gravada no
-  save (normalmente a de quem gerou o save de teste — **provavelmente não
-  é o que se quer distribuir**). Passe a sua própria, com a marcação do
-  Stadium (`<FONT LOAD nn>`, `<LINE nn>`, etc. — ver `spec.md` para a
-  sintaxe).
-- **`--flags`**, o byte de flags do Delibird. **Cuidado com isto**: os
-  bits `0x01` (Game Boy → Game Boy Advance) e `0x02` (Nintendo 64 →
-  GameCube) trocam a plataforma do jogador **de forma permanente**, e o
-  Stadium não desfaz. Salvo intenção clara, use `0`.
-- **`--cost`** decide quem pode baixar, e a escolha recomendada é `0`:
-  exige sessão autenticada e não cobra nada do jogador (ver a tabela em
-  `spec.md` §5.4). Sem prefixo (`null`) libera o download **sem
-  autenticação nenhuma** — não é o padrão para conteúdo que carrega nome
-  de treinador e time.
-- **`--region`** é a letra que o servidor usa (`j`/`e`/`p`/`u`/`d`/`f`/`i`/`s`),
-  não o código de 4 letras. Para as sete regiões ocidentais o conteúdo do
-  `.bin` é byte-idêntico entre si — gere uma vez por região mesmo assim,
-  porque cada uma precisa do seu próprio par no formato de importação.
+- **`<save.sav>`** needs to already have the download block assembled at
+  `0xF000` (0x1000 bytes) -- i.e. a save someone has already tested on the
+  emulator against Mobile Stadium, with the battles to be distributed
+  already recorded in it. The script doesn't assemble any battle; it only
+  swaps the fields of an already-ready distribution.
+- **`--slug`** becomes the name of the served file (no extension, no cost
+  prefix) and the row's identifier in the database. `[a-z0-9-]`, up to 40
+  characters.
+- **`--file-id`** must be **new** -- 16 ASCII characters, unique per
+  region. This is how the game decides "this is different from what I
+  already have" and offers the download. Reusing a value makes the game
+  say "you already have the same data again" and it never downloads.
+- **`--message`**, if omitted, keeps whatever message was already recorded
+  in the save (normally whoever generated the test save's -- **probably
+  not what you want to distribute**). Pass your own, with Stadium markup
+  (`<FONT LOAD nn>`, `<LINE nn>`, etc. -- see `spec.md` for the syntax).
+- **`--flags`**, the Delibird flags byte. **Be careful with this one**:
+  bits `0x01` (Game Boy -> Game Boy Advance) and `0x02` (Nintendo 64 ->
+  GameCube) switch the player's platform **permanently**, and Stadium
+  doesn't undo it. Unless that's clearly intended, use `0`.
+- **`--cost`** decides who can download it, and the recommended choice is
+  `0`: requires an authenticated session and charges the player nothing
+  (see the table in `spec.md` §5.4). No prefix (`null`) opens the download
+  up **with no authentication at all** -- not the default for content that
+  carries a trainer name and team.
+- **`--region`** is the letter the server uses (`j`/`e`/`p`/`u`/`d`/`f`/`i`/`s`),
+  not the 4-letter code. For the seven western regions the `.bin` content
+  is byte-identical across them -- generate one per region anyway, because
+  each needs its own pair in the import format.
 
-O resultado são dois arquivos em `<diretório-de-saída>/`:
-`<slug>.bin` (o bloco, exatamente 0xFFE bytes) e `<slug>.json` (os
-metadados). Não edite o `.bin` à mão — qualquer byte alterado invalida a
-soma que o próprio script já calculou.
+The result is two files in `<output-directory>/`: `<slug>.bin` (the
+block, exactly 0xFFE bytes) and `<slug>.json` (the metadata). Don't edit
+the `.bin` by hand -- any changed byte invalidates the checksum the script
+already computed.
 
-## Passo 2 — importar
+## Step 2 -- import
 
-No servidor (é lá que o banco vive):
-
-```
-php maint/import_stadium_distribution.php <caminho/para/slug.json>
-```
-
-ou, para vários pares de uma vez (por exemplo, uma região por
-subdiretório):
+On the server (that's where the database lives):
 
 ```
-php maint/import_stadium_distribution.php --dir <diretório>
+php maint/import_stadium_distribution.php <path/to/slug.json>
 ```
 
-O importador confere, antes de gravar: o tamanho exato (0xFFE bytes), o
-File ID do `.json` batendo com o que está gravado dentro do próprio
-`.bin`, e a moldura `P3`+soma no fim do bloco — essa última é a mesma
-verificação que faltava nos dois arquivos antigos do upstream, e é o que
-faz o Stadium listar a distribuição em vez de mostrar uma lista vazia.
-Qualquer um desses pontos falhando, ele recusa com uma mensagem dizendo
-qual, e não grava nada.
+or, for several pairs at once (for example, one region per subdirectory):
 
-A linha nasce **inativa**. Reimportar o mesmo File ID é seguro — o
-importador recusa a duplicata com uma mensagem clara, não derruba nada.
+```
+php maint/import_stadium_distribution.php --dir <directory>
+```
 
-## Passo 3 — ativar
+Before writing, the importer checks: the exact size (0xFFE bytes), the
+`.json`'s File ID matching what's recorded inside the `.bin` itself, and
+the `P3`+checksum frame at the end of the block -- that last check is the
+one missing from the two old upstream files, and it's what makes Stadium
+list the distribution instead of showing an empty list. If any of these
+fail, it refuses with a message saying which one, and writes nothing.
 
-Em `/admin/stadium.php?region=<letra>`, a distribuição aparece na lista
-com o botão **Ativar**. Só depois desse clique ela entra no `menu.cgb` que
-o jogo baixa e passa a ser oferecida de verdade.
+The row is born **inactive**. Re-importing the same File ID is safe -- the
+importer rejects the duplicate with a clear message, without breaking
+anything.
 
-Duas coisas para saber antes de clicar:
+## Step 3 -- activate
 
-- **Só a primeira entrada elegível de cada sessão é baixada.** Ativar mais
-  de uma distribuição na mesma região só faz sentido como janelas de tempo
-  que não se sobrepõem (ver `spec.md` §5.3) — nunca deixe uma distribuição
-  antiga ativa "atrás" de uma nova com a mesma janela: quem já tem a nova
-  recebe a antiga oferecida de novo, alternando.
-- **Desativar não apaga a linha nem o arquivo.** Um console que já baixou
-  aquele bloco continua com ele — desativar só impede *novos* downloads.
-  Isso é o mesmo tipo de limite que existe do lado do jogador: uma vez que
-  o Game Boy tem o bloco, o servidor não alcança mais aquela cópia.
+At `/admin/stadium.php?region=<letter>`, the distribution shows up in the
+list with an **Activate** button. Only after that click does it enter the
+`menu.cgb` the game downloads and start actually being offered.
 
-## Verificar antes de confiar
+Two things to know before clicking:
 
-`crystal_check.py` modela as mesmas checagens que o Crystal e o Stadium
-fazem, sem precisar de emulador nem console:
+- **Only the first eligible entry per session gets downloaded.** Activating
+  more than one distribution in the same region only makes sense as
+  non-overlapping time windows (see `spec.md` §5.3) -- never leave an old
+  distribution active "behind" a new one with the same window: whoever
+  already has the new one gets the old one offered again, alternating.
+- **Deactivating doesn't delete the row or the file.** A console that has
+  already downloaded that block keeps it -- deactivating only stops *new*
+  downloads. This is the same kind of limit that exists on the player's
+  side: once the Game Boy has the block, the server can no longer reach
+  that copy.
+
+## Verify before trusting it
+
+`crystal_check.py` models the same checks Crystal and Stadium perform,
+without needing an emulator or a console:
 
 ```
 python3 docs/mobile-stadium/crystal_check.py <menu.cgb> <payload.bin> [save.sav]
 ```
 
-Ele diz se o payload seria aceito, se a moldura é válida (ou seja, se o
-Stadium vai listar a distribuição), e o preço que apareceria na tela. É a
-mesma ferramenta usada para validar cada payload deste projeto antes de
-ativá-lo em produção — vale rodar contra o seu par antes do passo 2, não
-só depois.
+It reports whether the payload would be accepted, whether the frame is
+valid (i.e. whether Stadium will list the distribution), and the price
+that would show on screen. It's the same tool used to validate every
+payload in this project before activating it in production -- worth
+running against your own pair before step 2, not just after.
 
-## Procedência
+## Provenance
 
-`spec.md`, `crystal_check.py` e este próprio `make_distribution.py` vieram
-da sessão "PKHeX Linux Port", lidos do disassembly do Crystal — não são
-trabalho do lado do servidor. Cada arquivo carrega seu próprio cabeçalho
-dizendo isso. Este README é a exceção: foi escrito do lado do servidor,
-para documentar o fluxo que os três arquivos acima já permitiam, mas que
-nenhum deles explicava sozinho.
+`spec.md`, `crystal_check.py`, and this same `make_distribution.py` came
+from the "PKHeX Linux Port" session, read off the Crystal disassembly --
+they are not server-side work. Each file carries its own header saying so.
+This README is the exception: it was written on the server side, to
+document the flow that the three files above already allowed, but that
+none of them explained on its own.

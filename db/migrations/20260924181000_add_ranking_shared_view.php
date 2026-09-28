@@ -8,48 +8,51 @@ final class AddRankingSharedView extends AbstractMigration
 {
     public function up(): void
     {
-        // O que pode ser MOSTRADO do ranking.
+        // What of the rankings may be SHOWN.
         //
-        // O dado continua sendo gravado como sempre: o cartucho manda, o
-        // servidor guarda. O que esta view governa é a publicação -- a página
-        // aberta e a tabela que o jogo mostra aos outros jogadores.
+        // The data keeps being written as always: the cartridge sends it,
+        // the server stores it. What this view governs is publication --
+        // the open page and the table the game shows other players.
         //
-        // É uma view e não um `where` repetido porque os pontos de leitura
-        // são NOVE: oito no news.php, que monta o que o jogo vê, e um na
-        // página. Espalhar a mesma condição por nove consultas é garantir
-        // que um dia alguém acrescente a décima e esqueça -- e o modo de
-        // falhar é publicar dado de quem não pediu para ser publicado, em
-        // silêncio. Aqui a regra existe uma vez.
+        // It is a view rather than a repeated `where` because the read
+        // sites are NINE: eight in news.php, which builds what the game
+        // sees, and one on the page. Spreading the same condition across
+        // nine queries guarantees that someone will eventually add a tenth
+        // and forget -- and the failure mode is silently publishing the
+        // data of someone who asked not to be published. Here the rule
+        // exists once.
         //
-        // São duas condições, e elas são independentes de propósito:
+        // There are two conditions, and they are independent on purpose:
         //
-        // 1) A PREFERÊNCIA DA CONTA. Desligada por padrão (ver a coluna
-        //    rankings_opt_in): aparecer é uma coisa que a pessoa pede.
-        //    O COALESCE cobre a linha sem conta correspondente, e trata o
-        //    desconhecido como o padrão -- ninguém escolheu, então não
-        //    publica.
+        // 1) THE ACCOUNT'S PREFERENCE. Off by default (see the
+        //    rankings_opt_in column): appearing is something the person
+        //    asks for. The COALESCE covers a row with no matching account,
+        //    treating the unknown as the default -- nobody chose, so it
+        //    does not publish.
         //
-        // 2) A IDADE DECLARADA NO JOGO, abaixo de 13, que não publica
-        //    independentemente da preferência. A COPPA dispara com
-        //    conhecimento de fato, e guardar um campo de idade que diz 9 é
-        //    conhecimento de fato; guardar e ignorar seria a pior
-        //    combinação.
+        // 2) THE AGE DECLARED IN THE GAME, under 13, which does not publish
+        //    regardless of the preference. COPPA triggers on actual
+        //    knowledge, and storing an age field that reads 9 is actual
+        //    knowledge; storing it and ignoring it would be the worst
+        //    combination.
         //
-        //    O número é ruim de duas maneiras: é autodeclarado dentro do
-        //    jogo, e é ATUALIZADO À MÃO pela pessoa -- o jogo não mexe nele
-        //    sozinho, então uma idade digitada uma vez fica lá envelhecendo
-        //    enquanto a pessoa cresce. Por isso ele entra só na direção
-        //    protetiva. Quem mente para cima não fica protegido, mas já não
-        //    estaria; uma idade velha que diz 12 quando a pessoa já tem 15
-        //    protege quem não precisava, e esse erro é barato e do lado
-        //    certo. O que ela nunca faz é LIBERAR alguém.
+        //    The number is weak in two known ways: it is self-declared
+        //    inside the game, and it is UPDATED BY HAND by the person -- the
+        //    game never touches it on its own, so an age typed once sits
+        //    there ageing while the person grows up. That is why it is used
+        //    only in the protective direction. Someone who lies upward
+        //    gains no protection, but would not have had any anyway; a
+        //    stale age that reads 12 when the person is already 15
+        //    protects someone who did not need it, and that mistake is
+        //    cheap and on the right side. What it never does is let
+        //    someone IN.
         //
-        //    Idade ausente ou zero não esconde: é "não informado", não é
-        //    "criança", e a condição 1 já governa esse caso.
+        //    A missing or zero age does not hide: it means "not provided",
+        //    not "a child", and condition 1 already governs that case.
         //
-        // ATENÇÃO: o `r.*` é expandido na criação. Se bxt_ranking ganhar
-        // coluna, esta view precisa ser recriada, ou a coluna nova não
-        // aparece para quem lê por aqui.
+        // WARNING: `r.*` is expanded at creation time. If bxt_ranking gains
+        // a column, this view needs to be recreated, or the new column
+        // will not appear to whoever reads through here.
         $this->execute(
             "CREATE OR REPLACE VIEW bxt_ranking_shared AS
              SELECT r.*
