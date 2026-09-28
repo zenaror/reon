@@ -464,6 +464,10 @@ setup_php_web() {
     mkdir -p /var/log/reon
     chown "$SYS_USER:$SYS_GROUP" /var/log/reon
     chmod 1770 /tmp/reon
+    # /tmp/reon is also the pool's temp dir, and the site keeps its compiled
+    # templates and parsed translations in /tmp/reon/reon-twig-<uid>/ (see
+    # TemplateUtil). It has to stay writable by the pool user: without it
+    # every page re-parses the locale files (~0.5 s each instead of ~50 ms).
 
     log_info "Running composer install (this can take a while on a small VM)"
     # No --no-dev: phinx (the migration runner used below) lives in

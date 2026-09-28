@@ -10,8 +10,15 @@
 
 		private final function  __construct() {
 			$loader = new \Twig\Loader\FilesystemLoader(dirname(__DIR__)."/templates");
+
+			// Compiled templates are cached instead of being re-parsed on
+			// every request (the larger cost, the locale files, is handled
+			// in getTranslator). auto_reload stays on, so a template changed
+			// by a deploy is recompiled at its next request -- deploys by scp
+			// keep working unchanged.
+			$cacheRoot = self::cacheRoot();
 			$this->twig = new \Twig\Environment($loader, [
-				'cache' => false,
+				'cache' => $cacheRoot !== null ? $cacheRoot . "/twig" : false,
 				'auto_reload' => true,
 			]);
 			$this->twig->addExtension(new \Symfony\Bridge\Twig\Extension\TranslationExtension(self::getTranslator()));
@@ -26,6 +33,18 @@
 				$mtime = @filemtime($file);
 				return $mtime ? $path . '?v=' . $mtime : $path;
 			}));
+		}
+
+		// Where compiled templates and translations are cached, or null when
+		// there is nowhere writable (the page then just runs uncached).
+		//
+		// Per user id: the site (php-fpm) and the command-line jobs run as
+		// different users, and a cache written by one that the other cannot
+		// overwrite would break rendering for whichever comes second.
+		private static function cacheRoot() {
+			$dir = sys_get_temp_dir() . "/reon-twig-" . getmyuid();
+			if (!is_dir($dir)) @mkdir($dir, 0700, true);
+			return (is_dir($dir) && is_writable($dir)) ? $dir : null;
 		}
 
 		public static function render($template, $vars = null) {
@@ -104,7 +123,15 @@
 			}
 
 			$locale = SessionUtil::getInstance()->getLocale();
-			$translator = new \Symfony\Component\Translation\Translator($locale);
+			// Parsing the locale files was the biggest cost of every page: all
+			// seven were parsed once to validate them and again by the
+			// translator, about 0.9 s of CPU per request on this machine. The
+			// translator now keeps compiled catalogues on disk; with $debug on
+			// it re-checks the files' modification times, so a locale edited
+			// by a deploy is picked up at its next request.
+			$cacheRoot = self::cacheRoot();
+			$translator = new \Symfony\Component\Translation\Translator(
+				$locale, null, $cacheRoot !== null ? $cacheRoot . "/translations" : null, true);
 			$translator->setFallbackLocales(['en']);
 
 			if (!class_exists('\Symfony\Component\Translation\Loader\YamlFileLoader')) {
@@ -116,6 +143,10 @@
 			$translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
 
 			$supported_locales = ['en', 'es', 'de', 'ja', 'it', 'fr', 'pt-br'];
+			$validatedFile = $cacheRoot !== null ? $cacheRoot . "/locales-validated.json" : null;
+			$validated = ($validatedFile !== null && is_file($validatedFile))
+				? (json_decode((string)@file_get_contents($validatedFile), true) ?: []) : [];
+			$validatedChanged = false;
 			foreach ($supported_locales as $l) {
 				$path = dirname(__DIR__) . '/locales/' . $l . '.yml';
 				if (!is_file($path)) {
@@ -123,7 +154,10 @@
 				}
 
 				try {
-					if (class_exists('\Symfony\Component\Yaml\Yaml')) {
+					// The YAML is validated only when the file changed since it
+					// last passed (remembered by modification time and size).
+					$stamp = @filemtime($path) . ":" . @filesize($path);
+					if (($validated[$l] ?? null) !== $stamp && class_exists('\Symfony\Component\Yaml\Yaml')) {
 						$raw = @file_get_contents($path);
 						if (!is_string($raw) || $raw === '') {
 							throw new \RuntimeException("Locale file is empty or unreadable");
@@ -133,12 +167,21 @@
 						$sanitized = preg_replace('/^\s*---\s*(\r?\n)/m', '', $sanitized);
 						$sanitized = preg_replace('/^\s*\.\.\.\s*(\r?\n)/m', '', $sanitized);
 						\Symfony\Component\Yaml\Yaml::parse($sanitized);
+						$validated[$l] = $stamp;
+						$validatedChanged = true;
 					}
 
 					$translator->addResource('yaml', $path, $l);
 				} catch (\Throwable $e) {
 					error_log("Skipping invalid locale YAML [{$l}] at {$path}: " . $e->getMessage());
 				}
+			}
+
+			if ($validatedChanged && $validatedFile !== null) {
+				// Written aside and renamed, so a concurrent request never
+				// reads half a file.
+				$tmp = $validatedFile . "." . getmypid() . ".tmp";
+				if (@file_put_contents($tmp, json_encode($validated)) !== false) @rename($tmp, $validatedFile);
 			}
 
 			self::$translator = $translator;

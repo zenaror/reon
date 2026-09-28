@@ -73,6 +73,18 @@ order, all idempotent:
   vulnerabilities that need no major version change (does not force
   upgrades that could break the code).
 - `apt-get clean` at the end so no package cache piles up.
+- The site caches compiled templates and the parsed translations under
+  `/tmp/reon/reon-twig-<uid>/` (the pool's temp dir, created and owned by the
+  pool user by `setup_php_web`). Without that cache every page re-parses seven
+  locale files and takes about half a second even when it is trivial; with it,
+  10-80 ms. Nothing to configure: the cache is rebuilt by itself when a
+  template or a locale file changes, so updating the code by copying files
+  needs no cache clearing. If `/tmp/reon` is not writable by the pool user the
+  site still works, only slowly -- check that first if pages get slow.
+- The list of usernames nobody may register (`system`, `nintendo`, `admin`,
+  ...) is a database table filled by a migration (`sys_reserved_usernames`),
+  so it needs no step here; it is edited from the admin panel under Users ->
+  Reserved names. A fresh install starts with the seeded list.
 
 ## Logs
 

@@ -11,6 +11,14 @@ require_once(CORE_PATH.'/magbtest_log.php');
 	// the path is a /MAGBTEST/ fixture.
 	magbtestLog('upload');
 
+	// The game always sends ?name=. Without it (a scanner, a stray request)
+	// there is nothing to serve: refuse plainly instead of logging a PHP
+	// warning per hit.
+	if (!isset($_GET["name"]) || !is_string($_GET["name"])) {
+		http_response_code(400);
+		exit;
+	}
+
 	doAuth();
     serveFileOrExecScript($_GET["name"], "upload");
 

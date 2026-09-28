@@ -8,6 +8,12 @@
 	require_once(CORE_PATH.'/core.php');
 	require_once(CORE_PATH.'/auth.php');
     
+	// The game always sends ?name=; without it there is nothing to serve.
+	if (!isset($_GET["name"]) || !is_string($_GET["name"])) {
+		http_response_code(400);
+		exit;
+	}
+
 	$sessionId = doAuth(1);
 	if (isset($sessionId)) {
 		if (is_int($sessionId) && $sessionId == 0) {
