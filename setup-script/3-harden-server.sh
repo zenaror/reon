@@ -8,7 +8,10 @@
 # Covers:
 #   - fail2ban: bans repeat offenders against sshd and Postfix (both plain
 #     connection abuse and SASL auth failures) — this server gets constant
-#     scanner/bot traffic on 22/25/110, confirmed in its own logs.
+#     scanner/bot traffic on 22/25/110, confirmed in its own logs. Also
+#     installs REON's own jails from examples/fail2ban/: web scanners probing
+#     for .env/.git/phpunit/WordPress files (reon-web-scan) and POP3 auth
+#     failures (reon-pop3).
 #   - SSH: no root login, no password auth (key-only), no X11 forwarding.
 #     Only applied if at least one user already has a key in
 #     authorized_keys, specifically to avoid locking out remote access —
@@ -29,6 +32,8 @@ if [[ $EUID -ne 0 ]]; then
     echo "Run as root (sudo bash harden-server.sh)." >&2
     exit 1
 fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 c_reset=$'\033[0m'; c_red=$'\033[31m'; c_green=$'\033[32m'; c_yellow=$'\033[33m'; c_blue=$'\033[34m'
 log_step()  { printf '\n%s==>%s %s\n' "$c_blue"  "$c_reset" "$*"; }
@@ -61,9 +66,30 @@ enabled = true
 [postfix-sasl]
 enabled = true
 EOF
+    install_reon_jails
     systemctl enable --now fail2ban
     systemctl restart fail2ban
-    log_info "fail2ban active -- jails: sshd, postfix, postfix-sasl."
+    log_info "fail2ban active -- jails: sshd, postfix, postfix-sasl, reon-web-scan, reon-pop3."
+}
+
+# REON's own jails live in examples/fail2ban/ (with the reasoning for every
+# number in them). Copied, not re-typed here, so there is one copy to edit.
+# Found next to the script in the repo layout, or under reon/ in the packaged
+# layout. reon-web-scan reads nginx's reon.access.log, so run this after
+# 1-setup-reon.sh (the log has to exist before the jail starts).
+install_reon_jails() {
+    local src="" d
+    for d in "$SCRIPT_DIR/../examples/fail2ban" "$SCRIPT_DIR/reon/examples/fail2ban"; do
+        if [[ -f "$d/reon-web-scan.filter.conf" ]]; then src="$d"; break; fi
+    done
+    if [[ -z "$src" ]]; then
+        log_warn "examples/fail2ban not found next to this script -- REON's web-scanner and POP3 jails were NOT installed."
+        return
+    fi
+    install -m 644 "$src/reon-web-scan.filter.conf" /etc/fail2ban/filter.d/reon-web-scan.conf
+    install -m 644 "$src/reon-web-scan.jail.conf"   /etc/fail2ban/jail.d/reon-web-scan.conf
+    install -m 644 "$src/reon-pop3.jail.conf"       /etc/fail2ban/jail.d/reon-pop3.conf
+    log_info "Installed the reon-web-scan and reon-pop3 jails from $src"
 }
 
 harden_ssh() {
