@@ -8,7 +8,7 @@ order, all idempotent:
 | --- | --- |
 | `1-setup-reon.sh` | everything below: packages, MySQL, PHP, Node, .NET, Python, dnsmasq, nginx, HTTPS, systemd units |
 | `2-setup-postfix-bridge.sh` | Postfix in front of the game's mail: real internet e-mail in and out |
-| `3-harden-server.sh` | fail2ban, key-only SSH, unused services off, nginx security headers |
+| `3-harden-server.sh` | fail2ban (sshd, Postfix, POP3 and a web-scanner jail that bans addresses probing for `.env`/`.git`/phpunit/WordPress files), key-only SSH, unused services off, nginx security headers |
 | `4-harden-bots.sh` | blocks search/AI crawlers by User-Agent (re-run after every `1-setup-reon.sh`) |
 
 ## Usage
