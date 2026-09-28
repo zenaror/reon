@@ -1322,7 +1322,7 @@ admin:
   news-upload-failed: アップロードに失敗しました。
   panel: 管理
   nav-dashboard: ダッシュボード
-  nav-game-content: "ゲームコンテンツ"
+  nav-game-content: "DLC"
   games-intro: "まずゲームを選び、次に管理する内容を選びます。"
   games-mobile-trainer: "モバイルトレーナー"
   games-back: "← すべてのゲーム"

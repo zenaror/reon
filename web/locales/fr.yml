@@ -1348,7 +1348,7 @@ admin:
   news-upload-failed: L'envoi a échoué.
   panel: Administration
   nav-dashboard: Tableau de bord
-  nav-game-content: "Contenu des jeux"
+  nav-game-content: "DLCs"
   games-intro: "Choisissez un jeu, puis ce qu'il faut gérer."
   games-mobile-trainer: "Mobile Trainer"
   games-back: "← Tous les jeux"

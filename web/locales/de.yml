@@ -1283,7 +1283,7 @@ admin:
   news-upload-failed: Das Hochladen ist fehlgeschlagen.
   panel: Verwaltung
   nav-dashboard: Übersicht
-  nav-game-content: "Spielinhalte"
+  nav-game-content: "DLCs"
   games-intro: "Zuerst ein Spiel wählen, dann was verwaltet werden soll."
   games-mobile-trainer: "Mobile Trainer"
   games-back: "← Alle Spiele"

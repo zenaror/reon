@@ -404,7 +404,7 @@ admin:
   news-upload-failed: Falha no envio.
   panel: "Admin"
   nav-dashboard: "Painel"
-  nav-game-content: "Conteúdo de Jogos"
+  nav-game-content: "DLCs"
   games-intro: "Escolha um jogo e depois o que gerenciar."
   games-mobile-trainer: "Mobile Trainer"
   games-back: "← Todos os jogos"
