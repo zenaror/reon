@@ -243,18 +243,130 @@ HELPEREOF
 chown root:root "$HELPER"
 chmod 0755 "$HELPER"
 
+# The ban list (admin panel -> Banned IPs) gets its own helper and its own
+# sudoers entry instead of more verbs on the one above: this one can only ever
+# talk to fail2ban, so widening either helper never widens the other.
+BAN_HELPER=/usr/local/sbin/reon-ban-ctl
+BAN_SUDOERS=/etc/sudoers.d/reon-ban
+
+cat > "$BAN_HELPER" <<'BANHELPEREOF'
+#!/usr/bin/env bash
+# Lists, adds and removes fail2ban bans for the admin panel. Called through
+# exactly one sudoers entry, separate from reon-admin-ctl's: this one can only
+# ever talk to fail2ban, and only in the three ways below.
+#
+#   reon-ban-ctl list             every current ban, as JSON
+#   reon-ban-ctl ban <ip>         ban in the manual jail (web + mail ports)
+#   reon-ban-ctl unban <ip>       lift the ban from every jail
+#
+# The address is never trusted: it is parsed as an IP before anything else
+# happens, and a ban is refused unless it is a public address -- so the panel
+# cannot be used to cut off localhost, the private network or a reserved
+# range. The jail for a manual ban is fixed here, not taken from the caller.
+set -euo pipefail
+
+MANUAL_JAIL=reon-manual
+verb="${1:-}"
+ip="${2:-}"
+
+# exit 0 public address, 1 not an address, 3 an address that is not public
+check_ip() {
+	python3 - "$1" <<'PY'
+import ipaddress, sys
+try:
+    a = ipaddress.ip_address(sys.argv[1])
+except ValueError:
+    sys.exit(1)
+sys.exit(0 if a.is_global else 3)
+PY
+}
+
+case "$verb" in
+	list)
+		python3 <<'PY'
+import json, re, sqlite3, subprocess
+
+def run(*cmd):
+    return subprocess.run(cmd, capture_output=True, text=True).stdout
+
+status = run("fail2ban-client", "status")
+jails = []
+for line in status.splitlines():
+    if "Jail list" in line:
+        jails = [j.strip() for j in line.split(":", 1)[1].split(",") if j.strip()]
+
+db = sqlite3.connect("file:/var/lib/fail2ban/fail2ban.sqlite3?mode=ro", uri=True)
+out = []
+for jail in jails:
+    for line in run("fail2ban-client", "get", jail, "banip", "--with-time").splitlines():
+        m = re.match(r"^(\S+)\s+(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) \+ (-?\d+) = (\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)", line)
+        if not m:
+            continue
+        ip, since, seconds, until = m.groups()
+        row = db.execute(
+            "select bancount, data from bans where jail=? and ip=? order by timeofban desc limit 1",
+            (jail, ip)).fetchone()
+        matches = []
+        count = 1
+        if row:
+            count = row[0]
+            try:
+                matches = json.loads(row[1]).get("matches", [])
+            except Exception:
+                matches = []
+        out.append({
+            "jail": jail, "ip": ip, "since": since,
+            "until": None if int(seconds) < 0 else until,
+            "count": count,
+            "matches": [str(x)[:200] for x in matches[:3]],
+        })
+print(json.dumps(out))
+PY
+		;;
+	ban)
+		rc=0; check_ip "$ip" || rc=$?
+		if [ "$rc" -eq 1 ]; then echo "refused: $ip is not an IP address" >&2; exit 64; fi
+		if [ "$rc" -ne 0 ]; then echo "refused: $ip is not a public address" >&2; exit 2; fi
+		if ! fail2ban-client status "$MANUAL_JAIL" >/dev/null 2>&1; then
+			echo "refused: the $MANUAL_JAIL jail is not running (install it with 3-harden-server.sh)" >&2
+			exit 4
+		fi
+		fail2ban-client set "$MANUAL_JAIL" banip "$ip"
+		;;
+	unban)
+		rc=0; check_ip "$ip" || rc=$?
+		if [ "$rc" -eq 1 ]; then echo "refused: $ip is not an IP address" >&2; exit 64; fi
+		# A non-public address cannot have been banned through the panel, but
+		# lifting a ban is always harmless, so it is allowed.
+		fail2ban-client unban "$ip"
+		;;
+	*)
+		echo "usage: reon-ban-ctl list | ban <ip> | unban <ip>" >&2
+		exit 64
+		;;
+esac
+BANHELPEREOF
+
+chown root:root "$BAN_HELPER"
+chmod 0755 "$BAN_HELPER"
+
 cat > "$SUDOERS" <<SUDOEOF
 # The admin panel's service controls. One command, no password, nothing else.
 $WEB_USER ALL=(root) NOPASSWD: $HELPER
 SUDOEOF
 
-chown root:root "$SUDOERS"
-chmod 0440 "$SUDOERS"
+cat > "$BAN_SUDOERS" <<SUDOEOF
+# The admin panel's ban list. One command, no password, nothing else.
+$WEB_USER ALL=(root) NOPASSWD: $BAN_HELPER
+SUDOEOF
+
+chown root:root "$SUDOERS" "$BAN_SUDOERS"
+chmod 0440 "$SUDOERS" "$BAN_SUDOERS"
 
 # A malformed sudoers file locks the machine's sudo entirely, so it is
 # checked before it is left in place.
-if ! visudo -c -f "$SUDOERS"; then
-	rm -f "$SUDOERS"
+if ! visudo -c -f "$SUDOERS" || ! visudo -c -f "$BAN_SUDOERS"; then
+	rm -f "$SUDOERS" "$BAN_SUDOERS"
 	echo "sudoers entry was rejected and has been removed; nothing was granted." >&2
 	exit 1
 fi

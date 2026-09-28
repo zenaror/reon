@@ -1,8 +1,8 @@
 # Server setup scripts
 
 Install REON + mobile-relay straight onto a VM (no Docker), sized for an
-Oracle Cloud Always Free instance with 1 GB of RAM. Four scripts, run in
-order, all idempotent:
+Oracle Cloud Always Free instance with 1 GB of RAM. Five scripts, run in
+order, all idempotent (the fifth is optional):
 
 | script | what it does |
 | --- | --- |
@@ -10,6 +10,7 @@ order, all idempotent:
 | `2-setup-postfix-bridge.sh` | Postfix in front of the game's mail: real internet e-mail in and out |
 | `3-harden-server.sh` | fail2ban (sshd, Postfix, POP3 and a web-scanner jail that bans addresses probing for `.env`/`.git`/phpunit/WordPress files), key-only SSH, unused services off, nginx security headers |
 | `4-harden-bots.sh` | blocks search/AI crawlers by User-Agent (re-run after every `1-setup-reon.sh`) |
+| `5-admin-control.sh` | what the admin panel's Services page and Banned IPs page need: two small root helpers (`reon-admin-ctl`, `reon-ban-ctl`), each behind a single sudoers entry. Optional; without it the panel says so and does nothing |
 
 ## Usage
 
