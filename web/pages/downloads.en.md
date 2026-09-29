@@ -22,11 +22,9 @@ Start with the [guide](/guide.php) — it also hands you your
     <a class="reon-chrome-btn" href="#" data-download-for="pick">Download</a>
   </div>
 </div>
-<div class="reon-note">※ The same emulator also builds for the
-<strong>Nintendo 3DS</strong>, the <strong>Wii</strong> and the
-<strong>Switch</strong>. Those are not handed out here — get them, and their
-instructions, from <a href="https://github.com/zenaror/mgba">the project on
-GitHub</a>.</div>
+<div class="reon-note">※ The same emulator also has builds for other devices.
+Those are not handed out here — get them, and their instructions, from
+<a href="https://github.com/zenaror/mgba">the project on GitHub</a>.</div>
 <!-- Only the PC builds are offered from this page; every other build is a
      link to the repository that maintains it, so there is no second copy
      here to go stale. BGB + libmobile-bgb is deliberately absent from the
@@ -40,10 +38,27 @@ problems with them to the emulators' original authors.</div>
      "Other ways to connect", apontando para
      https://github.com/zenaror/PicoAdapterGB -->
 
-## Games and patches
+## Game patches
 
-[To be written: patches that restore each game's online features, and
-where to get them.]
+<div class="reon-note"><strong>Do you need a patch?</strong> Not if you already
+have the <strong>Japanese</strong> version of the game. Those were made to go
+online, so they connect to the server just as they are.</div>
+
+The patches here are for the other versions. A patch is a small file that
+holds a list of changes: you give it your own copy of the game, it makes the
+changes, and you get a new version. Some add the online part to a game that
+never had it; some translate the game (Game Boy Wars 3 becomes English).
+Nothing here is, or contains, a software backup: you bring your own.
+
+To use one, pick the game below and get the exact original it names. Open
+that original and the patch together in a patching program (for example
+[Floating IPS](https://github.com/Alcaro/Flips)) and save the result. If the
+program says no, your copy is a different edition from the one the patch was
+made for; compare it with the original's SHA-1 shown below, which works like
+a fingerprint. The patched file's SHA-1 is the fingerprint the finished game
+should have.
+
+<!--reon:patches-->
 
 <!-- A seção "For developers" (ROM de teste do Mobile Adapter GB) foi tirada
      por ora, a pedido do dono. O texto anterior era:

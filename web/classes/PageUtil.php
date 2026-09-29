@@ -2,6 +2,7 @@
 	require_once("TemplateUtil.php");
 	require_once("SessionUtil.php");
 	require_once("ServiceStatusUtil.php");
+	require_once("PatchListUtil.php");
 	require_once(__DIR__."/../vendor/autoload.php");
 
 	use League\CommonMark\CommonMarkConverter;
@@ -42,7 +43,7 @@
 			echo TemplateUtil::render("page", [
 				"nav_item" => $nav_item,
 				"page_title" => $title,
-				"html" => self::renderCached($file, $markdown),
+				"html" => PatchListUtil::fill(self::renderCached($file, $markdown)),
 				"services" => $services,
 				"page_file" => basename($file),
 			]);
@@ -56,7 +57,7 @@
 			$file = self::fileFor($slug, $locale);
 			if ($file === null) return null;
 			[, $markdown] = self::split(file_get_contents($file));
-			return self::renderCached($file, $markdown);
+			return PatchListUtil::fill(self::renderCached($file, $markdown));
 		}
 
 		// render() through a small file cache. Converting a page's Markdown

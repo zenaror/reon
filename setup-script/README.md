@@ -1,8 +1,8 @@
 # Server setup scripts
 
 Install REON + mobile-relay straight onto a VM (no Docker), sized for an
-Oracle Cloud Always Free instance with 1 GB of RAM. Five scripts, run in
-order, all idempotent (the fifth is optional), plus two helpers:
+Oracle Cloud Always Free instance with 1 GB of RAM. Six scripts, run in
+order, all idempotent (the fifth and sixth are optional), plus two helpers:
 
 | script | what it does |
 | --- | --- |
@@ -11,6 +11,7 @@ order, all idempotent (the fifth is optional), plus two helpers:
 | `3-harden-server.sh` | fail2ban (jails: `sshd`, `postfix`, `reon-pop3` — repeated failed POP3 logins, `reon-web-scan` — addresses probing for `.env`/`.git`/phpunit/WordPress files, and `reon-manual` — the bans an admin adds by hand), key-only SSH (only when a real login key exists for the invoking user), unused services off, nginx security headers, restart-on-failure for nginx, dovecot and dnsmasq |
 | `4-harden-bots.sh` | blocks search/AI crawlers by User-Agent (re-run after every `1-setup-reon.sh`) |
 | `5-admin-control.sh` | what the admin panel's Services page and Banned IPs page need: two small root helpers (`reon-admin-ctl`, `reon-ban-ctl`), each behind a single sudoers entry. Optional; without it the panel says so and does nothing |
+| `6-setup-rom-patches.sh` | the game-patch routine behind the Downloads page: build packages, rgbds 0.6.1 and 1.0.3 built from source (checked against a SHA-256), the `reonpatch` user and `/var/lib/reon-patches`, `reon-patch-build` and its daily timer. Optional. The official ROMs are not part of it: they are put away once with `reon-patch-build add-rom`. See `maint/rom-patches/README.md` |
 | `pull-backups.sh` | not part of the install: run it from your own computer to copy the nightly backups (databases and the mailbox archive) off the server over SSH |
 | `reon-menu.sh` | the terminal menu; installed as `reon-menu` by script 1 |
 
@@ -28,7 +29,7 @@ order, all idempotent (the fifth is optional), plus two helpers:
    - `reon/config.json`
    - `mobile-relay/config.ini`
 3. Run as root: `sudo bash reon/setup-script/1-setup-reon.sh`, then the
-   other four in order (2, 3, 4 and, if you want the admin panel's controls, 5).
+   other five in order (2, 3, 4 and, if you want them, 5 for the admin panel's controls and 6 for the game patches).
 4. Run them again whenever you want to update (re-running is safe).
 
 ## What it installs

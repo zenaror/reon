@@ -53,6 +53,7 @@
 			"reon-mail-bottle"      => ["kind" => "job",    "label" => "Mail de Cute"],
 			"reon-mail-trash-purge" => ["kind" => "job",    "label" => "Mail trash purge"],
 			"reon-service-status"   => ["kind" => "job",    "label" => "Service status probe"],
+			"reon-patch-build"      => ["kind" => "job",    "label" => "Game patches"],
 			// Reachable through the button on the row above and nowhere else;
 			// `hidden` keeps it off the listing so it is never taken for a
 			// scheduled job of its own.

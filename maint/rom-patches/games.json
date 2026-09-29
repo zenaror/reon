@@ -1,0 +1,91 @@
+{
+	"_comment": "Catalog for reon-patch-build. One entry per game repository; games sharing a `family` are one choice on the Downloads page, and each base ROM's `region` is what the player picks inside it. `bases` are the official ROMs a patch is made against, identified by SHA-1 only: the tool looks them up in its private ROM directory by that hash and never publishes them. Adding a game = adding an entry here (see README.md).",
+	"games": [
+		{
+			"id": "pokecrystal-mobile-eng",
+			"family": "pokecrystal",
+			"family_title": "Pokémon Crystal",
+			"title": "Pokémon Crystal",
+			"language": "en",
+			"repo": "https://github.com/gb-mobile/pokecrystal-mobile-eng",
+			"rgbds": "0.6.1",
+			"rgbds_style": "prefix",
+			"output": "pokecrystal.gbc",
+			"bases": [
+				{"id": "usa", "region": "USA", "label": "Pokémon Crystal Version (USA)", "sha1": "f4cd194bdee0d04ca4eac29e09b8e4e9d818c133"},
+				{"id": "usa-rev1", "region": "USA, Europe (Rev 1)", "label": "Pokémon Crystal Version (USA, Europe) (Rev 1)", "sha1": "f2f52230b536214ef7c9924f483392993e226cfb"}
+			]
+		},
+		{
+			"id": "pokecrystal-mobile-fra",
+			"family": "pokecrystal",
+			"family_title": "Pokémon Crystal",
+			"title": "Pokémon Cristal",
+			"language": "fr",
+			"repo": "https://github.com/gb-mobile/pokecrystal-mobile-fra",
+			"rgbds": "0.6.1",
+			"rgbds_style": "prefix",
+			"output": "pokecrystal.gbc",
+			"bases": [
+				{"id": "fra", "region": "France", "label": "Pokémon Version Cristal (France)", "sha1": "c055992b16b7399c687647725cdd1f4f13a2f75c"}
+			]
+		},
+		{
+			"id": "pokecrystal-mobile-ger",
+			"family": "pokecrystal",
+			"family_title": "Pokémon Crystal",
+			"title": "Pokémon Kristall-Edition",
+			"language": "de",
+			"repo": "https://github.com/gb-mobile/pokecrystal-mobile-ger",
+			"rgbds": "0.6.1",
+			"rgbds_style": "prefix",
+			"output": "pokecrystal.gbc",
+			"bases": [
+				{"id": "ger", "region": "Germany", "label": "Pokémon Kristall-Edition (Germany)", "sha1": "accb584293ba056152f1fd908439b019017ff2fe"}
+			]
+		},
+		{
+			"id": "pokecrystal-mobile-ita",
+			"family": "pokecrystal",
+			"family_title": "Pokémon Crystal",
+			"title": "Pokémon Versione Cristallo",
+			"language": "it",
+			"repo": "https://github.com/gb-mobile/pokecrystal-mobile-ita",
+			"rgbds": "0.6.1",
+			"rgbds_style": "prefix",
+			"output": "pokecrystal.gbc",
+			"bases": [
+				{"id": "ita", "region": "Italy", "label": "Pokémon Versione Cristallo (Italy)", "sha1": "6cee05e5b95beeae74b8365ad18ec4a07a8c4af8"}
+			]
+		},
+		{
+			"id": "pokecrystal-mobile-spa",
+			"family": "pokecrystal",
+			"family_title": "Pokémon Crystal",
+			"title": "Pokémon Edición Cristal",
+			"language": "es",
+			"repo": "https://github.com/gb-mobile/pokecrystal-mobile-spa",
+			"rgbds": "0.6.1",
+			"rgbds_style": "prefix",
+			"output": "pokecrystal.gbc",
+			"bases": [
+				{"id": "spa", "region": "Spain", "label": "Pokémon Edición Cristal (Spain)", "sha1": "889a06fc0bb863666865aa69def0adf97945ac2a"}
+			]
+		},
+		{
+			"id": "gbwars3-en",
+			"family": "gbwars3",
+			"family_title": "Game Boy Wars 3",
+			"title": "Game Boy Wars 3 (English)",
+			"language": "en",
+			"repo": "https://github.com/REONTeam/gbwars3-en",
+			"rgbds": "1.0.3",
+			"rgbds_style": "tools",
+			"output": "GBWARS3.gbc",
+			"build_base": "baserom.gbc",
+			"bases": [
+				{"id": "jpn", "region": "Japan", "label": "Game Boy Wars 3 (Japan)", "sha1": "61e08f96261b5f85c65c70db5464b4298f9f2cf8"}
+			]
+		}
+	]
+}

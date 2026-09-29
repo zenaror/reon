@@ -131,7 +131,46 @@
 		});
 	}
 
-	function start() { init(); initPickers(); }
+	// The patch chooser on the Downloads page (PatchListUtil): the menu picks
+	// the game, the game's region radios (when it has several) pick the patch,
+	// and the checked radio's data-* attributes fill the [data-field] cells
+	// while the button follows its value.
+	function initPatchPicker() {
+		document.querySelectorAll("[data-patch-picker]").forEach(function (card) {
+			var select = card.querySelector("select");
+			var sets = card.querySelectorAll("fieldset[data-family]");
+			if (!select || !sets.length) return;
+			function cell(name) { return card.querySelector('[data-field="' + name + '"]'); }
+			function apply() {
+				var chosen = null;
+				sets.forEach(function (fs) {
+					var mine = fs.dataset.family === select.value;
+					fs.hidden = !mine || fs.dataset.single === "1";
+					if (mine) chosen = fs;
+				});
+				card.querySelectorAll("[data-family-note]").forEach(function (n) {
+					n.hidden = n.dataset.familyNote !== select.value;
+				});
+				if (!chosen) return;
+				var radio = chosen.querySelector("input:checked") || chosen.querySelector("input");
+				if (!radio) return;
+				radio.checked = true;
+				var d = radio.dataset;
+				[["base", d.base], ["base-sha1", d.baseSha1], ["result-sha1", d.resultSha1],
+				 ["size", d.size], ["date", d.date]].forEach(function (f) {
+					var el = cell(f[0]);
+					if (el) el.textContent = f[1] || "";
+				});
+				var button = cell("button");
+				if (button) button.href = radio.value;
+			}
+			select.addEventListener("change", apply);
+			sets.forEach(function (fs) { fs.addEventListener("change", apply); });
+			apply();
+		});
+	}
+
+	function start() { init(); initPickers(); initPatchPicker(); }
 
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", start);

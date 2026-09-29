@@ -662,6 +662,16 @@ _nginx_app_locations() {
         fastcgi_pass unix:${PHP_FPM_SOCK};
     }
 
+    # Game patches (.bps) built by reon-patch-build. Only that folder: the ROMs
+    # the patches are made against are elsewhere and not readable by nginx.
+    location /patches/ {
+        alias /var/lib/reon-patches/public/;
+        autoindex off;
+        default_type application/octet-stream;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
     location / {
         try_files \$uri \$uri/ =404;
     }
@@ -1457,7 +1467,7 @@ exec journalctl -u reon-pokemon-battle.service -u reon-pokemon-exchange.service 
                 -u reon-auto-schedule.service -u reon-mail-bottle.service \
                 -u reon-mail-trash-purge.service -u reon-retention-purge.service \
                 -u reon-service-status.service -u reon-db-backup.service \
-                -u reon-session-sweep.service -f
+                -u reon-session-sweep.service -u reon-patch-build.service -f
 EOF
 
     cat > "$d/reon-logs-all.sh" <<EOF
@@ -1470,7 +1480,7 @@ exec journalctl -u reon-mail.service -u reon-mobile-relay.service \
                 -u reon-auto-schedule.service -u reon-mail-bottle.service \
                 -u reon-mail-trash-purge.service -u reon-retention-purge.service \
                 -u reon-service-status.service -u reon-db-backup.service \
-                -u reon-session-sweep.service -f
+                -u reon-session-sweep.service -u reon-patch-build.service -f
 EOF
 
     cat > "$d/reon-logs-files.sh" <<'EOF'
