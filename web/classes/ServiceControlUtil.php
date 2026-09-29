@@ -34,6 +34,7 @@
 			"reon-relay-policy"     => ["kind" => "daemon", "label" => "External mail policy"],
 			"nginx"                 => ["kind" => "daemon", "label" => "Web server"],
 			"postfix"               => ["kind" => "daemon", "label" => "Postfix"],
+			"dovecot"               => ["kind" => "daemon", "label" => "Dovecot (POP3, mailboxes)"],
 			"reon-pokemon-exchange" => ["kind" => "job",    "label" => "Trade Corner"],
 			"reon-pokemon-battle"   => ["kind" => "job",    "label" => "Battle Tower"],
 			// `extra` is a second, on-demand unit this job can also be run as.

@@ -1,31 +1,45 @@
 # Dovecot do REON
 
-A configuração que o servidor usa. Instalar assim:
+A configuração que o servidor usa. **Quem instala é o
+`setup-script/2-setup-postfix-bridge.sh`** (função `configure_dovecot`): pacotes,
+o usuário `vmail`, `99-reon.conf`, o `dovecot-sql.conf.ext` gerado a partir do
+`config.json` (com uma senha do doveadm sorteada uma vez), o drop-in do host do
+APOP e o filtro Sieve com os domínios do `config.json`. Rodar de novo é seguro.
+
+À mão, o equivalente é:
 
     99-reon.conf              -> /etc/dovecot/conf.d/99-reon.conf
-    dovecot-sql.conf.ext      -> /etc/dovecot/dovecot-sql.conf.ext   (root:dovecot 0640)
+    dovecot-sql.conf.ext      -> /etc/dovecot/dovecot-sql.conf.ext   (root:reon 0640)
+    reon-delivery.sieve       -> /etc/dovecot/sieve/reon-delivery.sieve  (sievec depois)
 
 O `.example` do segundo arquivo é o que sobe para o git; o de verdade guarda
-senha em claro e fica só no servidor.
+senha em claro e fica só no servidor. O grupo é `reon` (o usuário do serviço de
+correio) porque o doveadm lê a configuração inteira como quem o invoca.
 
 ## O que esta configuração decide
 
-O Dovecot é o dono do armazenamento de correspondência; o MySQL continua sendo
-o cadastro de contas e nada mais. O Postfix entrega por LMTP, o webmail e o
-nosso POP3 leem pelo socket do `doveadm`.
+O Dovecot é o dono do armazenamento de correspondência e da porta 110; o MySQL
+continua sendo o cadastro de contas e nada mais. O Postfix entrega por LMTP e o
+webmail lê pelo socket do `doveadm`. O nosso POP3 em Node está desligado
+(`disable_pop3` no `config.json`).
 
-Autenticação é **só APOP e CRAM-MD5**. `plain` e `login` estão desligados de
-propósito: o segredo é a chave de device-auth de 32 bytes, e deixar a senha de
-oito caracteres valendo ao lado dela seria oferecer a porta fraca junto com a
-forte. Adaptador que não sabe APOP não busca correio -- é a mesma postura que
-se tinha com o XAPOP, e é decisão do dono.
+Autenticação: **APOP e CRAM-MD5** com a chave de device-auth de 32 bytes (o
+segredo é a chave em 64 caracteres hex), e `plain`/`login` com a senha de oito
+caracteres **atrás de um interruptor do painel** (`sys_settings.pop3_password_fallback`,
+padrão ligado no repositório; **desligado neste servidor, por decisão do dono**).
+Com o interruptor fechado, ou sem chave, ou com a **conta banida**, a consulta
+devolve `*` como senha, que não casa com nada: a linha não some porque o
+`doveadm` resolve o usuário pela mesma consulta, e uma consulta sem linha
+deixaria a caixa ilegível, webmail junto. Banir bloqueia todas as portas do
+serviço; esta é a do POP3.
 
 ## Portas
 
-    110     o NOSSO POP3 (Node), que fala com o Game Boy hoje
-    10110   POP3 do Dovecot, só localhost, alvo de desenvolvimento dos
-            adaptadores enquanto eles não sabem APOP
-    10143   IMAP, só localhost
+    110     POP3 do Dovecot, aberta para a internet: é por ela que o Game Boy
+            busca o correio
+    10143   IMAP, só para desenvolvimento. No Dovecot 2.4 o endereço é global,
+            então ele escuta em todas as interfaces e é o firewall que o
+            mantém fora da internet
 
 ## `dovecot-hostname.conf.example`
 

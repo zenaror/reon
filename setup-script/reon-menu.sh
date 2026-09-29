@@ -8,7 +8,7 @@
 set -u
 
 SVC=(reon-mail reon-mobile-relay reon-relay-policy nginx php8.5-fpm postfix dovecot mysql dnsmasq fail2ban)
-JOBS=(reon-pokemon-battle reon-pokemon-exchange reon-auto-schedule reon-mail-bottle reon-mail-trash-purge reon-retention-purge reon-service-status reon-db-backup)
+JOBS=(reon-pokemon-battle reon-pokemon-exchange reon-auto-schedule reon-mail-bottle reon-mail-trash-purge reon-retention-purge reon-service-status reon-db-backup reon-session-sweep)
 
 # Only ask for sudo when we are not root already.
 if [ "$(id -u)" -eq 0 ]; then S=""; else S="sudo"; fi
@@ -51,7 +51,7 @@ follow_logs() {
 		mail)        $S journalctl -f -u reon-mail -u reon-relay-policy -u postfix -u dovecot ;;
 		"mobile relay") $S journalctl -f -u reon-mobile-relay ;;
 		web*)        $S journalctl -f -u nginx -u php8.5-fpm ;;
-		jobs*)       $S journalctl -f -u reon-pokemon-battle -u reon-pokemon-exchange -u reon-auto-schedule -u reon-mail-bottle ;;
+		jobs*)       $S journalctl -f -u reon-pokemon-battle -u reon-pokemon-exchange -u reon-auto-schedule -u reon-mail-bottle -u reon-mail-trash-purge -u reon-retention-purge -u reon-service-status -u reon-db-backup -u reon-session-sweep ;;
 		Activity*)   $S tail -n 40 -F /var/log/reon/activity.log ;;
 		PHP*)        $S tail -n 40 -F /var/log/reon/php-error.log ;;
 		nginx*)      $S tail -n 30 -F /var/log/nginx/reon.access.log /var/log/nginx/reon.error.log ;;
@@ -82,7 +82,7 @@ run_job() {
 bans() {
 	bold "Banned addresses"
 	if [ -x /usr/local/sbin/reon-ban-ctl ]; then
-		$S /usr/local/sbin/reon-ban-ctl list | head -c 4000; echo
+		$S /usr/local/sbin/reon-ban-ctl list | python3 -m json.tool 2>/dev/null | head -n 60 || true
 	else
 		$S fail2ban-client banned
 	fi

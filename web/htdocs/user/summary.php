@@ -199,7 +199,7 @@
 			"dion_email" => $result["dion_email_local"]."@".ConfigUtil::getInstance()->getConfig()["email_domain_dion"],
 			"username" => $result["username"],
 			// Both forms reach the same inbox: the full name, and the
-			// 8-character one the games are limited to (see deliver.js).
+			// 8-character one the games are limited to (see docs/OPERATIONS.md and mail/gameFormat.js).
 			"external_email" => $result["username"]."@".ConfigUtil::getInstance()->getConfig()["email_domain"],
 			"external_email_short" => $result["dion_email_local"]."@".ConfigUtil::getInstance()->getConfig()["email_domain"],
 			"log_in_password" => $result["log_in_password"],

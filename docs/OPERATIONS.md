@@ -111,11 +111,15 @@ legality checker's raw dumps are `debug`.
 - Every non-system MySQL database (the site's, and the relay's when it uses
   MySQL) is dumped to `/var/backups/reon/mysql-<db>-<UTC stamp>.sql.gz`; the
   relay's SQLite file, if that is what it uses, to `relay-*.db.gz`. Kept 7 days.
+- The mailboxes (Dovecot's Maildir under `/var/vmail`) are tarred every night
+  to `vmail-<UTC stamp>.tar.gz` next to the dumps; the databases no longer hold
+  any message. Restore one account: extract `vmail/<box>` from the tar into
+  `/var/vmail/` (as `vmail`), or the whole tree when the box is gone.
 - The folder is `0700 root`, the files `0600`: a dump holds every password
   hash and game login password.
 - Rotation is by age (`find -mtime +7` on everything directly in the folder),
-  so manual copies left there (`vmail-*`, `caixa-*`...) disappear on their own
-  after 7 days.
+  so manual copies left there (`caixa-*`...) disappear on their own after 7
+  days.
 - It is a copy on the same disk. `setup-script/pull-backups.sh <user@host>
   [key] [dest]` pulls `/var/backups/reon` to another machine over SSH (it runs
   `sudo -n tar` remotely and keeps the `0700`/`0600` modes locally). Run it
@@ -180,8 +184,8 @@ Jails (config in `/etc/fail2ban/`, sources in `examples/fail2ban/`, installed by
 
 | jail | what it catches | ports | ban |
 | --- | --- | --- | --- |
-| `sshd`, `postfix`, `postfix-sasl` | brute force on SSH and SMTP | default | 1 h |
-| `reon-pop3` | repeated POP3 login failures (Dovecot filter) | 110 | 1 h |
+| `sshd`, `postfix` | brute force on SSH and SMTP (Postfix has no SASL here, so no `postfix-sasl` jail); the server and the operator (`ignoreip`) are never banned | default | 1 h |
+| `reon-pop3` | 10 failed POP3 logins within 10 min. Its own filter (`reon-pop3`), **not** fail2ban's stock `dovecot` one: that one does not recognise the line Dovecot 2.4 writes (`... (auth failed, N attempts in S secs) (auth_failed) ...`) and the jail sat at "Total failed: 0" for weeks. Check with `fail2ban-regex systemd-journal reon-pop3` | 110 | 1 h |
 | `reon-web-scan` | web scanners: 3 requests within 10 min for `.env`, `.git`, phpunit, WordPress, phpMyAdmin, `phpinfo`, `HNAP1`, `config.json`, cgi-bin traversal... A plain 404 or a bare `../` is deliberately not matched | http, https | 1 day, doubling for repeat offenders, up to 1 week |
 | `reon-manual` | nothing: holds the bans added by hand from the panel | web + mail ports, never SSH | 30 days |
 
@@ -194,13 +198,39 @@ From the shell: `fail2ban-client status reon-web-scan`,
 ## systemd
 
 - Services this repo installs (`reon-mail`, `reon-mobile-relay`,
-  `reon-relay-policy`) have `Restart=on-failure`. nginx and dovecot get the
-  same from a drop-in (`/etc/systemd/system/<unit>.service.d/reon-restart.conf`,
+  `reon-relay-policy`) have `Restart=on-failure`. nginx, dovecot and dnsmasq
+  get the same from a drop-in (`/etc/systemd/system/<unit>.service.d/reon-restart.conf`,
   `3-harden-server.sh`), since the distribution ships them without one.
 - Timers: the game jobs (`reon-pokemon-*`, `reon-auto-schedule`,
   `reon-mail-bottle`), `reon-service-status` (every 5 min),
   `reon-mail-trash-purge` (04:30), `reon-retention-purge` (04:45, applies the
-  retention windows to the database tables), `reon-db-backup` (03:30).
+  retention windows to the database tables), `reon-db-backup` (03:30),
+  `reon-session-sweep` (hourly), `reon-monthly-reboot` (the 15th, 04:15 UTC).
+  `reon-auto-schedule-refresh` is a unit with no timer: the panel runs it on
+  demand (Services -> Auto schedule -> refresh).
+- `/tmp` is tmpfs and is emptied at every boot; `/etc/tmpfiles.d/reon.conf`
+  recreates `/tmp/reon` (sessions and the Twig cache) and exempts it from the
+  10-day `/tmp` cleanup. `vm.swappiness` lives in `/etc/sysctl.d/99-reon.conf`
+  (`/etc/sysctl.conf` is not read by this systemd).
+
+## What a ban of an account blocks
+
+A ban (admin panel, Users) has to close every door, and each one checks
+`sys_users.banned_at` itself:
+
+| door | where |
+| --- | --- |
+| web login, and a session that was already open | `login.php`, `SessionUtil::isSessionActive()` (read each request, the session is emptied) |
+| the game's HTTP auth (downloads, uploads, rankings) | `validateAuthData()` in `web/cgb/auth.php`: answered like a wrong password |
+| device-auth (`authorize`, `query`) | `DeviceAuthUtil` |
+| POP3 | Dovecot's passdb query returns `*` as the password for a banned account (`examples/dovecot/99-reon.conf`); the row must not disappear, `doveadm` resolves the user through it |
+| the game's SMTP | Postfix `smtpd_sender_restrictions` with `mysql-banned-sender.cf` (`REJECT Account suspended`), for our own domains only; `permit_mynetworks` first, so the local jobs still run |
+| external relay | `relayPolicy.js` |
+| the P2P relay | `mobile-relay` (`account_banned`, refused with the "blocked" reason byte) |
+
+A new door needs its own check; there is no central switch. Mail addressed TO a
+banned account is still accepted and kept (nobody reads it until the ban is
+lifted).
 
 ## Admin panel (`/admin`)
 

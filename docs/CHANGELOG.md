@@ -12,13 +12,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### reon-mail — SMTP, POP3 e relay de saída
 
-* **A correspondência saiu do MySQL e foi para o Dovecot.** O servidor do
+* **A correspondência saiu do MySQL e foi para o Dovecot** — e o `2-setup-postfix-bridge.sh` passou a instalar esse desenho (pacotes, usuário `vmail`, configuração, filtro Sieve, chaves do `config.json`), então um servidor novo nasce assim. O servidor do
   REONTeam guarda e-mail em Postfix + Dovecot; o nosso guardava numa tabela,
   e essa era a peça que impedia o nosso código de rodar lá. Agora é o mesmo
   armazém: o Postfix entrega por LMTP, o Dovecot guarda em Maildir, e o
   MySQL segue sendo o cadastro de contas — e só isso. O que era coluna virou
-  marca do IMAP (`read_at` → `\Seen`, coletada pelo jogo → `$Retrieved`,
-  lixeira → pasta `Trash`)
+  marca do IMAP (`read_at` → `$WebRead`, coletada pelo jogo →
+  `\Seen`/`$Retrieved`, apagada pelo jogo → `$DeletedByGame`, lixeira → pasta
+  `Trash`)
   * Tudo o que fazemos de diferente continua valendo: a formatação para o
     Mobile Trainer, a limpeza de cabeçalhos, a entrega byte a byte da
     correspondência de jogo, o relay para o que sai para a internet. O que
@@ -26,8 +27,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   * POP3 e webmail passaram a ler a MESMA caixa. Mandar para a lixeira no
     site tira a mensagem do jogo, e restaurar devolve — conferido byte a
     byte nos dois sentidos
-  * As doze mensagens que existiam foram migradas com remetente, data
-    original e estado (lida, coletada, apagada) preservados
+  * O correio que já existia foi migrado com remetente, data original e estado
+    (lida, coletada, apagada) preservados (`maint/migrate_mail_to_dovecot.js`,
+    e `maint/shape_existing_mail.js` para moldar o que já estava guardado)
   * **A porta 110 passou a ser do Dovecot.** O nosso servidor POP3 saiu do
     caminho; o que era dele e precisava sobreviver mudou de casa em vez de
     sumir:
@@ -46,8 +48,6 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
       mensagem segue recuperável pelo site
     * "lida no site" e "coletada pelo jogo" voltaram a ser marcas distintas,
       o que é o que faz a lixeira dizer se o cartucho chegou a baixar
-    * a correspondência que já estava guardada foi moldada numa passagem
-      única -- sem isso, tudo o que chegou antes do filtro iria cru ao jogo
   * Cópia em Enviados e linha no sino voltaram como serviço. Moravam no
     agente de entrega, que saiu quando o Postfix passou a entregar pelo
     Dovecot -- e tinham ido junto, caladas: correspondência chegava e não
@@ -81,45 +81,23 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     distintos que nunca coincidem -- a consulta de autenticação aceita os
     dois e devolve o nome da caixa, que é o que faz a entrega achar o lugar
     certo em vez de abrir uma caixa vazia chamada `g000000002`
-  * Sem porta dos fundos: `USER`/`PASS` está desligado no servidor. Adaptador
-    que não sabe APOP não busca correio
-  * A senha de oito caracteres vira um interruptor no painel, e não uma
-    decisão presa no código: quem administra fecha esse degrau na hora em que
-    as versões novas dos adaptadores chegarem em campo. Vale para os dois
-    servidores de POP3 ao mesmo tempo
+  * A senha de oito caracteres (`USER`/`PASS`) fica atrás de um interruptor no
+    painel, e não de uma decisão presa no código (padrão ligado; **desligado
+    neste servidor**, por decisão do dono): com ele desligado, adaptador que não
+    sabe APOP não busca correio. O desafio do APOP anuncia o host do serviço,
+    e não o nome da instância na nuvem
 
-* Lixeira de e-mail — o `DELE` do POP3 passou a marcar em vez de apagar. O
-  Mobile Trainer não tem modo "deixar no servidor": todos os caminhos dele
-  apagam, e um deles apaga sem nem baixar
-* **Fix: o Trade Corner nunca concluía uma troca.** O POP3 monta a mensagem
-  entregue ao Game Boy a partir de uma lista de cabeçalhos permitidos, para
-  não gastar segundos de cabo serial com o ruído de servidor de e-mail real.
-  O `X-Game-result`, de onde o Crystal lê o resultado, não estava na lista:
-  o jogo recebia a mensagem sem o único campo que importava e a descartava
-  calado. Correspondência interna passou a ser entregue exatamente como está
-  gravada; só a externa é tratada
-* Fix: corrida no POP3 em todos os caminhos de login — o `+OK` saía antes
-  do maildrop existir, então cliente rápido via caixa vazia numa caixa cheia
-* **Login POP3 sem repetir senha**, por APOP padrão, reaproveitando a chave
-  de device-auth de 256 bits. O segredo nunca cruza o fio, e quem atende é o
-  Dovecot, sem remendo
-* Envio de e-mail do jogo pra internet real (outbound relay via Postfix +
-  Brevo), com autorização por dispositivo — domínio, cabeçalho e corpo
-  (incluindo japonês) reescritos/decodificados só na saída
+* Envio de e-mail do jogo pra internet real (relay SMTP externo, via Postfix),
+  com autorização por dispositivo — domínio, cabeçalho e corpo (incluindo
+  japonês) reescritos/decodificados só na saída
 * Fix: vulnerabilidade real numa biblioteca de envio de e-mail (permitia
-  leitura de arquivo local / acesso a endereço arbitrário) — corrigida
+  leitura de arquivo local / acesso a endereço arbitrário) — nodemailer
+  atualizado para 10.0.9 em `mail/`, `app/mail-bottle` e `app/pokemon-exchange`
 * Fix: e-mail interno (mail-bottle, troca de Pokémon) parou de passar pelo
   relay externo — é entregue localmente e chega ao destinatário exatamente
   como foi gravado, sem nenhum tratamento pelo caminho
 * Fix: destinatário de e-mail de troca de Pokémon resolvido com segurança
   (busca no banco antes de usar)
-* Fix: numeração do POP3 sem `ORDER BY` — a ordem das linhas vira o número
-  que `RETR`/`DELE` endereçam; ler e-mail no webmail poderia renumerar a
-  caixa do jogo
-* `mail/package.json` registrava nodemailer ^6.9.14 enquanto produção rodava
-  9.1.1 (o fix do CVE) — repo alinhado ao servidor. Conferência completa:
-  2103 arquivos versionados do reon idênticos ao `/opt/reon`, fora
-  Dockerfile/lockfiles gerados no servidor
 
 ### Webmail
 
@@ -183,11 +161,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   nada — o laranja continua querendo dizer uma coisa só, que há carta para
   ler. Abrir o sino mostra as últimas e marca como lidas; a página
   `/user/notifications.php` guarda o histórico inteiro, paginado
-* **O histórico fica até a pessoa limpar** — o sistema não apaga
-  notificação, e não há expurgo por idade: uma notificação é o registro de
-  que algo aconteceu. Quem pode apagar é o dono da linha, por um botão na
-  página, e limpar não desfaz nada — a carta ou a troca que o aviso apontava
-  continua onde estava. A página diz as duas coisas, nos sete idiomas
+* **O histórico fica até a pessoa limpar, ou expira em 365 dias.** Uma
+  notificação é o registro de que algo aconteceu. Quem pode apagar é o dono da
+  linha, por um botão na página, e limpar não desfaz nada — a carta ou a troca
+  que o aviso apontava continua onde estava. O que ninguém limpar sai sozinho
+  depois de um ano (`purge_retention.php`). A página diz isso, nos sete idiomas
 * Texto guardado como chave de tradução mais parâmetros, não como frase
   pronta: o site fala sete idiomas e o cron que grava a linha não fala
   nenhum, então as palavras são escolhidas na hora de ler. Só o que uma
@@ -257,10 +235,13 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     que impede a lista de exibir um nome que já não existe. Conta apagada
     depois da gravação aparece dita como apagada, não como campo vazio
   * O diretório das gravações é um `StateDirectory=` do systemd
-    (`/var/lib/reon-captures`), criado com o dono certo, e o script de
-    instalação passa a montar isso. Antes a primeira tentativa gravava
-    dentro do checkout do relay, que é de outro usuário: falhava com
-    Permission denied e pareceria "modo ligado que não grava nada"
+    (`/var/lib/reon-captures`), criado com o dono certo pelo script de
+    instalação. As gravações somem sozinhas depois de 15 dias
+    (`purge_retention.php`)
+  * No relay, `[capture]` (`enabled`, `directory`, `max_bytes`): com `enabled =
+    yes` no arquivo ele grava mesmo com o painel em "desligado", o teto é de 1
+    MiB por sessão (o corte é escrito no arquivo e no log), e
+    `capture_merge.py` junta as duas metades por tempo
 
 * **Criador de Pokémon News** (`/admin/news_maker.php`). Uma edição de news
   não é documento: é um programa que o jogo interpreta, montado a partir de
@@ -284,16 +265,12 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   onde o `auto-schedule` já lê. Nada disso precisa de privilégio: o montador
   roda como o usuário web, em diretório temporário, e alcança a ferramenta só
   pelo caminho de includes
-* **A marcação do idioma é que abre os campos de texto.** Antes os seis
-  blocos apareciam sempre e a caixa de "compilar para" ficava *desabilitada*
-  até o idioma ter texto — confundia duas vezes: mostrava cinco blocos que
-  ninguém ia usar, e desabilitava justamente o controle que a pessoa estava
-  tentando usar. Agora a seção de destinos vem primeiro, marcar um idioma faz
-  os campos dele aparecerem, e marcado-mas-incompleto é aviso na própria
-  caixa, não um bloqueio. Bloco com texto dentro nunca é escondido, mesmo
-  desmarcado, e o campo escondido continua sendo enviado: desmarcar não apaga
-  nada. Sem JavaScript aparece tudo, como antes — quem recusa de verdade
-  continua sendo o servidor, antes de compilar
+* **A marcação do idioma é que abre os campos de texto.** A seção de destinos
+  vem primeiro, marcar um idioma faz os campos dele aparecerem, e
+  marcado-mas-incompleto é aviso na própria caixa, não um bloqueio. Bloco com
+  texto dentro nunca é escondido, mesmo desmarcado, e o campo escondido
+  continua sendo enviado: desmarcar não apaga nada. Sem JavaScript aparece
+  tudo; quem recusa de verdade continua sendo o servidor, antes de compilar
 * **O prêmio do minijogo é da edição.** Quem entrega item é o minijogo, e o
   item estava escrito no código dele: toda edição com o `HI-LO` dava um
   `STAR PIECE`, sempre. Agora a tela lê os `nsc_giveitem` do próprio minijogo
@@ -316,44 +293,29 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   nunca é tocado, a cópia com o prêmio trocado nasce no diretório temporário
   do build
 * **Dois minijogos não compilavam, em nenhum idioma** — logo, nenhuma edição
-  podia sair com eles. Três erros de digitação no fonte da ferramenta:
-  `event_timeless_gift_2.asm` tinha DUAS aspas de fechamento faltando
-  (linhas 673 e 791) e `game_personality.asm` (o TRAINER CHECKUP!) tinha uma
-  linha solta `JA____NEIN__ZUR___` entre um `db "@"` e o `.page3`, que o
-  montador lia como nome de macro. A linha é resto de colagem: o menu
-  JA/NEIN/ZURÜCK que ela imita está íntegro nas linhas 220-231, então
-  remover não perde texto nenhum. Corrigidos no nosso fork
-  (`zenaror/pokecrystal-news-maker`, `feature/full_server`), que passou a ser
-  o submódulo. Conferido montando os dez minijogos nos seis idiomas: 60 de 60
-  passam, contra 48 antes. Com isso os dez abrem inteiros — **24 prêmios
-  editáveis, nenhum fixo**
-* **A tela avisa quando um minijogo não monta**, em vez de deixar preencher a
-  edição inteira para receber o despejo do montador: nele não há prêmio para
-  escolher, e publicar é recusado antes de compilar. A tabela está vazia hoje
-  — os três erros foram corrigidos —, mas o mecanismo fica, porque a
-  ferramenta é de fora e a próxima atualização dela pode trazer outro. Ele
-  guarda a **linha inteira** que causa o erro, não um trecho: o primeiro
-  marcador que escrevi era `lang I, next "PARCO NAZIONALE?`, sem a aspa
-  final, e a correção só acrescenta a aspa no fim — o marcador continuava
-  casando com a linha corrigida, e a detecção nunca teria expirado, que é o
-  contrário do que ela existe para fazer
+  podia sair com eles. Erros de digitação no fonte da ferramenta:
+  `event_timeless_gift_2.asm` tinha DUAS aspas de fechamento faltando (linhas
+  673 e 791), `game_personality.asm` (o TRAINER CHECKUP!) tinha uma linha
+  solta `JA____NEIN__ZUR___` entre um `db "@"` e o `.page3`, que o montador
+  lia como nome de macro (resto de colagem: o menu JA/NEIN/ZURÜCK que ela imita
+  está íntegro nas linhas 220-231), e o bloco espanhol da página 2 do mesmo
+  arquivo não abria com `lang S, db` e perdera a primeira oração. Corrigidos no
+  nosso fork (`zenaror/pokecrystal-news-maker`, `feature/full_server`), que
+  passou a ser o submódulo. Conferido montando os dez minijogos nos seis
+  idiomas: 60 de 60 passam, contra 48 antes. Com isso os dez abrem inteiros —
+  **24 prêmios editáveis, nenhum fixo**
 * **Publicar agora**, para não esperar o ciclo de 15 minutos. Ele reescreve a
   data da edição para hoje em vez de ignorá-la: o agendador escolhe pela
   data, e mandar ir ao ar sem mexer no calendário deixaria a linha dizendo
   uma data e o jogo servindo outra. Se o auxiliar de serviços não estiver
   autorizado para o usuário que serve o PHP, a edição fica compilada e
   agendada e a tela diz que ela sai no próximo ciclo — não finge que foi.
-  **Mora na lista, uma edição por linha, e não no editor**: no editor ele
-  aparecia numa edição em branco e o aviso de confirmação — "depois de
-  publicada não dá mais para editar" — saltava antes de qualquer validação,
-  sobre uma edição que ainda não tinha nada dentro. Da lista o botão só existe
+  **Mora na lista, uma edição por linha, e não no editor**: o botão só existe
   para edição já compilada e ainda não publicada, e as regiões são as que já
-  estão compiladas: não há caixa para marcar nessa tela, e não deve haver
-* **Retirar e apagar dependem de a edição existir no disco**, e não de haver
-  um slug. O slug sai do nome digitado, então bastava um POST recusado num
-  formulário novo para a tela oferecer "apagar" uma edição que nunca chegou a
-  ser gravada
-* **Retirar ou apagar devolve a edição oficial na hora.** Antes, sair do
+  estão compiladas — não há caixa para marcar nessa tela, e não deve haver
+* **Retirar ou apagar devolve a edição oficial na hora** (e só existem para
+  uma edição que existe no disco, não para um slug que sobrou de um POST
+  recusado). Sair do
   calendário só impedia a próxima rodada de reaplicar: a linha custom
   continuava servindo a edição retirada até a notícia vanilla girar aquela
   região, o que pode levar um mês. Agora o conteúdo da linha vanilla é
@@ -371,23 +333,24 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   edição mais nova — e o painel ainda trava por data, de modo que uma marca
   perdida não libera o que já saiu. A recusa é no servidor, não botão
   escondido
-* **Entrar na rotina do agendador exigiu duas mudanças nele**, porque o
-  seletor de datas foi escrito para a rotação anual das sete edições
-  históricas e não para alguém publicando hoje. A data do calendário passou a
-  levar o ano: sem ele, uma data que ainda não chegou é lida como a ocorrência
-  do ano passado, e uma edição marcada para dezembro ia ao ar no mesmo dia. E
-  o track custom deixou de se guiar pelo timestamp da linha — ele descarta o
-  que não for mais novo que a última atualização, e a linha custom é tocada
-  com a hora de agora sempre que o espelho é criado, então a edição de hoje
-  caía fora em silêncio. No lugar disso a comparação é com o conteúdo: se o
-  que está no ar já é aquilo, a linha não é regravada — o que também poupa os
-  rankings da região, que são limpos a cada regravação
+* **Entrar na rotina do agendador exigiu mudanças nele**, porque o seletor de
+  datas foi escrito para a rotação anual das sete edições históricas e não
+  para alguém publicando hoje. O track custom deixou de se guiar pelo
+  timestamp da linha e compara o conteúdo: se o que está no ar já é aquilo, a
+  linha não é regravada — o que também poupa os rankings da região, que são
+  limpos a cada regravação. O calendário de cada região vem de um arquivo
+  sobreposto (`bxt_news_custom.schedule.json`, mesclado por região), a data
+  leva o ano (escrito pelo painel) e o agendador carimba `published_at` na
+  edição
+* A edição pode sortear a categoria de ranking (`RANKING_RANDOM`), além de
+  fixá-la
 
-* **Um painel de verdade em `/admin`**, com o que era só a tela de notícias
-  puxado para dentro dele: painel com os números do serviço, notícias,
-  notificações, contas, serviços, logs, páginas do Mobile Trainer e o
-  registro de atividade. Chega pelo menu da própria conta, para quem tem
-  acesso, em vez de ser uma URL que se precisa saber
+* **Um painel de verdade em `/admin`**: painel com os números do serviço,
+  notícias, DLCs (conteúdo de todos os jogos, incluindo as páginas do Mobile
+  Trainer), notificações, contas (e nomes reservados), serviços, IPs banidos,
+  adaptador (`/admin/adapter.php`), modo torneio, logs e registro de
+  auditoria. Chega pelo menu da própria conta, para quem tem acesso, em vez de
+  ser uma URL que se precisa saber
 * **Uma porta só.** `AdminUtil::guard()` é chamado no topo de todo handler
   sob `/admin`, antes de ler qualquer coisa do pedido, e responde 404 em vez
   de 403 — um 403 confirma que a página existe. Painel em que cada página
@@ -395,7 +358,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 * **Nada que um administrador faz fica sem registro.** Banir, desbloquear um
   console, reiniciar um serviço, escrever para todo mundo — tudo cai em
   `sys_admin_log`, com quem, o quê, o alvo e de qual endereço. A tabela é só
-  de acréscimo: não há update nem delete para ela em lugar nenhum
+  de acréscimo pelo painel (ninguém edita nem apaga uma linha), e as linhas
+  expiram em 365 dias
 * **Notificação escrita à mão**, para todas as contas ou para as que você
   escolher — o campo de destinatário filtra conforme se digita e aceita
   vários, com um chip por conta escolhida. O `<select multiple>` continua
@@ -407,13 +371,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   `batch` amarra o envio de volta numa coisa só na listagem
 * **Banimento que alcança o console, não só o site.** A conta banida é
   recusada no login (com a mesma resposta de senha errada — dizer "a senha
-  estava certa, mas..." é dizer a um atacante que a senha estava certa), no
-  device-auth, no POP3 e na política de relay externo. Banir um
+  estava certa, mas..." é dizer a um atacante que a senha estava certa), na sessão que já estava aberta, na autenticação
+  HTTP do jogo (downloads, uploads, rankings), no device-auth, no POP3 (Dovecot
+  devolve `*` como senha), no SMTP do jogo (o Postfix recusa o remetente, só
+  para os domínios do serviço; os jobs locais passam), no relay P2P e na
+  política de relay externo. Banir um
   administrador é recusado, e banir a própria conta em uso também
-* **Serviços e logs** passam por um auxiliar único que o servidor precisa
-  autorizar explicitamente (`setup-script/5-admin-control.sh`): uma entrada
-  de sudoers, um script, uma lista fixa de verbos e uma lista de units que
-  mora no servidor e não num campo de formulário. Sem ele instalado o painel
+* **Serviços e logs** passam por auxiliares que o servidor precisa autorizar
+  explicitamente (`setup-script/5-admin-control.sh`: um para serviços e outro
+  só para bans, cada um com uma entrada de sudoers, uma lista fixa de verbos e
+  uma lista de units que mora no servidor e não num campo de formulário). Sem ele instalado o painel
   diz isso e não executa nada — controle que finge funcionar é pior que
   controle que falta. E "instalado" passou a significar *chamável*, não
   *existente*: a checagem olhava só se o arquivo estava lá, então respondia
@@ -462,15 +429,13 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   os serviços, uma para os timers) em vez de dois processos por linha, e a
   descrição ao lado de cada um é a que a própria unit declara, para não
   divergir do que o systemd tem de fato
-* **Uma página é um arquivo, não um código de jogo.** A primeira versão do
-  criador pedia um "código de jogo" e criava `<CÓDIGO>/index.html` — errado: o
-  `01` é o prefixo do próprio Mobile Trainer (cada título tem o seu — Game Boy
-  Wars 3 usa `18`, EX Monopoly `A7`), então tudo dentro de `01/CGB-B9AJ`
-  pertence a um jogo só, e um segundo `CGB-B9AJ` não quer dizer nada. Agora
-  pede o **nome do arquivo**, dentro do diretório do jogo, para o índice poder
-  linkar com `<a href="credits.html">`. A listagem passou a mostrar qualquer
-  `.html`, marca qual é a página inicial, e apagar não remove mais o diretório
-  — as outras páginas e o `img/` compartilhado moram nele
+* **Uma página é um arquivo, não um código de jogo.** O `01` é o prefixo do
+  próprio Mobile Trainer (cada título tem o seu — Game Boy Wars 3 usa `18`, EX
+  Monopoly `A7`), então tudo dentro de `01/CGB-B9AJ` pertence a um jogo só. O
+  criador pede o **nome do arquivo**, dentro do diretório do jogo, para o
+  índice poder linkar com `<a href="credits.html">`. A listagem mostra qualquer
+  `.html`, marca qual é a página inicial, e apagar não remove o diretório — as
+  outras páginas e o `img/` compartilhado moram nele
 * **Criador e editor das páginas do Mobile Trainer** (`web/htdocs/01/...`) —
   criar, escrever o HTML, ver renderizado, salvar e apagar. O preview é um
   iframe isolado (`sandbox`, sem script) de 160×144 em 2×, com a fonte do
@@ -483,8 +448,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   na varredura do diretório — nada vindo do pedido é concatenado a um caminho
   base, então não há travessia a defender. Criar é o único lugar onde um
   caminho **é** construído a partir de entrada, e por isso o único que precisa
-  de regra em vez de consulta: o código do jogo casa com um padrão que não
-  consegue expressar separador nem diretório-pai, e o nome do arquivo é nosso.
+  de regra em vez de consulta: o diretório vem da varredura e o nome do arquivo
+  casa com um padrão (`FILE_PATTERN`) que não consegue expressar separador nem
+  diretório-pai.
   Grava em temporário e renomeia, para uma falha no meio não deixar truncada a
   página que um console está buscando
 * A lista de tags vem da documentação do adaptador (dandocs, "Mobile Trainer
@@ -492,22 +458,17 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   HTML não estão nela. Duas das tags não querem dizer o que um navegador quer
   dizer com elas, e o preview foi corrigido para não ensinar o contrário —
   **`<b>` deixa o texto vermelho, não negrito**, e `<center>` só funciona
-  dentro de `<html>`. Imagem é BMP 1BPP, no máximo 144×96. Ainda assim nada é
+  dentro de `<html>`. Imagem é BMP 1BPP, de até 255 de largura e altura. Ainda assim nada é
   recusado por estar fora da lista: a doc não diz o que o adaptador faz com
   uma tag desconhecida, e recusar uma que funciona seria o erro pior
-* **As regras de imagem corrigidas contra o site real, não contra a doc.** A
-  dandocs diz "1BPP, no máximo 144×96, sem tabela de cores". Confrontada com
-  as 37 imagens que o Mobile Trainer de verdade serve, essa regra recusa
-  **34** — imagens que um console renderiza hoje. Duas partes dela não se
-  sustentam: as reais chegam a 144×208 e 12×244 (o que todas respeitam é o
-  limite documentado de 8 bits, e é esse que ficou), e carregam `biClrUsed =
-  2`, que é simplesmente o que um bitmap de duas cores tem. O 1BPP se
-  sustenta: as 37 são 1BPP. Recusar o que comprovadamente funciona é o pior
-  dos dois erros disponíveis
-* **Achado de quebra:** o `images/banner.bmp` do servidor de testes é **4BPP**
-  e o `credits/index.html` aponta para ele — o adaptador só desenha 1BPP, então
-  essa página mostra imagem quebrada num console. A versão correta (1BPP,
-  144×33) está em `images (desktop viewable)/`. Foi o validador que achou
+* **As regras de imagem foram conferidas contra o site real, não contra a
+  doc.** A dandocs diz "1BPP, no máximo 144×96, sem tabela de cores", e essa
+  regra recusa **34** das 37 imagens que o Mobile Trainer de verdade serve —
+  imagens que um console renderiza hoje: as reais chegam a 144×208 e 12×244 (o
+  que todas respeitam é o limite de 8 bits, e é esse que vale) e carregam
+  `biClrUsed = 2`, que é o que um bitmap de duas cores tem. O 1BPP se sustenta:
+  as 37 são 1BPP. Recusar o que comprovadamente funciona é o pior dos dois
+  erros disponíveis
 * O editor passou a caber na árvore real: 137 páginas em vez de duas, `.txt`
   incluído (o site serve três como conteúdo), nomes com espaço e parêntese
   intactos, e as imagens procuradas no `images/` mais próximo acima da página
@@ -516,19 +477,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   `../images/banner.bmp` em `topix/`)
 * **Envio de imagem, com validação de verdade contra a dandocs** — não a
   extensão do arquivo, o cabeçalho BMP: exatamente 1BPP, planos exatamente 1,
-  sem compressão, tabela de cores vazia, largura e altura cabendo em 8 bits
-  cada mesmo os campos do BMP sendo de 32, offset dos pixels cabendo em 16, e
-  no máximo 144×96. A recusa diz a regra **e os números do arquivo** ("precisa
+  sem compressão, `biClrUsed` de no máximo 2, largura e altura cabendo em 8
+  bits cada (até 255) mesmo os campos do BMP sendo de 32, e offset dos pixels
+  cabendo em 16. A recusa diz a regra **e os números do arquivo** ("precisa
   ser 1BPP (16×16, 24BPP, 822 bytes)"), porque a regra sozinha não manda
   ninguém consertar nada. Nada é gravado antes de passar, então upload
   recusado não deixa rastro. A listagem reconfere o que já está lá — arquivo
   que hoje seria recusado é sinalizado mesmo tendo entrado antes disso existir
-* Salvar normaliza para **LF, não CRLF**. A primeira versão usava CRLF por
-  analogia com o caminho de e-mail, onde as quebras fazem parte do protocolo
-  do cabo serial. Aqui não é isso: é uma resposta HTTP, e a página que já
-  existe — buscada com sucesso dezenas de vezes por um console real — é LF.
-  CRLF acrescentaria um byte por linha a um documento cujo tamanho máximo a
-  própria documentação do adaptador não informa
+* Salvar normaliza para **LF**: é uma resposta HTTP, e a página que já existe —
+  buscada com sucesso dezenas de vezes por um console real — é LF
 
 ### app/pokemon-exchange — Trade Corner
 
@@ -536,13 +493,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   A linha fazia `strlen($request_data)`, e `$request_data` é a string
   `"php://input"` — o nome do stream. Onze caracteres, em todo depósito,
   desde sempre. Agora lê o `CONTENT_LENGTH` de verdade
-* Largura do campo de carta instrumentada. O tamanho do campo de mail da
-  oferta é genuinamente indefinido fora do japonês: a constante que lemos diz
-  47, e uma medição de save real feita por outra sessão diz 33 — e o nosso
-  parser é comprovadamente o do **depósito**, que é o lado onde os 33 se
-  aplicariam. Como o mail é o último campo do pacote, pedir bytes demais não
-  desalinha nada: o `fread` devolve o que existe, então o que ele devolveu é
-  a medição. O próximo depósito de um Crystal EN responde
+* Largura do campo de carta: o tamanho do campo de mail da oferta é
+  genuinamente indefinido fora do japonês (a constante diz 47, uma medição de
+  save real diz 33), e o parser é o do **depósito**; como o mail é o último
+  campo do pacote, ler bytes demais não desalinha nada
 * **Uma definição só para os grupos de região do Trade Corner.** Havia três e
   elas não combinavam: o default da coluna dizia `efdsipuj`, o parâmetro do
   `createUser` dizia `e,f,d,s,i,p,u,j`, e duas listas `in_array` separadas
@@ -595,22 +549,16 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   (as duas colunas somadas aos 440px do layout de referência), com a
   mensagem na linha do líder — a caixa não pode encolher porque o jogo quebra
   em 18 caracteres, exatamente o que a arte de 155px comporta
-* Fix: Battle Tower no celular estourava a caixa branca — painel, grade e
-  filtros eram dimensionados por `100vw` e não pelo container. Agora só a
-  tabela rola na horizontal, com título e filtros parados; a divisão em dois
-  painéis (que no celular só repetia o cabeçalho no meio) não acontece mais
-  abaixo de 992px
-* Zoom fixo — 2× no desktop (≥ 1200px), 1× abaixo disso, sem
-  controle; moldura do honor roll montada de fatias (cantos + faixa) em vez
-  de esticar a arte; 1º/2º/3º com fundo ouro/prata/bronze quando LEVEL e
-  ROOM estão filtrados; painel ALL/ALL em 2× alargado para não cortar as
-  laterais
-* Fix: Battle Tower 3,5px fora do centro da moldura (a arte lateral tem
-  30/37px mas as duas desenham 15px de borda); Rankings no Chromium com a
-  placa 1px fora do trilho direito (barra de rolagem clássica deixa o
-  header em meio pixel e os dois lados eram arredondados separados — o
-  direito agora deriva do esquerdo); placa do Rankings pregada no topo ao
-  recarregar com a página rolada (medida passou a coordenadas da página)
+* No celular a Battle Tower cabe na caixa branca: painel, grade e filtros são
+  dimensionados pelo container, e não por `100vw`; abaixo de 992px é um painel
+  só (em vez de dois repetindo o cabeçalho no meio) e abaixo de 576px cada
+  líder vira um grupo de duas linhas, sem rolagem a partir de 360px. No 2× do
+  celular a tabela rola de lado dentro da caixa
+* Moldura do honor roll montada de fatias (cantos + faixa) em vez de esticar
+  a arte; 1º/2º/3º com fundo ouro/prata/bronze quando LEVEL e ROOM estão
+  filtrados; painel ALL/ALL em 2× alargado para não cortar as laterais.
+  Centralização da moldura e alinhamento da placa dos Rankings com os trilhos
+  medidos ao pixel
 * Mensagens quebram como o jogo (`PrintEZChatBattleMessage`:
   linhas de 18 caracteres, palavra Easy Chat inteira), em vez de 2 palavras
   por linha fixas que estouravam a caixa
@@ -625,34 +573,26 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   resultado; a guia escolhida fica guardada. De brinde, no 2× a tabela
   vazava 53px do painel e ficava descentralizada — painel e guias agora têm
   a largura da tabela
-* Fix: título dos Rankings centrado na placa do banner e "POKéMON NEWS" fora
-  da moldura (margens colapsavam; medido no PNG); conta em duas colunas
-  empilhadas, sem buraco sob Stats nem cards colados
+* Título dos Rankings centrado na placa do banner e "POKéMON NEWS" dentro da
+  moldura; conta em duas colunas empilhadas, sem buraco sob Stats nem cards
+  colados
 
 ### maint/seed_pokemon_fake_data.php — dados sintéticos
 
-* Dados sintéticos para a Battle Tower e o Trade Corner
-  (`maint/seed_pokemon_fake_data.php`): 1393 registros (200 salas × 7) e 30
-  depósitos, todos moldados como uploads reais — nome de 7 bytes, classe
-  derivada do Trainer ID com o mesmo hash da ROM (`GetMobileOTTrainerClass`),
-  mensagens Easy Chat do corpus de placeholders, Pokémon com DVs re-sorteados e
-  stats recalculados pela fórmula da Gen II, todos aprovados no legality
-  checker. Tudo preso a uma conta bot (`reonbot`) para o `--purge` tirar de
-  volta. Ofertas e pedidos do Trade Corner são conjuntos disjuntos (não casam
-  entre si) e nenhum completa um pedido real existente. As mensagens de
-  vitória são validadas na geração: um espaço perdido dentro do hex faz
-  `hex2bin()` devolver `false` e o jogo receber mensagem zerada
-* Dados sintéticos também no **Rankings** (`--rankings=N`): 60 jogadores × 3
-  categorias do Pokémon News vigente, CEP em dígitos Gen II, mensagem Easy
-  Chat, scores enviesados para baixo; o manifesto do seeder acumula entre
-  rodadas
-* Battle Tower: **pódio completo** — o cron só promove o melhor de cada
-  sala, então nenhuma sala chegava ao bronze; o seeder ganhou
-  `--honor-top=N` (promove os N melhores distintos de cada sala semeada,
-  248 linhas adicionadas, todas as salas com três líderes) e `--touch`
-  (renova a data dos registros do bot para a expiração de 7 dias não os
-  apagar), rodado diariamente às 23:00 por `reon-seed-touch.timer`. Os
-  dados falsos ficam, a pedido, para ajustes de layout
+* Seeder de dados sintéticos (`maint/seed_pokemon_fake_data.php`) para testes
+  de layout: Battle Tower (7 registros × 20 salas × 10 níveis), Trade Corner (30
+  depósitos) e Rankings (`--rankings=N`), tudo moldado como upload real — nome
+  de 7 bytes, classe derivada do Trainer ID com o mesmo hash da ROM
+  (`GetMobileOTTrainerClass`), mensagens Easy Chat do corpus de placeholders,
+  Pokémon com DVs re-sorteados e stats recalculados pela fórmula da Gen II,
+  todos aprovados no legality checker. Preso a três contas bot (`reonbot`,
+  `reonbot-eu`, `reonbot-own`, com listas de troca diferentes para exercitar os
+  três avisos dos cards) para o `--purge` tirar de volta. `--honor-top=N` monta
+  o pódio de cada sala; `--touch` e `--rebalance` rodam à mão. Ofertas e
+  pedidos do Trade Corner são conjuntos disjuntos e nenhum completa um pedido
+  real. As mensagens de vitória são validadas na geração: um espaço perdido
+  dentro do hex faz `hex2bin()` devolver `false` e o jogo receber mensagem
+  zerada
 
 ### Device-auth e dispositivos conectados
 
@@ -666,19 +606,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   não muda; o formato antigo continua aceito (endereça o "aparelho legado"),
   então nenhuma implementação quebra antes de migrar. Re-download da bin não
   zera mais nada; "revogar todos" gira a chave e apaga os aparelhos. Teto de
-  32 aparelhos por conta. Diagnóstico que levou a isso: as seis chamadas do
-  3DS de 09/09 tinham assinaturas byte a byte iguais às de 08/09 — replay de
-  estado antigo, não corrida; o mGBA não gravava o teto do lote (corrigido lá)
-  e, por cima, PC e 3DS dividiam o contador. Junto, uma ação `query` só de
+  32 aparelhos por conta. Junto, uma ação `query` só de
   leitura (assinada, sem contador) devolve o último contador aceito do
   aparelho, para quem perdeu ou retrocedeu o estado retomar de valor+1 em vez
   de religar até o lote de 50 ultrapassar — ou de rebaixar a bin, que é
   baixada uma vez só. A resposta também é assinada (`<contador> <sig>`):
   o device-auth roda em HTTP puro numa rede que é do jogador, e um valor
-  forjado alto adotado às cegas estouraria o contador do aparelho — ponto
-  levantado pelo PicoAdapterGB na revisão. Contrato revisado com as quatro
-  implementações antes de qualquer uma implementar (regra do dono: cada uma
-  é uma)
+  forjado alto adotado às cegas estouraria o contador do aparelho.
+  Revogação é fail-safe e é honrada mesmo com contador igual ao último aceito
+  (um aparelho reiniciado no meio de um lote cai exatamente nisso)
 * **"Dispositivos conectados"** na conta, no lugar do botão único de revogar:
   uma linha por aparelho com código de pareamento (os 8 primeiros hex do id,
   `A4A2-90F8`, o mesmo que o aparelho mostra na própria tela/console/serial —
@@ -706,14 +642,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   válido passou a criar a linha do aparelho, para ele aparecer na lista
   assim que fala com o servidor, e carimba o "último uso" (só quando o
   contador ecoado é maior que o último gasto em consulta, para um replay
-  não fingir uso recente de outro IP). Verificado de ponta a ponta no 3DS:
-  bloqueado no site, a sessão seguinte recebeu "blocked" assinado, nenhum
-  tráfego do jogo chegou ao servidor e a tela mostrou BLOCKED; desbloqueado,
-  a sessão seguinte voltou ao normal sem reiniciar o console
-* **Fix: revogação de device-auth engolida como replay** — `deauthorize` com
-  contador igual ao último aceito devolvia 200 sem revogar; aparelho
-  reiniciado no meio de um lote cai exatamente nisso. Visto em produção.
-  Revogação é fail-safe e passou a ser honrada com contador igual
+  não fingir uso recente de outro IP)
 
 ### mobile_config.bin (dados do adaptador)
 
@@ -758,34 +687,41 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   `download` do link: quem abria a URL direto recebia um arquivo chamado
   `adapter_config.php`. O conteúdo não mudou em um byte, então nada precisa
   ser baixado de novo
-* Fix: o `mobile_config.bin` saía sem servidores DNS (tipo `NONE`), então todo
-  frontend precisava ser apontado para o REON à mão, e um sem tela de
-  configuração — um núcleo libretro, por exemplo — não tinha como ser
-  apontado. Agora sai com DNS e relay preenchidos, e um frontend que tenha a
-  própria configuração continua tendo preferência
-* Fix: DNS1/DNS2 gravado na EEPROM do jogador era o IP de quem baixava o
-  arquivo — agora são os DNS reais documentados
+* O `mobile_config.bin` sai com DNS1 (`152.67.55.127:53`) e relay
+  preenchidos e DNS2 vazio de propósito: antes saía sem servidores DNS (tipo
+  `NONE`), todo frontend precisava ser apontado para o REON à mão, e um sem tela
+  de configuração — um núcleo libretro, por exemplo — não tinha como ser
+  apontado. Um frontend que tenha a própria configuração continua tendo
+  preferência. O DNS gravado na EEPROM do jogador deixa de ser o IP de quem
+  baixava o arquivo. Tudo isso (DNS, relay, porta P2P, modelo, não-tarifado) é
+  editável em `/admin/adapter.php`, e os padrões reproduzem a bin de sempre
 
 ### mobile-relay — P2P
 
-* Redesign do relay token — negociação ao vivo aposentada, servidor recusa
-  handshake sem token
+* O token do relay é provisionado no cadastro (`relay_users.user_id`, entregue
+  na `mobile_config.bin`), e o relay recusa qualquer handshake sem token ou com
+  token desconhecido
 * **Bloqueio também no P2P pelo mobile-relay** (revisado com os quatro
   adaptadores e o Consultor, aprovado pelo dono em 09/09): uma sessão só de
   P2P nunca faz login, logo nunca consulta o device-auth, e o aparelho
   bloqueado seguia trocando e batalhando pelo relay. Handshake **versão 1**
-  (`[1]"MOBILE" + has_token + token + has_device + device(8)`); o relay
-  escolhe o formato pelo byte de versão por conexão e ecoa o mesmo byte em
-  toda resposta; consulta `sys_device_counter` **só leitura** (nunca cria
-  linha, nunca carimba) e recusa o bloqueado com 1 byte de motivo (`0x01`
-  token, `0x02` bloqueado) antes de fechar; sem id ou versão 0 = linha "sem
-  identificação" da conta. Versão 0 aceita e logada (conta + código de
-  pareamento) até as três releases saírem; **versão 0 cortada em 09/09**
-  com mGBA 9257, bgb 3fe18d9 e Pico 30a1d42 no pacote e o dono confirmando
-  que o 3DS dele roda sempre a build mais nova. Verificado ao vivo contra o
-  MySQL (10 cenários) e por sondas do core. Cooperativo, como o
-  resto: o id não é assinado e HMAC não ajudaria (quem tem o aparelho tem a
-  bin e a chave). `mobile-relay 0e2523a`
+  (`[1]"MOBILE" + has_token + token + has_device + device(8)`); o relay ecoa o
+  byte de versão em toda resposta; consulta `sys_device_counter` **só leitura**
+  (nunca cria linha, nunca carimba) e recusa o bloqueado com 1 byte de motivo
+  (`0x01` token, `0x02` bloqueado) antes de fechar; sem id (v1 com
+  `has_device=0`) = linha "sem identificação" da conta. A versão 0 é recusada,
+  e conta banida também (mesmo byte de motivo, `0x02`).
+  Cooperativo, como o resto: o id não é assinado e HMAC não ajudaria (quem tem
+  o aparelho tem a bin e a chave)
+* Relay endurecido: conexão morta é derrubada (keepalive TCP ligado por padrão,
+  60 s ocioso; timeout de 15 s no handshake; `idle_timeout`, `wait_timeout` e
+  `relay_timeout` opcionais na seção `[relay]`), e um console morto deixa de
+  manter o número "conectado" e travar o login da conta. Conexão que abre e
+  fecha (a sondagem de status a cada 5 min) é logada como "Port probe", não
+  mais como "Login failed"; o número de conexões P2P ao vivo vai para o banco
+  (`relay_stats`) e a sondagem de status o lê. Docker (`Dockerfile`,
+  `docker-compose.yml`, `config.example.ini`); a produção segue nativa, sob
+  systemd
 
 ### Conta, cadastro e autenticação
 
@@ -816,7 +752,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
     apaga. Quem acrescentar uma tabela e esquecer da lista erra dos dois
     lados — e exportação com buraco é bem mais fácil de notar do que
     exclusão com sobra
-  * O arquivo é um JSON só, com o cadastro, as treze tabelas presas ao id,
+  * O arquivo é um JSON só, com o cadastro, as quatorze tabelas presas ao id,
     as cinco que guardam o endereço em vez do id, o token de relay (que
     mora em outro banco) e o correio, que não está em banco nenhum
   * **Chave de aparelho e token de relay são citados, não escritos.** São
@@ -852,7 +788,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   nunca era olhada. Reproduzido (prefixo certo + resto "AAAA" = 200) e
   fechado: o cache exige o valor inteiro. Achado pela TestSuite, cujo
   estouro de buffer produziu um cabeçalho truncado que autenticou assim mesmo
-* **Token anti-CSRF** em todos os 15 formulários e 12 handlers, preso à
+* **Token anti-CSRF** em todos os formulários e handlers de POST, preso à
   sessão, com 403 traduzido; cookie de sessão com `SameSite=Lax`, `HttpOnly`
   e `Secure` (em HTTPS); id de sessão regenerado no login. Caminhos do jogo
   intocados — autenticam por cabeçalho, não por cookie
@@ -863,6 +799,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Servidor e segurança
 
+* **Scripts de instalação revisados contra o servidor.** O `2-setup-postfix-bridge.sh`
+  instala o desenho de hoje (Postfix, Dovecot, Sieve, `vmail`); o correio entra no
+  backup noturno (`/var/vmail`); `/tmp/reon` e o `swappiness` sobrevivem ao reboot
+  (`tmpfiles.d` e `sysctl.d`); a unidade `reon-auto-schedule-refresh` existe; o
+  jail do POP3 ganhou um filtro próprio, porque o de fábrica não reconhece o log do
+  Dovecot 2.4; o SSH só é endurecido com uma chave de login de verdade; o helper do
+  painel recusa argumento que comece com `-` e ganhou o Dovecot; o menu e os
+  comandos `reon-logs-*` cobrem Postfix, Dovecot e todos os timers.
 * **Log de atividade: quem fez o quê.** Cadastros, logins (e os que falharam),
   troca de senha e de e-mail, exclusão de conta, autenticação do console, tudo
   o que o jogo baixa e envia, e as trocas (Trade Corner e Mail de Cute), em
@@ -876,12 +820,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   convertido em cache, com a data do arquivo na chave: `guide.php` foi de ~36
   para ~90 pedidos por segundo e `/pokemon/` de ~47 para ~140; editar o `.md`
   vale no pedido seguinte. (2) O ajuste de memória do MySQL
-  (`zz-reon-tuning.cnf`) **nunca tinha valido neste servidor**: era um link
-  simbólico e o AppArmor barrava a leitura, então o banco rodava com o padrão
-  (`performance_schema` ligado, 151 conexões, buffer de log de 64 MB, pico de
-  ~500 MB). Agora é arquivo real, com pool de 64 MB (o banco tem ~10 MB),
-  `performance_schema` desligado e 40 conexões: o mysqld caiu para ~80–130 MB
-  e o swap de ~885 MB para ~300–400 MB. (3) `reon-session-sweep.timer` (de hora
+  (`zz-reon-tuning.cnf`, pelo setup): pool de 64 MB (o banco tem ~10 MB),
+  `performance_schema` desligado e 40 conexões; o mysqld caiu de ~500 MB para
+  ~80–130 MB e o swap de ~885 MB para ~300–400 MB. (3) `reon-session-sweep.timer` (de hora
   em hora) apaga sessões PHP anônimas (só um token CSRF) com mais de seis
   horas; cada visitante sem cookie criava um arquivo e nada os expirava, em
   `/tmp`, que é RAM (o teste de carga deixou 36 mil, ~140 MB). Sessões com
@@ -894,17 +835,13 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   reiniciar, rodar job, backups, recursos) e uma pasta na home com links para
   o site, docs, config, logs, units e todos os comandos `reon-*`. O setup
   cria os dois. O `reon-mail` passa a rodar com `LOG_LEVEL=debug`.
-* **`reon-seed-touch.timer` removido.** Ele renovava todo dia os registros
-  falsos da Battle Tower; com os dados e o bot apagados na limpeza, só
-  falhava. O seeder (`maint/seed_pokemon_fake_data.php`) continua na árvore
-  para testes manuais, e o setup e o crontab do Docker deixaram de instalá-lo.
-* **Logs dos serviços Node em JSON, com nível.** Os 57 `console.*` de
+* **Logs dos serviços Node em JSON, com nível.** Os `console.*` de
   `mail/` e `app/*` passaram por um logger pequeno (`lib/log.js`): uma linha
   JSON por evento, com `level` e `component`, e o prefixo de prioridade do
   systemd, então `journalctl -p warning` mostra só aviso e erro. Barulho por
   conexão do POP3 virou `debug` (desligado por padrão, `LOG_LEVEL=debug` liga).
 * **O site PHP também tem nível.** `LogUtil` escreve a mesma linha JSON pelo
-  `error_log()` (mesmo arquivo, mesma rotação); as 58 chamadas viraram
+  `error_log()` (mesmo arquivo, mesma rotação); as chamadas viraram
   `error`/`warn`/`debug` conforme o caso. Efeito colateral bom: os dumps do
   verificador de legalidade (comprimento e hex do Pokémon, stdout/stderr) que
   saíam sempre agora só saem com `debug`.
@@ -919,13 +856,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   a validação do YAML só refaz quando o arquivo muda, e ambos se atualizam
   sozinhos quando um template ou idioma é alterado (deploy por cópia continua
   valendo). 10-80 ms por página
-* Fix: **nada rotacionava os logs do servidor.** O `logrotate` não estava
-  instalado (o setup instala sem recomendados) e o timer estava inativo: o
-  log do nginx guardava 29 dias de endereços contra os 14 que a política de
-  privacidade promete, e o registro de proteção de dados listava a rotação
-  como certa só porque o arquivo de regra existia. Instalado e agendado, com
-  regra de 14 dias também para `/var/log/reon/`, e os arquivos já rotacionados
-  cortados nos últimos 14 dias
+* **Rotação de logs:** `logrotate` instalado e agendado pelo setup, com regra
+  de 14 dias para `/var/log/reon/*` (php-error, activity, magbtest), o que
+  cumpre a promessa da política de privacidade para os logs de conexão
 * **Backup diário do banco** (`reon-db-backup.timer`, 03:30): um dump
   comprimido por banco em `/var/backups/reon/` (só root), 7 dias. Cópia no
   mesmo disco; a política de privacidade declara, inclusive que uma conta
@@ -942,49 +875,41 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   gravar um aviso do PHP a cada tentativa de scanner
 * Mapa de tudo isto (caminhos, timers, helpers, jails, tabelas): `docs/OPERATIONS.md`
 
-* Fix: **o desafio do APOP anunciava o nome da instância na nuvem** a quem
-  só abria uma conexão POP3, antes de qualquer login. Cosmético, mas de
-  graça: agora anuncia o host do serviço. Duas tentativas erradas ficaram
-  registradas no `examples/dovecot/99-reon.conf` para ninguém repetir — a
-  opção `hostname` governa outro campo e `DOVECOT_HOSTDOMAIN` governa o
-  domínio; quem manda é `DOVECOT_HOSTNAME`, que vem do ambiente do serviço
-  (`import_environment` só deixa passar, não define) e por isso só vale
-  após restart, nunca após reload
+* O desafio do APOP anuncia o host do serviço, e não o nome da instância na
+  nuvem (`DOVECOT_HOSTNAME`, que vem do ambiente do serviço e por isso só vale
+  após restart; as tentativas que não funcionam estão registradas no
+  `examples/dovecot/99-reon.conf`)
 
-* **Jail de fail2ban para o POP3 do jogo**, com a regra ao contrário do óbvio.
-  A porta 110 é aberta para a internet por necessidade — é por ela que o
-  Mobile Adapter GB busca o correio — e o preço é ser varrida o dia inteiro
-  por quem cataloga a internet. A regra natural, "conectou e não autenticou",
-  puniria justamente o adaptador com conexão ruim, que cai antes de terminar o
-  login e voltaria banido. Então é **lista de permissão**: conta como falha
-  qualquer comando fora do vocabulário do jogo. Um cliente legítimo só sabe
-  falar os onze comandos implementados, e uma conexão que morre antes de
-  mandar qualquer coisa não gera linha nenhuma para casar — não há caminho em
-  que ele seja pego. Medido contra onze dias de log real, 3090 linhas: 347
-  acertos, **nenhuma conta autenticada entre eles**. O que cai na regra é
-  `CAPA`, `STLS`, `AUTH`, requisições HTTP inteiras mandadas para a 110 e até
-  um banner de SSH. Banimento de uma hora, e não permanente, porque IP de
-  nuvem é reciclado entre inquilinos e banir o endereço de hoje para sempre é
-  banir o jogador de amanhã que alugou a mesma máquina
-* Fix: 33-000 no upload do Pokémon Crystal — cabeçalhos de segurança do nginx
-  quebravam o parser HTTP do jogo; agora são omitidos em `/cgb/`, `/api/` e
-  `/01/`
+* **Jail `reon-pop3`** (fail2ban), com o filtro padrão do Dovecot: 10 falhas de
+  autenticação em 10 minutos banem por 1 hora (não permanente: IP de nuvem é
+  reciclado entre inquilinos); localhost nunca é banido. A porta 110 é aberta
+  para a internet por necessidade — é por ela que o Mobile Adapter GB busca o
+  correio
 * Segurança do servidor: fail2ban, hardening de SSH, serviço não usado
-  desligado, cabeçalhos de segurança no nginx
+  desligado e cabeçalhos de segurança no nginx, omitidos em `/cgb/`, `/api/` e
+  `/01/` (quebravam o parser HTTP do jogo, 33-000)
 * HTTP → HTTPS só para navegador no host humano: `/cgb/`, `/api/`, `/NN/`,
   a renovação do certbot e requisições sem `Host` (HTTP/1.0) ficam em HTTP
+* `reon-monthly-reboot.timer`: reinício todo dia 15 às 04:15 UTC, depois do
+  backup e antes das atualizações; não recupera data perdida
+* Rankings são opt-in (desligado por padrão, no cadastro ou na página da
+  conta); menores de 13 anos declarados no jogo nunca são publicados; a
+  publicação passa por uma view (`bxt_ranking_shared`)
+* Depois de excluir uma conta, o endereço de e-mail não cadastra de novo por 6
+  meses; só um hash com pepper do endereço é guardado (`sys_email_block`)
+* Lembrete no sino para quem está fora dos rankings, no máximo a cada 30 dias
+* Recusas de legalidade no Trade Corner e na Battle Tower registram só a regra e
+  a conta; o texto recusado só aparece com a depuração ligada
 
 ### Site: páginas Crystal, layout e navegação
 
-* **Uma largura só para o site.** Home, notícias, guia, downloads, termos,
-  Mario Kart, GB Wars e o hub do Pokémon Crystal eram limitados a 860 px,
-  enquanto login, cadastro e as tabelas da Battle Tower usavam os 1320 px do
-  restante; o cabeçalho ficava mais largo que o conteúdo. Tudo usa agora os
-  1320 px da página de login. Nas páginas de jogo o texto também deixou de ter
-  teto próprio (72ch no Pokémon e no Mario Kart, 1200 px na tabela do Mario
-  Kart): o bloco ocupa a caixa inteira; só os parágrafos e itens de lista
-  ficam em ~100 caracteres por linha, e tabelas, avisos e galerias usam a
-  largura toda.
+* **Uma largura só para o site.** Home, Mario Kart, GB Wars, o hub do Pokémon
+  Crystal e o conversor de saves eram limitados a 860 px (a tabela do Mario
+  Kart, a 1200 px), enquanto login, cadastro e as tabelas da Battle Tower usavam
+  os 1320 px do restante; o cabeçalho ficava mais largo que o conteúdo. Tudo usa
+  agora os 1320 px da página de login. Nas páginas de jogo o bloco de texto
+  ocupa a caixa inteira; só parágrafos e itens de lista ficam em ~100
+  caracteres por linha, e tabelas, avisos e galerias usam a largura toda
 * Sistema de notícias com painel em Markdown; painel de status dos serviços;
   usuário REON no cadastro, com o endereço de 8 caracteres derivado dele
 * **Revisão multi-dispositivo** (360, 412, 740×360, 768, 1024, 1366, 1920,
@@ -1010,12 +935,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   pendem da caixa de conteúdo, do fim da placa ao fim da página — antes eram
   fixos à viewport e o topo ficava vazio ao rolar. No desktop a placa e os
   trilhos também passaram a rolar com a página (eram um pano de fundo fixo
-  por baixo do conteúdo). Fix: isso deixou uma moldura branca de 12px em
-  volta da página e entre a placa e o conteúdo — a margem do `body` do site
-  deslocava os trilhos (absolutos) em relação ao ponto onde o fundo vira
-  branco; a margem virou padding só nessa página. No celular (< 576px) o
-  zoom é sempre 1×: o controle some e a escolha guardada é ignorada até a
-  tela crescer (tablet/rotação)
+  por baixo do conteúdo)
 * **Celular** (< 576px): Battle Tower com cada líder em duas linhas dentro
   do mesmo grupo — LV/ROOM/sprite/nome/Pokémon em cima, a caixa da mensagem
   (arte inteira) embaixo — sem rolagem em nenhum filtro a partir de 360px;
@@ -1023,8 +943,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   `body` abaixo de 992px: trilhos e moldura encostam nas bordas e a tabela do
   Rankings (352px) cabe num celular de 412px. Placa do Rankings alinhada aos
   trilhos (folga das fatias medida pelo dono, expressa em função da largura
-  do trilho). Fix: um `}` solto no CSS das páginas Crystal engolia a regra
-  seguinte (o "no results" do Trade Corner nunca valeu)
+  do trilho)
 * Fix: painéis laterais dos temas (Trade Corner, Battle Tower, Rankings, GB
   Wars, Mario Kart) mediam a largura por `innerWidth`/`100vw`, que incluem a
   barra de rolagem vertical — o painel direito saía ~15px largo demais e a
@@ -1036,15 +955,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 * A bolinha do cabeçalho de seção agora tem a cor da gema do menu (era
   sempre azul); rótulos "Relay" e "Página Mobile"; abas do webmail: só
   não-lidas na aba, totais na barra, Enviados sem seleção
-* Páginas Crystal: **1x/2x em todo lugar** — Battle Tower recupera o
-  controle (2x por padrão no desktop, 1x por padrão em celular/tablet,
-  escolha lembrada) e as três páginas aceitam 2x no celular, rolando a
-  tabela/os cards de lado dentro da caixa branca; no celular a página
-  **sempre abre em 1x**, o 2x vale só para aquela visita. **Sprites sempre em
-  escala inteira** (56/112): a Battle Tower encolhia o sprite do líder para
-  44px com LV ou ROOM abertas e no celular; agora o painel cresce pela
-  coluna extra (440→484px, coluna única) em vez de borrar a arte. Medido
-  ao vivo em 1600px e 390px
+* Páginas Crystal: **1x/2x em todo lugar**. Trade Corner e Rankings abrem em
+  1x (no celular sempre, e o 2x vale só para aquela visita); a Battle Tower
+  abre em 2x em qualquer tela, com a escolha lembrada (no celular, só durante
+  a visita). No 2x do celular a tabela/os cards rolam de lado dentro da caixa
+  branca. **Sprites sempre em escala inteira** (56/112): a Battle Tower
+  encolhia o sprite do líder para 44px com LV ou ROOM abertas e no celular;
+  agora o painel cresce pela coluna extra (440→484px, coluna única) em vez de
+  borrar a arte. Medido ao vivo em 1600px e 390px
 * Celulares de 360px: Rankings cabe sem rolar (trilhos encolhem para a
   faixa de 8px da borda, ADDRESS cede 8px que nunca usou, 344px exatos) e a
   Battle Tower passa a três linhas por líder onde duas quebravam
@@ -1062,8 +980,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   renderizado pelo mesmo CommonMark das notícias, sumário automático dos
   `##`, imagens em `htdocs/images/pages/`, `web/pages/README.md` explica
   como editar. Guia reescrito do rascunho do Google Docs em linguagem
-  simples, com o que falta marcado entre colchetes; passos do BGB vindos do
-  mantenedor. O modal do passaporte aponta para o guia
+  simples, com o que falta marcado entre colchetes. O modal do passaporte aponta para o guia
 * **Hubs de jogo como mini-sites de uma página** (/pokemon/, /gbwars/,
   /mariokart/): menu de seções no topo, "Get started" e "What you can do"
   vindos de `web/pages/games/<jogo>.<idioma>.md`, e por último a parte viva
@@ -1091,37 +1008,35 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   login do jogo guardada em claro está lá **com o motivo** (o adaptador prova
   quem é com um MD5 de desafio mais senha, então o servidor precisa da senha),
   o que as páginas de ranking mostram sem login, a saída de e-mail pela Brevo
-  na França como transferência internacional, e o que **não** existe —
-  exclusão de conta e exportação de dados não estão construídas, e a página
-  diz isso em vez de prometer botão que não há. O que ainda é decisão do dono
-  fica entre colchetes, como no guia. No cadastro eles abrem **em modal, sem
-  sair da tela**: o formulário já tem e-mail digitado, e trocar de página para
-  ler o que se vai aceitar custa o que já foi preenchido. O corpo do modal é o
-  mesmo HTML que as páginas servem, embutido na página e não buscado ao abrir
-  — é o documento que o consentimento referencia, e ele tem de estar legível
-  ali mesmo se a rede falhar no meio. O link continua apontando para a página
-  inteira, então sem JavaScript ele abre normalmente. Fora do cadastro, ficam
-  embaixo do menu de gemas — fora da fileira de gemas, que é das seções do
-  site. **Só existem em inglês por enquanto**: a moldura está nos sete
-  idiomas, o texto não
-* Ponto do Darkshade: o guia e a página de downloads linkam direto o que
-  mandam baixar (seções do Downloads; mGBA com seletor de plataforma, Pico
-  numa caixa só com três seletores — placa, rede, pinout — que casam com
-  um dos seis `.uf2` e desabilitam o botão na combinação que não existe) e
-  trazem um botão de
-  `mobile_config.bin` — logado baixa, deslogado vira "Log in to download" e o login
-  volta para o mesmo lugar (`login.php?next=`, só caminho local; acesso
-  deslogado ao `adapter_config.php` vai para o login com a conta como
-  destino, não mais para a home)
+  na França como transferência internacional, a exclusão de conta e a
+  exportação de dados, e o que o servidor registra. O que ainda é decisão do
+  dono fica entre colchetes, como no guia. No cadastro eles abrem **em modal,
+  sem sair da tela**: o formulário já tem e-mail digitado, e trocar de página
+  para ler o que se vai aceitar custa o que já foi preenchido. O corpo do modal
+  é o mesmo HTML que as páginas servem, embutido na página e não buscado ao
+  abrir — é o documento que o consentimento referencia, e ele tem de estar
+  legível ali mesmo se a rede falhar no meio. O link continua apontando para a
+  página inteira, então sem JavaScript ele abre normalmente. Fora do cadastro,
+  os dois links ficam num rodapé legal em toda página. **Só existem em inglês
+  por enquanto**: a moldura está nos sete idiomas, o texto não
+* O guia traz o botão de `mobile_config.bin`: logado baixa, deslogado vira
+  "Log in to download" e o login volta para o mesmo lugar (`login.php?next=`,
+  só caminho local; acesso deslogado ao `adapter_config.php` vai para o login
+  com a conta como destino, não mais para a home). A página de downloads
+  oferece o mGBA com seletor de plataforma
+* Hub do Pokémon com abas Crystal e Stadium (o hash da URL aponta para a aba;
+  sem JavaScript as duas aparecem empilhadas), cada uma com o próprio menu de
+  seções
+* `robots.txt` e bloqueio de crawlers de busca e de IA por User-Agent
+  (`4-harden-bots.sh`)
 
 ### Fixtures MAGBTEST (para a TestSuite ROM)
 
 * Fixtures MAGBTEST para a TestSuite ROM, com instrumentação temporária das
-  requisições
-* Fixtures MAGBTEST agora registram comprimento e cauda do Authorization,
-  intervalo entre requisições e se o prefixo de 44 corresponde a um desafio
-  emitido — o que separa "cauda errada de propósito" de "offset invadiu o
-  prefixo", indistinguíveis pela resposta
+  requisições (comprimento e cauda do Authorization, intervalo entre
+  requisições e se o prefixo de 44 corresponde a um desafio emitido — o que
+  separa "cauda errada de propósito" de "offset invadiu o prefixo",
+  indistinguíveis pela resposta)
 
 ### Mobile Stadium (Crystal)
 
@@ -1133,15 +1048,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   (slot vazio não é zero: leva o marcador `XX` e a soma em complemento), tudo
   foi verificado byte a byte contra dado real. Passo a passo em
   `docs/mobile-stadium/README.md`
-* Duas faixas, oficial e personalizada, com opt-in por conta. As ROMs
-  italiana e espanhola (BXTI/BXTS) tinham um bug próprio que impedia o
+* As ROMs italiana e espanhola (BXTI/BXTS) tinham um bug próprio que impedia o
   download (o parser do menu ficou num banco que ninguém chama): achado e
   corrigido do lado da ROM pelo trabalho do PKHeX, sem mudança no servidor.
   Falta vê-lo funcionando num console
 
 ### Game Boy Wars 3
 
-* **Criador de mapas** (`/admin/gbwars_maps.php`, aba *Map creator*): editor
+* **Criador de mapas** (`/admin/gbwars_map_editor.php`, aba *Map creator* do
+  painel de mapas): editor
   de tiles no navegador (pintar, preencher, unidades, conta-gotas, desfazer)
   com rascunhos salvos no servidor, download do `.cgb` e publicação como
   mapa REON novo e **inativo** (ids 2000-9999, o primeiro é 2000). Um mapa
@@ -1161,229 +1076,166 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   e instruções em inglês em todos os projetos (os quatro adaptadores já
   estavam; README de instalação, scripts de hardening e README do systemd
   traduzidos); toda URL de repositório dentro dos projetos aponta para o
-  GitHub — submódulos da libmobile no bgb (a56c3ec) e no Pico (9b9db48), e
-  instruções de clone do mGBA (dedee9fde); os quatro scripts de instalação
-  e este changelog/memo passaram a viver no repositório do reon
-  (`setup-script/`, `docs/`), com os scripts achando `reon/` e
-  `mobile-relay/` em qualquer dos dois layouts. Achados no caminho: o
-  espelho do Pico não tinha o branch `feature/full_server`, e a
-  sincronização rebaixou a `feature/3ds-magb` do mGBA no GitHub para uma
-  cópia antiga do Gitea (recuperada com force-push autorizado pelo dono);
-  o branch padrão dos seis repositórios no GitHub ainda é o do upstream
+  GitHub — os submódulos da libmobile no bgb e no Pico e as instruções de clone
+  do mGBA; os cinco scripts de instalação (o quinto é opcional), o
+  `pull-backups.sh`, o `reon-menu.sh` e este changelog passaram a viver no
+  repositório do reon (`setup-script/`, `docs/`), com os scripts achando
+  `reon/` e `mobile-relay/` em qualquer dos dois layouts
 
 ## libmobile (core)
 
-* Device-auth: autorizar/desautorizar agora por sessão PPP, não por conexão
-  TCP individual
-* **APOP** do lado do core (`72fac61`): o segredo é a chave de device-auth
-  em 64 caracteres hex, e o nome de login é o gID que a `mobile_config.bin`
-  leva
-* API pública exposta pra guardar/ler a chave de device-auth
-* Fix real de bug: envio parcial de socket (TCP/DNS) sendo tratado como
-  sucesso/erro errado por truncamento de tipo
-* **Fix: o `authorize` do device-auth nunca despachava** (`77b09e9`) — o gate
-  exigia sessão ociosa, mas o evento só nasce durante a sessão, e o
-  `deauthorize` do desligamento o sobrescrevia. Estrutural. Assinatura no
-  servidor: 18 `deauthorize`, zero `authorize` num dia
-* Fix: regressão da anterior (`7837484`) — o canal lateral segurava um slot
-  de conexão e podia derrubar o jogo; e um use-after-close no desligamento
-  (`3ddef42`)
-* Fix: `mobile_addr_compare()` comparava padding de struct — em ARM o enum
-  ocupa 1 byte e sobram 3 não inicializados, e nenhuma resolução de DNS
-  funcionava (`159d299`). Achado no port para 3DS
-* Resolução de DNS interna, com o IP entregue no callback (`935aec7`) — os
-  resolvers próprios dos frontends viraram dispensáveis
-* Contador de device-auth reservado em lotes de 50 para poupar a flash;
-  garantia é "estritamente crescente, nunca repetido", não continuidade
-* `b136972` **não resolve mais, e o sucessor dele também não**: a limpeza do
-  e-mail pessoal reescreveu a `feature/full_server` da libmobile e esse commit
-  virou `5e1526e`; depois o branch foi reorganizado (59 commits em 14) e
-  passou a `2b50f7d`, de modo que o `5e1526e` deixou de existir por sua vez.
-  Este trabalho hoje vive dentro de um dos commits agrupados. Nenhum dos dois
-  hashes antigos resolve, e ficam registrados porque eram o que valia quando
-  cada linha foi escrita — trocar o texto seria mentir sobre o passado, e
-  apontar para um commit agrupado esconderia que houve duas reescritas
-* `b136972`: handshake v1 do relay com o id do aparelho (buffer 0x20→0x30,
-  static_assert derivado das constantes); TEL/WAIT_CALL recusam quando o
-  estado já é "bloqueado"; falha na derivação da identidade não é mais
-  cacheada (fecha a janela do 3DS logo após o boot); byte de motivo do relay
-  só logado, nunca altera o estado (não é autenticado). 15 verificações,
-  suíte inteira verde; sondado ao vivo contra o relay de produção
-
-* Fix: **a resposta de consulta com dois campos era recusada** (`be1c4fc`) —
-  `<contador> <assinatura>`, sem eco, que é o que o servidor devolve na
-  primeira consulta da vida de um aparelho, com contador zero. O parser
-  exigia três campos, e nenhum teste cobria o caminho
-* Suíte de testes versionada em `tests/` com ctest (`ac3f3af`), desligada por
-  padrão quando o core é subprojeto — foi ela que pegou o defeito acima
-* Documentado (`eef8398`): o teto de desafio APOP de 96 veio de medição —
-  66 bytes no Dovecot em produção —, não de limite de protocolo; e CRAM-MD5
-  foi avaliado e deliberadamente não implementado, porque a fraqueza que ele
-  corrige só importa contra segredo curto
+* Device-auth por sessão PPP: autoriza uma vez, na primeira conexão às portas
+  25/110, e desautoriza ao encerrar a sessão; o evento é despachado durante a
+  sessão (no máximo um em voo, o novo substitui o anterior) e o socket volta
+  para o jogo na hora em que ele precisa do slot
+* Identidade por aparelho: id de 8 bytes derivado de
+  `sha256(nome-do-frontend || 0x00 || identidade)`, callback
+  `mobile_def_device_identity`, código de pareamento `XXXX-XXXX`
+  (`mobile_device_auth_get_id` / `get_pairing_code`)
+* Contador reservado em lotes de 50 para poupar a flash; garantia é
+  "estritamente crescente, nunca repetido", não continuidade, e só o teto é
+  persistido. Consulta assinada ao conectar o PPP, com três formas de resposta
+  aceitas (`<c> <assinatura>`, `<c> <eco> <assinatura>`, `blocked <eco> <assinatura>`);
+  o contador só avança
+* Bloqueio cooperativo (`mobile_device_auth_block_state()`, nunca persistido):
+  bloqueado, TCP_CONNECT, DNS_REQUEST, TEL e WAIT_CALL são recusados
+* Chave e teto do contador na área de extensão `DA` da config (0x160); API
+  pública para guardar e ler a chave
+* Resolução de DNS interna (`device.auth.dion.ne.jp` pelo mecanismo de
+  DNS1/DNS2), com o IP entregue ao callback
+* **APOP** (RFC 1939) no lugar da senha: o segredo é a chave de device-auth em
+  64 caracteres hex e o login é o gID que a `mobile_config.bin` leva. Sem
+  fallback para USER/PASS quando há chave; sem chave, passa direto como no POP3
+  clássico. Teto de desafio 96 (medido: 66 bytes no Dovecot); CRAM-MD5 avaliado
+  e deliberadamente não implementado, porque a fraqueza que ele corrige só
+  importa contra segredo curto
+* Relay v1: o handshake carrega o id do aparelho (pacote 0x20→0x30); TEL e
+  WAIT_CALL recusam quando o estado já é "bloqueado"; falha na derivação da
+  identidade não é cacheada; o byte de motivo do relay só é logado. Relay sem
+  token recusa conectar, sem gastar tentativas
+* Porta de e-mail alternativa: SMTP 25→587, com fallback para 25 se a conexão
+  falhar; flag na config (byte 0x0c, padrão ligado); API
+  `mobile_config_set_alt_mail` / `get_alt_mail`
+* Fix real de bug: envio parcial ou zero de socket (`mobile_cb_sock_send()`)
+  era tratado como sucesso/erro errado; DNS e handshake/CALL/WAIT/GET_NUMBER do
+  relay reenviam até completar. Em P2P, erro de socket deixa de ser reportado
+  ao jogo
+* Fix real de bug: `mobile_addr_compare()` comparava padding de struct — em ARM
+  o enum ocupa 1 byte e sobram 3 não inicializados, e nenhuma resolução de DNS
+  funcionava. Agora compara campo a campo (`tests/test_addr_compare.c`)
+* `md5.c` e `sha256.c` próprios; suíte de 16 programas em `tests/`, só com
+  CMake (`LIBMOBILE_BUILD_TESTS` ligado standalone, desligado quando o core é
+  subprojeto)
 
 ## libmobile-bgb
 
-* Corrigido bug de leitura de socket POP3/HTTP que travava com resposta
-  grande
-* Corrigido: resposta da conexão não sendo drenada antes de fechar
-* Puxadas as correções do core (device-auth, autenticação de POP3, envio
-  parcial de socket); builds em `72fac61`
-* No topo do ramo (`bb2d9b4`): `77b09e9` e `159d299` integrados e testados;
-  reversão dos timestamps temporários de log (`08a2320`)
-* Builds Linux e Windows produzidas para empacotamento
-* `3fe18d9`: core b136972 (relay v1); nada a mudar no source. Achado no
-  caminho: o relay falso do test.py lia o handshake com tamanho fixo e
-  derrubava o cliente v1 — corrigido para aceitar v0 e v1 e ecoar a versão.
-  `_RELEASES/libmobile-bgb` regenerada e conferida por sha256
-* **Nota: os hashes do libmobile-bgb citados acima não existem mais.** Em
-  11/09 o e-mail pessoal do dono foi retirado de todo o histórico das duas
-  branches, o que reescreveu a linha inteira em cascata. O conjunto vivo
-  passou a ser `feature/full_server` em **2eec307** e
-  `feature/alt_mail_parameter` em **9eab62d**; as duas árvores finais são
-  idênticas às de antes, verificado por tree hash e pela sequência
-  commit a commit. Os antigos que este documento citava mapeiam assim:
-  `3fe18d9` → `fa48ba2` e `a56c3ec` → `862d147`. Conferido aqui, e não
-  aceito de recado: nenhum dos antigos é alcançável a partir de qualquer
-  branch publicada. A única assinatura perdida é a do próprio dono
-  (`5db419f` → `9eab62d`); a de terceiro (`12a30c5`, Andrew Cook) ficou
-  fora do range e intacta
-
-* **Aviso quando não há chave de correio** (`624c725`) — o código de
-  pareamento saía normal num aparelho sem chave, e a falha só aparecia
-  depois, na primeira busca
-* Dois logs de andaime removidos (`4819a72`): imprimiam o `ppp_id` no stderr
-  de todo authorize, identificador de conta que alguém cola num pedido de
-  ajuda sem perceber. Os outros dois ficaram, re-rotulados como o que
-  viraram: log de suporte
-* Teste do caminho bloqueado (`d6bfc6b`, `1e763a3`), com servidor de
-  device-auth falso e resposta `blocked` assinada de verdade. Rodar achou um
-  defeito no próprio harness: a leitura do stderr bloqueava até encher o
-  buffer, o que nenhum teste anterior expunha por só ler depois de o processo
-  morrer
+* Cliente de device-auth (`device_auth.c` / `.h`): autoriza e desautoriza a
+  sessão PPP por HTTP, consulta de contador com resposta assinada e aviso
+  `BLOCKED` no stderr; a resposta é drenada antes de fechar. Sem opção de linha
+  de comando, variável de ambiente ou constante de compilação para redirecionar
+  o servidor
+* Identidade do PC (`/etc/machine-id`, `MachineGuid` no Windows, ou host e
+  usuário) entregue ao core sob o nome de frontend `libmobile-bgb`; código de
+  pareamento e id impressos ao iniciar
+* Aviso ao iniciar quando o aparelho não tem chave de correio (baixar a
+  `mobile_config.bin` da conta)
+* `--no-port-redir`: usa a porta 25 nas requisições SMTP (vem de commits do fork
+  de Andrew Cook)
+* Arquivo de config padrão passa a `mobile_config.bin`; README atualizado
+* Build do Windows reproduzível (`-Wl,--no-insert-timestamp` nos três sistemas
+  de build; `advapi32` para o `MachineGuid`); o README documenta que os
+  binários de release usam o toolchain que houver
+* Submódulo libmobile aponta para `zenaror/libmobile`, ramo `feature/full_server`
+* `test.py`: relay falso que aceita handshake v0 e v1 e ecoa a versão, testes
+  de device-auth e do caminho bloqueado (servidor falso, resposta `blocked`
+  assinada de verdade; pulados sem root e sem as portas 80/110),
+  `test_relay_no_token` e dreno contínuo do stdout/stderr do processo
 
 ## PicoAdapterGB
 
-* Implementação completa de device-auth, autenticação de POP3 por APOP e
-  relay (backends Pico W e ESP)
-* Confirmado: sem auto-negociação de relay token (repasse direto)
-* Confirmado (via engenharia reversa do binário fechado do ESP-AT): strings
-  de evento Wi-Fi/socket batem com o parser
-* No topo do ramo (`bb2d9b4`), verificado por ancestralidade; os dois
-  resolvers de DNS próprios (~500 linhas) aposentados após o `935aec7`
-* Padding do `mobile_addr_compare()` medido no toolchain deles: não
-  atingidos só porque as structs nasciam zeradas dos dois lados — levado ao
-  core
-* Batching N=50 ainda sem teste em hardware real (rodada única, pendente)
-* `30a1d42` **não resolve mais**: a limpeza do e-mail pessoal reescreveu o
-  branch e esse commit ficou órfão — existe como objeto solto no clone de
-  quem já o tinha, mas nenhuma ref atual o alcança, então num clone novo ele
-  não está. Os seis `.uf2` publicados carregam esse hash **dentro**, na string
-  de versão, e por isso apontam para um commit que não existe mais. A
-  verificação de então provou conteúdo idêntico (`diff --stat` vazio), que é
-  coisa diferente de alcançabilidade do hash citado. O hash antigo fica
-  registrado porque era o que valia quando isto foi escrito
-* **Fechado em 11/09/2026: o conjunto vivo é `ac86891`.** O branch foi
-  reorganizado (20 commits em 7) e repinado na libmobile `2b50f7d`, e os seis
-  `.uf2` foram refeitos carregando o hash novo, verificado no `.elf` de cada
-  um — nunca pelo `strings` no `.uf2`, que dá falso negativo quando a string
-  cai numa fronteira de bloco do container. O squash e a reconstrução saíram
-  na **mesma passada**, de propósito: separados, haveria uma janela em que os
-  binários publicados citariam um hash que o squash acabara de matar, ou seja,
-  o dano aumentaria antes de diminuir. Não faz sentido comparar o conteúdo com
-  o conjunto antigo: estes binários são funcionalmente novos, com todo o
-  trabalho de device-auth desde o último release de verdade, e não o mesmo
-  conteúdo reetiquetado. **Verificados por build, não em hardware** — a rodada
-  não incluiu teste em placa
-* `30a1d42`: submódulo em b136972 (relay v1), nenhuma linha de firmware
-  mudou; seis Release .uf2 regenerados e copiados para
-  `_RELEASES/PicoAdapterGB` (sha256 conferido). Aviso do mantenedor: `strings`
-  no `.uf2` dá falso negativo quando a string de versão cai numa fronteira
-  de bloco do container — a prova é o ELF (1 ocorrência nos seis) e o sha256.
-  Handshake v1 ainda não exercitado em hardware
-
-* **Aviso quando não há chave de correio** na interface web (`db8cd43`), com
-  o texto convergido entre as três implementações
-* Fix: **leitura fora dos limites em `flash_eeprom.c`** (`f9dbb4a`) — o
-  `memcpy` usava o tamanho do destino, lendo 20 e 55 bytes além do fim dos
-  literais de SSID e senha padrão. O aviso do compilador já aparecia sem
-  ligar flag nenhuma; ninguém lia o log
-* Limpeza da chave por ponteiro `volatile` no lugar de `memset` (`de1e4b3`) —
-  um `memset` em buffer que ninguém mais lê é escrita morta, e o compilador
-  pode descartá-la
-* `SPDX-License-Identifier: GPL-3.0-only` em 27 arquivos (`88b2fc8`)
-* Dois alvos a mais no pacote: `Pico2W_SmBoard` e `Pico2ESP_SmBoard`. São
-  oito, não seis — nunca foi limitação técnica, os pinos do StackSmashing
-  existem iguais no Pico 2 W
+* Device-auth por canal HTTP lateral (fila de 4,
+  `GET /api/adapter/device-auth?...action=authorize|deauthorize|query`), consulta
+  de contador assinada, identidade do aparelho pelo id único da placa
+  (`pico_unique_id`, nome `picoadaptergb`) e código de pareamento na interface
+  web e no serial, nos backends Pico W e ESP. APOP e relay v1 vêm da libmobile
+  fixada, não do firmware
+* Interface web: aviso quando não há chave de correio (texto convergido entre
+  as três implementações), rótulo "Current device" (cor e não-tarifado) no
+  lugar dos bytes brutos, arquivo de config `mobile_config.bin`, e o upload
+  restaura a chave de device-auth (cabeçalho `DA` em 0x160)
+* Fix: **leitura fora dos limites em `flash_eeprom.c`** — o `memcpy` usava o
+  tamanho do destino, lendo 20 e 55 bytes além do fim dos literais de SSID e
+  senha padrão. O aviso do compilador já aparecia sem ligar flag nenhuma
+* Limpeza da chave por ponteiro `volatile` no lugar de `memset` — um `memset`
+  em buffer que ninguém mais lê é escrita morta, e o compilador pode
+  descartá-la
+* Socket do Pico W: callbacks do lwIP ligados ao `socket_impl` de cada conexão
+  (sem o índice global `currentReqSocket`), datagrama UDP truncado a 512 em vez
+  de fatiado, `tcp_output()` após `tcp_write`, `ERR_MEM` vira 0 (contrapressão)
+  em vez de -1, e correções de ponteiro nulo em `addr`/`pbuf_alloc`, da ordem do
+  `udp_remove` e de ponteiros pendentes nos callbacks de erro/FIN
+* Backend ESP: `esp_at_send()` volta a ser não bloqueante e o connect TCP tem
+  janela de retry de 20 s
+* `SPDX-License-Identifier: GPL-3.0-only` em 27 arquivos; README com a seção de
+  licenciamento (firmware GPL-3.0, libmobile LGPL-3.0-or-later);
+  `.gitmodules` aponta para `zenaror/libmobile`, ramo `feature/full_server`
 
 ## mGBA
 
-* **Fechado de ponta a ponta em produção (3DS, 08/09/2026)** — primeiro
-  `authorize` da história do servidor, política de relay liberando, e-mail
-  no Gmail, `deauthorize` ao desligar. Atribuição fechada pela continuidade
-  do lote do contador (151…154 → 201, 202), não por IP
-* Camada de adaptador verificada em hardware depois de corrigir o padding do
-  `mobile_addr_compare()` (fix que depois subiu ao core)
-* Callback não-bloqueante com fila de 4 e máquina de estados, um passo por
-  frame; resposta drenada até o servidor fechar; socket dedicado
-* Tela do adaptador mostra os relatórios de device-auth conforme saem
-* Repositório no Gitea local (não mais GitHub); árvore vendorizada idêntica ao
-  `feature/full_server` byte a byte
-* 09/09/2026: identidade por aparelho (MAC do rádio no 3DS, machine-id no
-  PC), consulta assinada ao iniciar a sessão, bloqueio cooperativo mostrado
-  na tela ("BLOCKED"); fix de reregistro da identidade após reset; menu do
-  adaptador só com ROM carregada. Teste do dono no 3DS aprovado, commits e
-  pushes liberados. Release oficial `0.11-feature/full_server-9255-6b650cd76`
-  (core 99ad277) em `_RELEASES/mGBA`, três plataformas do mesmo commit,
-  verificada por conteúdo
-* Release `0.11-feature/full_server-9257-0ab45a2a0` (core b136972, relay
-  v1): árvore vendorizada atualizada e o retry de identidade do frontend
-  retirado (o core re-deriva sozinho). Três plataformas do mesmo commit,
-  conferidas por conteúdo, nenhum hash anterior
-* **PS Vita** no pacote (`_RELEASES/mGBA/Vita/mgba.vpk`, versão
-  `0.11-feature/vita-magb-9262-100ac18bf` = full_server 0ab45a2a0 + portas
-  de CMake, sockets não-bloqueantes do sceNet, mobile.log como opção de
-  menu). Testado hoje no hardware: login DION, homepage do Mobile Trainer,
-  código de pareamento, consulta de contador; ainda não: envio de e-mail,
-  P2P pelo relay, tela de bloqueio; sem otimização de desempenho ainda.
-  README da release com instalação (VitaShell, HENkaku/h-encore) e o
-  caminho `ux0:data/mGBA/`; dois trechos defasados corrigidos (menu só com
-  jogo, config do 3DS em `/mGBA/`)
-* Próximo (prioridade mais baixa, qualquer outra demanda passa na frente):
-  otimizações do emulador para ARM na Vita
-
-* **Aviso quando não há chave de correio** (`9d2e9b91a`), nos quatro lugares
-  que mostram o código de pareamento. O `Unavailable` do Qt continua
-  significando falta de identidade, que é outra falha com outra solução
-* Fix: **o arquivo de identidade do libretro era aceito sem se olhar o
-  conteúdo** — bastava ter 16 bytes. Um arquivo zerado por escrita
-  interrompida passava como válido, e toda instalação nessa situação
-  colidiria numa identidade só. Agora rejeita e sorteia de novo
+* **PS Vita, Switch e Wii** no pacote: o `CMakeLists` deixa de forçar
+  `USE_LIBMOBILE` desligado e as fontes do SIO voltam sob `MINIMAL_CORE`; na
+  Vita, sockets não-bloqueantes do `sceNet` e `mobile.log` como opção de menu
+* Tela nativa do adaptador (`gui-mobile.c`) no 3DS, Vita, Switch e Wii: ativar,
+  status, relatórios de device-auth, código de pareamento, log na tela de baixo,
+  trace de sockets, tipo, não-tarifado, DNS1/2, porta P2P, relay, token e "Use
+  mail port 587". O adaptador só abre com um jogo rodando; teclado numérico no
+  3DS
+* Núcleo libretro: opção `mgba_mobile_adapter` (desligada por padrão),
+  `mobile_config.bin` e `magb_config.ini` no diretório de sistema, binário
+  separado `mgba_magb_libretro`. Sorteia a identidade uma vez, guarda em arquivo
+  próprio ao lado da config e rejeita arquivo zerado
+* Qt: caixa "Enable Mobile Adapter GB" (de propósito não persistida), campo do
+  código de pareamento e config gravada no disco na hora
+* Canal lateral de device-auth não-bloqueante (`mobile-auth.c`): fila de 4,
+  estados IDLE/CONNECTING/SENDING/DRAINING, um passo por frame, socket
+  dedicado, resposta drenada até o servidor fechar; carrega também a consulta
+  assinada de contador
+* Identidade por aparelho: MAC do rádio (3DS, Vita), número de série (Switch),
+  endereço Wi-Fi (Wii), `MachineGuid` (Windows), `/etc/machine-id` (Linux) e
+  reserva "host|usuário"; toda fonte é validada, valor zerado é recusado, e a
+  identidade é reaplicada a cada reset. Consulta assinada ao iniciar a sessão;
+  bloqueio cooperativo mostrado na tela ("Blocked on the site")
+* Aviso quando não há chave de correio, nos cinco lugares que mostram o código
+  de pareamento. O `Unavailable` do Qt continua significando falta de
+  identidade, que é outra falha com outra solução
+* Sessões de e-mail reportadas a um relay cooperante; leitura de socket sem
+  poll prévio
+* Fork público em `github.com/zenaror/mgba`, com aviso no README de que não é o
+  mGBA oficial; nome "mGBA (MAGB fork)" e IDs próprios (3DS `0xD7AB`, Vita
+  `MAGB00001`) para conviver com o build oficial; build de macOS no CI;
+  `MOBILE_ADAPTER_3DS.md`
 
 ## Mobile Adapter GB TestSuite ROM
 
 * Testes BIG BUFFER (8192 bytes) e SMALL BUFFER (128 bytes) contra fixtures
-  próprios do servidor — o teste NEWS ARTICLE saiu, e nenhum teste depende
-  mais de dados reais do Pokémon Crystal
-* Ritual pré-conexão como teste próprio, com o read de config nos dois splits
-  — o resto da suíte só exercitava um deles
-* Pacing de ~400ms nos caminhos HTTP: velocidade máxima não é o teste mais
-  realista, e alguns bugs só aparecem devagar
-* Fix: buffer pequeno demais pra resposta POP3 `TOP`, travava com mensagem
-  grande
-* Fix real de bug: resposta que chega junto com o ACK do próprio envio
-  estava sendo descartada (causa raiz de um travamento intermitente)
+  próprios do servidor — os testes NEWS ARTICLE e News Config saíram das duas
+  ROMs, e nenhum teste autenticado (GB00) depende mais de dados do Pokémon
+  Crystal
+* Pacing de ~400ms entre blocos nos downloads HTTP (Tamago e BIG BUFFER no
+  GBDK; BIG BUFFER no RGBDS): velocidade máxima não é o teste mais realista, e
+  alguns bugs só aparecem devagar. O correio fica sem pacing
+* Fix real de bug: resposta que chega junto com o ACK do próprio envio estava
+  sendo descartada (causa raiz de um travamento intermitente)
 * Fix: crash pós-reset por falta de init do stack pointer (build RGBDS)
-* **AUTH PREFIX** — teste negativo em item próprio (`SERVER CONF`),
-  separado dos testes de adaptador: manda o Authorization com o prefixo
-  genuíno de 44 e a cauda destruída e exige `401 + Gb-Status: 201`. Verificado
-  em execução nas duas ROMs, com o servidor confirmando "prefixo confere"
-* As três formas de 401 distinguidas pelo `Gb-Status` e pelo que a ROM
-  enviou: `AUTH REJECTED (201)`, `CHALLENGE EXPIRED`, `AUTH ID REJECTED`
-* Fix: overflow do buffer do Authorization no GBDK — saía truncado no meio do
-  base64; agora 104 caracteres com aspa de fecho, visível na instrumentação
-* EMAIL RECV: assunto `MAGB TEST` (9 chars, cabe nos 10 do servidor) e
-  casamento por prefixo; `RETR` ausente por decisão, para não apagar correio
-  real da caixa do dono
-* Save da senha confirmado com ciclo de energia real nas duas ROMs; guias
-  gbdk/rgbds reescritos; hardware do gbdk não desenha mais tela
-
+* **AUTH PREFIX** — teste negativo em item próprio (`SERVER CONF`), separado dos
+  testes de adaptador: manda o Authorization com o prefixo genuíno de 44 e a
+  cauda destruída e exige `401 + Gb-Status: 201`. Verificado em execução nas
+  duas ROMs, com o servidor confirmando "prefixo confere"
+* As três formas de 401 distinguidas pelo `Gb-Status` e pelo que a ROM enviou:
+  `AUTH REJECTED (201)`, `CHALLENGE EXPIRED`, `AUTH ID REJECTED`
+* EMAIL RECV: assunto `MAGB TEST` (9 chars, cabe nos 10 do servidor) e casamento
+  por prefixo; só apaga (`DELE`) as mensagens do próprio teste, nunca o resto da
+  caixa (o Mobile Trainer, ao contrário, apaga tudo)
+* A senha do ISP passa a persistir na SRAM do cartucho (as duas ROMs viram
+  MBC5+RAM+BATTERY), confirmado com ciclo de energia real; guias gbdk/rgbds
+  reescritos; hardware do gbdk não desenha mais tela; `make check-banking`

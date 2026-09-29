@@ -58,8 +58,8 @@ const dbConfig = {
 // wEmailAddress -- populated from the sending account's own adapter config
 // (self-identification), not free-form input -- so it's correct to use it,
 // matching how Pokémon Crystal's real Trade Corner protocol always has.
-// It's still resolved through the same dion_email_local lookup deliver.js
-// uses (sendExchangeSuccessEmail below) rather than trusted as a literal
+// It's still resolved through the same dion_email_local lookup Postfix's
+// recipient map uses (sendExchangeSuccessEmail below) rather than trusted as a literal
 // delivery target, so a malformed/hacked payload just fails to resolve
 // instead of routing anywhere unexpected. The message is handed to the local
 // mail system as-is, rather than composed through an SMTP library --
@@ -3504,7 +3504,7 @@ async function sendExchangeSuccessEmail(
   // (self-identification), the same field Pokémon Crystal's real Trade
   // Corner protocol has always used here -- so it's correct to use it, not
   // an account_id substitute. Still resolved safely via the same
-  // dion_email_local lookup deliver.js uses, rather than trusted as a
+  // dion_email_local lookup Postfix's recipient map uses, rather than trusted as a
   // literal delivery target: a malformed/hacked payload just fails to
   // resolve to any account instead of routing anywhere unexpected.
   const localPart = String(emailAddress || "").split("@")[0];

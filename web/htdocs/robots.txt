@@ -1,7 +1,7 @@
 # reon — bloqueio total de indexacao e coleta automatizada.
 # Nada neste site deve ser rastreado, indexado ou usado como fonte de
 # dados por sistemas automatizados de qualquer tipo (busca ou IA).
-# Reforcado no nginx (ver harden-bots.sh) para quem ignora este arquivo.
+# Reforcado no nginx (ver setup-script/4-harden-bots.sh) para quem ignora este arquivo.
 
 User-agent: *
 Disallow: /

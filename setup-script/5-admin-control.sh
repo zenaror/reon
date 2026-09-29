@@ -16,9 +16,10 @@
 #
 # Changing a job's schedule is written as a systemd drop-in under
 # /etc/systemd/system/<unit>.timer.d/, never into the unit file. On this
-# server those unit files are symlinks into the checkout, so editing one
-# would be editing the repository; a drop-in leaves the shipped unit exactly
-# as it came and is undone by deleting one file.
+# server most unit files are symlinks into the deploy/ folder that
+# 1-setup-reon.sh generates, so editing one would edit that generated copy (and
+# a re-run of the setup would undo it); a drop-in leaves the shipped unit
+# exactly as it came and is undone by deleting one file.
 set -euo pipefail
 
 HELPER=/usr/local/sbin/reon-admin-ctl
@@ -97,6 +98,7 @@ ALLOWED=(
 	reon-service-status
 	nginx
 	postfix
+	dovecot
 )
 
 # Units whose schedule and enabled state this script may touch. Only the
@@ -195,7 +197,13 @@ case "$verb" in
 		# systemd itself decides whether the expression is valid, before
 		# anything is written. A drop-in with a bad OnCalendar would leave
 		# the job silently never running again.
-		if ! systemd-analyze calendar "$arg" >/dev/null 2>&1; then
+		# `--` and the leading-dash refusal: without them a value such as
+		# --help or --iterations=... would be read as an OPTION of
+		# systemd-analyze, run as root on the panel's request.
+		case "$arg" in
+			-*) echo "refused: $arg is not a valid systemd calendar expression" >&2; exit 65 ;;
+		esac
+		if ! systemd-analyze calendar -- "$arg" >/dev/null 2>&1; then
 			echo "refused: $arg is not a valid systemd calendar expression" >&2
 			exit 65
 		fi
@@ -350,26 +358,30 @@ BANHELPEREOF
 chown root:root "$BAN_HELPER"
 chmod 0755 "$BAN_HELPER"
 
-cat > "$SUDOERS" <<SUDOEOF
+# A malformed sudoers file locks the machine's sudo entirely, so each one is
+# written to a temporary file and checked THERE; only a file that passes is
+# installed. (Checking after installing meant a rejected file was deleted
+# together with a previously working one.)
+tmp_sudoers="$(mktemp)"
+tmp_ban_sudoers="$(mktemp)"
+trap 'rm -f "$tmp_sudoers" "$tmp_ban_sudoers"' EXIT
+
+cat > "$tmp_sudoers" <<SUDOEOF
 # The admin panel's service controls. One command, no password, nothing else.
 $WEB_USER ALL=(root) NOPASSWD: $HELPER
 SUDOEOF
 
-cat > "$BAN_SUDOERS" <<SUDOEOF
+cat > "$tmp_ban_sudoers" <<SUDOEOF
 # The admin panel's ban list. One command, no password, nothing else.
 $WEB_USER ALL=(root) NOPASSWD: $BAN_HELPER
 SUDOEOF
 
-chown root:root "$SUDOERS" "$BAN_SUDOERS"
-chmod 0440 "$SUDOERS" "$BAN_SUDOERS"
-
-# A malformed sudoers file locks the machine's sudo entirely, so it is
-# checked before it is left in place.
-if ! visudo -c -f "$SUDOERS" || ! visudo -c -f "$BAN_SUDOERS"; then
-	rm -f "$SUDOERS" "$BAN_SUDOERS"
-	echo "sudoers entry was rejected and has been removed; nothing was granted." >&2
+if ! visudo -c -f "$tmp_sudoers" || ! visudo -c -f "$tmp_ban_sudoers"; then
+	echo "sudoers entry was rejected; nothing was installed or removed." >&2
 	exit 1
 fi
+install -m 0440 -o root -g root "$tmp_sudoers" "$SUDOERS"
+install -m 0440 -o root -g root "$tmp_ban_sudoers" "$BAN_SUDOERS"
 
 echo "Installed $HELPER and granted $WEB_USER the right to run it."
 echo "The Services and Logs pages of the admin panel will now work."

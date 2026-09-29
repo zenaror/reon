@@ -1,3 +1,6 @@
+// LEGACY: REON's own POP3 server. Off since 2026-09-12 (config.json `disable_pop3`):
+// Dovecot answers port 110 now (examples/dovecot/). Kept for reference and for
+// the development environments that still run it; do not enable it next to Dovecot.
 const EventEmitter = require("events");
 const crypto = require("crypto");
 const gameFormat = require("./gameFormat.js");
