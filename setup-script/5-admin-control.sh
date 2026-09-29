@@ -96,6 +96,7 @@ ALLOWED=(
 	reon-mail-bottle
 	reon-mail-trash-purge
 	reon-service-status
+	reon-patch-build
 	nginx
 	postfix
 	dovecot
@@ -114,6 +115,7 @@ TIMED=(
 	reon-mail-bottle
 	reon-mail-trash-purge
 	reon-service-status
+	reon-patch-build
 )
 
 # Stopping nginx from a page nginx is serving is a one-way door: the panel

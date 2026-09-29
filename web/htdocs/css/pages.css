@@ -102,7 +102,10 @@
 .reon-page .reon-download h3 {
   margin: 0 0 6px;
   font-family: var(--reon-font-display);
-  font-size: var(--mt-1);
+  /* Bigger than the text under it: at the 12px chrome size a card's title read
+     as a caption to the paragraph below. */
+  font-size: 1.3rem;
+  line-height: 1.2;
 }
 
 .reon-page .reon-download p { margin: 0 0 6px; }
@@ -130,6 +133,59 @@
 .reon-page .reon-download__note:empty { display: none; }
 
 .reon-page .reon-download__note.is-warn { color: #9a3412; }
+
+/* Game patches: a menu, the facts about the chosen patch, its button. */
+.reon-page .reon-patches__label {
+  display: block;
+  font-family: var(--reon-font-display);
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.reon-page .reon-patch-pick {
+  display: block;
+  width: 100%;
+  margin: 4px 0 10px;
+  padding: 4px 6px;
+  border: 1px solid var(--reon-line);
+  background: #fffdf4;
+  color: var(--reon-ink);
+  font: inherit;
+}
+
+.reon-page .reon-patches__regions {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.reon-page .reon-patches__regions[hidden],
+.reon-page .reon-patches[hidden],
+.reon-page .reon-patches [data-family-note][hidden] { display: none; }
+
+.reon-page .reon-patches__regions legend { padding: 0; }
+
+.reon-page .reon-patches__region {
+  display: block;
+  margin: 3px 0;
+  cursor: pointer;
+}
+
+.reon-page .reon-patches__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 14px;
+  margin: 0 0 8px;
+}
+
+.reon-page .reon-patches__facts dt { color: var(--reon-ink-soft); font-size: 0.92em; }
+.reon-page .reon-patches__facts dd { margin: 0; overflow-wrap: anywhere; }
+.reon-page .reon-patches__facts dd.is-hash { font-family: monospace; font-size: 0.92em; }
+
+@media (max-width: 560px) {
+  .reon-page .reon-patches__facts { grid-template-columns: 1fr; }
+  .reon-page .reon-patches__facts dd { margin-bottom: 4px; }
+}
 
 /* Several pickers side by side (board / network / wiring). */
 .reon-page .reon-download--wide { grid-column: 1 / -1; }

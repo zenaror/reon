@@ -208,10 +208,43 @@ From the shell: `fail2ban-client status reon-web-scan`,
   `reon-session-sweep` (hourly), `reon-monthly-reboot` (the 15th, 04:15 UTC).
   `reon-auto-schedule-refresh` is a unit with no timer: the panel runs it on
   demand (Services -> Auto schedule -> refresh).
+- `reon-patch-build` (daily, 05:10 UTC): rebuilds the games from their
+  repositories and republishes their patches when the source changed; a run
+  with nothing new takes seconds. See "Game patches" below.
 - `/tmp` is tmpfs and is emptied at every boot; `/etc/tmpfiles.d/reon.conf`
   recreates `/tmp/reon` (sessions and the Twig cache) and exempts it from the
   10-day `/tmp` cleanup. `vm.swappiness` lives in `/etc/sysctl.d/99-reon.conf`
   (`/etc/sysctl.conf` is not read by this systemd).
+
+## Game patches (`/downloads.php`)
+
+`reon-patch-build` (installed by `6-setup-rom-patches.sh`, described in
+`maint/rom-patches/README.md`) builds the games from their public
+repositories and publishes **patches, never ROMs**.
+
+- The official ROMs the patches are made against are in
+  `/var/lib/reon-patches/roms/` (mode 0700, owner `reonpatch`). Not served, not
+  readable by the web user, not in the backups. Put one away with
+  `sudo -u reonpatch reon-patch-build add-rom FILE`; `status` lists what is
+  missing.
+- `/var/lib/reon-patches/public/` holds the `.bps` files and `manifest.json`;
+  nginx serves that folder as `/patches/` and nothing else of the state
+  directory. The Downloads page lists the manifest (`PatchListUtil`).
+- Every patch is applied back to its base ROM and compared with the build
+  before it is written, and a guard refuses anything that is not a small BPS
+  patch. A game that fails to build keeps its last good patch online; the
+  unit shows as failed.
+- To run it now: Admin -> Services -> Game patches -> run, or
+  `sudo systemctl start reon-patch-build.service`. Logs: `journalctl -u
+  reon-patch-build`. A full rebuild takes about eight minutes on this
+  machine (peak memory about 400 MB); the unit is capped at 600 MB and runs
+  at low CPU/IO priority.
+- The build runs the games' Makefiles, so the unit is sandboxed (own
+  directory only, no home directories, no privileges) and runs as its own
+  user.
+- rgbds 0.6.1 and 1.0.3 are built from source into `/opt/reon-toolchain`. The
+  Crystal forks need exactly 0.6.1; the distribution's rgbds does not
+  assemble them.
 
 ## What a ban of an account blocks
 

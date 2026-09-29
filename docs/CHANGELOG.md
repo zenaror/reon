@@ -975,6 +975,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Conteúdo: guias, downloads e hubs de jogo
 
+* **Patches dos jogos na página Downloads, gerados por uma rotina no servidor** (`maint/rom-patches/`, instalada pelo `6-setup-rom-patches.sh`): ela baixa os repositórios (Crystal em inglês, francês, alemão, italiano e espanhol; Game Boy Wars 3 em inglês), compila e publica um patch BPS contra a ROM oficial — só o patch, nunca a ROM. As ROMs oficiais ficam num diretório privado (0700, usuário próprio, fora do nginx e dos backups), achadas pelo SHA-1
+  * Cada patch é aplicado de volta na ROM base e comparado byte a byte com o que foi compilado antes de ser publicado, e uma trava recusa qualquer coisa que não seja um patch pequeno; um jogo que falha ao compilar mantém o último patch bom no ar. Testado com o Floating IPS nos dois sentidos
+  * Roda todo dia às 05:10 UTC (sem novidade nos repositórios leva segundos), ou no botão do painel (Services → Game patches). A página lista o que a rotina publicou e mostra o SHA-1 da ROM original e da ROM final
+  * Compila o rgbds 0.6.1 (exigido pelos forks do Crystal) e o 1.0.3 (fixado pelo Game Boy Wars 3) a partir do código-fonte, conferidos por SHA-256
 * **Páginas "Get started" e "Downloads"** no menu superior e na lateral:
   texto em Markdown em `web/pages/<slug>.<idioma>.md` (inglês como fallback),
   renderizado pelo mesmo CommonMark das notícias, sumário automático dos
@@ -1077,7 +1081,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   estavam; README de instalação, scripts de hardening e README do systemd
   traduzidos); toda URL de repositório dentro dos projetos aponta para o
   GitHub — os submódulos da libmobile no bgb e no Pico e as instruções de clone
-  do mGBA; os cinco scripts de instalação (o quinto é opcional), o
+  do mGBA; os seis scripts de instalação (o quinto e o sexto são opcionais), o
   `pull-backups.sh`, o `reon-menu.sh` e este changelog passaram a viver no
   repositório do reon (`setup-script/`, `docs/`), com os scripts achando
   `reon/` e `mobile-relay/` em qualquer dos dois layouts

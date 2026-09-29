@@ -27,9 +27,9 @@
       digits before the first dot and addCostToAccount() charges them to
       sys_users.money_spent, and auth.php:12 only requires authentication when a
       cost exists.
-    - REON distributes no ROMs or patches today, so the Italian/Spanish ROM bug
-      in section 3.3 affects nothing we ship. The "Games and patches" section of
-      web/pages/downloads.en.md is an unwritten stub.
+    - REON distributes patches, never ROMs (the "Game patches" section of
+      web/pages/downloads.en.md, built by maint/rom-patches), so the
+      Italian/Spanish ROM bug in section 3.3 concerns whatever those forks build.
 
   What is NOT verified, quoted from the document's own section 7: nothing here has
   run on an emulator or a console; only the FF x6 "always" schedule was traced end

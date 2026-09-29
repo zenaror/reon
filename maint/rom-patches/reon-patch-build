@@ -1,0 +1,456 @@
+#!/usr/bin/env python3
+"""reon-patch-build -- build the games from their repositories and publish
+patches for them, never the ROMs.
+
+For each game in games.json: fetch the repository, build it, and make a BPS
+patch from the official base ROM (kept privately, found by its SHA-1) to the
+ROM that came out. The patch is applied back onto the base ROM and the result
+compared with the build before anything is published, and what is published is
+only ever a .bps file plus manifest.json.
+
+  reon-patch-build [build] [--only ID] [--force] [--dry-run]
+  reon-patch-build add-rom FILE...      put an official ROM (raw or .zip) away
+  reon-patch-build status               what is built, what ROM is missing
+  reon-patch-build apply PATCH BASE OUT apply a patch (what a player does)
+
+State lives in /var/lib/reon-patches (REON_PATCH_STATE):
+  roms/    the official ROMs, <sha1>.rom, mode 0700 -- never served
+  src/     one clone of each repository
+  work/    scratch for the build in progress
+  public/  the patches and manifest.json -- the only thing nginx serves
+"""
+import argparse
+import datetime
+import fcntl
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, HERE)
+import bps  # noqa: E402
+
+STATE = os.environ.get("REON_PATCH_STATE", "/var/lib/reon-patches")
+TOOLCHAIN = os.environ.get("REON_TOOLCHAIN", "/opt/reon-toolchain")
+CATALOG = os.environ.get("REON_PATCH_CATALOG", os.path.join(HERE, "games.json"))
+
+BUILD_TIMEOUT = 20 * 60
+GIT_TIMEOUT = 5 * 60
+# A patch is a few percent of the ROM it patches. One that is a large share of
+# it is carrying the game itself, which is the one thing this tool must not
+# publish; the build stops there instead of guessing.
+DEFAULT_MAX_PATCH_RATIO = 0.5
+
+
+# ---- logging ---------------------------------------------------------------
+# Under systemd the "<N>" prefix is the journal priority (the same convention
+# the Node side's lib/log.js uses); on a terminal it is left out.
+_PRIO = {"error": 3, "warn": 4, "info": 6, "debug": 7}
+_journal = bool(os.environ.get("JOURNAL_STREAM"))
+
+
+def log(level, msg):
+    prefix = "<%d>" % _PRIO[level] if _journal else ("%s: " % level.upper() if level != "info" else "")
+    print(prefix + msg, flush=True)
+
+
+class Fail(Exception):
+    pass
+
+
+# ---- helpers ---------------------------------------------------------------
+def sha1_of(data):
+    return hashlib.sha1(data).hexdigest()
+
+
+def sha256_of(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def read(path):
+    with open(path, "rb") as f:
+        return f.read()
+
+
+def atomic_write(path, data, mode=0o644):
+    tmp = "%s.%d.tmp" % (path, os.getpid())
+    with open(tmp, "wb") as f:
+        f.write(data)
+    os.chmod(tmp, mode)
+    os.replace(tmp, path)
+
+
+def load_catalog():
+    with open(CATALOG, encoding="utf-8") as f:
+        cat = json.load(f)
+    seen = set()
+    for g in cat["games"]:
+        for key in ("id", "title", "repo", "rgbds", "rgbds_style", "output", "bases"):
+            if key not in g:
+                raise Fail("catalog: game %r has no %r" % (g.get("id"), key))
+        if g["id"] in seen or not all(c.isalnum() or c in "-_" for c in g["id"]):
+            raise Fail("catalog: bad or repeated id %r" % g["id"])
+        seen.add(g["id"])
+        if g["rgbds_style"] not in ("prefix", "tools"):
+            raise Fail("catalog: %s: rgbds_style must be prefix or tools" % g["id"])
+        if not g["bases"]:
+            raise Fail("catalog: %s has no base ROM" % g["id"])
+        for b in g["bases"]:
+            if len(b["sha1"]) != 40:
+                raise Fail("catalog: %s/%s: sha1 must be 40 hex digits" % (g["id"], b["id"]))
+    return cat
+
+
+def patch_name(game, base):
+    return game["id"] if len(game["bases"]) == 1 else "%s-%s" % (game["id"], base["id"])
+
+
+def known_hashes(cat):
+    return {b["sha1"] for g in cat["games"] for b in g["bases"]}
+
+
+def rom_path(sha1):
+    return os.path.join(STATE, "roms", sha1 + ".rom")
+
+
+def load_base(base):
+    """The private copy of a base ROM, checked against its hash, or None."""
+    path = rom_path(base["sha1"])
+    if not os.path.isfile(path):
+        return None
+    data = read(path)
+    if sha1_of(data) != base["sha1"]:
+        raise Fail("%s does not hash to its own name; remove it and add the ROM again" % path)
+    return data
+
+
+def manifest_path():
+    return os.path.join(STATE, "public", "manifest.json")
+
+
+def load_manifest():
+    try:
+        with open(manifest_path(), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"games": []}
+
+
+def run(cmd, cwd, timeout, env=None):
+    log("debug", "$ " + " ".join(cmd))
+    p = subprocess.run(cmd, cwd=cwd, env=env, timeout=timeout, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT, text=True, errors="replace")
+    if p.returncode != 0:
+        tail = "\n".join(p.stdout.strip().splitlines()[-25:])
+        raise Fail("%s failed (exit %d):\n%s" % (cmd[0], p.returncode, tail))
+    return p.stdout
+
+
+def clean_env(extra_path=None):
+    home = os.path.join(STATE, "home")
+    os.makedirs(home, exist_ok=True)
+    path = "/usr/local/bin:/usr/bin:/bin"
+    if extra_path:
+        path = extra_path + ":" + path
+    return {"PATH": path, "HOME": home, "LANG": "C.UTF-8", "GIT_TERMINAL_PROMPT": "0",
+            "TMPDIR": os.path.join(STATE, "work")}
+
+
+# ---- the guard -------------------------------------------------------------
+def guard(game, name, patch, built, base_data):
+    """Refuse to publish anything that is not a small, self-checking BPS patch.
+
+    This is the last line before the public directory, and it does not trust
+    the code above it: it re-derives everything from the bytes.
+    """
+    if not name.endswith(".bps") or "/" in name or name.startswith("."):
+        raise Fail("guard: %r is not a plain .bps file name" % name)
+    if patch[:4] != b"BPS1":
+        raise Fail("guard: %s is not a BPS patch" % name)
+    # The published bytes must reproduce the build from the base, and only
+    # from the base: applying them is the proof, and a patch that needs no
+    # base to make sense is not one of ours.
+    try:
+        again = bps.apply(patch, base_data)
+    except bps.BpsError as e:
+        raise Fail("guard: %s does not apply to its base ROM: %s" % (name, e))
+    if again != built:
+        raise Fail("guard: %s does not reproduce the build" % name)
+    ratio = game.get("max_patch_ratio", DEFAULT_MAX_PATCH_RATIO)
+    if len(patch) > ratio * len(built):
+        raise Fail("guard: %s is %d bytes, %.0f%% of the ROM (limit %.0f%%): it would be carrying the game"
+                   % (name, len(patch), 100.0 * len(patch) / len(built), 100 * ratio))
+    if patch == built or patch == base_data:
+        raise Fail("guard: %s is a ROM, not a patch" % name)
+    # A plain ROM header (Nintendo logo at 0x104, N64 magic) inside the file's
+    # first bytes would mean somebody published a ROM under a patch's name.
+    if patch[0x104:0x108] == b"\xce\xed\x66\x66" or patch[:4] in (b"\x80\x37\x12\x40", b"\x37\x80\x40\x12"):
+        raise Fail("guard: %s looks like a ROM" % name)
+
+
+# ---- building --------------------------------------------------------------
+def fetch(game):
+    src = os.path.join(STATE, "src", game["id"])
+    env = clean_env()
+    if not os.path.isdir(os.path.join(src, ".git")):
+        os.makedirs(os.path.dirname(src), exist_ok=True)
+        run(["git", "clone", "--quiet", game["repo"], src], STATE, GIT_TIMEOUT, env)
+    ref = game.get("branch") or "HEAD"
+    run(["git", "remote", "set-url", "origin", game["repo"]], src, 60, env)
+    run(["git", "fetch", "--quiet", "--force", "origin", ref], src, GIT_TIMEOUT, env)
+    run(["git", "reset", "--quiet", "--hard", "FETCH_HEAD"], src, 120, env)
+    run(["git", "clean", "-xfdq"], src, 120, env)
+    run(["git", "submodule", "update", "--quiet", "--init", "--recursive"], src, GIT_TIMEOUT, env)
+    commit = run(["git", "rev-parse", "HEAD"], src, 60, env).strip()
+    date = run(["git", "log", "-1", "--format=%cI"], src, 60, env).strip()
+    return src, commit, date
+
+
+def toolchain_bin(game):
+    d = os.path.join(TOOLCHAIN, "rgbds-" + game["rgbds"], "bin")
+    for tool in ("rgbasm", "rgblink", "rgbfix"):
+        if not os.access(os.path.join(d, tool), os.X_OK):
+            raise Fail("rgbds %s is not installed (%s missing); run setup-script/6-setup-rom-patches.sh"
+                       % (game["rgbds"], os.path.join(d, tool)))
+    return d
+
+
+def build(game, src, base_data):
+    tools = toolchain_bin(game)
+    env = clean_env(tools)
+    if game.get("build_base"):
+        with open(os.path.join(src, game["build_base"]), "wb") as f:
+            f.write(base_data)
+    if game["rgbds_style"] == "prefix":
+        args = ["RGBDS=" + tools + "/"]
+    else:
+        args = ["RGBASM=%s/rgbasm" % tools, "RGBLINK=%s/rgblink" % tools, "RGBFIX=%s/rgbfix" % tools]
+    # Not parallel: some repositories build a helper the first time and race
+    # on it under -j; a full build takes seconds either way.
+    run(["make"] + args, src, BUILD_TIMEOUT, env)
+    out = os.path.join(src, game["output"])
+    if not os.path.isfile(out) or os.path.getsize(out) == 0:
+        raise Fail("the build finished but %s is not there" % game["output"])
+    built = read(out)
+    # Leave nothing that is a ROM behind in the clone.
+    run(["git", "clean", "-xfdq"], src, 120, env)
+    return built
+
+
+# Catalog fields that only decide how the Downloads page labels a patch. They
+# stay out of the fingerprint: renaming a region must not rebuild the games.
+PRESENTATION_KEYS = ("title", "language", "family", "family_title")
+
+
+def fingerprint(game):
+    """What, besides the repository's commit, decides the patches' contents."""
+    build = {k: v for k, v in game.items() if k not in PRESENTATION_KEYS}
+    build["bases"] = [{"id": b["id"], "sha1": b["sha1"]} for b in game["bases"]]
+    return sha1_of(json.dumps(build, sort_keys=True).encode())[:12]
+
+
+def decorate(entry, game):
+    """Write the catalog's labels into a manifest entry (new or carried over)."""
+    entry["title"] = game["title"]
+    entry["language"] = game.get("language", "")
+    entry["family"] = game.get("family", game["id"])
+    entry["family_title"] = game.get("family_title", game["title"])
+    labels = {b["sha1"]: b for b in game["bases"]}
+    for p in entry.get("patches", []):
+        b = labels.get(p["base"]["sha1"])
+        if b:
+            p["base"]["id"], p["base"]["label"] = b["id"], b["label"]
+            p["base"]["region"] = b.get("region", b["label"])
+    return entry
+
+
+def build_game(game, force, dry_run, previous):
+    entry = None
+    bases = []
+    for b in game["bases"]:
+        data = load_base(b)
+        if data is None:
+            log("warn", "%s: base ROM %s (%s) is not in %s/roms -- skipped for this base"
+                % (game["id"], b["label"], b["sha1"], STATE))
+        else:
+            bases.append((b, data))
+    if not bases:
+        return previous, "missing-rom"
+
+    src, commit, date = fetch(game)
+    fp = fingerprint(game)
+    if (not force and previous and previous.get("commit") == commit and previous.get("fingerprint") == fp
+            and len(previous.get("patches", [])) == len(bases)
+            and all(os.path.isfile(os.path.join(STATE, "public", p["file"])) for p in previous["patches"])):
+        log("info", "%s: unchanged at %s" % (game["id"], commit[:9]))
+        return decorate(previous, game), "unchanged"
+
+    log("info", "%s: building %s" % (game["id"], commit[:9]))
+    built = build(game, src, bases[0][1])
+    log("info", "%s: built %s (%d bytes, sha1 %s)" % (game["id"], game["output"], len(built), sha1_of(built)))
+
+    patches = []
+    for b, data in bases:
+        name = patch_name(game, b) + ".bps"
+        patch = bps.create(data, built)
+        guard(game, name, patch, built, data)
+        patches.append({
+            "file": name, "format": "bps", "size": len(patch), "sha256": sha256_of(patch),
+            "base": {"id": b["id"], "label": b["label"], "region": b.get("region", b["label"]),
+                     "sha1": b["sha1"], "size": len(data)},
+            "result": {"sha1": sha1_of(built), "size": len(built)},
+        })
+        log("info", "%s: %s -> %d bytes (%.1f%% of the ROM), verified against %s"
+            % (game["id"], name, len(patch), 100.0 * len(patch) / len(built), b["label"]))
+        if not dry_run:
+            atomic_write(os.path.join(STATE, "public", name), patch)
+
+    entry = {"id": game["id"], "repo": game["repo"], "commit": commit, "commit_date": date,
+             "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+             "fingerprint": fp, "patches": patches}
+    return decorate(entry, game), "built"
+
+
+def cmd_build(args):
+    cat = load_catalog()
+    for sub in ("roms", "src", "work", "public"):
+        os.makedirs(os.path.join(STATE, sub), exist_ok=True)
+    os.chmod(os.path.join(STATE, "roms"), 0o700)
+    os.chmod(os.path.join(STATE, "public"), 0o755)
+
+    games = cat["games"]
+    if args.only:
+        games = [g for g in games if g["id"] == args.only]
+        if not games:
+            raise Fail("no game %r in the catalog" % args.only)
+
+    old = {e["id"]: e for e in load_manifest().get("games", [])}
+    new, results = {}, {}
+    for game in games:
+        try:
+            new[game["id"]], results[game["id"]] = build_game(game, args.force, args.dry_run, old.get(game["id"]))
+        except (Fail, subprocess.TimeoutExpired) as e:
+            log("error", "%s: %s" % (game["id"], e))
+            results[game["id"]] = "failed"
+            new[game["id"]] = old.get(game["id"])   # the last good patch stays up
+        finally:
+            shutil.rmtree(os.path.join(STATE, "work"), ignore_errors=True)
+            os.makedirs(os.path.join(STATE, "work"), exist_ok=True)
+
+    if not args.dry_run:
+        # Games not touched this run (--only) keep their entries; games that
+        # left the catalog lose theirs, and their files with them.
+        merged = []
+        wanted = {g["id"] for g in cat["games"]}
+        for g in cat["games"]:
+            e = new.get(g["id"], old.get(g["id"]))
+            if e:
+                merged.append(e)
+        keep = {p["file"] for e in merged for p in e["patches"]}
+        for e in old.values():
+            if e["id"] not in wanted:
+                for p in e["patches"]:
+                    if p["file"] not in keep:
+                        try:
+                            os.remove(os.path.join(STATE, "public", p["file"]))
+                        except OSError:
+                            pass
+        doc = {"generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "games": merged}
+        atomic_write(manifest_path(), (json.dumps(doc, indent="\t", ensure_ascii=False) + "\n").encode())
+
+    summary = ", ".join("%s %s" % (k, v) for k, v in results.items())
+    failed = [k for k, v in results.items() if v == "failed"]
+    log("error" if failed else "info", "done: " + summary)
+    return 1 if failed else 0
+
+
+# ---- the other commands ----------------------------------------------------
+def cmd_add_rom(args):
+    cat = load_catalog()
+    known = known_hashes(cat)
+    os.makedirs(os.path.join(STATE, "roms"), exist_ok=True)
+    os.chmod(os.path.join(STATE, "roms"), 0o700)
+    bad = 0
+    for path in args.files:
+        blobs = []
+        if zipfile.is_zipfile(path):
+            with zipfile.ZipFile(path) as z:
+                blobs = [z.read(n) for n in z.namelist() if not n.endswith("/")]
+        else:
+            blobs = [read(path)]
+        found = False
+        for data in blobs:
+            h = sha1_of(data)
+            if h in known:
+                atomic_write(rom_path(h), data, 0o600)
+                log("info", "%s: kept as %s.rom" % (path, h))
+                found = True
+        if not found:
+            log("error", "%s: not a ROM this catalog uses (SHA-1 not in games.json); nothing kept" % path)
+            bad += 1
+    return 1 if bad else 0
+
+
+def cmd_status(args):
+    cat = load_catalog()
+    manifest = {e["id"]: e for e in load_manifest().get("games", [])}
+    for g in cat["games"]:
+        e = manifest.get(g["id"])
+        print("%-26s %s" % (g["id"], ("built %s @ %s" % (e["built_at"], e["commit"][:9])) if e else "not built"))
+        for b in g["bases"]:
+            have = os.path.isfile(rom_path(b["sha1"]))
+            print("    %-9s %-50s %s" % ("ROM ok" if have else "MISSING", b["label"], b["sha1"]))
+    return 0
+
+
+def cmd_apply(args):
+    try:
+        out = bps.apply(read(args.patch), read(args.base))
+    except bps.BpsError as e:
+        raise Fail(str(e))
+    atomic_write(args.out, out)
+    log("info", "wrote %s (%d bytes, sha1 %s)" % (args.out, len(out), sha1_of(out)))
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    sub = ap.add_subparsers(dest="cmd")
+    b = sub.add_parser("build")
+    b.add_argument("--only")
+    b.add_argument("--force", action="store_true", help="rebuild even if the repository has not changed")
+    b.add_argument("--dry-run", action="store_true", help="build and verify, publish nothing")
+    r = sub.add_parser("add-rom")
+    r.add_argument("files", nargs="+")
+    sub.add_parser("status")
+    a = sub.add_parser("apply")
+    a.add_argument("patch")
+    a.add_argument("base")
+    a.add_argument("out")
+    args = ap.parse_args()
+    if args.cmd is None:
+        args = ap.parse_args(["build"] + sys.argv[1:])
+
+    try:
+        if args.cmd == "build":
+            os.makedirs(STATE, exist_ok=True)
+            lock = open(os.path.join(STATE, "lock"), "w")
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                log("warn", "another run is in progress; nothing to do")
+                return 0
+        return {"build": cmd_build, "add-rom": cmd_add_rom, "status": cmd_status, "apply": cmd_apply}[args.cmd](args)
+    except Fail as e:
+        log("error", str(e))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
