@@ -42,7 +42,31 @@
 		}
 		
 		public function isSessionActive() {
-			return isset($_SESSION["user_id"]) && isset($_SESSION["type"]) && $_SESSION["type"] == "web";
+			if (!(isset($_SESSION["user_id"]) && isset($_SESSION["type"]) && $_SESSION["type"] == "web")) return false;
+
+			// A banned account is out at every door, and this is the one for
+			// a session that was already open when the ban was applied: without
+			// the check it would keep working until the cookie expired. Read
+			// from the database (once per request), not cached in the session,
+			// for the same reason isAdmin() is. The session is emptied, so the
+			// person is simply signed out.
+			static $banned = [];
+			$id = (int)$_SESSION["user_id"];
+			if (!isset($banned[$id])) {
+				$db = DBUtil::getInstance()->getDB();
+				$stmt = $db->prepare("select banned_at is not null from sys_users where id = ? limit 1");
+				$stmt->bind_param("i", $id);
+				$stmt->execute();
+				$stmt->bind_result($isBanned);
+				$stmt->fetch();
+				$stmt->close();
+				$banned[$id] = (bool)$isBanned;
+			}
+			if ($banned[$id]) {
+				unset($_SESSION["user_id"], $_SESSION["type"]);
+				return false;
+			}
+			return true;
 		}
 		
 		public function initSession($userId) {

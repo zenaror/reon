@@ -9,6 +9,7 @@
 	require_once("ConfigUtil.php");
 	require_once("TemplateUtil.php");
 	require_once("ActivityLog.php");
+	require_once("ReservedNamesUtil.php");
 	
 	class UserUtil {
 
@@ -804,7 +805,6 @@
 			$stmt->execute();
 
 			require_once("RelayUtil.php");
-	require_once("ReservedNamesUtil.php");
 			$newId = $db->insert_id;
 			ActivityLog::record("signup", ["account" => (int)$newId, "username" => $username]);
 			RelayUtil::getInstance()->provisionForUser($newId);

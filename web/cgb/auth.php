@@ -231,7 +231,9 @@
 	
 	function validateAuthData($dionId, $passwordHash, $challenge) {
 		$db = connectMySQL();
-		$stmt = $db->prepare("select id, log_in_password from sys_users where dion_ppp_id = ?;");
+		// A banned account is refused here like a wrong password (401, Gb-Status
+		// 201): the game gets no hint about why.
+		$stmt = $db->prepare("select id, log_in_password from sys_users where dion_ppp_id = ? and banned_at is null;");
 		$stmt->bind_param("s", $dionId);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
