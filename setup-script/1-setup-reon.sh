@@ -941,6 +941,10 @@ Group=${SYS_GROUP}
 WorkingDirectory=${OPT_REON}/mail
 ExecStart=/opt/node/bin/node ${OPT_REON}/mail/index.js -c ${OPT_REON}/config.json
 AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Per-connection lines (POP3 logins, commands) are log level "debug"; the owner
+# wants them in the journal, so the threshold is lowered for this service only.
+# Drop this line to go back to the default (info).
+Environment=LOG_LEVEL=debug
 Restart=on-failure
 RestartSec=3
 
@@ -1059,8 +1063,6 @@ EOF
         "${OPT_REON}/web/scripts/purge_retention.php"     "*-*-* 04:45:00"
     write_php_cron_unit service-status   "Service status check" \
         "${OPT_REON}/web/scripts/check_service_status.php" "*-*-* *:0/5:00"
-    write_php_cron_unit seed-touch       "Refresh seeded demo data" \
-        "${OPT_REON}/maint/seed_pokemon_fake_data.php" "*-*-* 23:00:00" "--touch"
 
     # A TIME limit on the journal. Without this its retention is disk space,
     # which is not retention at all: connection records pile up until the
@@ -1109,7 +1111,7 @@ LOGROTATEEOF
 #     mobile-relay's when it uses MySQL), one compressed dump each;
 #   - the mobile-relay's SQLite file, when that is what it uses.
 #
-# Kept for 7 days, then deleted by age. The folder is root-only (0700) and the
+# Kept for 7 days, then deleted by age (everything in the folder, see the end). The folder is root-only (0700) and the
 # files 0600: a dump holds every account's password hash and game login
 # password. This is a copy on the same disk -- it protects against a bad
 # migration, a mistaken delete or a corrupted table, NOT against losing the
@@ -1153,7 +1155,11 @@ PY
 	echo "sqlite $f -> $out.gz"
 done
 
-find "$DEST" -maxdepth 1 -type f \( -name 'mysql-*.sql.gz' -o -name 'relay-*.db.gz' \) -mtime +"$KEEP_DAYS" -delete
+# Rotation: anything in this folder older than KEEP_DAYS goes, files and folders
+# alike -- including copies somebody put here by hand (a mailbox copy taken
+# before a migration, say). The folder is the backup folder; nothing in it is
+# meant to outlive the window.
+find "$DEST" -mindepth 1 -maxdepth 1 -mtime +"$KEEP_DAYS" -exec rm -rf -- {} +
 echo "kept: $(find "$DEST" -maxdepth 1 -type f | wc -l) files, $(du -sh "$DEST" | cut -f1)"
 DBBACKUPEOF
     chmod 0755 /usr/local/sbin/reon-db-backup
@@ -1189,7 +1195,7 @@ enable_all_services() {
     systemctl restart reon-mail.service reon-mobile-relay.service
 
     for slug in pokemon-battle pokemon-exchange auto-schedule mail-bottle \
-                mail-trash-purge retention-purge service-status seed-touch db-backup; do
+                mail-trash-purge retention-purge service-status db-backup; do
         systemctl enable --now "reon-${slug}.timer"
     done
 }
@@ -1338,13 +1344,78 @@ EOF
 cd "${OPT_REON}/web/scripts" && exec php add_user.php
 EOF
 
+    # The terminal menu is a real file next to this script, not a heredoc, so it
+    # can be run and edited on its own.
+    install -m 0755 "$SCRIPT_DIR/reon-menu.sh" "$d/reon-menu.sh"
+
     chmod +x "$d"/*.sh
 
     for f in "$d"/*.sh; do
         ln -sfn "$f" "/usr/local/bin/$(basename "$f" .sh)"
     done
 
-    log_info "Log scripts ready — try: reon-logs-all  |  reon-logs-files  |  reon-logs-mail  |  reon-status"
+    log_info "Log scripts ready — try: reon-menu  |  reon-logs-all  |  reon-logs-files  |  reon-status"
+}
+
+# ---------------------------------------------------------------------------
+# ~/shortcuts: links, in the login user's home, to the places and commands
+# used to run the server -- logs, backups, config, units, the site's own tree,
+# the reon-* commands -- so nobody has to remember where each one lives.
+# Links only: nothing is copied, so they cannot go stale, and deleting the
+# folder deletes nothing but the links. SHORTCUT_USER=<user> picks whose home.
+# ---------------------------------------------------------------------------
+
+setup_shortcuts() {
+    log_step "Creating ~/shortcuts"
+    local user="${SHORTCUT_USER:-${SUDO_USER:-ubuntu}}"
+    local home; home="$(getent passwd "$user" | cut -d: -f6 || true)"
+    if [ -z "$home" ] || [ ! -d "$home" ]; then
+        log_warn "No home directory for \"$user\"; skipping ~/shortcuts (SHORTCUT_USER=<user> to pick one)"
+        return 0
+    fi
+    local dir="$home/shortcuts"
+    mkdir -p "$dir/commands"
+
+    # link <name> <target> [dir]: replaces a link, never a real file or folder.
+    link() {
+        local name="$1" target="$2" where="${3:-$dir}"
+        [ -e "$target" ] || return 0
+        if [ -e "$where/$name" ] && [ ! -L "$where/$name" ]; then return 0; fi
+        ln -sfn "$target" "$where/$name"
+    }
+
+    link site          "$OPT_REON"
+    link config.json   "$OPT_REON/config.json"
+    link docs          "$OPT_REON/docs"
+    link setup-scripts "$OPT_REON/setup-script"
+    link logs-php      /var/log/reon
+    link logs-web      /var/log/nginx
+    link backups       /var/backups/reon        # 0700 root: open it with sudo
+    link systemd-units /etc/systemd/system
+    link nginx         /etc/nginx/sites-enabled
+    link postfix       /etc/postfix
+    link dovecot       /etc/dovecot
+    link fail2ban      /etc/fail2ban
+    for f in /usr/local/bin/reon-*; do
+        [ -e "$f" ] && link "$(basename "$f")" "$f" "$dir/commands"
+    done
+    link reon-menu /usr/local/bin/reon-menu "$home"
+
+    cat > "$dir/README.txt" <<'README'
+Shortcuts for running the REON server (all of them are links).
+
+  ~/reon-menu          the terminal menu: status, logs, restarts, jobs, backups...
+  commands/            every reon-* command (reon-status, reon-logs-*, ...)
+  site/                the running site        docs/   operations notes
+  config.json          the site's configuration (has secrets)
+  logs-php/ logs-web/  PHP site log; nginx logs
+  backups/             database backups (root only: sudo ls ...)
+  systemd-units/       the reon-* units and timers
+  nginx/ postfix/ dovecot/ fail2ban/    their configuration
+README
+    chown -R --no-dereference "$user:$(id -gn "$user")" "$dir" || true
+    chown -h "$user:$(id -gn "$user")" "$home/reon-menu" 2>/dev/null || true
+    log_info "Shortcuts in $dir  (and $home/reon-menu)"
 }
 
 # ---------------------------------------------------------------------------
@@ -1422,6 +1493,7 @@ main() {
 
     setup_systemd_units
     generate_log_scripts
+    setup_shortcuts
     enable_all_services
 
     # After everything that writes nginx, never before: setup_nginx()

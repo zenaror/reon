@@ -2,7 +2,6 @@
 #
 #   reon-mail-trash-purge    OnCalendar=*-*-* 04:30:00
 #   reon-retention-purge     OnCalendar=*-*-* 04:45:00
-#   reon-seed-touch          OnCalendar=*-*-* 23:00:00
 #   reon-service-status      OnCalendar=*-*-* *:0/5:00
 #
 # Run in a separate image because they need PHP and composer's dependencies
@@ -14,13 +13,10 @@
 # before: the whole point of this file is to mirror production, and it had
 # quietly stopped doing that for one job.
 #
-# seed-touch only refreshes the timestamp on the rows the seeder already
-# created, so the demo data does not expire. On an install with no seeded
-# data it does nothing. If you do not want fake data, comment the line out
-# instead of deleting it: deleting hides the fact that production has this
-# timer.
+# There used to be a daily `seed_pokemon_fake_data.php --touch` here, keeping the
+# demo Battle Tower rows alive. Removed 2026-09-29 along with the demo data;
+# the seeder is still in maint/ for a manual run.
 
 30 4 * * * php /var/www/reon/web/scripts/purge_mail_trash.php
 45 4 * * * php /var/www/reon/web/scripts/purge_retention.php
 */5 * * * * php /var/www/reon/web/scripts/check_service_status.php
-0 23 * * * php /var/www/reon/maint/seed_pokemon_fake_data.php --touch

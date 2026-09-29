@@ -1,6 +1,7 @@
 const fs = require("fs");
 const POP3Server = require("./pop3").POP3Server;
 const { Command } = require('commander');
+const log = require("../lib/log").child("mail");
 const program = new Command();
 
 program
@@ -26,7 +27,7 @@ const mysqlConfig = {
 // que não são trabalho de servidor POP3 e não têm dono do lado do Dovecot.
 let pop3 = config["disable_pop3"] === true ? null
 	: new POP3Server(mysqlConfig, config["email_domain"], config["email_domain_dion"], config);
-if (pop3 === null) console.log("POP3: a porta 110 e do Dovecot; servidor proprio desligado");
+if (pop3 === null) log.info("POP3: a porta 110 e do Dovecot; servidor proprio desligado");
 
 // O pool do MySQL vinha do POP3; sem ele, monta-se um aqui.
 const poolEfeitos = pop3 ? pop3.mysql : require("mysql2").createPool(mysqlConfig);

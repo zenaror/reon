@@ -3,6 +3,7 @@ ini_set('log_errors', 1);
 // SPDX-License-Identifier: MIT
 
 require_once(CORE_PATH . "/database.php");
+require_once(__DIR__ . '/../../classes/LogUtil.php');
 require_once(__DIR__ . '/../../scripts/bxt_decode_helpers.php');
 require_once(__DIR__ . '/../../scripts/bxt_value_validation.php');
 require_once(CORE_PATH . "/pokemon/bxt_config.php");
@@ -72,7 +73,7 @@ function process_trade_request($region, $request_data) {
         // A recusa sai sempre, com a conta; o texto recusado só com a
         // depuração ligada. Quem modera precisa saber QUE houve recusa e de
         // quem; quem investiga um caso liga a depuração e vê o quê.
-        error_log('trade_corner_gateway: banned player name'
+        LogUtil::warn("trade-corner", 'trade_corner_gateway: banned player name'
             . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         bxt_debug_log('trade_corner_gateway: banned player name: ' . $decoded_name_for_policy);
         http_response_code(403);
@@ -84,7 +85,7 @@ function process_trade_request($region, $request_data) {
 
 
     if ($decoded_mail_for_policy !== '' && bxt_contains_banned($decoded_mail_for_policy, $banned, $allowed)) {
-        error_log('trade_corner_gateway: banned mail message'
+        LogUtil::warn("trade-corner", 'trade_corner_gateway: banned mail message'
             . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         bxt_debug_log('trade_corner_gateway: banned mail message: ' . $decoded_mail_for_policy);
         http_response_code(403);
@@ -107,7 +108,7 @@ function process_trade_request($region, $request_data) {
             function ($msg) { bxt_debug_log('BXT_DEBUG trade_corner_pkm_legality_summary: account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none') . ' ' . $msg); }
         );
         if (!$ok_leg) {
-            error_log('trade_corner_gateway: illegal Pokémon blob');
+            LogUtil::warn("trade-corner", 'trade_corner_gateway: illegal Pokémon blob');
             http_response_code(403);
             exit("Illegal Pokémon");
         }
@@ -117,7 +118,7 @@ function process_trade_request($region, $request_data) {
             // behaves identically across features.
             if (!bxt_policy_allow_nickname($details, $banned, $allowed)) {
                 $nick_dbg = isset($details['nickname']) && is_string($details['nickname']) ? $details['nickname'] : '';
-                error_log('trade_corner_gateway: banned pokemon nickname'
+                LogUtil::warn("trade-corner", 'trade_corner_gateway: banned pokemon nickname'
                     . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
                 bxt_debug_log('trade_corner_gateway: banned pokemon nickname: ' . $nick_dbg);
                 http_response_code(403);
@@ -154,7 +155,7 @@ function process_trade_request($region, $request_data) {
     )) {
         // Os NOMES das regras sempre; os valores, que são o que a pessoa
         // escreveu, só com a depuração ligada.
-        error_log('trade_corner_gateway: value validation failed'
+        LogUtil::warn("trade-corner", 'trade_corner_gateway: value validation failed'
             . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none')
             . ' rules=' . implode(',', array_keys((array)$validation_errors)));
         bxt_debug_log('trade_corner_gateway: value validation failed: '

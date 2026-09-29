@@ -1725,6 +1725,13 @@ admin:
   logs-service: Dienst
   logs-lines: Zeilen
   logs-show: Anzeigen
+  logs-level: "Stufe"
+  logs-level-all: "Alle Stufen"
+  logs-level-warn: "Warnungen und Fehler"
+  logs-level-error: "Nur Fehler"
+  logs-raw: "Rohtext"
+  logs-details: "Details"
+  logs-file-unreadable: "Das PHP-Log ist nicht lesbar. Prüfe, ob /var/log/reon/php-error.log existiert und der Web-Benutzer es lesen darf."
   logs-empty: Nichts anzuzeigen.
   logs-unavailable: Das Systemprotokoll lässt sich noch nicht lesen, es gibt also nichts anzuzeigen.
   logs-unavailable-why: 'PHP läuft als „%user%“, und das Systemprotokoll zu lesen setzt die Mitgliedschaft in der Protokollgruppe voraus. Das gewährt Lesen und sonst nichts — es ist nicht die sudo-Regel, die die Seite „Dienste“ braucht, und es erlaubt niemandem, etwas neu zu starten:'

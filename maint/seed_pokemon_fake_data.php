@@ -60,7 +60,7 @@ Options:
   --create-account     create the bot accounts that do not exist yet
   --rebalance          only redistribute existing bot deposits over the bot accounts (no inserts)
   --touch              set the bot Battle Tower records' timestamp to now, so the daily
-                       7-day expiry never removes them (run daily from a timer; no inserts)
+                       7-day expiry never removes them (no inserts; no timer runs it any more, run by hand while testing)
   --honor-top=N        promote the N best distinct trainers of every seeded level/room to the
                        honor roll (the daily job only ever promotes the best one, so a room
                        never reached bronze); skips trainers already there; no other inserts

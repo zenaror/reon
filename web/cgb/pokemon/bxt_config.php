@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/../../classes/LogUtil.php');
 
 // Base BXT configuration for REON / Battle Tower / Trade Corner.
 
@@ -155,7 +156,7 @@ if (!function_exists('bxt_debug_enabled')) {
 if (!function_exists('bxt_debug_log')) {
     function bxt_debug_log(string $message): void {
         if (bxt_debug_enabled()) {
-            error_log($message);
+            LogUtil::emit("debug", "bxt", $message);
         }
     }
 }
@@ -203,7 +204,7 @@ if (!function_exists('bxt_account_rankings_opt_in')) {
             // Installation without the column yet (migration not run): the
             // default applies, so the rankings do not stop working over
             // this.
-            error_log("rankings_opt_in unavailable, using the default: " . $e->getMessage());
+            LogUtil::warn("bxt-config", "rankings_opt_in unavailable, using the default: " . $e->getMessage());
             return $cache[$id] = BXT_RANKINGS_OPT_IN_DEFAULT;
         }
         if ($linha === null) {

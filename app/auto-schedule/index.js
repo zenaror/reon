@@ -13,6 +13,7 @@ try {
   mysql2 = require("mysql2");
 }
 const { Command } = require("commander");
+const log = require("../../lib/log").child("auto-schedule");
 
 const program = new Command();
 
@@ -51,7 +52,7 @@ try {
     rotationConfigRaw = parseJsonFile(options.rotationConfig);
   }
 } catch (e) {
-  console.error("Failed to load rotation config:", e);
+  log.error("Failed to load rotation config:", e);
   rotationConfigRaw = null;
 }
 
@@ -61,7 +62,7 @@ try {
     featureAvailabilityConfigRaw = parseJsonFile(options.featureConfig);
   }
 } catch (e) {
-  console.error("Failed to load feature availability config:", e);
+  log.error("Failed to load feature availability config:", e);
   featureAvailabilityConfigRaw = null;
 }
 
@@ -335,7 +336,7 @@ function loadPokemonNewsCustomConfig(rootDir) {
     } catch (e) {
       // A broken overlay must not take the whole run down with it: the
       // vanilla news still has to go out today.
-      console.warn(`[news] ignoring unreadable ${path.basename(overlayPath)}: ${e.message}`);
+      log.warn(`[news] ignoring unreadable ${path.basename(overlayPath)}: ${e.message}`);
     }
   }
 
@@ -693,7 +694,7 @@ function applyTimedFeatureAvailability(rootDir, featureCfg, cycleState, now, new
 
   const bxtConfigPath = featureCfg.bxt_config_path || path.resolve(rootDir, "web", "cgb", "pokemon", "bxt_config.php");
   if (!fs.existsSync(bxtConfigPath) || !fs.statSync(bxtConfigPath).isFile()) {
-    console.warn(`[feature_availability] bxt_config.php not found at ${bxtConfigPath}; skipping`);
+    log.warn(`[feature_availability] bxt_config.php not found at ${bxtConfigPath}; skipping`);
     return;
   }
 
@@ -743,7 +744,7 @@ function applyTimedFeatureAvailability(rootDir, featureCfg, cycleState, now, new
     const tmp = `${bxtConfigPath}.tmp`;
     fs.writeFileSync(tmp, phpText, "utf8");
     fs.renameSync(tmp, bxtConfigPath);
-    console.log(`[feature_availability] updated ${bxtConfigPath}`);
+    log.info(`[feature_availability] updated ${bxtConfigPath}`);
   }
 
   const runtimeState = {
@@ -751,7 +752,7 @@ function applyTimedFeatureAvailability(rootDir, featureCfg, cycleState, now, new
     flags: desiredFlags,
   };
   writeJsonAtomic(runtimeStatePath, runtimeState);
-  console.log(`[feature_availability] updated ${runtimeStatePath}`);
+  log.info(`[feature_availability] updated ${runtimeStatePath}`);
 }
 
 function loadRotationConfig(rootDir) {
@@ -997,7 +998,7 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
 
       try {
         if (!fs.existsSync(srcPath) || !fs.statSync(srcPath).isFile()) {
-          console.warn(
+          log.warn(
             `[rotation] job=${jobId}: source file missing, skipping (${srcPath})`
           );
           continue;
@@ -1014,7 +1015,7 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
         }
 
         if (destUpToDate) {
-          console.log(
+          log.info(
             `[rotation] job=${jobId}: destination already up to date at ${destPath}`
           );
           rotationState[jobId] = {
@@ -1026,14 +1027,14 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
         }
 
         fs.copyFileSync(srcPath, destPath);
-        console.log(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
+        log.info(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
         rotationState[jobId] = {
           lastApplied: candidateDate.toISOString().slice(0, 10),
           src: srcPath,
           dest: destPath,
         };
       } catch (e) {
-        console.error(
+        log.error(
           `[rotation] job=${jobId}: failed to copy ${srcPath} -> ${destPath}:`,
           e
         );
@@ -1127,7 +1128,7 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
 
     try {
       if (!fs.existsSync(srcPath) || !fs.statSync(srcPath).isFile()) {
-        console.warn(
+        log.warn(
           `[rotation] job=${jobId}: source file missing, skipping (${srcPath})`
         );
         continue;
@@ -1144,7 +1145,7 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
       }
 
       if (destUpToDate) {
-        console.log(
+        log.info(
           `[rotation] job=${jobId}: destination already up to date at ${destPath}`
         );
         rotationState[jobId] = {
@@ -1156,14 +1157,14 @@ function processFileRotations(rootDir, rotationCfg, cycleState, todayDate) {
       }
 
       fs.copyFileSync(srcPath, destPath);
-      console.log(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
+      log.info(`[rotation] job=${jobId}: copied ${srcPath} -> ${destPath}`);
       rotationState[jobId] = {
         lastApplied: now.toISOString(),
         src: srcPath,
         dest: destPath,
       };
     } catch (e) {
-      console.error(
+      log.error(
         `[rotation] job=${jobId}: failed to copy ${srcPath} -> ${destPath}:`,
         e
       );
@@ -1530,14 +1531,14 @@ function loadCycleState(filesDir) {
     try {
       raw = fs.readFileSync(primaryPath, "utf8");
     } catch (e) {
-      console.error("Failed to read cycle_state.json:", e);
+      log.error("Failed to read cycle_state.json:", e);
       return { news: {}, rotation: {} };
     }
   } else if (fs.existsSync(legacyPath)) {
     try {
       raw = fs.readFileSync(legacyPath, "utf8");
     } catch (e) {
-      console.error("Failed to read legacy news_cycle_state.json:", e);
+      log.error("Failed to read legacy news_cycle_state.json:", e);
       return { news: {}, rotation: {} };
     }
   } else {
@@ -1559,7 +1560,7 @@ function loadCycleState(filesDir) {
     const news = data && typeof data === "object" ? data : {};
     return { news, rotation: {} };
   } catch (e) {
-    console.error("Failed to parse cycle state JSON:", e);
+    log.error("Failed to parse cycle state JSON:", e);
     return { news: {}, rotation: {} };
   }
 }
@@ -1584,7 +1585,7 @@ function saveCycleState(filesDir, state) {
     try {
       fs.unlinkSync(legacyPath);
     } catch (e) {
-      console.error("Failed to remove legacy state file:", e);
+      log.error("Failed to remove legacy state file:", e);
     }
   }
 }
@@ -1845,7 +1846,7 @@ function stampIssuePublished(newsCfg, articleId) {
     data.published_at = new Date().toISOString();
     fs.writeFileSync(file, JSON.stringify(data, null, 4) + "\n");
   } catch (err) {
-    console.warn(`[news] could not stamp published_at for ${articleId}: ${err.message}`);
+    log.warn(`[news] could not stamp published_at for ${articleId}: ${err.message}`);
   }
 }
 
@@ -1853,7 +1854,7 @@ async function clearRankingsForRegions(conn, regions, reason) {
   const uniqueRegions = Array.from(new Set((regions || []).filter(Boolean))).sort();
   for (const region of uniqueRegions) {
     await conn.execute("DELETE FROM bxt_ranking WHERE game_region = ?", [region]);
-    console.log(
+    log.info(
       `[news] Cleared bxt_ranking entries for region=${region}` +
         (reason ? ` (${reason})` : "")
     );
@@ -1916,7 +1917,7 @@ async function processPokemonNewsCycle(
     if (overrideArticle) {
       const candidate = selectOverrideScheduledEntry(regionEntries, overrideArticle);
       if (!candidate) {
-        console.warn(
+        log.warn(
           `[news:${trackLabel}] override ${overrideArticle} has no schedule entry for region=${region}`
         );
         continue;
@@ -2003,7 +2004,7 @@ async function processPokemonNewsCycle(
 
     const binPath = resolveArticleAssetPath(newsCfg.articles_dir, regionDir, chosenArticleFile);
     if (!fs.existsSync(binPath) || !fs.statSync(binPath).isFile()) {
-      console.warn(
+      log.warn(
         `[news:${trackLabel}] configured article ${chosenArticleId} for region=${region} but file not found at ${binPath}`
       );
       continue; // configured but no .bin present
@@ -2023,7 +2024,7 @@ async function processPokemonNewsCycle(
       configuredMessagePath
     );
     if (!articleMessage) {
-      console.warn(
+      log.warn(
         `[news:${trackLabel}] configured article ${chosenArticleId} for region=${region} but .message file not found at ${configuredMessagePath || `${binPath}.message`}`
       );
       continue;
@@ -2113,7 +2114,7 @@ async function processPokemonNewsCycle(
       );
       updatedByRegion[region] = true;
       if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
-      console.log(
+      log.info(
         `[news:${trackLabel}] Updated bxt_news for region=${region}, id=${existingId}, article=${chosenArticleId}`
       );
     } else {
@@ -2140,7 +2141,7 @@ async function processPokemonNewsCycle(
       );
       updatedByRegion[region] = true;
       if (isCustom) stampIssuePublished(newsCfg, chosenArticleId);
-      console.log(
+      log.info(
         `[news:${trackLabel}] Inserted bxt_news for region=${region}, id=${res.insertId}, article=${chosenArticleId}`
       );
     }
@@ -2172,7 +2173,7 @@ async function finalizePokemonNewsCustomAndRankings(
       const newId = await mirrorVanillaToCustom(conn, region, vanillaRow.id, null);
       customRow = await getLatestBxtNewsRow(conn, region, true);
       if (customRow) {
-        console.log(
+        log.info(
           `[news] Created missing custom bxt_news row for region=${region} id=${newId} (mirrored from vanilla)`
         );
       }
@@ -2183,7 +2184,7 @@ async function finalizePokemonNewsCustomAndRankings(
       await mirrorVanillaToCustom(conn, region, vanillaRow.id, customRow ? customRow.id : null);
       customRow = await getLatestBxtNewsRow(conn, region, true);
       customMirroredByRegion[region] = true;
-      console.log(
+      log.info(
         `[news] Mirrored vanilla -> custom for region=${region} (custom track disabled)`
       );
     }
@@ -2204,16 +2205,16 @@ async function main() {
 
   const pokemonNewsCustomEnabled = scheduleHasAnyEntries(pokemonNewsCustomCfg);
 
-  console.log("[news] rootDir:", rootDir);
-  console.log("[news] articles_dir:", newsCfg.articles_dir);
-  console.log("[news] pokemon_news_custom_enabled:", pokemonNewsCustomEnabled);
-  console.log("[news] refresh:", refreshMode);
-  console.log("[news] override:", overrideArticleName || false);
+  log.info("[news] rootDir:", rootDir);
+  log.info("[news] articles_dir:", newsCfg.articles_dir);
+  log.info("[news] pokemon_news_custom_enabled:", pokemonNewsCustomEnabled);
+  log.info("[news] refresh:", refreshMode);
+  log.info("[news] override:", overrideArticleName || false);
 
   const pool = createPool(mainConfig);
 
   const todayDate = toDateOnly(new Date());
-  console.log("[news] today (server local):", todayDate.toISOString().slice(0, 10));
+  log.info("[news] today (server local):", todayDate.toISOString().slice(0, 10));
 
   const cycleState = loadCycleState(newsCfg.articles_dir);
 
@@ -2295,7 +2296,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("auto-schedule failed:", err);
+  log.error("auto-schedule failed:", err);
   process.exit(1);
 });
 

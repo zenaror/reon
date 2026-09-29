@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bxt_legality_policy.php';
+require_once __DIR__ . '/../classes/LogUtil.php';
 
 /**
  * Run the LegalityCheckerConsole against a raw Gen 2 pk2 / trade blob.
@@ -37,7 +38,7 @@ function legality_check_pk2_bytes_with_details(string $pkm_raw, ?callable $logge
 
     if (!$bin || !file_exists($bin)) {
         $msg = "bxt_legality_check: legality binary not found (bin={$bin})";
-        error_log($msg);
+        LogUtil::error("legality-check", $msg);
         throw new RuntimeException($msg);
     }
 
@@ -48,8 +49,8 @@ $len = strlen($pkm_raw);
         $logger(sprintf('legality_debug: raw length = %d bytes', $len));
         $logger('legality_debug: raw hex = ' . $hex);
     } else {
-        error_log(sprintf('legality_debug: raw length = %d bytes', $len));
-        error_log('legality_debug: raw hex = ' . $hex);
+        LogUtil::debug("legality-check", sprintf('legality_debug: raw length = %d bytes', $len));
+        LogUtil::debug("legality-check", 'legality_debug: raw hex = ' . $hex);
     }
 
     // ★★★ DEBUG FILE OUTPUT REMOVED COMPLETELY ★★★
@@ -67,7 +68,7 @@ $len = strlen($pkm_raw);
 
     if (!is_resource($process)) {
         $msg = 'bxt_legality_check: failed to start legality checker process';
-        error_log($msg);
+        LogUtil::error("legality-check", $msg);
         throw new RuntimeException($msg);
     }
 
@@ -80,8 +81,8 @@ $len = strlen($pkm_raw);
             $logger(sprintf('legality_check: raw pk2 length = %d bytes', $len));
             $logger(sprintf('legality_check: wrote %d bytes to stdin', (int)$written));
         } else {
-            error_log(sprintf('legality_check: raw pk2 length = %d bytes', $len));
-            error_log(sprintf('legality_check: wrote %d bytes to stdin', (int)$written));
+            LogUtil::debug("legality-check", sprintf('legality_check: raw pk2 length = %d bytes', $len));
+            LogUtil::debug("legality-check", sprintf('legality_check: wrote %d bytes to stdin', (int)$written));
         }
 
         $stdout = stream_get_contents($pipes[1]);
@@ -101,12 +102,12 @@ $len = strlen($pkm_raw);
                 $logger('legality_check: stderr=' . trim($stderr));
             }
         } else {
-            error_log(sprintf('legality_check: exit=%d', $exitCode));
+            LogUtil::debug("legality-check", sprintf('legality_check: exit=%d', $exitCode));
             if ($stdout !== false && $stdout !== '') {
-                error_log('legality_check: stdout=' . trim($stdout));
+                LogUtil::debug("legality-check", 'legality_check: stdout=' . trim($stdout));
             }
             if ($stderr !== false && $stderr !== '') {
-                error_log('legality_check: stderr=' . trim($stderr));
+                LogUtil::debug("legality-check", 'legality_check: stderr=' . trim($stderr));
             }
         }
 
@@ -131,7 +132,7 @@ $len = strlen($pkm_raw);
         if ($logger !== null) {
             $logger('legality_check: exception=' . $e->getMessage());
         } else {
-            error_log('legality_check: exception=' . $e->getMessage());
+            LogUtil::error("legality-check", 'legality_check: exception=' . $e->getMessage());
         }
 
         throw $e;

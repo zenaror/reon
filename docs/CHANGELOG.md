@@ -863,6 +863,31 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Servidor e segurança
 
+* **Tela de logs do painel renovada.** Passou a mostrar também o log do site
+  PHP (`Site (PHP)`), filtra por nível (tudo / avisos e erros / só erros) e
+  desenha uma entrada por linha, com o nível em palavra e cor e o stack trace
+  dobrado; "Texto cru" mostra a saída de sempre.
+* **`reon-menu` e `~/shortcuts`.** Um menu de terminal (status, logs,
+  reiniciar, rodar job, backups, recursos) e uma pasta na home com links para
+  o site, docs, config, logs, units e todos os comandos `reon-*`. O setup
+  cria os dois. O `reon-mail` passa a rodar com `LOG_LEVEL=debug`.
+* **`reon-seed-touch.timer` removido.** Ele renovava todo dia os registros
+  falsos da Battle Tower; com os dados e o bot apagados na limpeza, só
+  falhava. O seeder (`maint/seed_pokemon_fake_data.php`) continua na árvore
+  para testes manuais, e o setup e o crontab do Docker deixaram de instalá-lo.
+* **Logs dos serviços Node em JSON, com nível.** Os 57 `console.*` de
+  `mail/` e `app/*` passaram por um logger pequeno (`lib/log.js`): uma linha
+  JSON por evento, com `level` e `component`, e o prefixo de prioridade do
+  systemd, então `journalctl -p warning` mostra só aviso e erro. Barulho por
+  conexão do POP3 virou `debug` (desligado por padrão, `LOG_LEVEL=debug` liga).
+* **O site PHP também tem nível.** `LogUtil` escreve a mesma linha JSON pelo
+  `error_log()` (mesmo arquivo, mesma rotação); as 58 chamadas viraram
+  `error`/`warn`/`debug` conforme o caso. Efeito colateral bom: os dumps do
+  verificador de legalidade (comprimento e hex do Pokémon, stdout/stderr) que
+  saíam sempre agora só saem com `debug`.
+* **Cópia de backup para fora da máquina.** `setup-script/pull-backups.sh`
+  puxa `/var/backups/reon` por SSH para outro computador; a rotação de 7 dias
+  agora também apaga cópias manuais deixadas na pasta.
 * **Páginas até dezenas de vezes mais rápidas.** Cada requisição relia os
   sete arquivos de tradução (uma vez para validar, outra na tradução) e
   recompilava os templates: ~0,5 s até para a página mais simples, o que
@@ -928,6 +953,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Site: páginas Crystal, layout e navegação
 
+* **Uma largura só para o site.** Home, notícias, guia, downloads, termos,
+  Mario Kart, GB Wars e o hub do Pokémon Crystal eram limitados a 860 px,
+  enquanto login, cadastro e as tabelas da Battle Tower usavam os 1320 px do
+  restante; o cabeçalho ficava mais largo que o conteúdo. Tudo usa agora os
+  1320 px da página de login. Nas páginas de jogo o texto também deixou de ter
+  teto próprio (72ch no Pokémon e no Mario Kart, 1200 px na tabela do Mario
+  Kart): o bloco ocupa a caixa inteira; só os parágrafos e itens de lista
+  ficam em ~100 caracteres por linha, e tabelas, avisos e galerias usam a
+  largura toda.
 * Sistema de notícias com painel em Markdown; painel de status dos serviços;
   usuário REON no cadastro, com o endereço de 8 caracteres derivado dele
 * **Revisão multi-dispositivo** (360, 412, 740×360, 768, 1024, 1366, 1920,
@@ -1076,10 +1110,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   (slot vazio não é zero: leva o marcador `XX` e a soma em complemento), tudo
   foi verificado byte a byte contra dado real. Passo a passo em
   `docs/mobile-stadium/README.md`
-* Duas faixas, oficial e personalizada, com opt-in por conta. A ROM
-  italiana/espanhola (BXTI/BXTS) tem um bug próprio que impede o download
-  mesmo com distribuição ativa (o parser do menu ficou num banco que ninguém
-  chama); não é do servidor
+* Duas faixas, oficial e personalizada, com opt-in por conta. As ROMs
+  italiana e espanhola (BXTI/BXTS) tinham um bug próprio que impedia o
+  download (o parser do menu ficou num banco que ninguém chama): achado e
+  corrigido do lado da ROM pelo trabalho do PKHeX, sem mudança no servidor.
+  Falta vê-lo funcionando num console
 
 ### Game Boy Wars 3
 

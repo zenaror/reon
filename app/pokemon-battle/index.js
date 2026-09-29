@@ -3,6 +3,7 @@ const path = require("path");
 const mysql = require("mysql2/promise");
 const { Command } = require("commander");
 const { loadBxtConfig } = require("../bxt_config_loader");
+const log = require("../../lib/log").child("pokemon-battle");
 
 const program = new Command();
 const defaultPath = path.resolve(__dirname, "..", "..", "config.json");
@@ -50,14 +51,14 @@ async function updateContent() {
         );
 
         for (const region of regions) {
-            console.log("Begin battle content update for region " + region);
+            log.info("Begin battle content update for region " + region);
             await updateContentForRegion(region, connection);
-            console.log("Finished battle content update for region " + region);
+            log.info("Finished battle content update for region " + region);
         }
 
         await connection.commit();
     } catch (e) {
-        console.error("Battle content update failed, rolling back:", e);
+        log.error("Battle content update failed, rolling back:", e);
         await connection.rollback();
     } finally {
         await connection.end();

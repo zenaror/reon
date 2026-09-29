@@ -1789,6 +1789,13 @@ admin:
   logs-service: Service
   logs-lines: Lignes
   logs-show: Afficher
+  logs-level: "Niveau"
+  logs-level-all: "Tous les niveaux"
+  logs-level-warn: "Avertissements et erreurs"
+  logs-level-error: "Erreurs seulement"
+  logs-raw: "Texte brut"
+  logs-details: "Détails"
+  logs-file-unreadable: "Le journal PHP est illisible. Vérifiez que /var/log/reon/php-error.log existe et que l'utilisateur web peut le lire."
   logs-empty: Rien à afficher.
   logs-unavailable: Le journal système n'est pas encore lisible, il n'y a donc rien à afficher.
   logs-unavailable-why: 'PHP tourne en tant que « %user% », et lire le journal système demande d''appartenir au groupe du journal. Cela accorde la lecture et rien d''autre : ce n''est pas la règle sudo dont la page Services a besoin, et cela ne permet à personne de redémarrer quoi que ce soit :'

@@ -3,6 +3,7 @@ ini_set('log_errors', 1);
 // SPDX-License-Identifier: MIT
 
 require_once(CORE_PATH . "/database.php");
+require_once(__DIR__ . '/../../classes/LogUtil.php');
 require_once(CORE_PATH . "/pokemon/func.php");
 // bxt_debug_log(): estes arquivos registram recusas, e o texto recusado
 // só aparece com a depuração ligada. require_once é idempotente.
@@ -102,7 +103,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
 
     foreach (['pokemon1', 'pokemon2', 'pokemon3'] as $slot) {
         if (!isset($data[$slot]) || $data[$slot] === null) {
-            error_log("bt_legality_error: missing slot $slot");
+            LogUtil::warn("battle-tower-legality", "bt_legality_error: missing slot $slot");
             http_response_code(403);
             exit("Missing data for $slot");
         }
@@ -116,7 +117,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
         }
     }
     if (!empty($extraSlots)) {
-        error_log('bt_legality_error: unexpected Pokémon slots: ' . implode(',', $extraSlots));
+        LogUtil::warn("battle-tower-legality", 'bt_legality_error: unexpected Pokémon slots: ' . implode(',', $extraSlots));
         http_response_code(403);
         exit('Exactly 3 Pokémon are required');
     }
@@ -145,7 +146,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
             // A recusa sai sempre; o texto recusado, só com a depuração
             // ligada. Quem opera precisa saber QUE houve recusa e em qual
             // campo; quem investiga um caso liga a depuração e vê o quê.
-            error_log("bt_legality_error: banned text in {$label}");
+            LogUtil::warn("battle-tower-legality", "bt_legality_error: banned text in {$label}");
             bxt_debug_log("bt_legality_error: banned text in {$label}: '{$txt}'");
             http_response_code(403);
             exit("Banned text in {$label}");
@@ -168,7 +169,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
 	$txt = bxt_decode_text_table($raw, $table_id);
 
 		if ($txt !== '' && bxt_contains_banned($txt, $banned)) {
-			error_log("bt_legality_error: banned text in trainer name");
+			LogUtil::warn("battle-tower-legality", "bt_legality_error: banned text in trainer name");
 			bxt_debug_log("bt_legality_error: banned text in trainer name: '{$txt}'");
 			http_response_code(403);
 			exit("Banned text in trainer name");
@@ -198,19 +199,19 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
         );
 
         if (!$ok) {
-            error_log("bt_legality_error: illegal Pokémon in {$label}");
+            LogUtil::warn("battle-tower-legality", "bt_legality_error: illegal Pokémon in {$label}");
             http_response_code(403);
             exit("Illegal Pokémon in {$label}");
         }
 
         if (!bxt_policy_allow_nickname($details, $banned, $allowed)) {
-            error_log("bt_legality_error: banned nickname in {$label}");
+            LogUtil::warn("battle-tower-legality", "bt_legality_error: banned nickname in {$label}");
             http_response_code(403);
             exit("Banned nickname in {$label}");
         }
 
         if (!bxt_policy_allow_ot($details, $banned, $allowed)) {
-            error_log("bt_legality_error: banned OT in {$label}");
+            LogUtil::warn("battle-tower-legality", "bt_legality_error: banned OT in {$label}");
             http_response_code(403);
             exit("Banned OT in {$label}");
         }
@@ -225,7 +226,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
 
         if ($speciesKey !== null) {
             if (isset($speciesSeen[$speciesKey])) {
-                error_log("bt_legality_error: duplicate species in {$label} (matches {$speciesSeen[$speciesKey]})");
+                LogUtil::warn("battle-tower-legality", "bt_legality_error: duplicate species in {$label} (matches {$speciesSeen[$speciesKey]})");
                 http_response_code(403);
                 exit('Duplicate Pokémon species not allowed');
             }
@@ -250,7 +251,7 @@ function battleTowerSubmitRecord_legality($inputStream, $game_region) {
         $validation_errors
     )) {
         // Os nomes das regras sempre; os valores só com a depuração ligada.
-        error_log('bt_legality_error: value validation failed'
+        LogUtil::warn("battle-tower-legality", 'bt_legality_error: value validation failed'
             . ' rules=' . implode(',', array_keys((array)$validation_errors)));
         bxt_debug_log('bt_legality_error: value validation failed: '
             . json_encode($validation_errors));
@@ -315,7 +316,7 @@ $db = connectMySQL();
     bxt_debug_log('BXT_DEBUG battle_tower_legality: before_prepare account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
     $stmt = $db->prepare($sql);
     if (!$stmt) {
-        error_log("bt_legality_error: failed to prepare insert: " . $db->error);
+        LogUtil::error("battle-tower-legality", "bt_legality_error: failed to prepare insert: " . $db->error);
         http_response_code(500);
         exit("Failed to prepare Battle Tower insert");
     }
@@ -354,7 +355,7 @@ $db = connectMySQL();
 
 
     if (!$stmt->execute()) {
-        error_log("bt_legality_error: failed to execute insert: " . $stmt->error);
+        LogUtil::error("battle-tower-legality", "bt_legality_error: failed to execute insert: " . $stmt->error);
         http_response_code(500);
         exit("Failed to execute Battle Tower insert");
     }

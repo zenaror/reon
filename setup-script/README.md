@@ -45,6 +45,7 @@ order, all idempotent (the fifth is optional):
   and any request without a `Host` header stay on HTTP, because the Game
   Boy speaks no TLS and follows no 301, and certbot's renewal also needs
   HTTP on `/.well-known/`
+- **reon-menu and ~/shortcuts** → a terminal menu and a folder of links to everything used to run the server (see "Running the server from a terminal")
 - **systemd** → every service becomes a unit (reon-mail, reon-mobile-relay,
   the cron timers) and restarts on its own if it dies; see
   `../examples/systemd/README.md`
@@ -99,10 +100,53 @@ order, all idempotent (the fifth is optional):
   so it needs no step here; it is edited from the admin panel under Users ->
   Reserved names. A fresh install starts with the seeded list.
 
+## Running the server from a terminal
+
+Everything below is created by `1-setup-reon.sh` (`generate_log_scripts` and
+`setup_shortcuts`), so a fresh install gets it too. Nothing here is a new
+capability: each entry is a plain `systemctl` / `journalctl` call, saved
+from having to remember the names.
+
+**`reon-menu`** (also `~/reon-menu`; source: `setup-script/reon-menu.sh`)
+
+| | |
+| --- | --- |
+| 1 Status | services, timers with next/last run, failed units |
+| 2 Follow a log | everything, mail, mobile relay, web, jobs, the PHP site log, nginx, fail2ban |
+| 3 Recent warnings and errors | last 24 h of the services, plus the error/warn lines of the PHP log |
+| 4 Restart a service | picks from the list, asks first |
+| 5 Run a job now | Battle Tower, Trade Corner, news, Mail de Cute, purges, status probe, backup |
+| 6 Banned addresses | lists them; banning and unbanning stay in the admin panel, where a reason is required |
+| 7 Backups | lists `/var/backups/reon`, offers to run one now |
+| 8 Load, memory, disk | uptime, `free`, `df`, top processes by memory |
+| 9 Database shell | `mysql` on the site's database |
+
+**`~/shortcuts/`**: links only (nothing is copied, so nothing goes stale, and
+deleting the folder removes only the links). Made in the home of
+`$SHORTCUT_USER` (default: the user who ran `sudo`, else `ubuntu`).
+
+| link | goes to |
+| --- | --- |
+| `site` | `/opt/reon`, the running site |
+| `docs`, `setup-scripts` | `/opt/reon/docs`, `/opt/reon/setup-script` |
+| `config.json` | the site's configuration (holds secrets) |
+| `logs-php`, `logs-web` | `/var/log/reon`, `/var/log/nginx` |
+| `backups` | `/var/backups/reon` (root only: `sudo ls ~/shortcuts/backups/`) |
+| `systemd-units` | `/etc/systemd/system` (the `reon-*` units and timers) |
+| `nginx`, `postfix`, `dovecot`, `fail2ban` | their configuration folders |
+| `commands/` | every `reon-*` command |
+
+Re-running the setup refreshes the links and never overwrites a real file or
+folder of the same name. To add a place, add a `link <name> <target>` line to
+`setup_shortcuts` in `1-setup-reon.sh`. The same page of the admin panel,
+`/admin/logs.php`, shows the service logs and the PHP site log without a
+terminal.
+
 ## Logs
 
 Once installed, these become global commands:
 
+- `reon-menu` — the terminal menu, see "Running the server from a terminal" below
 - `reon-status` — status of everything
 - `reon-logs-all` / `reon-logs-mail` / `reon-logs-web` / `reon-logs-relay` /
   `reon-logs-dns` / `reon-logs-cron` — follow the logs live

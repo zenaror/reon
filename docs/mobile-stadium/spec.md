@@ -222,6 +222,10 @@ built with 3 defines, and fra/ger/ita/spa are separate repositories. All seven l
 western payload serves all seven codes.** Only the URL in each code's menu differs.
 
 ### 3.3 Bug in the Italian and Spanish builds (BXTI, BXTS)
+**Status, 2026-09-29: fixed on the ROM side (by the PKHeX/ROM work), no server change needed.** The
+description below is kept because it is the diagnosis of what was wrong and how to recognise it in a ROM. It has not
+been seen working on a console yet.
+
 In `pokecrystal-mobile-ita`/`-spa` (commit ef838fe, and the same in the copies under
 `…/Pokemon Crystal BR/comparativo/`), the menu parser `Function119471` was moved to bank 7E (`mobile/mobile_46_2.asm:760`;
 sym 7e:4a48 ita, 7e:4a47 spa), but nothing calls it. `Function119451` (46:5176) ends with `ld a,[wd002] / ld hl,wd003`

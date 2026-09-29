@@ -2,6 +2,7 @@ const net = require("net");
 const fs = require("fs");
 const mysql = require("mysql2");
 const { Command } = require("commander");
+const log = require("../lib/log").child("mail-relay-policy");
 
 // Postfix policy delegation service (see SMTPD_POLICY_README) that gates
 // outbound relay to real internet addresses on the device-auth "authorized"
@@ -22,7 +23,7 @@ class RelayPolicyServer {
 	constructor(mysqlConfig, port) {
 		this.mysql = mysql.createPool(mysqlConfig);
 		net.createServer(sock => this._onClientConnect(sock)).listen(port, "127.0.0.1");
-		console.log("Relay policy service listening on 127.0.0.1:" + port);
+		log.info("Relay policy service listening on 127.0.0.1:" + port);
 	}
 
 	_onClientConnect(sock) {
@@ -71,7 +72,7 @@ class RelayPolicyServer {
 		// concern, leave it to the restrictions already handling that.
 		this.mysql.query("select 1 from sys_users where dion_email_local = ? limit 1", [recipientLocal], (error, results) => {
 			if (error) {
-				console.error("relayPolicy: recipient lookup failed:", error.message);
+				log.error("relayPolicy: recipient lookup failed:", error.message);
 				callback("DUNNO");
 				return;
 			}
@@ -91,7 +92,7 @@ class RelayPolicyServer {
 				[senderLocal],
 				(error, results) => {
 					if (error) {
-						console.error("relayPolicy: authorization lookup failed:", error.message);
+						log.error("relayPolicy: authorization lookup failed:", error.message);
 						callback("DUNNO");
 						return;
 					}

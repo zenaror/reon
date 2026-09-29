@@ -1726,6 +1726,13 @@ admin:
   logs-service: Servicio
   logs-lines: Líneas
   logs-show: Mostrar
+  logs-level: "Nivel"
+  logs-level-all: "Todos los niveles"
+  logs-level-warn: "Avisos y errores"
+  logs-level-error: "Solo errores"
+  logs-raw: "Texto sin formato"
+  logs-details: "Detalles"
+  logs-file-unreadable: "No se puede leer el registro de PHP. Comprueba que /var/log/reon/php-error.log existe y que el usuario web puede leerlo."
   logs-empty: Nada que mostrar.
   logs-unavailable: Todavía no se puede leer el diario del sistema, así que no hay nada que mostrar.
   logs-unavailable-why: 'PHP se ejecuta como «%user%», y leer el diario del sistema requiere pertenecer al grupo del diario. Eso concede leer y nada más: no es la regla de sudo que necesita la página de Servicios, y no permite a nadie reiniciar nada:'

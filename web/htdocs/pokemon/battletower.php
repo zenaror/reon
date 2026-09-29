@@ -1,5 +1,6 @@
 <?php
     require_once("../../classes/TemplateUtil.php");
+    require_once("../../classes/LogUtil.php");
     require_once("../../classes/DBUtil.php");
     require_once("../../classes/SessionUtil.php");
     require_once("../../classes/PokemonUtil.php");
@@ -534,7 +535,7 @@
     );
 
     if (!$stmt) {
-        error_log("Battle Tower query prepare failed: " . $db->error);
+        LogUtil::error("battletower", "Battle Tower query prepare failed: " . $db->error);
         echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }
@@ -543,7 +544,7 @@
         $stmt->bind_param(str_repeat("i", count($params)), ...$params);
     }
     if (!$stmt->execute()) {
-        error_log("Battle Tower query execute failed: " . $stmt->error);
+        LogUtil::error("battletower", "Battle Tower query execute failed: " . $stmt->error);
         echo TemplateUtil::render("/pokemon/battletower", $render_args);
         exit;
     }

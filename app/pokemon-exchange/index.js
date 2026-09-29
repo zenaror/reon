@@ -7,6 +7,7 @@ const { loadBxtConfig } = require("../bxt_config_loader");
 const { notify } = require("../../lib/notifications");
 const { mailUser } = require("../../lib/usermail");
 const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
+const log = require("../../lib/log").child("pokemon-exchange");
 
 // ------------------------------
 // Config
@@ -3339,7 +3340,7 @@ function loadTradeRegionGroupsFromPhpConfig(phpPath) {
     }
     return groups;
   } catch (e) {
-    console.error("Failed to load trade region groups from PHP config:", e);
+    log.error("Failed to load trade region groups from PHP config:", e);
     return [];
   }
 }
@@ -3511,7 +3512,7 @@ async function sendExchangeSuccessEmail(
     [localPart]
   );
   if (rows.length === 0) {
-    console.error(`sendExchangeSuccessEmail: unknown recipient ${emailAddress}`);
+    log.error(`sendExchangeSuccessEmail: unknown recipient ${emailAddress}`);
     return;
   }
 
@@ -3717,7 +3718,7 @@ async function doExchange() {
 
   try {
     if (!TRADE_CORNER_ENABLED) {
-      console.log("Trade Corner is disabled; skipping exchange run.");
+      log.info("Trade Corner is disabled; skipping exchange run.");
       await connection.end();
       return;
     }
@@ -3863,13 +3864,13 @@ async function doExchange() {
     }
 
     await connection.commit();
-    console.log(`Finished exchange; performed ${numTrades} trade(s)`);
+    log.info(`Finished exchange; performed ${numTrades} trade(s)`);
 
     for (const [row, outcome] of toTell) {
       await tellPlayerAboutTrade(connection, row, outcome);
     }
   } catch (e) {
-    console.error("Exchange failed, rolling back:", e);
+    log.error("Exchange failed, rolling back:", e);
     try {
       await connection.rollback();
     } catch (_) {}

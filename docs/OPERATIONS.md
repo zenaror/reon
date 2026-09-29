@@ -6,12 +6,16 @@ reading to use the site; it is what to open when something needs finding,
 restoring or turning off. Everything a fresh install needs is created by the
 scripts in `setup-script/`; the last column says which one.
 
+To get around the server without remembering any of these paths, run
+`reon-menu` or open `~/shortcuts/` (both described in "Getting around the
+server from a terminal" below, and in `setup-script/README.md`).
+
 ## Logs
 
 | what | where | kept | created by |
 | --- | --- | --- | --- |
 | web server access / error | `/var/log/nginx/reon.access.log`, `reon.error.log` | 14 days, rotated daily (`/etc/logrotate.d/nginx`) | package + `1-setup-reon.sh` installs `logrotate` |
-| PHP errors and every `error_log()` of the site | `/var/log/reon/php-error.log` | 14 days (`/etc/logrotate.d/reon`) | `1-setup-reon.sh` |
+| PHP errors and every `error_log()` / `LogUtil` line of the site | `/var/log/reon/php-error.log` | 14 days (`/etc/logrotate.d/reon`) | `1-setup-reon.sh` |
 | PHP-FPM master log | `/var/log/php8.5-fpm.log` | package rule | package |
 | fail2ban | `/var/log/fail2ban.log` | weekly, 4 rotations | package |
 | the services (mail, relay, cron jobs, dovecot, postfix, mysql) | the systemd journal | 30 days (`/etc/systemd/journald.conf.d/reon-retention.conf`) | `1-setup-reon.sh` |
@@ -30,6 +34,51 @@ The privacy page promises 14 days for connection logs and 30 for the
 journal; these settings are what keeps that promise. `logrotate` must be
 installed (it is not pulled in by `--no-install-recommends`).
 
+### Log format of the Node services
+
+`mail/`, `app/*` write one JSON object per line through `lib/log.js`:
+`{"level":"warn","component":"mail-pop3","msg":"...","error":{"message","stack"}}`.
+Under systemd the line also carries a `<N>` syslog prefix, so the journal
+knows the real priority and `journalctl -p warning -u 'reon-*'` shows only
+warnings and errors (without the prefix everything would be "info"). The
+timestamp is left to the journal there; outside it the record has a `ts`.
+
+- Levels: `debug`, `info`, `warn`, `error`. The threshold is `LOG_LEVEL`
+  (default `info`). The per-connection POP3 lines are `debug`, so they are off
+  by default; turn them on with a drop-in
+  (`Environment=LOG_LEVEL=debug` on `reon-mail.service`) and restart.
+- To use it in a new script: `const log = require("../lib/log").child("my-component");`
+  and `log.info(...)`, `log.warn(...)`, `log.error(msg, err)` (a trailing
+  `Error` becomes the `error` field).
+
+### Log format of the PHP site
+
+`web/classes/LogUtil.php` is the same thing for PHP: `LogUtil::error("mail", "...")`,
+`warn`, `info`, `debug`. It writes the same JSON line through `error_log()`,
+so it lands in `/var/log/reon/php-error.log` (with PHP-FPM's own timestamp),
+rotated like before. `error` and `warn` always go out; `debug` only with
+`env[LOG_LEVEL] = debug` in the FPM pool. `bxt_debug_log()` keeps its own
+runtime switch (`debug_log_enabled`) and writes at `debug` through
+`LogUtil::emit()`. Reading: `reon-logs-files php`, and `grep '"level":"error"'`.
+Rule of thumb used in the conversion: a failed query or mail send is `error`,
+a game request the site refused (banned text, illegal Pokémon) is `warn`, the
+legality checker's raw dumps are `debug`.
+
+### Getting around the server from a terminal
+
+- `reon-menu` (also `~/reon-menu`): numbered menu for status, following a
+  log, recent warnings and errors, restarting a service, running a job now,
+  listing bans, backups, and load/memory/disk. Every entry is a plain
+  `systemctl` / `journalctl` call. Banning and unbanning stay in the admin
+  panel, where a reason is required.
+- `~/shortcuts/`: links only, made by `1-setup-reon.sh` (`setup_shortcuts`,
+  `SHORTCUT_USER=` picks whose home): `site`, `docs`, `config.json`,
+  `setup-scripts`, `logs-php`, `logs-web`, `backups` (root-only, use sudo),
+  `systemd-units`, `nginx`, `postfix`, `dovecot`, `fail2ban`, and `commands/`
+  with every `reon-*` command. Deleting the folder deletes only links.
+- `reon-mail` runs with `LOG_LEVEL=debug` (unit line in the setup; on the
+  live server a drop-in, `reon-mail.service.d/log-level.conf`).
+
 ## Backups
 
 - `reon-db-backup.timer` runs `/usr/local/sbin/reon-db-backup` daily at 03:30.
@@ -38,8 +87,13 @@ installed (it is not pulled in by `--no-install-recommends`).
   relay's SQLite file, if that is what it uses, to `relay-*.db.gz`. Kept 7 days.
 - The folder is `0700 root`, the files `0600`: a dump holds every password
   hash and game login password.
-- It is a copy on the same disk. Copy `/var/backups/reon` elsewhere to
-  survive losing the machine.
+- Rotation is by age (`find -mtime +7` on everything directly in the folder),
+  so manual copies left there (`vmail-*`, `caixa-*`...) disappear on their own
+  after 7 days.
+- It is a copy on the same disk. `setup-script/pull-backups.sh <user@host>
+  [key] [dest]` pulls `/var/backups/reon` to another machine over SSH (it runs
+  `sudo -n tar` remotely and keeps the `0700`/`0600` modes locally). Run it
+  from cron on the other machine to survive losing this one.
 - Restore one database: `zcat mysql-reon_db-<stamp>.sql.gz | sudo mysql reon_db`
   (into an empty database, or after checking what you are overwriting).
 - The privacy page discloses the backups, including that a deleted account
@@ -108,7 +162,8 @@ From the shell: `fail2ban-client status reon-web-scan`,
 | `trainer.php` | Mobile Trainer pages |
 | `users.php` (tabs: Accounts, Reserved names) | accounts, ban, grant admin, **delete account** (type the name; refuses yourself and other admins; audited); `reserved_names.php` edits the list of usernames nobody may register (each with a comment) |
 | `bans.php` ("Banned IPs") | every address fail2ban blocks, with origin, jail, expiry and reason; ban by hand (a reason is mandatory) or lift a ban |
-| `services.php`, `logs.php`, `log.php`, `tournament.php`, `adapter.php`, `notifications.php` | service control, logs, audit trail, tournament recording, adapter defaults, notifications |
+| `logs.php` | the journal of each service **and the PHP site's own log** (`Site (PHP)`, read from `php-error.log`), filtered by level (all / warnings and errors / errors only) and drawn one entry per row with the level as a word and colour; stack traces fold under their message; "Raw text" shows the plain output. Parsing is `LogViewUtil`; the level filter uses `journalctl -p` for services |
+| `services.php`, `log.php`, `tournament.php`, `adapter.php`, `notifications.php` | service control, logs, audit trail, tournament recording, adapter defaults, notifications |
 
 Everything an administrator does is written to `sys_admin_log`.
 

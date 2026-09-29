@@ -1,5 +1,6 @@
 <?php
 	require_once("../../classes/TemplateUtil.php");
+	require_once("../../classes/LogUtil.php");
 	require_once("../../classes/DBUtil.php");
 	require_once("../../classes/SessionUtil.php");
 	require_once("../../classes/MarioKartUtil.php");
@@ -181,9 +182,9 @@
 		$stmt = $db->prepare($sql);
 
 		if (!$stmt) {
-			error_log("Mario Kart query prepare failed: " . $db->error);
+			LogUtil::error("mariokart", "Mario Kart query prepare failed: " . $db->error);
 		} elseif (!$stmt->execute()) {
-			error_log("Mario Kart query execute failed: " . $stmt->error);
+			LogUtil::error("mariokart", "Mario Kart query execute failed: " . $stmt->error);
 		} else {
 			$data = DBUtil::fancy_get_result($stmt);
 			$saw_course_zero = false;
@@ -246,7 +247,7 @@
 	}
 	catch (\Throwable $e) {
 		$tracks = array();
-		error_log("Mario Kart page load failed: " . $e->getMessage());
+		LogUtil::error("mariokart", "Mario Kart page load failed: " . $e->getMessage());
 	}
 
 	// Text sections live in web/pages/games/mariokart.<locale>.md.

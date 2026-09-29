@@ -1,20 +1,21 @@
 <?php
 // Decode helpers for BXT tables and ranking, with optional global override.
 require_once(__DIR__ . "/bxt_legality_policy.php");
+require_once __DIR__ . '/../classes/LogUtil.php';
 
 function bxt_load_encoding_json() {
     static $cfg = null;
     if ($cfg !== null) return $cfg;
     $path = __DIR__ . '/bxt_encoding.json';
     if (!is_file($path)) {
-        error_log('bxt_decode_helpers: missing bxt_encoding.json at ' . $path);
+        LogUtil::error("bxt-decode", 'bxt_decode_helpers: missing bxt_encoding.json at ' . $path);
         $cfg = [];
         return $cfg;
     }
     $json = file_get_contents($path);
     $data = json_decode($json, true);
     if (!is_array($data)) {
-        error_log('bxt_decode_helpers: failed to decode json');
+        LogUtil::error("bxt-decode", 'bxt_decode_helpers: failed to decode json');
         $cfg = [];
         return $cfg;
     }
@@ -776,7 +777,7 @@ function bxt_summarize_pk2_blob($blob) {
         [$ok, $details] = legality_check_pk2_bytes_with_details(
             $blob,
             function ($msg) {
-                error_log('[LegalityCheckerConsole BXT] ' . $msg);
+                LogUtil::debug("bxt-decode", '[LegalityCheckerConsole BXT] ' . $msg);
             }
         );
 
@@ -792,7 +793,7 @@ function bxt_summarize_pk2_blob($blob) {
 
     } catch (Throwable $e) {
         // ignore, fallback below
-        error_log('bxt_summarize_pk2_blob exception: ' . $e->getMessage());
+        LogUtil::error("bxt-decode", 'bxt_summarize_pk2_blob exception: ' . $e->getMessage());
     }
 
     // Last-ditch fallback: hex dump

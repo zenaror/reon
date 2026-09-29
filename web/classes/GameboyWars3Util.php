@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once(__DIR__."/LogUtil.php");
 /**
  * Utility class for Game Boy Wars 3 (CGB-BWWJ/CGB-BWWE) operations
  */
@@ -814,7 +815,7 @@ class GameboyWars3Util {
             $stmt->bind_param("ii", $a, $id);
             return $stmt->execute();
         } catch (\mysqli_sql_exception $e) {
-            error_log("GameboyWars3Util::setMapActive($id) failed: " . $e->getMessage());
+            LogUtil::error("gbwars3", "GameboyWars3Util::setMapActive($id) failed: " . $e->getMessage());
             return false;
         }
     }
@@ -833,7 +834,7 @@ class GameboyWars3Util {
             $row = $stmt->get_result()->fetch_assoc();
             return $row !== null && (int)$row["custom_gbwars_opt_in"] === 1;
         } catch (\mysqli_sql_exception $e) {
-            error_log("GameboyWars3Util::userOptedInCustom($userId) failed: " . $e->getMessage());
+            LogUtil::error("gbwars3", "GameboyWars3Util::userOptedInCustom($userId) failed: " . $e->getMessage());
             return false;
         }
     }
@@ -1273,7 +1274,7 @@ class GameboyWars3Util {
             $stmt->bind_param("isi", $a, $region, $mailboxId);
             return $stmt->execute();
         } catch (\mysqli_sql_exception $e) {
-            error_log("GameboyWars3Util::setMessageActive($region, $mailboxId) failed: " . $e->getMessage());
+            LogUtil::error("gbwars3", "GameboyWars3Util::setMessageActive($region, $mailboxId) failed: " . $e->getMessage());
             return false;
         }
     }
@@ -1286,7 +1287,7 @@ class GameboyWars3Util {
             $stmt->bind_param("si", $region, $mailboxId);
             return $stmt->execute();
         } catch (\mysqli_sql_exception $e) {
-            error_log("GameboyWars3Util::deleteMessage($region, $mailboxId) failed: " . $e->getMessage());
+            LogUtil::error("gbwars3", "GameboyWars3Util::deleteMessage($region, $mailboxId) failed: " . $e->getMessage());
             return false;
         }
     }
@@ -1313,7 +1314,7 @@ class GameboyWars3Util {
             }
             return $prices;
         } catch (\mysqli_sql_exception $e) {
-            error_log("GameboyWars3Util::getMercenaryPrices() failed, serving hardcoded defaults: " . $e->getMessage());
+            LogUtil::warn("gbwars3", "GameboyWars3Util::getMercenaryPrices() failed, serving hardcoded defaults: " . $e->getMessage());
             return self::MERCENARY_DEFAULT_PRICES;
         }
     }

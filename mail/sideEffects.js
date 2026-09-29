@@ -1,5 +1,6 @@
 const net = require("net");
 const { notify, isGameMail } = require("../lib/notifications");
+const log = require("../lib/log").child("mail-side-effects");
 
 // O que acontece ALÉM de guardar a mensagem: a cópia em Enviados de quem
 // mandou, e a linha no sino de quem recebeu.
@@ -102,14 +103,14 @@ function iniciar(pool, porta = PORTA) {
 				}
 				sock.end("OK\n");
 			} catch (e) {
-				console.log("(efeitos) " + (e.message || e));
+				log.info("(efeitos) " + (e.message || e));
 				sock.end("ERR " + (e.message || e) + "\n");
 			}
 		});
 	});
 
 	servidor.listen(porta, "127.0.0.1", () =>
-		console.log("Efeitos de entrega escutando em 127.0.0.1:" + porta));
+		log.info("Efeitos de entrega escutando em 127.0.0.1:" + porta));
 	return servidor;
 }
 
