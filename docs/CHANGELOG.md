@@ -863,6 +863,21 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Servidor e segurança
 
+* **Otimizações do teste de carga.** (1) As páginas em Markdown (guia,
+  downloads, termos, privacidade e os hubs de jogo) guardam o HTML já
+  convertido em cache, com a data do arquivo na chave: `guide.php` foi de ~36
+  para ~90 pedidos por segundo e `/pokemon/` de ~47 para ~140; editar o `.md`
+  vale no pedido seguinte. (2) O ajuste de memória do MySQL
+  (`zz-reon-tuning.cnf`) **nunca tinha valido neste servidor**: era um link
+  simbólico e o AppArmor barrava a leitura, então o banco rodava com o padrão
+  (`performance_schema` ligado, 151 conexões, buffer de log de 64 MB, pico de
+  ~500 MB). Agora é arquivo real, com pool de 64 MB (o banco tem ~10 MB),
+  `performance_schema` desligado e 40 conexões: o mysqld caiu para ~80–130 MB
+  e o swap de ~885 MB para ~300–400 MB. (3) `reon-session-sweep.timer` (de hora
+  em hora) apaga sessões PHP anônimas (só um token CSRF) com mais de seis
+  horas; cada visitante sem cookie criava um arquivo e nada os expirava, em
+  `/tmp`, que é RAM (o teste de carga deixou 36 mil, ~140 MB). Sessões com
+  usuário nunca são tocadas.
 * **Tela de logs do painel renovada.** Passou a mostrar também o log do site
   PHP (`Site (PHP)`), filtra por nível (tudo / avisos e erros / só erros) e
   desenha uma entrada por linha, com o nível em palavra e cor e o stack trace

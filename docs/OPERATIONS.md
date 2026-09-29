@@ -110,6 +110,31 @@ deploying by copying files needs no clearing. If the folder is not writable the
 site still works, only about ten times slower. `/tmp/reon` is created by
 `setup_php_web` in `1-setup-reon.sh`.
 
+`/tmp/reon/reon-twig-<uid>/pages/`: the Markdown pages (guide, downloads,
+terms, privacy, game hubs) already converted to HTML, one file per page and
+version (the key holds the file's modification time and size, so editing the
+`.md` is enough). Bump `PageUtil::CACHE_VERSION` if the converter's options
+or library change what it prints.
+
+`/tmp/reon/sess_*`: PHP sessions. `/tmp` is RAM on this server (tmpfs). A
+visitor without a cookie gets a session holding only a CSRF token, and PHP's
+own collector is off in the pool (so signed-in people are not logged out
+after 24 minutes), so `reon-session-sweep.timer` (hourly,
+`/usr/local/sbin/reon-session-sweep`) deletes the ones older than six hours
+that hold no `user` key. Signed-in sessions (`user_id`, or the game's
+`userId`) are never touched. Run it by hand with
+`sudo systemctl start reon-session-sweep`; the result is in its journal.
+
+## MySQL memory
+
+`/etc/mysql/mysql.conf.d/zz-reon-tuning.cnf` (written by `1-setup-reon.sh`):
+64 MB buffer pool (the database is ~10 MB), 40 connections,
+`performance_schema` off. It must be a **real file, not a link**: AppArmor
+lets mysqld read `/etc/mysql/` but not the link's target, and the settings
+silently never applied on this server until 2026-09-29. Check with
+`sudo mysql -e 'select @@performance_schema, @@innodb_buffer_pool_size/1048576, @@max_connections'`
+(expect 0, 64, 40); `journalctl -k | grep apparmor.*mysqld` shows a denial.
+
 ## Root helpers used by the admin panel
 
 The web server never runs privileged commands itself. Two small scripts do,

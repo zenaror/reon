@@ -66,8 +66,10 @@ order, all idempotent (the fifth is optional):
 ## Tuning for a 1 GB VM
 
 - Creates a 2 GB swapfile automatically when it detects little RAM.
-- MySQL with a reduced buffer pool and connection count, performance_schema
-  off (the Docker mysql:8.4 image reached ~500 MB; this is much smaller).
+- MySQL with a reduced buffer pool (64 MB; the database is ~10 MB) and
+  connection count, performance_schema off. The tuning file must be a real
+  file, never a link: AppArmor blocks mysqld from following it and the
+  settings silently do not apply (see docs/OPERATIONS.md, "MySQL memory") (the Docker mysql:8.4 image reached ~500 MB; this is much smaller).
 - php-fpm in `ondemand` mode (a process only starts when there is a request).
 - Temporary downloads (Node, .NET) use the large disk instead of `/tmp`,
   which tends to be too small on these VMs.
