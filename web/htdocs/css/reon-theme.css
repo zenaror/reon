@@ -616,11 +616,6 @@ body.gbwars-theme {
   background-image: url("/images/gbwars/gbwarsrepeat.png");
 }
 
-body.mariokart-theme .container-xxl,
-body.gbwars-theme .container-xxl {
-  max-width: 860px;
-}
-
 body.mariokart-theme main#content,
 body.gbwars-theme main#content {
   background: #faf6e2;
@@ -634,10 +629,6 @@ body.gbwars-theme main#content {
    game pages, on a crystal-blue field. */
 body.pokecrystal-index {
   background: #1e4a93;
-}
-
-body.pokecrystal-index .container-xxl {
-  max-width: 860px;
 }
 
 body.pokecrystal-index main#content {

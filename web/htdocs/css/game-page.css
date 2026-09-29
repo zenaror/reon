@@ -62,8 +62,14 @@
 
 .game-section > h2 { scroll-margin-top: 56px; }
 
-/* Rendered Markdown: comfortable reading width, whole-pixel rhythm. */
-.game-doc { max-width: 72ch; line-height: 1.6; }
+/* Rendered Markdown: whole-pixel rhythm. The block fills the game page like the
+   rest of the site (a 72ch cap on it left the right half of a 1320px page
+   empty), but running text alone is kept to a readable line of about 100
+   characters; tables, notices and galleries use the full width. */
+.game-doc { max-width: none; line-height: 1.6; }
+
+.game-doc p,
+.game-doc li { max-width: 100ch; }
 
 .game-doc h3 { margin-top: 1.2em; }
 
@@ -116,7 +122,6 @@ body.gbwars-theme .game-nav { background: #faf6e2; }
 
 body.gbwars-theme .game-nav a { padding: 8px 12px; }
 
-body.gbwars-theme .game-doc { max-width: none; }
 
 body.gbwars-theme .game-doc p,
 body.gbwars-theme .game-doc li { margin-bottom: 8px; }

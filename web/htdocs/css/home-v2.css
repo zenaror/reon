@@ -15,11 +15,10 @@ body.home-v2 {
   background-attachment: fixed;
 }
 
-/* Narrow 2000s width; nav, ticker and content are each their own boxed panel
-   floating on the pattern field — the nav boxed to match the news ticker. */
-body.home-v2 .container-xxl {
-  max-width: 860px;
-}
+/* Nav, ticker and content are each their own boxed panel floating on the
+   pattern field — the nav boxed to match the news ticker. The width is the
+   site-wide container-xxl (1320px), the same as /login.php; there used to be
+   a narrow 860px cap here, which made every page a different width. */
 
 body.home-v2 header.navbar {
   background: #ffffff !important;

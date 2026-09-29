@@ -64,7 +64,9 @@ body.mariokart-theme > main {
 }
 
 .mkgba-page {
-  width: min(1200px, calc(100% - 16px));
+  /* Fills the page box like the other game pages (was capped at 1200px, which
+     left it narrower than the frame around it). */
+  width: 100%;
   margin: 0 auto;
 }
 
