@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once(__DIR__."/LogUtil.php");
 	require_once("MailStoreUtil.php");
 	require_once("ConfigUtil.php");
 
@@ -516,7 +517,7 @@
 			$status = proc_close($proc);
 
 			if ($status !== 0) {
-				error_log("MailUtil: sendmail exited {$status}: " . trim((string)$err));
+				LogUtil::error("mail", "MailUtil: sendmail exited {$status}: " . trim((string)$err));
 			}
 			return $status === 0;
 		}

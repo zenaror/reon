@@ -723,3 +723,25 @@
 .admin-row-actions__form {
   margin: 0;
 }
+
+/* The Logs page, one row per entry (see LogViewUtil). The level column is a
+   word first and a colour second. */
+.log-view { border: 2px solid var(--reon-line); background: #12141c; color: #d7dde8; font-family: ui-monospace, "Courier New", monospace; font-size: 12px; line-height: 1.5; max-height: 560px; overflow: auto; }
+.log-row { display: grid; grid-template-columns: 11.5em 4.5em 12em minmax(0, 1fr); gap: 0 10px; padding: 3px 10px; border-bottom: 1px solid #232838; }
+.log-row:last-child { border-bottom: 0; }
+.log-time { color: #8a93a6; white-space: nowrap; }
+.log-where { color: #8fb8e8; overflow-wrap: anywhere; }
+.log-msg { overflow-wrap: anywhere; white-space: pre-wrap; }
+.log-msg details { margin-top: 2px; }
+.log-msg summary { cursor: pointer; color: #8a93a6; }
+.log-msg pre { margin: 4px 0 0; padding: 6px 8px; background: #0b0d13; color: #b9c1d0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.log-level { text-transform: uppercase; font-weight: bold; letter-spacing: 0.04em; }
+.log-level--error { color: #ff6b8b; }
+.log-level--warn { color: #f2c14e; }
+.log-level--info { color: #7bd88f; }
+.log-level--debug, .log-level--none { color: #8a93a6; }
+.log-row:has(.log-level--error) { background: #2a1620; }
+@media (max-width: 720px) {
+  .log-row { grid-template-columns: 4.5em minmax(0, 1fr); }
+  .log-time, .log-where { grid-column: 1 / -1; }
+}

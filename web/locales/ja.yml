@@ -1764,6 +1764,13 @@ admin:
   logs-service: サービス
   logs-lines: 行数
   logs-show: 表示
+  logs-level: "レベル"
+  logs-level-all: "すべてのレベル"
+  logs-level-warn: "警告とエラー"
+  logs-level-error: "エラーのみ"
+  logs-raw: "生テキスト"
+  logs-details: "詳細"
+  logs-file-unreadable: "PHPのログを読み取れません。/var/log/reon/php-error.log が存在し、Webユーザーが読めるか確認してください。"
   logs-empty: 表示するものがありません。
   logs-unavailable: システムのジャーナルをまだ読めないため、表示するものがありません。
   logs-unavailable-why: PHP は「%user%」として動いており、システムのジャーナルを読むにはジャーナルのグループに属している必要があります。これは読み取りだけを与えるもので、サービスのページが必要とする sudo の設定ではなく、誰かが何かを再起動できるようになるわけでもありません：

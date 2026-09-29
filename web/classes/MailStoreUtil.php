@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__."/LogUtil.php");
 	// A caixa de entrada do webmail, vinda do Dovecot.
 	//
 	// Desde o corte, quem guarda correspondência é o Dovecot -- a mesma peça
@@ -59,7 +60,7 @@
 			fclose($pipes[1]); fclose($pipes[2]);
 			$status = proc_close($proc);
 			if ($status !== 0) {
-				if (!$calado) error_log("MailStoreUtil: doveadm exited {$status}: " . trim((string)$err));
+				if (!$calado) LogUtil::error("mail-store", "MailStoreUtil: doveadm exited {$status}: " . trim((string)$err));
 				return null;
 			}
 			return $out;

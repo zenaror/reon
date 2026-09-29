@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once(__DIR__."/LogUtil.php");
 	require_once("TemplateUtil.php");
 
 	// The bell in the header. Everything a player should be told about but
@@ -171,7 +172,7 @@
 			} catch (\Throwable $e) {
 				// Installation without the table, or the database down: a
 				// reminder is a nice-to-have and cannot crash the caller.
-				error_log("addReminder(" . $key . "): " . $e->getMessage());
+				LogUtil::error("notifications", "addReminder(" . $key . "): " . $e->getMessage());
 				return null;
 			}
 		}

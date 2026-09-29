@@ -4,6 +4,7 @@
 	use PHPMailer\PHPMailer\Exception;
 
 	require_once dirname(__DIR__)."/vendor/autoload.php";
+	require_once(__DIR__."/LogUtil.php");
 	require_once("DBUtil.php");
 	require_once("ConfigUtil.php");
 	require_once("TemplateUtil.php");
@@ -83,7 +84,7 @@
 				static $avisado = false;
 				if (!$avisado) {
 					$avisado = true;
-					error_log("email_block_pepper missing from config.json: block hashes are unpeppered");
+					LogUtil::warn("user", "email_block_pepper missing from config.json: block hashes are unpeppered");
 				}
 			}
 			return hash("sha256", $normal . "\0" . $pepper);
@@ -128,7 +129,7 @@
 				$stmt->bind_param("s", $h);
 				return $stmt->execute();
 			} catch (\Throwable $e) {
-				error_log("blockEmailAfterDeletion failed: " . $e->getMessage());
+				LogUtil::error("user", "blockEmailAfterDeletion failed: " . $e->getMessage());
 				return false;
 			}
 		}
@@ -147,7 +148,7 @@
 				$stmt->bind_param("s", $h);
 				return $stmt->execute();
 			} catch (\Throwable $e) {
-				error_log("unblockEmail failed: " . $e->getMessage());
+				LogUtil::error("user", "unblockEmail failed: " . $e->getMessage());
 				return false;
 			}
 		}
@@ -441,7 +442,7 @@
 			// The recipient is logged because these are all account e-mails
 			// and knowing which account went unserved is the point; the body
 			// is not, since it carries reset and signup links.
-			error_log(sprintf("reon: e-mail para %s falhou (%s): %s",
+			LogUtil::error("user", sprintf("reon: e-mail para %s falhou (%s): %s",
 				$to, $subject, $mail->ErrorInfo));
 			return false;
 		}

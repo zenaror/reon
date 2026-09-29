@@ -4,6 +4,7 @@ const mysql = require("mysql2/promise");
 
 const { Command } = require("commander");
 const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
+const log = require("../../lib/log").child("mail-bottle");
 
 // ------------------------------
 // Config
@@ -90,9 +91,9 @@ async function doExchange() {
     }
 
     await connection.commit();
-    console.log("Finished exchange");
+    log.info("Finished exchange");
   } catch (e) {
-    console.error("Exchange failed, rolling back:", e);
+    log.error("Exchange failed, rolling back:", e);
     try {
       await connection.rollback();
     } catch (_) {}

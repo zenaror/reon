@@ -2,6 +2,7 @@ const net = require("net");
 const mysql = require("mysql2");
 const POP3Connection = require("./pop3Connection").POP3Connection;
 const { createStore } = require("./mailStore");
+const log = require("../lib/log").child("mail-pop3");
 
 class POP3Server {
 	constructor(mysqlConfig, emailDomain, emailDomainDion, config) {
@@ -12,7 +13,7 @@ class POP3Server {
 		// o outro caminho ficou sem destino -- ver mailStore.js. O MySQL
 		// segue sendo o cadastro de contas e a chave de device-auth.
 		this.store = createStore(config || {}, this.mysql);
-		console.log("POP3 storage backend: " + this.store.name);
+		log.info("POP3 storage backend: " + this.store.name);
 		// Mail sent from one of our own domains was written for these games
 		// and is handed over untouched; see POP3Connection#_getMail.
 		this.internalDomains = [emailDomain, emailDomainDion]
@@ -21,13 +22,13 @@ class POP3Server {
 		// tratativas. Daqui em diante este servidor so entrega os bytes
 		// guardados -- que e o que o Dovecot vai fazer quando assumir a 110.
 		this.shapedAtDelivery = (config || {})["shaped_at_delivery"] === true;
-		if (this.shapedAtDelivery) console.log("POP3: tratativas ja aplicadas na entrega");
+		if (this.shapedAtDelivery) log.info("POP3: tratativas ja aplicadas na entrega");
 		net.createServer(sock => this._onClientConnect(sock)).listen(110, "0.0.0.0");
-		console.log("POP3 server listening");
+		log.info("POP3 server listening");
 	}
 	
 	_onClientConnect(socket) {
-		console.log("(POP3) CONNECTED: " + socket.remoteAddress + ":" + socket.remotePort);
+		log.debug("(POP3) CONNECTED: " + socket.remoteAddress + ":" + socket.remotePort);
 		let conn = new POP3Connection(this, socket);
 		conn.on("disconnect", (connection, ip, port) => this._onClientDisconnect(connection, ip, port));
 		conn.on("command", (command, user, ip, port) => this._onClientCommand(command, user, ip, port));
@@ -36,16 +37,16 @@ class POP3Server {
 	}
 	
 	_onClientDisconnect(connection, ip, port) {
-		console.log("(POP3) DISCONNECTED: " + ip + ":" + port);
+		log.debug("(POP3) DISCONNECTED: " + ip + ":" + port);
 		this.connections.delete(connection);
 	}
 	
 	_onClientCommand(command, user, ip, port) {
-		console.log("(POP3) " + ip + ":" + port + (user == null ? "" : " (" + user + ")") + ": " + command);
+		log.debug("(POP3) " + ip + ":" + port + (user == null ? "" : " (" + user + ")") + ": " + command);
 	}
 	
 	_onClientError(error) {
-		console.log("(POP3) " + error);
+		log.warn("(POP3) " + error);
 	}
 }
 module.exports.POP3Server = POP3Server;

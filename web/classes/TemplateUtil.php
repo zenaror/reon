@@ -1,5 +1,6 @@
 <?php
 	require_once dirname(__DIR__)."/vendor/autoload.php";
+	require_once(__DIR__."/LogUtil.php");
 	require_once("SessionUtil.php");
 	
 	class TemplateUtil {
@@ -135,7 +136,7 @@
 			$translator->setFallbackLocales(['en']);
 
 			if (!class_exists('\Symfony\Component\Translation\Loader\YamlFileLoader')) {
-				error_log("Translation YAML loader class unavailable; locale resources cannot be loaded.");
+				LogUtil::error("template", "Translation YAML loader class unavailable; locale resources cannot be loaded.");
 				self::$translator = $translator;
 				return self::$translator;
 			}
@@ -173,7 +174,7 @@
 
 					$translator->addResource('yaml', $path, $l);
 				} catch (\Throwable $e) {
-					error_log("Skipping invalid locale YAML [{$l}] at {$path}: " . $e->getMessage());
+					LogUtil::warn("template", "Skipping invalid locale YAML [{$l}] at {$path}: " . $e->getMessage());
 				}
 			}
 

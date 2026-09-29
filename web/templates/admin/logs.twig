@@ -20,10 +20,26 @@
 				{% endfor %}
 			</select>
 		</label>
+		<label>
+			{{ 'admin.logs-level'|trans }}
+			<select name="level">
+				<option value=""{% if level == '' %} selected{% endif %}>{{ 'admin.logs-level-all'|trans }}</option>
+				<option value="warn"{% if level == 'warn' %} selected{% endif %}>{{ 'admin.logs-level-warn'|trans }}</option>
+				<option value="error"{% if level == 'error' %} selected{% endif %}>{{ 'admin.logs-level-error'|trans }}</option>
+			</select>
+		</label>
+		<label>
+			<input type="checkbox" name="raw" value="1"{% if raw %} checked{% endif %}>
+			{{ 'admin.logs-raw'|trans }}
+		</label>
 		<button class="btn btn-outline-primary" type="submit">{{ 'admin.logs-show'|trans }}</button>
 	</form>
 
-	{% if not available %}
+	{% if not available and is_file %}
+		<div class="admin-notice admin-notice--bad">
+			<p class="mb-0"><strong>{{ 'admin.logs-file-unreadable'|trans }}</strong></p>
+		</div>
+	{% elseif not available %}
 		{# The command is here rather than a bare "not enabled": joining the
 		   journal group grants reading and nothing else, which is a much
 		   smaller thing to hand out than the sudo rule the Services page
@@ -36,7 +52,25 @@ sudo systemctl restart php8.5-fpm</pre>
 		</div>
 	{% elseif text is empty %}
 		<p>{{ 'admin.logs-empty'|trans }}</p>
-	{% else %}
+	{% elseif raw %}
 		<pre class="admin-console">{{ text }}</pre>
+	{% elseif entries is empty %}
+		<p>{{ 'admin.logs-empty'|trans }}</p>
+	{% else %}
+		{# One row per entry. The level is a word as well as a colour, so it
+		   reads without telling red from amber; a stack trace is folded
+		   under the message it belongs to. #}
+		<div class="log-view" role="table">
+			{% for e in entries %}
+				<div class="log-row" role="row">
+					<span class="log-time" role="cell">{{ e.time }}</span>
+					<span class="log-level log-level--{{ e.level ?: 'none' }}" role="cell">{{ e.level }}</span>
+					<span class="log-where" role="cell">{{ e.component ?: e.source }}</span>
+					<span class="log-msg" role="cell">{{ e.msg }}
+						{% if e.extra %}<details><summary>{{ 'admin.logs-details'|trans }}</summary><pre>{{ e.extra }}</pre></details>{% endif %}
+					</span>
+				</div>
+			{% endfor %}
+		</div>
 	{% endif %}
 {% endblock %}

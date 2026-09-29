@@ -243,14 +243,20 @@
 		// So journalctl is tried directly first, and the helper is the
 		// fallback for a server that has it. Returns null when neither works,
 		// which is the page's cue to say what to grant.
-		public function journal($unit, $lines = 200) {
+		// $priority ("3" errors, "4" warnings and worse) is journalctl -p, so
+		// the filter is applied before the line count: "the last 200 errors",
+		// not "the errors among the last 200 lines". Only the direct route
+		// honours it; the sudo helper returns everything and the page filters.
+		public function journal($unit, $lines = 200, $priority = null) {
 			if (!self::isKnown($unit)) return "";
 			$lines = max(10, min(1000, (int)$lines));
 
-			$direct = $this->run([
+			$cmd = [
 				"/usr/bin/journalctl", "-u", $unit . ".service",
 				"-n", (string)$lines, "--no-pager", "-q", "--output", "short-iso",
-			]);
+			];
+			if ($priority === "3" || $priority === "4") array_push($cmd, "-p", $priority);
+			$direct = $this->run($cmd);
 			if ($direct["code"] === 0 && trim($direct["stdout"]) !== "") {
 				return $direct["stdout"];
 			}

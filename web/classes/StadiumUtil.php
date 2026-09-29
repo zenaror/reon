@@ -1,5 +1,6 @@
 <?php
 	require_once("DBUtil.php");
+	require_once(__DIR__."/LogUtil.php");
 
 	// Mobile Stadium distributions, assembled from the database -- same
 	// design as the Pokémon News, and born from the same request from the
@@ -289,7 +290,7 @@
 			try {
 				return $stmt->execute();
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::deleteReplay($id) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::deleteReplay($id) failed: " . $e->getMessage());
 				return false;
 			}
 		}
@@ -654,7 +655,7 @@ PHPEOF;
 				// distribution" (empty list -> buildMenu() returns null ->
 				// 404, the same as the other six regions always had) than
 				// to break the download.
-				error_log("StadiumUtil::activeFor($region) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::activeFor($region) failed: " . $e->getMessage());
 				return [];
 			}
 		}
@@ -673,7 +674,7 @@ PHPEOF;
 				$linha = $stmt->get_result()->fetch_assoc();
 				return $linha !== null && (int)$linha["custom_mobile_stadium_opt_in"] === 1;
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::userOptedInCustom($userId) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::userOptedInCustom($userId) failed: " . $e->getMessage());
 				return false;
 			}
 		}
@@ -694,7 +695,7 @@ PHPEOF;
 				$stmt->execute();
 				return $stmt->get_result()->fetch_assoc() !== null;
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::customRowExists($region) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::customRowExists($region) failed: " . $e->getMessage());
 				return false;
 			}
 		}
@@ -750,7 +751,7 @@ PHPEOF;
 				// This is a symptom of someone activating too many
 				// distributions; we do not trim on our own because we do
 				// not know which one to drop.
-				error_log("StadiumUtil::buildMenu($region): menu exceeds 0xFFE bytes with " . count($linhas) . " active distributions");
+				LogUtil::warn("stadium", "StadiumUtil::buildMenu($region): menu exceeds 0xFFE bytes with " . count($linhas) . " active distributions");
 				return null;
 			}
 			return $menu;
@@ -782,7 +783,7 @@ PHPEOF;
 				$linha = $stmt->get_result()->fetch_assoc();
 				return $linha ? $linha["payload"] : null;
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::payloadForSlug($region, $slug) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::payloadForSlug($region, $slug) failed: " . $e->getMessage());
 				return null;
 			}
 		}
@@ -962,7 +963,7 @@ PHPEOF;
 				$stmt->bind_param("ii", $a, $id);
 				return $stmt->execute();
 			} catch (\mysqli_sql_exception $e) {
-				error_log("StadiumUtil::setActive($id) failed: " . $e->getMessage());
+				LogUtil::error("stadium", "StadiumUtil::setActive($id) failed: " . $e->getMessage());
 				return false;
 			}
 		}
