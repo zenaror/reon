@@ -386,10 +386,12 @@ setup_mysql() {
 # The dockerized mysql:8.4.0 image was observed using ~500MB RSS; these
 # limits keep native mysqld well under that on a 1GB host.
 [mysqld]
-innodb_buffer_pool_size = 128M
+# The whole database is ~10 MB; 64M holds it with room to grow (the default
+# 128M just sits there). Raise it if the data ever outgrows that.
+innodb_buffer_pool_size = 64M
 innodb_log_buffer_size = 16M
 key_buffer_size = 16M
-max_connections = 30
+max_connections = 40
 table_open_cache = 400
 thread_cache_size = 8
 performance_schema = OFF
@@ -1186,6 +1188,52 @@ WantedBy=timers.target
 EOF
 )"
 
+    # Anonymous PHP sessions. Every visitor without a cookie -- scanners
+    # above all -- gets a session file holding a CSRF token and nothing else,
+    # and nothing ever expires them (the pool turns PHP's own collector off, so
+    # signed-in sessions are not cut after 24 minutes). /tmp is RAM here: a
+    # load test left 36 000 of them, ~140 MB. This removes the ones that are
+    # older than six hours AND hold no user (no "user" key: sign-in stores
+    # user_id, the game's own sessions userId). Signed-in sessions are never
+    # touched.
+    cat > /usr/local/sbin/reon-session-sweep <<'SWEEPEOF'
+#!/usr/bin/env bash
+# Removes anonymous PHP sessions older than six hours. See 1-setup-reon.sh.
+set -euo pipefail
+DIR=/tmp/reon
+[ -d "$DIR" ] || exit 0
+list=$(mktemp)
+trap 'rm -f "$list"' EXIT
+# Old enough, and no "user" anywhere in the file: only a CSRF token in it.
+find "$DIR" -maxdepth 1 -name 'sess_*' -mmin +360 -print0 \
+    | xargs -0 -r grep -L -Z -e user > "$list" || true
+n=$(tr -cd '\0' < "$list" | wc -c)
+xargs -0 -r rm -f -- < "$list"
+echo "removed $n anonymous sessions; $(find "$DIR" -maxdepth 1 -name 'sess_*' | wc -l) left"
+SWEEPEOF
+    chmod 0755 /usr/local/sbin/reon-session-sweep
+    write_unit reon-session-sweep.service "$(cat <<EOF
+[Unit]
+Description=REON: remove anonymous PHP sessions older than six hours
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/reon-session-sweep
+EOF
+)"
+    write_unit reon-session-sweep.timer "$(cat <<EOF
+[Unit]
+Description=Timer for reon-session-sweep.service
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+)"
+
     systemctl daemon-reload
 }
 
@@ -1195,7 +1243,7 @@ enable_all_services() {
     systemctl restart reon-mail.service reon-mobile-relay.service
 
     for slug in pokemon-battle pokemon-exchange auto-schedule mail-bottle \
-                mail-trash-purge retention-purge service-status db-backup; do
+                mail-trash-purge retention-purge service-status db-backup session-sweep; do
         systemctl enable --now "reon-${slug}.timer"
     done
 }

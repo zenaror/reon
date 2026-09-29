@@ -15,6 +15,9 @@
 
 		const PAGES_DIR = __DIR__."/../pages";
 		const DEFAULT_LOCALE = "en";
+		// Bump when render() changes what it outputs for the same Markdown
+		// (the converter options, an upgrade of the library).
+		const CACHE_VERSION = "1";
 
 		// Renders /pages/<slug>.<locale>.md through the portal layout. The
 		// first "# heading" of the file is the page title; the rest is the
@@ -39,7 +42,7 @@
 			echo TemplateUtil::render("page", [
 				"nav_item" => $nav_item,
 				"page_title" => $title,
-				"html" => self::render($markdown),
+				"html" => self::renderCached($file, $markdown),
 				"services" => $services,
 				"page_file" => basename($file),
 			]);
@@ -53,7 +56,34 @@
 			$file = self::fileFor($slug, $locale);
 			if ($file === null) return null;
 			[, $markdown] = self::split(file_get_contents($file));
-			return self::render($markdown);
+			return self::renderCached($file, $markdown);
+		}
+
+		// render() through a small file cache. Converting a page's Markdown
+		// cost about as much as the rest of the request put together (the
+		// guide served half as many pages per second as the home page), and
+		// the text only changes when someone edits the file. The key is the
+		// file's own path, modification time and size, so an edit -- or a
+		// deploy that copies the new file over -- is picked up on the next
+		// request with nothing to clear. No writable temp dir: it just
+		// renders each time, as before.
+		private static function renderCached($file, $markdown) {
+			$root = TemplateUtil::cacheRoot();
+			if ($root === null) return self::render($markdown);
+
+			$mtime = @filemtime($file);
+			$key = sha1(self::CACHE_VERSION."|".$file."|".$mtime."|".strlen($markdown));
+			$path = $root."/pages/".$key.".html";
+			$html = @file_get_contents($path);
+			if ($html !== false) return $html;
+
+			$html = self::render($markdown);
+			if (!is_dir($root."/pages")) @mkdir($root."/pages", 0700, true);
+			// Written then renamed: a request that reads while another writes
+			// never sees half a page.
+			$tmp = $path.".".getmypid().".tmp";
+			if (@file_put_contents($tmp, $html) !== false) @rename($tmp, $path);
+			return $html;
 		}
 
 		// The file for this locale, else the English one, else nothing.

@@ -42,7 +42,7 @@
 		// Per user id: the site (php-fpm) and the command-line jobs run as
 		// different users, and a cache written by one that the other cannot
 		// overwrite would break rendering for whichever comes second.
-		private static function cacheRoot() {
+		public static function cacheRoot() {
 			$dir = sys_get_temp_dir() . "/reon-twig-" . getmyuid();
 			if (!is_dir($dir)) @mkdir($dir, 0700, true);
 			return (is_dir($dir) && is_writable($dir)) ? $dir : null;
