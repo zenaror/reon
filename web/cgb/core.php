@@ -13,6 +13,8 @@ function getConfig() {
 }
 
 function serveFileOrExecScript($filePath, $type, $sessionId = null) {
+	require_once(dirname(__DIR__)."/classes/ActivityLog.php");
+	ActivityLog::gameRequest($type, $filePath);
 	$dir = dirname(__DIR__).DIRECTORY_SEPARATOR."cgb".DIRECTORY_SEPARATOR.$type;
 	
 	header_remove();

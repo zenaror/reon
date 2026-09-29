@@ -101,8 +101,13 @@ them. Deleted mail stays in the trash for 30 days and is then removed.
 ### Logs
 
 The server records connections, administrative actions, and outbound mail,
-each with an IP address and a time. This is how abuse is spotted and how
-faults are traced.
+each with an IP address and a time. It also keeps an activity log of what
+accounts do on the service: sign-ups, sign-ins (and failed ones), password
+and e-mail changes, account deletion, what the game downloads and uploads, and
+trades. Each entry carries your account number and the time — not your IP
+address (the web server's own log has that), and never your e-mail address, a
+password, or anything you typed. This is how abuse is spotted and how faults
+are traced.
 
 ## What is public
 
@@ -142,6 +147,7 @@ Nothing is sold, and nothing is handed to advertisers.
 - Deleted mail: 30 days.
 - Connection logs (the web server's): **14 days**, already enforced by
   rotation.
+- The activity log described above: **14 days**, same rotation.
 - Connection records in the system journal: **30 days**.
 - Database backups: a copy of the databases is made every night and kept
   **7 days**, on the same server, readable only by the administrator. It

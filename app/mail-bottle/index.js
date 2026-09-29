@@ -5,6 +5,7 @@ const mysql = require("mysql2/promise");
 const { Command } = require("commander");
 const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
 const log = require("../../lib/log").child("mail-bottle");
+const activity = require("../../lib/activity");
 
 // ------------------------------
 // Config
@@ -54,6 +55,7 @@ async function doExchange() {
 
   try {
     await connection.beginTransaction();
+    const activityToWrite = [];
 
     const table = "amc_trades";
 
@@ -84,6 +86,8 @@ async function doExchange() {
         await sendRaw(a["email"], b["email"], "To: " + b["email"] + "\r\n" + a["message"]);
         await sendRaw(b["email"], a["email"], "To: " + a["email"] + "\r\n" + b["message"]);
 
+        activityToWrite.push({ kind: "mail-bottle", region });
+
         // Clean up processed rows
         await connection.execute("DELETE FROM " + table + " WHERE id = ?", [a["id"]]);
         await connection.execute("DELETE FROM " + table + " WHERE id = ?", [b["id"]]);
@@ -91,6 +95,7 @@ async function doExchange() {
     }
 
     await connection.commit();
+    for (const t of activityToWrite) activity.record("trade", t);
     log.info("Finished exchange");
   } catch (e) {
     log.error("Exchange failed, rolling back:", e);

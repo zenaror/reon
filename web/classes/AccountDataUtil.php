@@ -3,6 +3,7 @@
 	require_once(__DIR__ . "/MailStoreUtil.php");
 	require_once(__DIR__ . "/ConfigUtil.php");
 	require_once(__DIR__ . "/RelayUtil.php");
+	require_once(__DIR__ . "/ActivityLog.php");
 
 	// Levar embora e apagar: os dois direitos que faltavam.
 	//
@@ -274,6 +275,8 @@
 			$stmt->bind_param("i", $id);
 			$stmt->execute();
 			$feito["conta"] = $stmt->affected_rows;
+			// The id of an account that no longer exists: nothing left to identify.
+			ActivityLog::record("account-deleted", ["account" => $id, "removed" => (int)$feito["conta"]]);
 
 			return $feito;
 		}

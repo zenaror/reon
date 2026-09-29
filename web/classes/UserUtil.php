@@ -8,6 +8,7 @@
 	require_once("DBUtil.php");
 	require_once("ConfigUtil.php");
 	require_once("TemplateUtil.php");
+	require_once("ActivityLog.php");
 	
 	class UserUtil {
 
@@ -32,6 +33,7 @@
 			if (!self::$instance->verifyPassword($password)) return 1;
 			
 			if (!self::$instance->setPassword($_SESSION["user_id"], $newPassword)) return 2;
+			ActivityLog::record("password-changed", ["account" => (int)$_SESSION["user_id"]]);
 			
 			return 0;
 		}
@@ -332,6 +334,7 @@
 			$stmt = $db->prepare("update sys_users set email = ? where id = ?");
 			$stmt->bind_param("si", $new_email, $id);
 			$stmt->execute();
+			ActivityLog::record("email-changed", ["account" => (int)$id]);
 			
 			return 0;
 		}
@@ -368,6 +371,7 @@
 			$row = $stmt->get_result()->fetch_assoc();
 			if (!isset($row)) return 1;
 			$user_id = $row["id"];
+			ActivityLog::record("password-reset-requested", ["account" => (int)$user_id]);
 			
 			// The column is "timestamp"; this said "time", so the query threw
 			// and password reset failed for everyone, every time.
@@ -462,6 +466,7 @@
 			$stmt = $db->prepare("delete from sys_password_reset where user_id = ? and secret = ?");
 			$stmt->bind_param("is", $id, $key);
 			$stmt->execute();
+			ActivityLog::record("password-reset", ["account" => (int)$id]);
 			
 			return 4;
 		}
@@ -482,6 +487,7 @@
 			$stmt = $db->prepare("update sys_users set log_in_password = ? where id = ?");
 			$stmt->bind_param("si", $new_password, $_SESSION["user_id"]);
 			$stmt->execute();
+			ActivityLog::record("game-password-rerolled", ["account" => (int)$_SESSION["user_id"]]);
 		}
 		
 		private function generateLogInPassword() {
@@ -586,6 +592,7 @@
 			]);
 			
 			if (!self::$instance->sendUtf8Email($email, $from, $subject, $message)) return 3;
+			ActivityLog::record("signup-requested");
 			
 			return 0;
 		}
@@ -798,7 +805,9 @@
 
 			require_once("RelayUtil.php");
 	require_once("ReservedNamesUtil.php");
-			RelayUtil::getInstance()->provisionForUser($db->insert_id);
+			$newId = $db->insert_id;
+			ActivityLog::record("signup", ["account" => (int)$newId, "username" => $username]);
+			RelayUtil::getInstance()->provisionForUser($newId);
 
 			return 0;
 		}

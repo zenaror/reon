@@ -863,6 +863,14 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Servidor e segurança
 
+* **Log de atividade: quem fez o quê.** Cadastros, logins (e os que falharam),
+  troca de senha e de e-mail, exclusão de conta, autenticação do console, tudo
+  o que o jogo baixa e envia, e as trocas (Trade Corner e Mail de Cute), em
+  `/var/log/reon/activity.log`, uma linha JSON por evento, 14 dias. Vai na
+  tela de logs do painel como "Activity", com filtro por grupo. Só número da
+  conta e hora (o IP fica só no log do nginx): nunca e-mail, senha, o nome digitado num login que
+  falhou, texto de mensagem ou apelido. A página de privacidade passou a
+  citá-lo.
 * **Otimizações do teste de carga.** (1) As páginas em Markdown (guia,
   downloads, termos, privacidade e os hubs de jogo) guardam o HTML já
   convertido em cache, com a data do arquivo na chave: `guide.php` foi de ~36
