@@ -82,6 +82,18 @@ order, all idempotent (the fifth is optional):
   template or a locale file changes, so updating the code by copying files
   needs no cache clearing. If `/tmp/reon` is not writable by the pool user the
   site still works, only slowly -- check that first if pages get slow.
+- Logs: `logrotate` is installed explicitly (the base packages are installed
+  without recommends, which left it out and meant nothing was ever rotated);
+  the site's own files in `/var/log/reon/` get a 14-day rule, and nginx,
+  php-fpm and fail2ban use the ones their packages ship. The journal is
+  capped at 30 days. `reon-logs-files [web|php|fail2ban|all]` follows the
+  logs that live in files, next to `reon-logs-all` for the journal.
+- Backups: `reon-db-backup.timer` dumps every non-system MySQL database (and
+  the relay's SQLite file, if it uses one) at 03:30 into `/var/backups/reon/`
+  (root-only), keeping 7 days. It is a copy on the same disk -- copy the folder
+  elsewhere to survive losing the machine.
+- nginx and dovecot get `Restart=on-failure` (a systemd drop-in, from
+  `3-harden-server.sh`); the distribution ships them without a restart policy.
 - The list of usernames nobody may register (`system`, `nintendo`, `admin`,
   ...) is a database table filled by a migration (`sys_reserved_usernames`),
   so it needs no step here; it is edited from the admin panel under Users ->

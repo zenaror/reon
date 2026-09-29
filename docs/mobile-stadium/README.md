@@ -137,3 +137,32 @@ they are not server-side work. Each file carries its own header saying so.
 This README is the exception: it was written on the server side, to
 document the flow that the three files above already allowed, but that
 none of them explained on its own.
+
+## Composing from the admin panel (no outside tooling)
+
+Since 2026-09-28 a distribution can also be built inside the panel from single
+replays, instead of importing an already assembled one. `spec.md` has the byte
+format; this is the path:
+
+1. **Library** -- `/admin/stadium_replays.php?format=j|w`. Upload one replay
+   record (exactly 0x480 bytes Japanese / 0x490 western, with its own `P3`
+   trailer), or import with `maint/import_stadium_replay.php`. Each has a label,
+   a source note and a *custom* flag. Only the label, note and flag are edited
+   in place; to change the data, upload again.
+2. **Compose** -- `/admin/stadium.php`, per format: pick up to 3 replays, a
+   message, the Delibird flags and the cost option (no prefix = free and
+   unauthenticated, `0.` = authenticated and free, `N.` = charged). The panel
+   assembles the 0xFFE-byte payload (`StadiumUtil::composePayload()`), fills
+   unused slots with the real "empty slot" trailer, and refuses to compose an
+   official distribution out of a custom replay.
+3. **Activate** -- per region, and **at most one active per region and track**;
+   activating one deactivates the other.
+4. **Inspect / remove** -- `stadium_details.php?id=` decodes a build (slots,
+   flags, File ID, message, frame validity); a build can be deleted once it is
+   deactivated.
+
+Who receives what: distributions have an official and a custom track
+(`is_custom`). An account gets the custom track only if it opted in (*Mobile
+Stadium: Content Preferences* on the account page,
+`sys_users.custom_mobile_stadium_opt_in`) **and** a custom distribution is
+active for its region; otherwise it gets the official one, never nothing.

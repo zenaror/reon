@@ -205,6 +205,34 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Painel de administração (`/admin`)
 
+* **DLCs: um menu só para o conteúdo de todos os jogos** (`/admin/games.php`).
+  Escolhe-se o jogo e depois o tipo de conteúdo, em vez de um item de menu
+  por tela: Crystal (Pokémon News, News Maker, Mobile Stadium e sua
+  biblioteca de replays), GB Wars (mapas, mercenários, mensagens) e Mobile
+  Trainer. Detalhes em `docs/mobile-stadium/README.md` e `docs/gbwars/README.md`
+* **Excluir conta pelo painel.** Caixa vermelha na página de cada usuário,
+  pelo mesmo caminho do botão da própria pessoa (`AccountDataUtil::erase`):
+  pede o nome digitado, recusa a conta logada e outros administradores
+  (tire o admin antes), grava a auditoria antes e depois, e pode liberar o
+  e-mail para novo cadastro (a exclusão normal o bloqueia por 6 meses)
+* **Nomes reservados** (Usuários → Nomes reservados). A lista de nomes que
+  ninguém pode registrar mora no banco (`sys_reserved_usernames`), com um
+  comentário em cada nome, e é editável no painel (um por vez ou vários com
+  `nome # comentário`). Nasceu do fato de `system` e `nintendo` só estarem
+  protegidos por duas contas existirem: apagadas as contas, os nomes ficavam
+  livres. Só cadastros novos são checados
+* **IPs banidos** (`/admin/bans.php`). Lista tudo o que o fail2ban bloqueia,
+  com origem, jail, quando expira, quantas vezes e o motivo; permite banir à
+  mão (motivo obrigatório, 30 dias, portas de web e e-mail, nunca SSH) e
+  tirar um ban. O motivo fica no banco (`sys_ip_bans`) porque o fail2ban só
+  guarda o endereço.
+  * A parte privilegiada é um script shell pequeno com regra de sudo própria
+    (`reon-ban-ctl`, instalado pelo `5-admin-control.sh`): só sabe listar,
+    banir e desbanir, e recusa endereço que não seja público. O painel também
+    recusa o IP de quem está usando e o do servidor
+* Abas (`.admin-tabs`) passaram a ter estilo — as do Mobile Stadium existiam
+  sem nenhuma regra de CSS
+
 * **Modo torneio** (`/admin/tournament.php`) — liga a gravação do que passa
   entre dois consoles no mobile-relay, e lista o que foi gravado com botão
   de baixar.
@@ -761,6 +789,25 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Conta, cadastro e autenticação
 
+* **Página da conta reorganizada.** Data de nascimento e fuso horário foram
+  para *Detalhes da conta*; as preferências de cada jogo viraram *Game
+  Settings*, com uma aba por jogo (Pokémon Crystal, Game Boy Wars 3).
+  * **Uma data de nascimento salva não muda mais.** É a barreira de idade dos
+    rankings, e uma barreira que se reabre digitando outro ano não é
+    barreira. Vale no servidor, não só no formulário. O custo, dito na
+    política de privacidade: um erro de digitação não tem conserto pela
+    conta, só apagando-a
+* **Opt-in de conteúdo personalizado para Mobile Stadium e para GB Wars**,
+  no mesmo formato do Pokémon News: desligado por padrão, e não marcar dá o
+  conteúdo oficial, nunca nada. No GB Wars filtra o menu de mapas
+  (`0.map_menu.txt`, que já vem autenticado); mapas oficiais aparecem para
+  todos
+* Fix: **o reset de senha dava 500 depois de trocar a senha.**
+  `UserUtil::resetPassword()` usava `$db` sem defini-lo (erro herdado do
+  upstream, nunca visto porque só o GET do link tinha sido exercitado): a
+  senha era gravada, o pedido morria antes de apagar o token, e o link seguia
+  valendo por 24 h
+
 * **Levar embora e apagar.** A conta ganhou os dois direitos que faltavam,
   na própria página: baixar tudo o que o servidor guarda sobre ela, e
   apagá-la.
@@ -815,6 +862,37 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   workers, todo log do código era no-op; agora em `/var/log/reon/php-error.log`
 
 ### Servidor e segurança
+
+* **Páginas até dezenas de vezes mais rápidas.** Cada requisição relia os
+  sete arquivos de tradução (uma vez para validar, outra na tradução) e
+  recompilava os templates: ~0,5 s até para a página mais simples, o que
+  deixou uma rajada de 75 pedidos de um scanner encher os 12 processos do
+  PHP. Agora o Twig e as traduções ficam em cache em `/tmp/reon/reon-twig-<uid>/`,
+  a validação do YAML só refaz quando o arquivo muda, e ambos se atualizam
+  sozinhos quando um template ou idioma é alterado (deploy por cópia continua
+  valendo). 10-80 ms por página
+* Fix: **nada rotacionava os logs do servidor.** O `logrotate` não estava
+  instalado (o setup instala sem recomendados) e o timer estava inativo: o
+  log do nginx guardava 29 dias de endereços contra os 14 que a política de
+  privacidade promete, e o registro de proteção de dados listava a rotação
+  como certa só porque o arquivo de regra existia. Instalado e agendado, com
+  regra de 14 dias também para `/var/log/reon/`, e os arquivos já rotacionados
+  cortados nos últimos 14 dias
+* **Backup diário do banco** (`reon-db-backup.timer`, 03:30): um dump
+  comprimido por banco em `/var/backups/reon/` (só root), 7 dias. Cópia no
+  mesmo disco; a política de privacidade declara, inclusive que uma conta
+  apagada só sai dos backups quando eles envelhecem
+* **fail2ban para scanners de web** (`reon-web-scan`): bane quem pede 3
+  caminhos típicos de scanner (`.env`, `.git`, phpunit, WordPress...) em 10
+  minutos, 1 dia dobrando até 1 semana. 404 comum e `../` solto não casam de
+  propósito (adaptadores, NAT de operadora, os testes do time). O jail do
+  POP3 e o novo `reon-manual` (bans à mão) passaram a ser instalados pelo
+  `3-harden-server.sh`, que antes não os conhecia
+* nginx e dovecot ganham `Restart=on-failure` (a distribuição os entrega sem
+  política de reinício); `reon-logs-files` segue os logs que vivem em arquivo
+* `cgb/upload.php` e `cgb/ranking.php` respondem 400 sem `?name=` em vez de
+  gravar um aviso do PHP a cada tentativa de scanner
+* Mapa de tudo isto (caminhos, timers, helpers, jails, tabelas): `docs/OPERATIONS.md`
 
 * Fix: **o desafio do APOP anunciava o nome da instância na nuvem** a quem
   só abria uma conexão POP3, antes de qualquer login. Cosmético, mas de
@@ -987,6 +1065,37 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   intervalo entre requisições e se o prefixo de 44 corresponde a um desafio
   emitido — o que separa "cauda errada de propósito" de "offset invadiu o
   prefixo", indistinguíveis pela resposta
+
+### Mobile Stadium (Crystal)
+
+* **Distribuições montadas pelo painel, sem ferramenta de fora.** Biblioteca
+  de replays (`bxt_stadium_replays`), composição de até 3 replays com
+  mensagem, flags do Delibird e opção de custo, ativação por região com no
+  máximo uma ativa por região e faixa, tela que decodifica uma build, e
+  exclusão de builds. Como o formato tem detalhes que só o console revela
+  (slot vazio não é zero: leva o marcador `XX` e a soma em complemento), tudo
+  foi verificado byte a byte contra dado real. Passo a passo em
+  `docs/mobile-stadium/README.md`
+* Duas faixas, oficial e personalizada, com opt-in por conta. A ROM
+  italiana/espanhola (BXTI/BXTS) tem um bug próprio que impede o download
+  mesmo com distribuição ativa (o parser do menu ficou num banco que ninguém
+  chama); não é do servidor
+
+### Game Boy Wars 3
+
+* **Criador de mapas** (`/admin/gbwars_maps.php`, aba *Map creator*): editor
+  de tiles no navegador (pintar, preencher, unidades, conta-gotas, desfazer)
+  com rascunhos salvos no servidor, download do `.cgb` e publicação como
+  mapa REON novo e **inativo** (ids 2000-9999, o primeiro é 2000). Um mapa
+  oficial pode ser copiado para o criador e nunca é sobrescrito. O arquivo é
+  montado por `GameboyWars3Util::createMapData()`, que reproduz byte a byte
+  4 dos 5 mapas oficiais
+* Painel de mapas em abas (Maps, Upload, Map creator), preço dos mercenários
+  (`/admin/gbwars_mercs.php`) e mensagens da caixa (`/admin/gbwars_mbox.php`,
+  o "News" do próprio jogo). Achado de passagem, deixado como está: o mapa
+  1006 guarda o checksum como complemento de dois da soma, ao contrário dos
+  outros, e a validação o recusa. Nada disto foi testado num console ainda.
+  Detalhes em `docs/gbwars/README.md`
 
 ### Publicação
 
