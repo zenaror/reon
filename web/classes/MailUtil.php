@@ -294,8 +294,9 @@
 		// Resolves an address to a REON account id, or null if it belongs to
 		// the real internet. Matches on either form of the local part -- the
 		// full username or the 8-character one the games are limited to --
-		// exactly as mail/deliver.js does for inbound mail, and regardless of
-		// which of our domains it was addressed to.
+		// the same way Postfix's recipient map (mysql-virtual-mailbox.cf plus the
+		// alias map) resolves inbound mail, and regardless of which of our
+		// domains it was addressed to.
 		public function resolveLocalRecipient($address) {
 			$local = trim((string)$address);
 			$at = strpos($local, "@");
@@ -362,8 +363,8 @@
 			];
 
 			$message = implode("\r\n", $headers) . "\r\n\r\n" . $wireBody;
-			// Normalize whatever the browser submitted to CRLF, the way
-			// deliver.js does for what Postfix hands it.
+			// Normalize whatever the browser submitted to CRLF, as a mail
+			// message on the wire is.
 			return preg_replace('/\r\n|\r|\n/', "\r\n", $message);
 		}
 
@@ -413,11 +414,11 @@
 			// servidor que use a nossa tabela; o do REONTeam entrega pelo
 			// Dovecot, e lá o insert dava certo sem ninguém receber nada.
 			//
-			// A cópia em Enviados e o sino continuam sendo feitos AQUI, e
-			// não no deliver.js: aqui se sabe que a origem é "web" e quem é
-			// o remetente de verdade. O deliver.js reconhece o
-			// X-REON-Origin que submitLocally() carimba e não repete nenhum
-			// dos dois.
+			// A cópia em Enviados e o sino continuam sendo feitos AQUI: aqui se
+			// sabe que a origem é "web" e quem é o remetente de verdade. O
+			// serviço de efeitos colaterais (mail/sideEffects.js, chamado
+			// pelo filtro de entrega do Dovecot) reconhece o X-REON-Origin
+			// que submitLocally() carimba e não repete nenhum dos dois.
 			$ok = $this->submitLocally($fromAddress, $toAddress, $message, $threadKey);
 			if ($ok) {
 				$this->recordSent($fromUserId, $toAddress, $message, $threadKey);
@@ -696,8 +697,8 @@
 
 		// Recorded only for what this class delivers itself. Mail that leaves
 		// through Postfix -- the game's, and the webmail's external sends --
-		// is recorded by deliver.js and outboundRelay.js instead, so nothing
-		// is written twice.
+		// is recorded by the delivery side-effects service (mail/sideEffects.js)
+		// and outboundRelay.js instead, so nothing is written twice.
 		private function recordSent($userId, $toAddress, $message, $threadKey = null) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare(

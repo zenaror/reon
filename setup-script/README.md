@@ -2,15 +2,17 @@
 
 Install REON + mobile-relay straight onto a VM (no Docker), sized for an
 Oracle Cloud Always Free instance with 1 GB of RAM. Five scripts, run in
-order, all idempotent (the fifth is optional):
+order, all idempotent (the fifth is optional), plus two helpers:
 
 | script | what it does |
 | --- | --- |
 | `1-setup-reon.sh` | everything below: packages, MySQL, PHP, Node, .NET, Python, dnsmasq, nginx, HTTPS, systemd units |
-| `2-setup-postfix-bridge.sh` | Postfix in front of the game's mail: real internet e-mail in and out |
-| `3-harden-server.sh` | fail2ban (sshd, Postfix, POP3 and a web-scanner jail that bans addresses probing for `.env`/`.git`/phpunit/WordPress files), key-only SSH, unused services off, nginx security headers |
+| `2-setup-postfix-bridge.sh` | The mail system: Postfix (port 25, real internet e-mail in and out, a banned account refused as a sender) delivering by LMTP to Dovecot, which stores the mail in Maildir, runs the Sieve filter that shapes it for the Game Boy, and answers POP3 on :110 with APOP. Installs the Dovecot packages, the `vmail` user, the config from `examples/dovecot/`, a certbot deploy hook that reloads Postfix, and sets `mail_store`, `disable_pop3` and `shaped_at_delivery` in `config.json` |
+| `3-harden-server.sh` | fail2ban (jails: `sshd`, `postfix`, `reon-pop3` — repeated failed POP3 logins, `reon-web-scan` — addresses probing for `.env`/`.git`/phpunit/WordPress files, and `reon-manual` — the bans an admin adds by hand), key-only SSH (only when a real login key exists for the invoking user), unused services off, nginx security headers, restart-on-failure for nginx, dovecot and dnsmasq |
 | `4-harden-bots.sh` | blocks search/AI crawlers by User-Agent (re-run after every `1-setup-reon.sh`) |
 | `5-admin-control.sh` | what the admin panel's Services page and Banned IPs page need: two small root helpers (`reon-admin-ctl`, `reon-ban-ctl`), each behind a single sudoers entry. Optional; without it the panel says so and does nothing |
+| `pull-backups.sh` | not part of the install: run it from your own computer to copy the nightly backups (databases and the mailbox archive) off the server over SSH |
+| `reon-menu.sh` | the terminal menu; installed as `reon-menu` by script 1 |
 
 ## Usage
 
@@ -26,15 +28,18 @@ order, all idempotent (the fifth is optional):
    - `reon/config.json`
    - `mobile-relay/config.ini`
 3. Run as root: `sudo bash reon/setup-script/1-setup-reon.sh`, then the
-   other three in order.
+   other four in order (2, 3, 4 and, if you want the admin panel's controls, 5).
 4. Run them again whenever you want to update (re-running is safe).
 
 ## What it installs
 
 - **nginx + php-fpm** → the website
 - **MySQL** → the database
-- **Node.js** → the mail service (SMTP/POP3) and the 4 cron jobs (Battle
-  Tower, Trade Corner, news, Mail de Cute)
+- **Postfix + Dovecot** → the mail system (script 2)
+- **Node.js** → the mail side-effects worker and the 4 Node jobs (Battle
+  Tower, Trade Corner, news, Mail de Cute); the PHP jobs (mail trash,
+  retention, service status), the nightly backup, the session sweep and the
+  monthly reboot are timers too
 - **.NET** → the Pokémon legality checker the site uses
 - **Python** → mobile-relay
 - **dnsmasq** → the fake DNS that lets the Game Boy find the server
@@ -55,8 +60,8 @@ order, all idempotent (the fifth is optional):
 - Everything is symlinked from `/opt/reon` and `/opt/mobile-relay` to the
   folder you ran the script from. Updating the code = replacing the files
   and running the script again, nothing to reconfigure.
-- Ports: the mail service listens only on 25/110 internally; 587 is
-  redirected to 25 (iptables). DNS listens on 5453; the standard port 53 is
+- Ports: Postfix listens on 25 and Dovecot on 110; the reon-mail worker only
+  on 127.0.0.1:10046. 587 is redirected to 25 (iptables). DNS listens on 5453; the standard port 53 is
   redirected to 5453.
 - Firewall (iptables) opened automatically. **Oracle also filters in the
   cloud** (Security List/NSG) — the script cannot configure that, it has to
@@ -93,10 +98,16 @@ order, all idempotent (the fifth is optional):
   logs that live in files, next to `reon-logs-all` for the journal.
 - Backups: `reon-db-backup.timer` dumps every non-system MySQL database (and
   the relay's SQLite file, if it uses one) at 03:30 into `/var/backups/reon/`
-  (root-only), keeping 7 days. It is a copy on the same disk -- copy the folder
-  elsewhere to survive losing the machine.
-- nginx and dovecot get `Restart=on-failure` (a systemd drop-in, from
+  (root-only), keeping 7 days, and a tar of the mailboxes (`/var/vmail`).
+  It is a copy on the same disk -- copy the folder elsewhere
+  (`pull-backups.sh`) to survive losing the machine.
+- nginx, dovecot and dnsmasq get `Restart=on-failure` (a systemd drop-in, from
   `3-harden-server.sh`); the distribution ships them without a restart policy.
+- `/tmp` is tmpfs (emptied at every boot, the monthly reboot included):
+  `/etc/tmpfiles.d/reon.conf` recreates `/tmp/reon` (sessions and the template
+  cache) and keeps the 10-day `/tmp` cleanup away from it. `vm.swappiness` is
+  set in `/etc/sysctl.d/99-reon.conf` for the same reason (`/etc/sysctl.conf`
+  is not read).
 - The list of usernames nobody may register (`system`, `nintendo`, `admin`,
   ...) is a database table filled by a migration (`sys_reserved_usernames`),
   so it needs no step here; it is edited from the admin panel under Users ->
@@ -148,10 +159,12 @@ terminal.
 
 Once installed, these become global commands:
 
-- `reon-menu` — the terminal menu, see "Running the server from a terminal" below
+- `reon-menu` — the terminal menu, see "Running the server from a terminal" above
 - `reon-status` — status of everything
 - `reon-logs-all` / `reon-logs-mail` / `reon-logs-web` / `reon-logs-relay` /
-  `reon-logs-dns` / `reon-logs-cron` — follow the logs live
+  `reon-logs-dns` / `reon-logs-cron` / `reon-logs-postfix` /
+  `reon-logs-dovecot` / `reon-logs-relay-policy` — follow the logs live
+- `reon-logs-files [web|php|activity|fail2ban|all]` — the logs that live in files
 - `reon-add-user` — create the first account without any e-mail configured
 
 And two files in `/var/log/reon/`, owned by the php-fpm user:

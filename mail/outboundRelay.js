@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Postfix pipe-transport delivery agent for the one case reoninbox doesn't
-// cover: a message reon-relay-policy already authorized to leave to a real
+// Postfix pipe-transport delivery agent (default_transport) for the one case
+// Dovecot's LMTP delivery doesn't cover: a message reon-relay-policy already authorized to leave to a real
 // internet address (see relayPolicy.js, smtpd_relay_restrictions). Same
-// invocation shape the old local delivery agent had (${sender}/${recipient}
+// invocation shape of any Postfix pipe transport (${sender}/${recipient}
 // + raw message on stdin), but instead of delivering into a mailbox, this
 // submits the message onward to the relay -- replacing Postfix's own
 // relayhost/smtp(8) path

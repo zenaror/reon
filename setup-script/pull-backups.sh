@@ -25,8 +25,9 @@ if [ -n "$key" ]; then ssh_opts+=(-i "$key"); fi
 mkdir -p "$dest"
 chmod 700 "$dest"
 
-# Names of the dumps only (the folder can also hold older manual copies).
-remote_list="$(ssh "${ssh_opts[@]}" "$host" "sudo -n find /var/backups/reon -maxdepth 1 -type f \( -name 'mysql-*.sql.gz' -o -name 'relay-*.db.gz' \) -printf '%f\n'" | sort)"
+# Names of the nightly files only (database dumps and the mailbox archive; the
+# folder can also hold older manual copies).
+remote_list="$(ssh "${ssh_opts[@]}" "$host" "sudo -n find /var/backups/reon -maxdepth 1 -type f \( -name 'mysql-*.sql.gz' -o -name 'relay-*.db.gz' -o -name 'vmail-*.tar.gz' \) -printf '%f\n'" | sort)"
 
 wanted=()
 while IFS= read -r name; do

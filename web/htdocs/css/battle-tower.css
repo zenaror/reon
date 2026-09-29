@@ -34,8 +34,9 @@
   letter-spacing: 0;
 }
 
-/* 1x / 2x, chosen by the player: 2x by default on a desktop, 1x by default
-   on phones and tablets, where 2x scrolls sideways inside the box. */
+/* 1x / 2x, chosen by the player: 2x by default on every screen. The choice
+   is remembered, except on phones, where it lasts only for the visit; there 2x
+   scrolls sideways inside the box. */
 .battle-control-zoom {
   grid-area: zoom;
   justify-self: end;
