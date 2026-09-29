@@ -87,7 +87,39 @@ A game with several bases gets one patch per base (`<id>-<base id>.bps`). On the
 Another rgbds version means one more `build_rgbds` line in the setup script,
 with the tarball's SHA-256.
 
-Not done: N64 (Pokémon Stadium 2, Kin Gin). Its repository is not published
-yet. When it is: BPS handles 64 MB, but the base ROM has to be in the
-big-endian `.z64` byte order the catalog hashes (`add-rom` does not convert
-`.v64`/`.n64`).
+## Stadium 2 (the `stadium` builder)
+
+`pokestadiumgs-mobile` is not a `make` project: one build (the sequence the
+maintainers validated on Linux, in `STADIUM_STEPS`) yields seven ROMs, each a
+patch over a different official release, so the catalog lists them as
+`products` (one base each; Europe serves both the English and the Australian
+build) and the official ROMs the build reads as `inputs` (file name it expects
+-> SHA-1). The Japanese Kin Gin is an input only: its graphics are read, and
+the Japanese game is natively Mobile, so it needs no patch.
+
+What it needs beyond the repositories' own tools:
+
+- the MIPS binutils **2.42** (`/opt/reon-toolchain/mips-binutils`, installed by
+  the setup script; another version can change the compiled overlay bytes) and
+  Pillow;
+- a **private overlay**, `/var/lib/reon-patches/overlays/pokestadiumgs-mobile/`
+  (mode 0700, never served): the 79 authored files (localization images,
+  texts, `builds.json`) that the repository's `.gitignore` (`assets/`,
+  unanchored) keeps out of git. The build copies them into its working copy
+  **only where the clone lacks them**, and the overlay's digest is part of the
+  fingerprint. Once the repository carries those files the overlay is inert;
+  delete it then.
+- `tools/bin/turbojpeg.dll` (the repository does not carry it) is **not** needed
+  today: with the current art the build never calls it. It becomes required
+  only if someone replaces `archive13_055_jpeg_144x96.jpg` with a 4:2:0 JPEG
+  outside the Stadium layout, and then the build stops with a clear message.
+  The maintainers document where to get it (libjpeg-turbo 3.1.2, the official
+  Linux `.deb` unpacked with `dpkg-deb -x`, copied as `tools/bin/turbojpeg.dll`).
+- room and time: the whole game list takes about 15 minutes on a fast machine
+  (Stadium 2 is most of it); the unit's timeout is two hours.
+
+The published patches must be reproducible from the repository; the
+maintainers' expected SHA-1 of the seven outputs is the check.
+
+Not done: converting `.v64`/`.n64` byte order in `add-rom` (the catalog hashes
+the big-endian `.z64` dumps).

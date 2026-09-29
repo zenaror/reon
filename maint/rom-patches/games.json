@@ -12,8 +12,18 @@
 			"rgbds_style": "prefix",
 			"output": "pokecrystal.gbc",
 			"bases": [
-				{"id": "usa", "region": "USA", "label": "Pokémon Crystal Version (USA)", "sha1": "f4cd194bdee0d04ca4eac29e09b8e4e9d818c133"},
-				{"id": "usa-rev1", "region": "USA, Europe (Rev 1)", "label": "Pokémon Crystal Version (USA, Europe) (Rev 1)", "sha1": "f2f52230b536214ef7c9924f483392993e226cfb"}
+				{
+					"id": "usa",
+					"region": "USA",
+					"label": "Pokémon Crystal Version (USA)",
+					"sha1": "f4cd194bdee0d04ca4eac29e09b8e4e9d818c133"
+				},
+				{
+					"id": "usa-rev1",
+					"region": "USA, Europe (Rev 1)",
+					"label": "Pokémon Crystal Version (USA, Europe) (Rev 1)",
+					"sha1": "f2f52230b536214ef7c9924f483392993e226cfb"
+				}
 			]
 		},
 		{
@@ -27,7 +37,12 @@
 			"rgbds_style": "prefix",
 			"output": "pokecrystal.gbc",
 			"bases": [
-				{"id": "fra", "region": "France", "label": "Pokémon Version Cristal (France)", "sha1": "c055992b16b7399c687647725cdd1f4f13a2f75c"}
+				{
+					"id": "fra",
+					"region": "France",
+					"label": "Pokémon Version Cristal (France)",
+					"sha1": "c055992b16b7399c687647725cdd1f4f13a2f75c"
+				}
 			]
 		},
 		{
@@ -41,7 +56,12 @@
 			"rgbds_style": "prefix",
 			"output": "pokecrystal.gbc",
 			"bases": [
-				{"id": "ger", "region": "Germany", "label": "Pokémon Kristall-Edition (Germany)", "sha1": "accb584293ba056152f1fd908439b019017ff2fe"}
+				{
+					"id": "ger",
+					"region": "Germany",
+					"label": "Pokémon Kristall-Edition (Germany)",
+					"sha1": "accb584293ba056152f1fd908439b019017ff2fe"
+				}
 			]
 		},
 		{
@@ -55,7 +75,12 @@
 			"rgbds_style": "prefix",
 			"output": "pokecrystal.gbc",
 			"bases": [
-				{"id": "ita", "region": "Italy", "label": "Pokémon Versione Cristallo (Italy)", "sha1": "6cee05e5b95beeae74b8365ad18ec4a07a8c4af8"}
+				{
+					"id": "ita",
+					"region": "Italy",
+					"label": "Pokémon Versione Cristallo (Italy)",
+					"sha1": "6cee05e5b95beeae74b8365ad18ec4a07a8c4af8"
+				}
 			]
 		},
 		{
@@ -69,7 +94,12 @@
 			"rgbds_style": "prefix",
 			"output": "pokecrystal.gbc",
 			"bases": [
-				{"id": "spa", "region": "Spain", "label": "Pokémon Edición Cristal (Spain)", "sha1": "889a06fc0bb863666865aa69def0adf97945ac2a"}
+				{
+					"id": "spa",
+					"region": "Spain",
+					"label": "Pokémon Edición Cristal (Spain)",
+					"sha1": "889a06fc0bb863666865aa69def0adf97945ac2a"
+				}
 			]
 		},
 		{
@@ -84,8 +114,117 @@
 			"output": "GBWARS3.gbc",
 			"build_base": "baserom.gbc",
 			"bases": [
-				{"id": "jpn", "region": "Japan", "label": "Game Boy Wars 3 (Japan)", "sha1": "61e08f96261b5f85c65c70db5464b4298f9f2cf8"}
+				{
+					"id": "jpn",
+					"region": "Japan",
+					"label": "Game Boy Wars 3 (Japan)",
+					"sha1": "61e08f96261b5f85c65c70db5464b4298f9f2cf8"
+				}
 			]
+		},
+		{
+			"id": "pokestadiumgs-mobile",
+			"family": "pokestadium2",
+			"family_title": "Pokémon Stadium 2",
+			"title": "Pokémon Stadium 2 (Mobile)",
+			"language": "multi",
+			"repo": "https://github.com/gb-mobile/pokestadiumgs-mobile",
+			"builder": "stadium",
+			"products": [
+				{
+					"id": "ntsc-en",
+					"output": "build/mobile-stadium/pokestadiumgs-ntsc-en.z64",
+					"region": "USA",
+					"bases": [
+						{
+							"id": "usa",
+							"label": "Pokémon Stadium 2 (USA)",
+							"sha1": "d8343e69a7dc63b869cf6361d87cde64444281d3"
+						}
+					]
+				},
+				{
+					"id": "pal-en",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-en.z64",
+					"region": "Europe",
+					"bases": [
+						{
+							"id": "eur",
+							"label": "Pokémon Stadium 2 (Europe)",
+							"sha1": "f6a7e8146433a48bf101722e30bf86311a641f7b"
+						}
+					]
+				},
+				{
+					"id": "pal-au",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-au.z64",
+					"region": "Australia",
+					"bases": [
+						{
+							"id": "eur",
+							"label": "Pokémon Stadium 2 (Europe)",
+							"sha1": "f6a7e8146433a48bf101722e30bf86311a641f7b"
+						}
+					]
+				},
+				{
+					"id": "pal-fr",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-fr.z64",
+					"region": "France",
+					"bases": [
+						{
+							"id": "fra",
+							"label": "Pokémon Stadium 2 (France)",
+							"sha1": "d7e13535b671024a92822db01507e87bd42f68ec"
+						}
+					]
+				},
+				{
+					"id": "pal-de",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-de.z64",
+					"region": "Germany",
+					"bases": [
+						{
+							"id": "ger",
+							"label": "Pokémon Stadium 2 (Germany)",
+							"sha1": "6de05180d77e73dcf32d57af7c8c1529c7acda59"
+						}
+					]
+				},
+				{
+					"id": "pal-it",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-it.z64",
+					"region": "Italy",
+					"bases": [
+						{
+							"id": "ita",
+							"label": "Pokémon Stadium 2 (Italy)",
+							"sha1": "4926db649c76521f61ae51c13e452a2c8001354c"
+						}
+					]
+				},
+				{
+					"id": "pal-es",
+					"output": "build/mobile-stadium/pokestadiumgs-pal-es.z64",
+					"region": "Spain",
+					"bases": [
+						{
+							"id": "spa",
+							"label": "Pokémon Stadium 2 (Spain)",
+							"sha1": "ab1cdf753bed70487923ea3129278e45d6325773"
+						}
+					]
+				}
+			],
+			"inputs": {
+				"Pokemon Stadium 2 (English).n64": "d8343e69a7dc63b869cf6361d87cde64444281d3",
+				"Pokemon Stadium 2 (Europe).z64": "f6a7e8146433a48bf101722e30bf86311a641f7b",
+				"Pokemon Stadium 2 (France).n64": "d7e13535b671024a92822db01507e87bd42f68ec",
+				"Pokemon Stadium 2 (Germany).n64": "6de05180d77e73dcf32d57af7c8c1529c7acda59",
+				"Pokemon Stadium 2 (Italy).n64": "4926db649c76521f61ae51c13e452a2c8001354c",
+				"Pokemon Stadium 2 (Spain).n64": "ab1cdf753bed70487923ea3129278e45d6325773",
+				"Pokemon Stadium Kin Gin (Japan).z64": "05682e60b13479ca1c54656e5a5b1ee6d099c1a4"
+			}
 		}
 	]
 }
