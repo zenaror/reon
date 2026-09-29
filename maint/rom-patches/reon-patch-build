@@ -39,7 +39,8 @@ STATE = os.environ.get("REON_PATCH_STATE", "/var/lib/reon-patches")
 TOOLCHAIN = os.environ.get("REON_TOOLCHAIN", "/opt/reon-toolchain")
 CATALOG = os.environ.get("REON_PATCH_CATALOG", os.path.join(HERE, "games.json"))
 
-BUILD_TIMEOUT = 20 * 60
+# One step of a build. Stadium 2's longest step takes minutes on a fast machine.
+BUILD_TIMEOUT = 45 * 60
 GIT_TIMEOUT = 5 * 60
 # A patch is a few percent of the ROM it patches. One that is a large share of
 # it is carrying the game itself, which is the one thing this tool must not
@@ -85,33 +86,85 @@ def atomic_write(path, data, mode=0o644):
     os.replace(tmp, path)
 
 
+BUILDERS = ("make", "stadium")
+
+
+def products_of(game):
+    """What one build of a game yields: (product id or None, output path, bases).
+
+    Most games make one ROM, which may be patched from several official
+    releases (the bases). A game whose single build yields several ROMs, each
+    for its own base (Stadium 2), lists them under "products".
+    """
+    if game.get("products"):
+        return game["products"]
+    return [{"id": None, "output": game["output"], "bases": game["bases"]}]
+
+
+def all_bases(game):
+    seen, out = set(), []
+    for prod in products_of(game):
+        for b in prod["bases"]:
+            if b["sha1"] not in seen:
+                seen.add(b["sha1"])
+                out.append(b)
+    return out
+
+
 def load_catalog():
     with open(CATALOG, encoding="utf-8") as f:
         cat = json.load(f)
     seen = set()
     for g in cat["games"]:
-        for key in ("id", "title", "repo", "rgbds", "rgbds_style", "output", "bases"):
+        for key in ("id", "title", "repo"):
             if key not in g:
                 raise Fail("catalog: game %r has no %r" % (g.get("id"), key))
         if g["id"] in seen or not all(c.isalnum() or c in "-_" for c in g["id"]):
             raise Fail("catalog: bad or repeated id %r" % g["id"])
         seen.add(g["id"])
-        if g["rgbds_style"] not in ("prefix", "tools"):
-            raise Fail("catalog: %s: rgbds_style must be prefix or tools" % g["id"])
-        if not g["bases"]:
-            raise Fail("catalog: %s has no base ROM" % g["id"])
-        for b in g["bases"]:
-            if len(b["sha1"]) != 40:
-                raise Fail("catalog: %s/%s: sha1 must be 40 hex digits" % (g["id"], b["id"]))
+        builder = g.get("builder", "make")
+        if builder not in BUILDERS:
+            raise Fail("catalog: %s: builder must be one of %s" % (g["id"], ", ".join(BUILDERS)))
+        if builder == "make":
+            for key in ("rgbds", "rgbds_style"):
+                if key not in g:
+                    raise Fail("catalog: game %r has no %r" % (g["id"], key))
+            if g["rgbds_style"] not in ("prefix", "tools"):
+                raise Fail("catalog: %s: rgbds_style must be prefix or tools" % g["id"])
+        if builder == "stadium" and not (g.get("products") and g.get("inputs")):
+            raise Fail("catalog: %s: the stadium builder needs products and inputs" % g["id"])
+        if not g.get("products") and not ("output" in g and g.get("bases")):
+            raise Fail("catalog: %s needs an output and its bases, or products" % g["id"])
+        pids = [p.get("id") for p in products_of(g)]
+        if len(pids) > 1 and (None in pids or len(set(pids)) != len(pids)):
+            raise Fail("catalog: %s: products need distinct ids" % g["id"])
+        for prod in products_of(g):
+            if "output" not in prod or not prod.get("bases"):
+                raise Fail("catalog: %s: every product needs an output and bases" % g["id"])
+            for b in prod["bases"]:
+                if len(b["sha1"]) != 40:
+                    raise Fail("catalog: %s/%s: sha1 must be 40 hex digits" % (g["id"], b["id"]))
+        for name, sha1 in (g.get("inputs") or {}).items():
+            if len(sha1) != 40 or "/" in name:
+                raise Fail("catalog: %s: bad input %r" % (g["id"], name))
     return cat
 
 
-def patch_name(game, base):
-    return game["id"] if len(game["bases"]) == 1 else "%s-%s" % (game["id"], base["id"])
+def patch_name(game, product, base):
+    name = game["id"]
+    if len(products_of(game)) > 1:
+        name += "-" + product["id"]
+    if len(product["bases"]) > 1:
+        name += "-" + base["id"]
+    return name
 
 
 def known_hashes(cat):
-    return {b["sha1"] for g in cat["games"] for b in g["bases"]}
+    known = set()
+    for g in cat["games"]:
+        known |= {b["sha1"] for b in all_bases(g)}
+        known |= set((g.get("inputs") or {}).values())
+    return known
 
 
 def rom_path(sha1):
@@ -220,7 +273,16 @@ def toolchain_bin(game):
     return d
 
 
+def stash(path, name):
+    """Copy a build output out of the clone into the scratch directory."""
+    dest = os.path.join(STATE, "work", name)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.copyfile(path, dest)
+    return dest
+
+
 def build(game, src, base_data):
+    """The `make` builder. Returns {product id: path of the built ROM}."""
     tools = toolchain_bin(game)
     env = clean_env(tools)
     if game.get("build_base"):
@@ -233,13 +295,128 @@ def build(game, src, base_data):
     # Not parallel: some repositories build a helper the first time and race
     # on it under -j; a full build takes seconds either way.
     run(["make"] + args, src, BUILD_TIMEOUT, env)
-    out = os.path.join(src, game["output"])
-    if not os.path.isfile(out) or os.path.getsize(out) == 0:
-        raise Fail("the build finished but %s is not there" % game["output"])
-    built = read(out)
+    out = {}
+    for prod in products_of(game):
+        path = os.path.join(src, prod["output"])
+        if not os.path.isfile(path) or os.path.getsize(path) == 0:
+            raise Fail("the build finished but %s is not there" % prod["output"])
+        out[prod["id"]] = stash(path, "built-%s" % (prod["id"] or "rom"))
     # Leave nothing that is a ROM behind in the clone.
     run(["git", "clean", "-xfdq"], src, 120, env)
-    return built
+    return out
+
+
+# ---- Stadium 2 ---------------------------------------------------------------
+# The sequence is the one the project's maintainers validated on Linux from a
+# clean tree (their Windows wrapper, "Build Mobile Stadium ROMs.bat", runs the
+# same steps plus checks that need Windows). Order matters: export-graphics
+# comes before the sync.
+STADIUM_LANGS = ["us", "en", "au", "fr", "de", "it", "es"]
+STADIUM_STEPS = [
+    ["python3", "tools/localization.py", "extract", "--repo", ".", "--input-root", "..",
+     "--languages", "en", "fr", "de", "it", "es"],
+    ["python3", "tools/mobile_stadium.py", "profiles", "--repo", ".", "--input-root", "..",
+     "--languages"] + STADIUM_LANGS,
+    ["python3", "tools/mobile_stadium.py", "export-graphics", "--repo", ".", "--input-root", "..",
+     "--languages"] + STADIUM_LANGS,
+    ["python3", "tools/sync_localization_kit.py", "--repo", "."],
+    ["bash", "tools/build_mobile_overlays_wsl.sh"] + STADIUM_LANGS,
+    ["python3", "tools/mobile_stadium.py", "refresh-assets", "--repo", ".", "--input-root", "..",
+     "--languages"] + STADIUM_LANGS,
+    ["python3", "tools/localization.py", "compose", "--repo", ".",
+     "--languages"] + STADIUM_LANGS + ["--official-layout", "--mobile-stadium"],
+]
+
+
+def overlay_dir(game):
+    return os.path.join(STATE, "overlays", game["id"])
+
+
+def overlay_files(game):
+    root = overlay_dir(game)
+    for d, _, files in os.walk(root):
+        for f in sorted(files):
+            full = os.path.join(d, f)
+            yield os.path.relpath(full, root), full
+
+
+def overlay_digest(game):
+    h = hashlib.sha256()
+    for rel, full in sorted(overlay_files(game)):
+        h.update(rel.encode() + b"\0" + sha256_of(read(full)).encode() + b"\n")
+    return h.hexdigest()[:16]
+
+
+def mips_binutils():
+    d = os.path.join(TOOLCHAIN, "mips-binutils")
+    if not os.access(os.path.join(d, "usr/bin/mips-linux-gnu-ld.bfd"), os.X_OK):
+        raise Fail("the MIPS binutils are not installed in %s; run setup-script/6-setup-rom-patches.sh" % d)
+    return d
+
+
+def build_stadium(game, src):
+    """Returns {product id: path of the built ROM}."""
+    binutils = mips_binutils()
+    root = os.path.join(STATE, "work", "stadium")
+    repo = os.path.join(root, "pokestadiumgs-mobile")
+    shutil.rmtree(root, ignore_errors=True)
+    # The build wants the official ROMs and the message scripts in the folder
+    # above the repository, and writes its results inside it, so it works on a
+    # copy and the clone stays as fetched.
+    shutil.copytree(src, repo, ignore=shutil.ignore_patterns(".git"))
+    for name, sha1 in game["inputs"].items():
+        data = load_base({"sha1": sha1, "label": name})
+        if data is None:
+            raise Fail("input %s (%s) is not in the ROM directory" % (name, sha1))
+        with open(os.path.join(root, name), "wb") as f:
+            f.write(data)
+        del data
+    kit = os.path.join(repo, "stadium2-localization-kit")
+    for f in sorted(os.listdir(kit)):
+        if f.endswith("_msg.txt"):
+            shutil.copyfile(os.path.join(kit, f), os.path.join(root, f))
+
+    # Files the maintainers keep out of git (their .gitignore has "assets/"
+    # unanchored, which also hides the kit's authored images and texts). They
+    # are filled in from a private copy, and only where the clone lacks them:
+    # once the repository carries them, the copy stops mattering.
+    filled = 0
+    for rel, full in overlay_files(game):
+        dest = os.path.join(repo, rel)
+        if not os.path.exists(dest):
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(full, dest)
+            filled += 1
+    log("info", "%s: %d file(s) filled in from the private overlay" % (game["id"], filled))
+
+    # Pre-seeding this path is what stops the project's script from trying to
+    # download binutils itself.
+    tool = os.path.join(repo, "build/mobile-stadium/tool")
+    os.makedirs(tool, exist_ok=True)
+    os.symlink(binutils, os.path.join(tool, "mips-binutils"))
+
+    env = clean_env()
+    env["PYTHONPYCACHEPREFIX"] = os.path.join(STATE, "work", "pyc")
+    for step in STADIUM_STEPS:
+        log("info", "%s: %s" % (game["id"], " ".join(step[1:3])))
+        run(step, repo, BUILD_TIMEOUT, env)
+
+    # The overlay script exits 0 even when it fails; what it does not fake is
+    # the marker it writes last, with the hashes of the sources it compiled.
+    marker = os.path.join(tool, ".overlay-build-ok")
+    if not os.path.isfile(marker):
+        raise Fail("the overlay build left no success marker")
+    for line in read(marker).decode().splitlines()[1:]:
+        digest, path = line.split(None, 1)
+        if sha256_of(read(os.path.join(repo, path.strip()))) != digest:
+            raise Fail("the compiled overlay does not match its sources (%s)" % path.strip())
+    out = {}
+    for prod in game["products"]:
+        path = os.path.join(repo, prod["output"])
+        if not os.path.isfile(path) or os.path.getsize(path) != 0x4000000:
+            raise Fail("the build finished but %s is missing or the wrong size" % prod["output"])
+        out[prod["id"]] = path
+    return out
 
 
 # Catalog fields that only decide how the Downloads page labels a patch. They
@@ -250,7 +427,14 @@ PRESENTATION_KEYS = ("title", "language", "family", "family_title")
 def fingerprint(game):
     """What, besides the repository's commit, decides the patches' contents."""
     build = {k: v for k, v in game.items() if k not in PRESENTATION_KEYS}
-    build["bases"] = [{"id": b["id"], "sha1": b["sha1"]} for b in game["bases"]]
+    if "bases" in game:
+        build["bases"] = [{"id": b["id"], "sha1": b["sha1"]} for b in game["bases"]]
+    if "products" in game:
+        build["products"] = [
+            {"id": p["id"], "output": p["output"], "bases": [{"id": b["id"], "sha1": b["sha1"]} for b in p["bases"]]}
+            for p in game["products"]]
+    if game.get("builder") == "stadium":
+        build["overlay"] = overlay_digest(game)
     return sha1_of(json.dumps(build, sort_keys=True).encode())[:12]
 
 
@@ -260,55 +444,62 @@ def decorate(entry, game):
     entry["language"] = game.get("language", "")
     entry["family"] = game.get("family", game["id"])
     entry["family_title"] = game.get("family_title", game["title"])
-    labels = {b["sha1"]: b for b in game["bases"]}
+    labels = {(prod["id"], b["sha1"]): (prod, b) for prod in products_of(game) for b in prod["bases"]}
     for p in entry.get("patches", []):
-        b = labels.get(p["base"]["sha1"])
-        if b:
+        found = labels.get((p.get("product"), p["base"]["sha1"]))
+        if found:
+            prod, b = found
             p["base"]["id"], p["base"]["label"] = b["id"], b["label"]
-            p["base"]["region"] = b.get("region", b["label"])
+            p["base"]["region"] = prod.get("region") or b.get("region", b["label"])
     return entry
 
 
 def build_game(game, force, dry_run, previous):
-    entry = None
-    bases = []
-    for b in game["bases"]:
-        data = load_base(b)
-        if data is None:
-            log("warn", "%s: base ROM %s (%s) is not in %s/roms -- skipped for this base"
-                % (game["id"], b["label"], b["sha1"], STATE))
-        else:
-            bases.append((b, data))
-    if not bases:
+    # Which (product, base) pairs can be published: those whose official ROM
+    # is in the private directory.
+    jobs = []
+    for prod in products_of(game):
+        for b in prod["bases"]:
+            if os.path.isfile(rom_path(b["sha1"])):
+                jobs.append((prod, b))
+            else:
+                log("warn", "%s: base ROM %s (%s) is not in %s/roms -- skipped for this base"
+                    % (game["id"], b["label"], b["sha1"], STATE))
+    if not jobs:
         return previous, "missing-rom"
 
     src, commit, date = fetch(game)
     fp = fingerprint(game)
     if (not force and previous and previous.get("commit") == commit and previous.get("fingerprint") == fp
-            and len(previous.get("patches", [])) == len(bases)
+            and len(previous.get("patches", [])) == len(jobs)
             and all(os.path.isfile(os.path.join(STATE, "public", p["file"])) for p in previous["patches"])):
         log("info", "%s: unchanged at %s" % (game["id"], commit[:9]))
         return decorate(previous, game), "unchanged"
 
     log("info", "%s: building %s" % (game["id"], commit[:9]))
-    built = build(game, src, bases[0][1])
-    log("info", "%s: built %s (%d bytes, sha1 %s)" % (game["id"], game["output"], len(built), sha1_of(built)))
+    if game.get("builder") == "stadium":
+        built_files = build_stadium(game, src)
+    else:
+        built_files = build(game, src, load_base(jobs[0][1]))
 
     patches = []
-    for b, data in bases:
-        name = patch_name(game, b) + ".bps"
+    for prod, b in jobs:
+        built = read(built_files[prod["id"]])
+        data = load_base(b)
+        name = patch_name(game, prod, b) + ".bps"
         patch = bps.create(data, built)
         guard(game, name, patch, built, data)
         patches.append({
-            "file": name, "format": "bps", "size": len(patch), "sha256": sha256_of(patch),
-            "base": {"id": b["id"], "label": b["label"], "region": b.get("region", b["label"]),
+            "file": name, "format": "bps", "size": len(patch), "sha256": sha256_of(patch), "product": prod["id"],
+            "base": {"id": b["id"], "label": b["label"], "region": prod.get("region") or b.get("region", b["label"]),
                      "sha1": b["sha1"], "size": len(data)},
             "result": {"sha1": sha1_of(built), "size": len(built)},
         })
-        log("info", "%s: %s -> %d bytes (%.1f%% of the ROM), verified against %s"
-            % (game["id"], name, len(patch), 100.0 * len(patch) / len(built), b["label"]))
+        log("info", "%s: %s -> %d bytes (%.1f%% of the ROM, result sha1 %s), verified against %s"
+            % (game["id"], name, len(patch), 100.0 * len(patch) / len(built), sha1_of(built), b["label"]))
         if not dry_run:
             atomic_write(os.path.join(STATE, "public", name), patch)
+        del built, data, patch
 
     entry = {"id": game["id"], "repo": game["repo"], "commit": commit, "commit_date": date,
              "built_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -403,9 +594,11 @@ def cmd_status(args):
     for g in cat["games"]:
         e = manifest.get(g["id"])
         print("%-26s %s" % (g["id"], ("built %s @ %s" % (e["built_at"], e["commit"][:9])) if e else "not built"))
-        for b in g["bases"]:
-            have = os.path.isfile(rom_path(b["sha1"]))
-            print("    %-9s %-50s %s" % ("ROM ok" if have else "MISSING", b["label"], b["sha1"]))
+        rows = [(b["label"], b["sha1"]) for b in all_bases(g)]
+        rows += [(name, sha1) for name, sha1 in (g.get("inputs") or {}).items()]
+        for label, sha1 in rows:
+            have = os.path.isfile(rom_path(sha1))
+            print("    %-9s %-50s %s" % ("ROM ok" if have else "MISSING", label, sha1))
     return 0
 
 

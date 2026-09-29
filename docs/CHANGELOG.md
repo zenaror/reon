@@ -975,10 +975,11 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Conteúdo: guias, downloads e hubs de jogo
 
-* **Patches dos jogos na página Downloads, gerados por uma rotina no servidor** (`maint/rom-patches/`, instalada pelo `6-setup-rom-patches.sh`): ela baixa os repositórios (Crystal em inglês, francês, alemão, italiano e espanhol; Game Boy Wars 3 em inglês), compila e publica um patch BPS contra a ROM oficial — só o patch, nunca a ROM. As ROMs oficiais ficam num diretório privado (0700, usuário próprio, fora do nginx e dos backups), achadas pelo SHA-1
+* **Patches dos jogos na página Downloads, gerados por uma rotina no servidor** (`maint/rom-patches/`, instalada pelo `6-setup-rom-patches.sh`): ela baixa os repositórios (Crystal em inglês, francês, alemão, italiano e espanhol; Game Boy Wars 3 em inglês; Pokémon Stadium 2 mobile em sete versões: EUA, Europa, Austrália, França, Alemanha, Itália e Espanha), compila e publica um patch BPS contra a ROM oficial — só o patch, nunca a ROM. As ROMs oficiais ficam num diretório privado (0700, usuário próprio, fora do nginx e dos backups), achadas pelo SHA-1
   * Cada patch é aplicado de volta na ROM base e comparado byte a byte com o que foi compilado antes de ser publicado, e uma trava recusa qualquer coisa que não seja um patch pequeno; um jogo que falha ao compilar mantém o último patch bom no ar. Testado com o Floating IPS nos dois sentidos
   * Roda todo dia às 05:10 UTC (sem novidade nos repositórios leva segundos), ou no botão do painel (Services → Game patches). A página lista o que a rotina publicou e mostra o SHA-1 da ROM original e da ROM final
-  * Compila o rgbds 0.6.1 (exigido pelos forks do Crystal) e o 1.0.3 (fixado pelo Game Boy Wars 3) a partir do código-fonte, conferidos por SHA-256
+  * Compila o rgbds 0.6.1 (exigido pelos forks do Crystal) e o 1.0.3 (fixado pelo Game Boy Wars 3) a partir do código-fonte, conferidos por SHA-256; para o Stadium 2 usa também o binutils MIPS 2.42 fixado por SHA-512
+  * O Stadium 2 sai de uma build de várias etapas que só entra no ar se o resultado bater com o SHA-1 que os mantenedores validaram; a página tem um menu de jogo e, dentro dele, a região
 * **Páginas "Get started" e "Downloads"** no menu superior e na lateral:
   texto em Markdown em `web/pages/<slug>.<idioma>.md` (inglês como fallback),
   renderizado pelo mesmo CommonMark das notícias, sumário automático dos

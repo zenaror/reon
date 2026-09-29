@@ -19,6 +19,8 @@
 		// A warning that belongs to one game (its family key -> locale key),
 		// shown while that game is chosen.
 		const NOTES = ["pokecrystal" => "patches-note-pokecrystal"];
+		// The one link a note may carry, where its text has a %test% marker.
+		const NOTE_LINKS = ["pokecrystal" => "https://github.com/ZoomTen/mbc30test"];
 
 		public static function dir() {
 			return getenv("REON_PATCH_PUBLIC") ?: "/var/lib/reon-patches/public";
@@ -123,8 +125,15 @@
 			$n = 0;
 			foreach ($families as $key => $family) {
 				if (isset(self::NOTES[$key])) {
+					// Escaped first, then the marker becomes the link: the text
+					// never carries markup of its own.
+					$text = $e($t(self::NOTES[$key], ["%test%" => "\x01"]));
+					if (isset(self::NOTE_LINKS[$key])) {
+						$text = str_replace("\x01", '<a href="'.$e(self::NOTE_LINKS[$key]).'">'
+							.$e($t(self::NOTES[$key]."-link")).'</a>', $text);
+					}
 					$out .= '<div class="reon-note" data-family-note="'.$e($key).'"'.($n > 0 ? ' hidden' : '').'>'
-						.$e($t(self::NOTES[$key])).'</div>';
+						.$text.'</div>';
 				}
 				$n++;
 			}
