@@ -1732,6 +1732,11 @@ admin:
   logs-level-error: "Solo errores"
   logs-raw: "Texto sin formato"
   logs-details: "Detalles"
+  logs-group: "Mostrar"
+  logs-group-all: "Todo"
+  logs-group-accounts: "Registros, inicios de sesión y contraseñas"
+  logs-group-game: "Descargas y subidas del juego"
+  logs-group-trades: "Intercambios"
   logs-file-unreadable: "No se puede leer el registro de PHP. Comprueba que /var/log/reon/php-error.log existe y que el usuario web puede leerlo."
   logs-empty: Nada que mostrar.
   logs-unavailable: Todavía no se puede leer el diario del sistema, así que no hay nada que mostrar.

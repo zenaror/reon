@@ -1731,6 +1731,11 @@ admin:
   logs-level-error: "Nur Fehler"
   logs-raw: "Rohtext"
   logs-details: "Details"
+  logs-group: "Anzeigen"
+  logs-group-all: "Alles"
+  logs-group-accounts: "Registrierungen, Logins und Passwörter"
+  logs-group-game: "Spiel-Downloads und -Uploads"
+  logs-group-trades: "Tausche"
   logs-file-unreadable: "Das PHP-Log ist nicht lesbar. Prüfe, ob /var/log/reon/php-error.log existiert und der Web-Benutzer es lesen darf."
   logs-empty: Nichts anzuzeigen.
   logs-unavailable: Das Systemprotokoll lässt sich noch nicht lesen, es gibt also nichts anzuzeigen.

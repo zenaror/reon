@@ -8,6 +8,7 @@ const { notify } = require("../../lib/notifications");
 const { mailUser } = require("../../lib/usermail");
 const { sendRaw, configure: configurarEnvio } = require("../../lib/rawmail");
 const log = require("../../lib/log").child("pokemon-exchange");
+const activity = require("../../lib/activity");
 
 // ------------------------------
 // Config
@@ -3752,6 +3753,7 @@ async function doExchange() {
     );
 
     const performedTrades = new Set();
+    const activityToWrite = [];
     let numTrades = 0;
 
     for (let i = 0; i < trades.length; i++) {
@@ -3835,6 +3837,16 @@ async function doExchange() {
           );
 
           await insertExchangeLogRow(connection, a, b);
+          // Who and what, by number: the two accounts, the region pool and the
+          // species each gave. The rows are still uncommitted here; a rolled
+          // back run would have logged a trade that did not happen, so the
+          // line is written after the commit (see below).
+          activityToWrite.push({
+            kind: "trade-corner",
+            a: a["account_id"], b: b["account_id"],
+            a_region: a["game_region"], b_region: b["game_region"],
+            a_gives: a["offer_species"], b_gives: b["offer_species"],
+          });
 
           // Retention: keep only last 1 month of exchange logs.
           await connection.execute(
@@ -3864,6 +3876,7 @@ async function doExchange() {
     }
 
     await connection.commit();
+    for (const t of activityToWrite) activity.record("trade", t);
     log.info(`Finished exchange; performed ${numTrades} trade(s)`);
 
     for (const [row, outcome] of toTell) {

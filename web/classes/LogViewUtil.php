@@ -19,13 +19,24 @@
 		// PHP user, rotated by /etc/logrotate.d/reon.
 		const PHP_LOG = "/var/log/reon/php-error.log";
 
+		// What people do (ActivityLog.php / lib/activity.js). Lines carry their
+		// own "ts", and an "event" that the Logs page can filter by group.
+		const ACTIVITY_LOG = "/var/log/reon/activity.log";
+		const EVENT_GROUPS = [
+			"accounts" => ["signup", "signup-requested", "login", "login-failed", "password-changed",
+			               "password-reset-requested", "password-reset", "game-password-rerolled",
+			               "email-changed", "account-deleted"],
+			"game"     => ["game-login", "game-login-failed", "download", "upload", "ranking"],
+			"trades"   => ["trade"],
+		];
+
 		// Last $entries entries of the PHP log at or above $minLevel. Reads
 		// only the tail of the file (it can be megabytes), so a very old
 		// entry is out of reach by design; null when the file is unreadable.
-		public static function phpLogText($bytes = 1048576) {
-			$f = @fopen(self::PHP_LOG, "rb");
+		public static function phpLogText($bytes = 1048576, $path = self::PHP_LOG) {
+			$f = @fopen($path, "rb");
 			if (!$f) return null;
-			$size = (int)@filesize(self::PHP_LOG);
+			$size = (int)@filesize($path);
 			if ($size > $bytes) {
 				fseek($f, $size - $bytes);
 				fgets($f); // drop the line cut in half
@@ -37,7 +48,7 @@
 
 		// $kind: "journal" or "file". $minLevel: "" (all), "warn" or "error".
 		// Returns at most $limit of the newest entries, oldest first.
-		public static function parse($text, $kind, $minLevel = "", $limit = 200) {
+		public static function parse($text, $kind, $minLevel = "", $limit = 200, $group = "") {
 			$entries = [];
 			foreach (preg_split('/\R/', (string)$text) as $line) {
 				if ($line === "" || strpos($line, "-- No entries --") === 0 || strpos($line, "-- Boot ") === 0) continue;
@@ -46,6 +57,15 @@
 				$rest = $line;
 				if ($kind === "journal" && preg_match('/^(\d{4}-\d\d-\d\dT[\d:]+[+-]\d\d:?\d\d)\s+\S+\s+([^\s\[:]+)(?:\[\d+\])?:\s?(.*)$/', $line, $m)) {
 					[$time, $source, $rest] = [str_replace('T', ' ', $m[1]), $m[2], $m[3]];
+				} elseif ($kind === "file" && $line[0] === "{") {
+					// The activity log has no PHP prefix; its lines carry "ts".
+					$j = json_decode($line, true);
+					if (is_array($j) && isset($j["ts"])) {
+						$entries[] = self::fromMessage(str_replace(["T", "Z"], [" ", " UTC"], (string)$j["ts"]), null, $line);
+						continue;
+					}
+					$entries[] = self::fromMessage(null, null, $line);
+					continue;
 				} elseif ($kind === "file" && preg_match('/^\[(\d\d-\w{3}-\d{4} [\d:]+ \w+)\]\s?(.*)$/', $line, $m)) {
 					[$time, $rest] = [$m[1], $m[2]];
 				} else {
@@ -55,6 +75,13 @@
 					continue;
 				}
 				$entries[] = self::fromMessage($time, $source, $rest);
+			}
+
+			if ($group !== "" && isset(self::EVENT_GROUPS[$group])) {
+				$want = self::EVENT_GROUPS[$group];
+				$entries = array_values(array_filter($entries, function ($e) use ($want) {
+					return in_array($e["event"] ?? "", $want, true);
+				}));
 			}
 
 			if ($minLevel !== "" && isset(self::RANK[$minLevel])) {
@@ -77,7 +104,18 @@
 					if (isset($j["error"]["stack"])) $extra = (string)$j["error"]["stack"];
 					elseif (isset($j["error"]["message"])) $extra = (string)$j["error"]["message"];
 					$level = isset(self::RANK[$j["level"]]) ? $j["level"] : "";
-					return self::entry($time, $source, $level, (string)($j["component"] ?? ""), (string)$j["msg"], $extra);
+					// Any other field (an activity event's account, path, status...)
+					// is shown after the message as key=value.
+					$msgText = (string)$j["msg"];
+					$kv = [];
+					foreach ($j as $k => $v) {
+						if (in_array($k, ["ts", "level", "component", "msg", "error", "event"], true) || is_array($v)) continue;
+						$kv[] = $k."=".$v;
+					}
+					if ($kv) $msgText .= "  ".implode(" ", $kv);
+					$e = self::entry($time, $source, $level, (string)($j["component"] ?? ""), $msgText, $extra);
+					if (isset($j["event"])) $e["event"] = (string)$j["event"];
+					return $e;
 				}
 			}
 			$level = "";

@@ -1,6 +1,7 @@
 <?php
 	// SPDX-License-Identifier: MIT
 	require_once(CORE_PATH."/database.php");
+	require_once(dirname(CORE_PATH)."/classes/ActivityLog.php");
 	
 	// Auth procedure
 	// Will only be performed for files prefixed with a cost (e.g. "10.")
@@ -86,6 +87,7 @@
 				$data = decodeAuthorization($challenge, $authString);
 				$result = validateAuthData($data["dionId"], $data["passwordHash"], $challenge);
 				if ($result["isValid"]) {
+					ActivityLog::record("game-login", ["account" => (int)$result["userId"], "auth_type" => (int)$type]);
 					// Auth successful
 					// The download and upload functions give the user a session that is to be used for the next request
 					// The utility function however seems to immediately return the requested data
@@ -121,6 +123,9 @@
 						exit();
 					}
 				} else {
+					// Which account is not recorded: a failed attempt proves nothing
+					// about whose it was.
+					ActivityLog::record("game-login-failed", ["auth_type" => (int)$type], "warn");
 					// If unsuccessful, return error code 33-201
 					header_remove();
 					http_response_code(401);

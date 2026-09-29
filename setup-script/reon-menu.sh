@@ -45,13 +45,14 @@ status() {
 follow_logs() {
 	pick "Follow which log? (Ctrl+C to stop)" \
 		"everything (journal)" "mail" "mobile relay" "web (nginx + php-fpm)" "jobs (cron)" \
-		"PHP site log (file)" "nginx access/error (files)" "fail2ban (file)" || return
+		"Activity: sign-ups, logins, downloads, trades (file)" "PHP site log (file)" "nginx access/error (files)" "fail2ban (file)" || return
 	case "$CHOICE" in
 		everything*) $S journalctl -f -u 'reon-*' -u nginx -u postfix -u dovecot -u mysql -u dnsmasq ;;
 		mail)        $S journalctl -f -u reon-mail -u reon-relay-policy -u postfix -u dovecot ;;
 		"mobile relay") $S journalctl -f -u reon-mobile-relay ;;
 		web*)        $S journalctl -f -u nginx -u php8.5-fpm ;;
 		jobs*)       $S journalctl -f -u reon-pokemon-battle -u reon-pokemon-exchange -u reon-auto-schedule -u reon-mail-bottle ;;
+		Activity*)   $S tail -n 40 -F /var/log/reon/activity.log ;;
 		PHP*)        $S tail -n 40 -F /var/log/reon/php-error.log ;;
 		nginx*)      $S tail -n 30 -F /var/log/nginx/reon.access.log /var/log/nginx/reon.error.log ;;
 		fail2ban*)   $S tail -n 40 -F /var/log/fail2ban.log ;;

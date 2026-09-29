@@ -1731,6 +1731,11 @@ admin:
   logs-level-error: "Solo errori"
   logs-raw: "Testo grezzo"
   logs-details: "Dettagli"
+  logs-group: "Mostra"
+  logs-group-all: "Tutto"
+  logs-group-accounts: "Iscrizioni, accessi e password"
+  logs-group-game: "Download e upload del gioco"
+  logs-group-trades: "Scambi"
   logs-file-unreadable: "Il log PHP non è leggibile. Controlla che /var/log/reon/php-error.log esista e che l'utente web possa leggerlo."
   logs-empty: Niente da mostrare.
   logs-unavailable: Il diario di sistema non è ancora leggibile, quindi non c'è niente da mostrare.

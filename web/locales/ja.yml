@@ -1770,6 +1770,11 @@ admin:
   logs-level-error: "エラーのみ"
   logs-raw: "生テキスト"
   logs-details: "詳細"
+  logs-group: "表示"
+  logs-group-all: "すべて"
+  logs-group-accounts: "登録・ログイン・パスワード"
+  logs-group-game: "ゲームのダウンロード／アップロード"
+  logs-group-trades: "交換"
   logs-file-unreadable: "PHPのログを読み取れません。/var/log/reon/php-error.log が存在し、Webユーザーが読めるか確認してください。"
   logs-empty: 表示するものがありません。
   logs-unavailable: システムのジャーナルをまだ読めないため、表示するものがありません。

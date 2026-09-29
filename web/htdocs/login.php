@@ -3,6 +3,7 @@
 	require_once("../classes/CsrfUtil.php");
 	require_once("../classes/DBUtil.php");
 	require_once("../classes/SessionUtil.php");
+	require_once("../classes/ActivityLog.php");
 	session_start();
 
 	// Where to go after logging in: a page that sent the visitor here to
@@ -38,9 +39,19 @@
 		$result = DBUtil::fancy_get_result($stmt);
 		if (array_key_exists(0, $result) && password_verify($_POST["password"], $result[0]["password"])) {
 			SessionUtil::getInstance()->initSession($result[0]["id"]);
+			ActivityLog::record("login", ["account" => (int)$result[0]["id"]]);
 			//$_SESSION["user_email"] = $result[0]["email"];
 			header("Location: ".($next !== "" ? $next : "index.php"));
 		} else {
+			// Only the account (when there is one) and why -- never the text
+			// that was typed in the name box. A wrong password on an account
+			// that exists reads differently from a name that does not, which
+			// is what someone looking for guessing wants to tell apart; the
+			// person at the form still sees one message.
+			ActivityLog::record("login-failed", [
+				"account" => array_key_exists(0, $result) ? (int)$result[0]["id"] : null,
+				"reason" => array_key_exists(0, $result) ? "wrong-password" : "no-such-account-or-banned",
+			], "warn");
 			echo TemplateUtil::render("login", [
 				"login_fail" => true,
 				"next" => $next,

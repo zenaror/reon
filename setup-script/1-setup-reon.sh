@@ -1088,7 +1088,7 @@ EOF
 # 14 days, the window the privacy page promises for connection logs (the PHP
 # error log can hold addresses too). copytruncate: PHP keeps the file open, and
 # the pool user owns it, so rotation is done as that user without a reload.
-/var/log/reon/php-error.log /var/log/reon/magbtest.log {
+/var/log/reon/php-error.log /var/log/reon/activity.log /var/log/reon/magbtest.log {
 	su ${SYS_USER} ${SYS_GROUP}
 	daily
 	rotate 14
@@ -1234,6 +1234,35 @@ WantedBy=timers.target
 EOF
 )"
 
+    # A reboot on the 15th of every month, 04:15 (the box's clock is UTC): after
+    # the 03:30 backup, before the 06:00 apt upgrade. With 1 GB of RAM this
+    # clears what accumulates over weeks (fragmentation, swap) and applies
+    # pending kernel updates. Persistent=false on purpose: a missed date is not
+    # made up at the next boot. Tested by hand on 2026-09-29 (everything came
+    # back on its own). Remove the timer to stop it:
+    #   systemctl disable --now reon-monthly-reboot.timer
+    write_unit reon-monthly-reboot.service "$(cat <<EOF
+[Unit]
+Description=REON: monthly reboot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl reboot
+EOF
+)"
+    write_unit reon-monthly-reboot.timer "$(cat <<EOF
+[Unit]
+Description=Timer for reon-monthly-reboot.service (15th of each month, 04:15)
+
+[Timer]
+OnCalendar=*-*-15 04:15:00
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+EOF
+)"
+
     systemctl daemon-reload
 }
 
@@ -1243,7 +1272,7 @@ enable_all_services() {
     systemctl restart reon-mail.service reon-mobile-relay.service
 
     for slug in pokemon-battle pokemon-exchange auto-schedule mail-bottle \
-                mail-trash-purge retention-purge service-status db-backup session-sweep; do
+                mail-trash-purge retention-purge service-status db-backup session-sweep monthly-reboot; do
         systemctl enable --now "reon-${slug}.timer"
     done
 }
@@ -1363,14 +1392,15 @@ EOF
 # the file name printed whenever the output switches from one to another.
 # (reon-logs-all covers the services that log to the journal.)
 #
-#   reon-logs-files [web|php|fail2ban|all]     (default: all)
+#   reon-logs-files [web|php|activity|fail2ban|all]     (default: all)
 case "${1:-all}" in
 	web)      files=(/var/log/nginx/reon.access.log /var/log/nginx/reon.error.log) ;;
 	php)      files=(/var/log/reon/php-error.log /var/log/php*-fpm.log) ;;
+	activity) files=(/var/log/reon/activity.log) ;;
 	fail2ban) files=(/var/log/fail2ban.log) ;;
 	all)      files=(/var/log/nginx/reon.access.log /var/log/nginx/reon.error.log \
-	                 /var/log/reon/php-error.log /var/log/php*-fpm.log /var/log/fail2ban.log) ;;
-	*) echo "usage: reon-logs-files [web|php|fail2ban|all]" >&2; exit 64 ;;
+	                 /var/log/reon/php-error.log /var/log/reon/activity.log /var/log/php*-fpm.log /var/log/fail2ban.log) ;;
+	*) echo "usage: reon-logs-files [web|php|activity|fail2ban|all]" >&2; exit 64 ;;
 esac
 existing=()
 for f in "${files[@]}"; do [ -e "$f" ] && existing+=("$f"); done

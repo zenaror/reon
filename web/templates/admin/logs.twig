@@ -28,6 +28,17 @@
 				<option value="error"{% if level == 'error' %} selected{% endif %}>{{ 'admin.logs-level-error'|trans }}</option>
 			</select>
 		</label>
+		{% if is_activity %}
+		<label>
+			{{ 'admin.logs-group'|trans }}
+			<select name="group">
+				<option value=""{% if group == '' %} selected{% endif %}>{{ 'admin.logs-group-all'|trans }}</option>
+				<option value="accounts"{% if group == 'accounts' %} selected{% endif %}>{{ 'admin.logs-group-accounts'|trans }}</option>
+				<option value="game"{% if group == 'game' %} selected{% endif %}>{{ 'admin.logs-group-game'|trans }}</option>
+				<option value="trades"{% if group == 'trades' %} selected{% endif %}>{{ 'admin.logs-group-trades'|trans }}</option>
+			</select>
+		</label>
+		{% endif %}
 		<label>
 			<input type="checkbox" name="raw" value="1"{% if raw %} checked{% endif %}>
 			{{ 'admin.logs-raw'|trans }}
