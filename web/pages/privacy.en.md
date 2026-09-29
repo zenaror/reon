@@ -143,6 +143,11 @@ Nothing is sold, and nothing is handed to advertisers.
 - Connection logs (the web server's): **14 days**, already enforced by
   rotation.
 - Connection records in the system journal: **30 days**.
+- Database backups: a copy of the databases is made every night and kept
+  **7 days**, on the same server, readable only by the administrator. It
+  protects against a mistake or a corrupted table; it holds everything the
+  live database holds, which is why an account you delete is gone from it
+  only when the backups that contain it age out.
 - Outbound-mail records, which hold a recipient and a subject line: **90 days**.
   The shortest window on this list, because a subject line is the most revealing
   thing in it.
@@ -201,6 +206,11 @@ go through a person:
   who had already downloaded that issue keeps it in their cartridge until they
   fetch a new one. Nothing on a server can reach into a Game Boy that is not
   connected, and no promise here should pretend otherwise.
+
+  **A deleted account stays in the nightly backup until it ages out.** The
+  live database forgets it at once; the copies of the database taken each night
+  (see "How long it is kept") are not edited, so the account disappears from
+  them within seven days, when the last one that contained it is deleted.
 
   **The address cannot start a new account for six months.** That window exists
   to stop accounts being cycled — deleted and recreated in quick succession. We
@@ -267,4 +277,4 @@ change to this page is an event, not a routine.
 
 ---
 
-*Draft of 28 September 2026.*
+*Draft of 29 September 2026.*
