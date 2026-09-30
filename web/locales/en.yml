@@ -2489,6 +2489,7 @@ admin:
   services-schedule-reset: "Reset"
   services-schedule-reset-confirm: "Go back to the schedule this job ships with?"
   services-next: "Next run"
+  times-note: "Times are shown in Brasília time (UTC−3); hover a time for UTC, which is what the server runs on."
   services-stop-confirm: "Stop this service? It stays down until someone starts it again."
   services-disable-confirm: "Switch this job off? It will not run again until it is switched back on."
   services-no-stop: "No Stop: this page is served by it, so stopping it would take away the button that starts it again."

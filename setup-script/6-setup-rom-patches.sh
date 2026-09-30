@@ -180,10 +180,19 @@ Group=$BUILD_USER
 Environment=REON_PATCH_STATE=$STATE
 Environment=REON_TOOLCHAIN=$TOOLCHAIN
 ExecStart=$TOOL_DIR/reon-patch-build
-TimeoutStartSec=2h
-# Keep a build from competing with the game for the machine (1 GB, 2 cores).
-Nice=15
+# Slow on purpose: the site is what this machine is for. A full Stadium 2 build
+# wants ~520 MB and a core for an hour, on a 1 GB / 2 core machine that
+# is shared with the hypervisor, and on 2026-09-30 it made the site time out.
+# So: the build is throttled into swap above 380 MB (MemoryHigh, unlike
+# MemoryMax, slows it instead of killing it), gets half a core at most, and
+# loses every tie for CPU and disk. It takes about twice as long.
+TimeoutStartSec=4h
+Nice=19
+CPUQuota=50%
+CPUWeight=10
+IOWeight=10
 IOSchedulingClass=idle
+MemoryHigh=380M
 MemoryMax=600M
 # It runs code from the games' repositories (their Makefiles), so it gets
 # nothing but its own directory and the network to fetch them.

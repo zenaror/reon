@@ -11,6 +11,8 @@
 	// only when PHP itself says one ("PHP Fatal error: ..."). A line that
 	// does not start with a timestamp at all (a stack trace) belongs to the
 	// entry above it.
+	require_once(__DIR__."/DisplayTimeUtil.php");
+
 	class LogViewUtil {
 
 		const RANK = ["debug" => 0, "info" => 1, "warn" => 2, "error" => 3];
@@ -125,7 +127,10 @@
 		}
 
 		private static function entry($time, $source, $level, $component, $msg, $extra) {
-			return ["time" => $time, "source" => $source, "level" => $level,
+			// "time" is what the log said (UTC); the page shows the local form and
+			// keeps the original in the tooltip.
+			return ["time" => $time, "time_local" => DisplayTimeUtil::local($time), "time_utc" => DisplayTimeUtil::utc($time),
+			        "source" => $source, "level" => $level,
 			        "component" => $component, "msg" => $msg, "extra" => $extra];
 		}
 

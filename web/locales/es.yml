@@ -1719,6 +1719,7 @@ admin:
   services-schedule-reset: Restablecer
   services-schedule-reset-confirm: ¿Volver al horario con el que viene esta tarea?
   services-next: Próxima ejecución
+  times-note: "Las horas se muestran en hora de Brasilia (UTC−3); pasa el cursor sobre una hora para ver el UTC, que es el que usa el servidor."
   services-stop-confirm: ¿Detener este servicio? Queda parado hasta que alguien lo inicie de nuevo.
   services-disable-confirm: ¿Apagar esta tarea? No volverá a ejecutarse hasta que se encienda otra vez.
   services-no-stop: 'Sin Detener: esta página la sirve él, así que detenerlo quitaría el botón que lo vuelve a iniciar.'

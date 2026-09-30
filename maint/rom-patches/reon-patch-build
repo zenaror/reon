@@ -39,8 +39,9 @@ STATE = os.environ.get("REON_PATCH_STATE", "/var/lib/reon-patches")
 TOOLCHAIN = os.environ.get("REON_TOOLCHAIN", "/opt/reon-toolchain")
 CATALOG = os.environ.get("REON_PATCH_CATALOG", os.path.join(HERE, "games.json"))
 
-# One step of a build. Stadium 2's longest step takes minutes on a fast machine.
-BUILD_TIMEOUT = 45 * 60
+# One step of a build. Stadium 2's longest step takes 20 minutes at full speed,
+# and the unit runs the build at half a core on purpose.
+BUILD_TIMEOUT = 2 * 60 * 60
 GIT_TIMEOUT = 5 * 60
 # A patch is a few percent of the ROM it patches. One that is a large share of
 # it is carrying the game itself, which is the one thing this tool must not

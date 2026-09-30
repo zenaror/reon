@@ -71,10 +71,11 @@ sudo systemctl restart php8.5-fpm</pre>
 		{# One row per entry. The level is a word as well as a colour, so it
 		   reads without telling red from amber; a stack trace is folded
 		   under the message it belongs to. #}
+		<p class="admin-form__hint">{{ 'admin.times-note'|trans }}</p>
 		<div class="log-view" role="table">
 			{% for e in entries %}
 				<div class="log-row" role="row">
-					<span class="log-time" role="cell">{{ e.time }}</span>
+					<span class="log-time" role="cell"{% if e.time_utc %} title="{{ e.time_utc }}"{% endif %}>{{ e.time_local ?: e.time }}</span>
 					<span class="log-level log-level--{{ e.level ?: 'none' }}" role="cell">{{ e.level }}</span>
 					<span class="log-where" role="cell">{{ e.component ?: e.source }}</span>
 					<span class="log-msg" role="cell">{{ e.msg }}
