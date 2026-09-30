@@ -102,13 +102,14 @@ What it needs beyond the repositories' own tools:
 - the MIPS binutils **2.42** (`/opt/reon-toolchain/mips-binutils`, installed by
   the setup script; another version can change the compiled overlay bytes) and
   Pillow;
-- a **private overlay**, `/var/lib/reon-patches/overlays/pokestadiumgs-mobile/`
-  (mode 0700, never served): the 79 authored files (localization images,
-  texts, `builds.json`) that the repository's `.gitignore` (`assets/`,
-  unanchored) keeps out of git. The build copies them into its working copy
-  **only where the clone lacks them**, and the overlay's digest is part of the
-  fingerprint. Once the repository carries those files the overlay is inert;
-  delete it then.
+- optionally, a **private overlay**, `/var/lib/reon-patches/overlays/<game id>/`
+  (mode 0700, never served): files copied into the build's working copy **only
+  where the clone lacks them**; its digest is part of the fingerprint. It was
+  needed at first, because the repository's `.gitignore` (`assets/`, unanchored)
+  kept 79 authored files out of git. The maintainers published them
+  (`b0db1c7`), the overlay was emptied, and the build reproduced the same seven
+  SHA-1s from the repository alone (the log says `0 file(s) filled in`). The
+  mechanism stays for the next time a repository is missing something.
 - `tools/bin/turbojpeg.dll` (the repository does not carry it) is **not** needed
   today: with the current art the build never calls it. It becomes required
   only if someone replaces `archive13_055_jpeg_144x96.jpg` with a 4:2:0 JPEG
