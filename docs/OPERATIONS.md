@@ -244,9 +244,8 @@ repositories and publishes **patches, never ROMs**.
   user.
 - Stadium 2 (`stadium` builder) takes about an hour on this machine (peak about
   520 MB, near the unit's 600 MB cap). Its build needs the MIPS binutils 2.42
-  (`/opt/reon-toolchain/mips-binutils`) and a private overlay of 79 authored files
-  the maintainers' repository does not carry (`/var/lib/reon-patches/overlays/pokestadiumgs-mobile`);
-  see `maint/rom-patches/README.md`. Delete the overlay once the repository has them.
+  (`/opt/reon-toolchain/mips-binutils`) and Pillow; see `maint/rom-patches/README.md`.
+  It builds from the repository alone (the private overlay is empty).
 - rgbds 0.6.1 and 1.0.3 are built from source into `/opt/reon-toolchain`. The
   Crystal forks need exactly 0.6.1; the distribution's rgbds does not
   assemble them.
