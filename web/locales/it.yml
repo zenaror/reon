@@ -1718,6 +1718,7 @@ admin:
   services-schedule-reset: Ripristina
   services-schedule-reset-confirm: Tornare all'orario con cui questa operazione viene distribuita?
   services-next: Prossima esecuzione
+  times-note: "Gli orari sono mostrati nell'ora di Brasília (UTC−3); passa il mouse su un orario per vedere l'UTC, usato dal server."
   services-stop-confirm: Fermare questo servizio? Resta fermo finché qualcuno non lo riavvia.
   services-disable-confirm: Spegnere questa operazione? Non girerà più finché non verrà riaccesa.
   services-no-stop: 'Niente Ferma: questa pagina è servita da lui, quindi fermarlo toglierebbe il pulsante che lo riavvia.'

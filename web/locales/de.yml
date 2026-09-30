@@ -1718,6 +1718,7 @@ admin:
   services-schedule-reset: Zurücksetzen
   services-schedule-reset-confirm: Zurück zu dem Zeitplan, mit dem diese Aufgabe ausgeliefert wird?
   services-next: Nächster Lauf
+  times-note: "Zeiten werden in Brasília-Zeit (UTC−3) angezeigt; mit dem Mauszeiger auf einer Zeit erscheint die UTC-Zeit, nach der der Server läuft."
   services-stop-confirm: Diesen Dienst anhalten? Er bleibt aus, bis ihn jemand wieder startet.
   services-disable-confirm: Diese Aufgabe ausschalten? Sie läuft erst wieder, wenn sie erneut eingeschaltet wird.
   services-no-stop: 'Kein Anhalten: diese Seite wird von ihm ausgeliefert, ihn anzuhalten würde also die Schaltfläche wegnehmen, die ihn wieder startet.'

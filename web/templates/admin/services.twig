@@ -67,6 +67,7 @@
 	<section class="admin-section">
 		<h2 class="admin-section__title">{{ 'admin.services-jobs'|trans }}</h2>
 		<p class="admin-form__hint">{{ 'admin.services-jobs-note'|trans }}</p>
+		<p class="admin-form__hint">{{ 'admin.times-note'|trans }}</p>
 		<div class="admin-scroll">
 			<table class="admin-table">
 				<thead>
@@ -108,7 +109,7 @@
 								</form>
 								<span class="admin-form__hint">{{ 'admin.services-schedule-hint'|trans }}</span>
 							</td>
-							<td>{{ u.timer.next ?: '—' }}</td>
+							<td><span{% if u.timer.next_utc %} title="{{ u.timer.next_utc }}"{% endif %}>{{ u.timer.next_local ?: (u.timer.next ?: '—') }}</span></td>
 							<td>
 								<div class="admin-form__row">
 									{# Where a job has an on-demand variant, that variant *is*

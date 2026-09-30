@@ -14,6 +14,8 @@
 	// When the helper is not installed, nothing is attempted and the panel
 	// says so. A control that silently does nothing is worse than one that
 	// is plainly not available yet.
+	require_once(__DIR__."/DisplayTimeUtil.php");
+
 	class ServiceControlUtil {
 
 		private static $instance;
@@ -163,6 +165,8 @@
 						"active" => ($timer["ActiveState"] ?? "") === "active",
 						"schedule" => $this->calendarOf($timer["TimersCalendar"] ?? ""),
 						"next" => $timer["NextElapseUSecRealtime"] ?? "",
+						"next_local" => DisplayTimeUtil::local($timer["NextElapseUSecRealtime"] ?? ""),
+						"next_utc" => DisplayTimeUtil::utc($timer["NextElapseUSecRealtime"] ?? ""),
 					];
 				}
 

@@ -1757,6 +1757,7 @@ admin:
   services-schedule-reset: 戻す
   services-schedule-reset-confirm: この処理に元から付いている実行時刻に戻しますか？
   services-next: 次回の実行
+  times-note: "時刻はブラジリア時間（UTC−3）で表示されます。時刻にカーソルを合わせると、サーバーが使用する UTC が表示されます。"
   services-stop-confirm: このサービスを停止しますか？誰かが起動するまで止まったままです。
   services-disable-confirm: この処理を無効にしますか？もう一度有効にするまで実行されません。
   services-no-stop: 停止はありません。このページを配信しているのがそれ自身なので、止めると再開のボタンごと無くなります。

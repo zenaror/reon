@@ -838,6 +838,7 @@ admin:
   services-schedule-reset: "Restaurar"
   services-schedule-reset-confirm: "Voltar para o agendamento que a tarefa traz de origem?"
   services-next: "Próxima"
+  times-note: "Os horários aparecem no horário de Brasília (UTC−3); passe o mouse sobre um horário para ver em UTC, que é o que o servidor usa."
   services-stop-confirm: "Desligar este serviço? Ele fica fora até alguém ligar de novo."
   services-disable-confirm: "Desativar esta tarefa? Ela não roda mais até ser reativada."
   services-no-stop: "Sem Desligar: esta página é servida por ele, então desligá-lo tiraria o botão que o liga de volta."

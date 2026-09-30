@@ -1782,6 +1782,7 @@ admin:
   services-schedule-reset: Réinitialiser
   services-schedule-reset-confirm: Revenir à l'horaire livré avec cette tâche ?
   services-next: Prochaine exécution
+  times-note: "Les heures sont affichées à l'heure de Brasília (UTC−3) ; survolez une heure pour voir l'UTC, celui du serveur."
   services-stop-confirm: Arrêter ce service ? Il reste arrêté jusqu'à ce que quelqu'un le relance.
   services-disable-confirm: Désactiver cette tâche ? Elle ne tournera plus jusqu'à ce qu'on la réactive.
   services-no-stop: 'Pas d''Arrêter : cette page est servie par lui, donc l''arrêter supprimerait le bouton qui le relance.'

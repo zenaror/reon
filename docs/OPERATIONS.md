@@ -242,8 +242,10 @@ repositories and publishes **patches, never ROMs**.
 - The build runs the games' Makefiles, so the unit is sandboxed (own
   directory only, no home directories, no privileges) and runs as its own
   user.
-- Stadium 2 (`stadium` builder) takes about an hour on this machine (peak about
-  520 MB, near the unit's 600 MB cap). Its build needs the MIPS binutils 2.42
+- The build is throttled on purpose (`MemoryHigh=380M`, half a core, lowest CPU
+  and disk priority), because an unthrottled Stadium 2 build made the site time
+  out on 2026-09-30. Stadium 2 (`stadium` builder) takes about two hours this
+  way (peak about 520 MB before the throttle; the hard cap is 600 MB). Its build needs the MIPS binutils 2.42
   (`/opt/reon-toolchain/mips-binutils`) and Pillow; see `maint/rom-patches/README.md`.
   It builds from the repository alone (the private overlay is empty).
 - rgbds 0.6.1 and 1.0.3 are built from source into `/opt/reon-toolchain`. The

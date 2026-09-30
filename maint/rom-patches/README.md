@@ -117,7 +117,9 @@ What it needs beyond the repositories' own tools:
   The maintainers document where to get it (libjpeg-turbo 3.1.2, the official
   Linux `.deb` unpacked with `dpkg-deb -x`, copied as `tools/bin/turbojpeg.dll`).
 - room and time: the whole game list takes about 15 minutes on a fast machine
-  (Stadium 2 is most of it); the unit's timeout is two hours.
+  (Stadium 2 is most of it). On the server the unit is throttled on purpose
+  (memory soft limit 380 MB, half a core, lowest priority), so it takes about
+  two hours and the unit's timeout is four.
 
 The published patches must be reproducible from the repository; the
 maintainers' expected SHA-1 of the seven outputs is the check.
