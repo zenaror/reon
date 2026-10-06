@@ -15,28 +15,36 @@
  <label>{{ 'bmvj-admin.metadata'|trans }} <input type="file" id="bmvj-json" accept=".json,application/json"></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.metadata-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.id'|trans }} <input name="game_id" value="{{ form.game_id }}" pattern="G[0-9]{3}" maxlength="4" required {{ editing ? 'readonly' : '' }}></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.id-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.body'|trans }} <input type="file" name="body" accept=".cgb,application/octet-stream" {{ editing ? '' : 'required' }}></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.body-hint'|trans }}</p>
  <label>SHA-256 <input name="body_sha256" value="{{ form.body_sha256|default('') }}" pattern="[a-fA-F0-9]{64}" maxlength="64"></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.hash-hint'|trans }}</p>
  {% for name in ['title','description'] %}
  <label>{{ ('bmvj-admin.' ~ (name == 'title' ? 'game-title' : name))|trans }} <input name="{{ name }}_text" value="{{ attribute(form,name ~ '_text')|default('') }}" maxlength="255"></label>
+ <p class="admin-form__hint">{{ ('bmvj-admin.' ~ (name == 'title' ? 'game-title' : name) ~ '-hint')|trans }}</p>
  <label>{{ ('bmvj-admin.' ~ name ~ '-hex')|trans }} <input name="{{ name }}_hex" value="{{ attribute(form,name ~ '_hex')|default('') }}" pattern="([a-fA-F0-9]{2}){1,255}" maxlength="510"></label>
  {% endfor %}
  <p class="admin-form__hint">{{ 'bmvj-admin.encoding-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.blocks'|trans }} <input type="number" name="blocks_needed" min="1" max="16" value="{{ form.blocks_needed }}" required></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.blocks-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.icon'|trans }} <input type="number" name="category_icon" min="0" max="8" value="{{ form.category_icon }}" required></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.icon-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.type'|trans }} <select name="minigame_type">{% for type in [1,2,4,8] %}<option value="{{ type }}" {{ form.minigame_type == type ? 'selected' : '' }}>{{ type }}</option>{% endfor %}</select></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.type-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.price'|trans }} <input type="number" name="price_yen" value="0" readonly></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.free-hint'|trans }}</p>
  <details><summary>{{ 'bmvj-admin.requirements'|trans }}</summary>
+ <p class="admin-form__hint">{{ 'bmvj-admin.requirements-hint'|trans }}</p>
  {% for name in ['min_level_react','min_level_smart','min_level_sense','min_hidden_level_a','min_hidden_level_b'] %}
  <label>{{ ('bmvj-admin.' ~ (name == 'title' ? 'game-title' : name))|trans }} <input type="number" name="{{ name }}" min="0" max="{{ name starts with 'min_hidden' ? 65535 : 255 }}" value="{{ attribute(form,name) }}" required></label>
+ <p class="admin-form__hint">{{ ('bmvj-admin.' ~ name ~ '-hint')|trans }}</p>
  {% endfor %}
  </details>
  <label><input type="checkbox" name="is_custom" value="1" {{ form.is_custom|default(0) ? 'checked' : '' }}> {{ 'bmvj-admin.custom'|trans }}</label>
  <p class="admin-form__hint">{{ 'bmvj-admin.custom-hint'|trans }}</p>
  <label><input type="checkbox" name="is_active" value="1" {{ form.is_active|default(0) ? 'checked' : '' }}> {{ 'bmvj-admin.active'|trans }}</label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.active-hint'|trans }}</p>
  <button type="submit" class="admin-btn">{{ 'bmvj-admin.save'|trans }}</button>
 </form>
 <script>

@@ -12,6 +12,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Net de Get — conteúdo personalizado
 
+* Ajuda nos campos do painel de minijogos: espaço instalado em blocos de 8 KiB, ID interno, ícone/tipo do Maker, título/descrição, níveis e efeito da ativação.
+
 * Painel de minijogos em Conteúdo dos jogos: upload .cgb, preenchimento pelo JSON do Maker, edição de metadados, substituição/download do arquivo, ativação e exclusão com confirmação do ID. Classificação oficial/personalizado no banco, com opt-in aplicado ao personalizado.
 
 * Catálogo e minijogos personalizados no MySQL, com opt-in desligado por padrão na conta e autenticação GB00. O catálogo original permanece para todos.
