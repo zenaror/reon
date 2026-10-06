@@ -124,6 +124,7 @@ pokemon-pages:
   battle-tower-description: Zeigt die Bestenliste des Kampfturms nach Level und Raum.
   bxt-save-converter-description: Wandle Crystal-BYT-Spielstände lokal in deinem Browser ins BXT-Format um.
 gameboy-wars: Game Boy Wars 3
+net-de-get: Net de Get
 
 mario-kart:
   title: Mario Kart
@@ -978,6 +979,10 @@ account:
   gbwars-custom-opt-in-blurb: "Wenn aktiviert, listet das Kartenmenü von Game Boy Wars 3 zusätzlich benutzerdefinierte Karten des REON-Teams auf. Das sind von Fans erstellte Inhalte, keine offiziellen Daten. Die offiziellen Karten werden immer angezeigt."
   gbwars-custom-opt-in-off: "Nur offizielle Karten"
   gbwars-custom-opt-in-on: "Offizielle und benutzerdefinierte Karten"
+  bmvj-custom-opt-in: "Benutzerdefinierte Minispiele"
+  bmvj-custom-opt-in-blurb: "REON-Minispiele im Net-de-Get-Katalog anzeigen. Offizielle Spiele bleiben verfügbar."
+  bmvj-custom-opt-in-off: "Nur offizielle Minispiele"
+  bmvj-custom-opt-in-on: "Offizielle und benutzerdefinierte Minispiele"
 
   adapter-settings: "Adapter"
   adapter-color: "Adapterfarbe"
@@ -1021,6 +1026,7 @@ account:
 invalid-pokemon-news-setting: Ungültige Pokémon-Nachrichten-Einstellung.
 invalid-mobile-stadium-setting: Ungültige Mobile-Stadium-Einstellung.
 invalid-gbwars-setting: "Ungültige Game-Boy-Wars-3-Einstellung."
+invalid-bmvj-setting: "Ungültige Einstellung für benutzerdefinierte Net-de-Get-Minispiele."
 
 mail:
   title: "REON Mail"

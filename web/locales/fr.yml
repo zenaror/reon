@@ -102,6 +102,7 @@ invalid-trade-setting: Réglage invalide pour le pool des régions.
 invalid-pokemon-news-setting: Préférence d’actualités Pokémon invalide.
 invalid-mobile-stadium-setting: Préférence Mobile Stadium invalide.
 invalid-gbwars-setting: "Préférence Game Boy Wars 3 invalide."
+invalid-bmvj-setting: "Préférence de jeux personnalisés Net de Get invalide."
 default-time-zone: Par défaut (Japon, +0900)
 invalid-time-zone-setting: Fuseau horaire invalide.
 auth:
@@ -206,6 +207,10 @@ account:
   gbwars-custom-opt-in-blurb: "Lorsqu’elle est activée, le menu des cartes de Game Boy Wars 3 propose aussi des cartes personnalisées créées par l’équipe REON. Il s’agit de contenu réalisé par des fans, pas de données officielles. Les cartes officielles sont toujours proposées."
   gbwars-custom-opt-in-off: "Cartes officielles uniquement"
   gbwars-custom-opt-in-on: "Cartes officielles et personnalisées"
+  bmvj-custom-opt-in: "Mini-jeux personnalisés"
+  bmvj-custom-opt-in-blurb: "Afficher les mini-jeux personnalisés de REON dans le catalogue Net de Get. Les jeux officiels restent disponibles."
+  bmvj-custom-opt-in-off: "Mini-jeux officiels uniquement"
+  bmvj-custom-opt-in-on: "Mini-jeux officiels et personnalisés"
   adapter-settings: "Adaptateur"
   adapter-color: "Couleur de l'adaptateur"
   adapter-blurb: "Quel adaptateur les jeux voient en lisant votre mobile_config.bin. Cela change la couleur et le nom affichés par le jeu, rien d'autre."
@@ -257,6 +262,7 @@ index:
   what-is-mobile-adapter: Qu'est-ce c'est l'Adaptateur Mobile?
   mobile-adapter-description: L'Adaptateur Mobile était un chose.
 gameboy-wars: Game Boy Wars 3
+net-de-get: Net de Get
 mario-kart:
   title: Mario Kart
 pokemon-crystal: Pokémon Cristal

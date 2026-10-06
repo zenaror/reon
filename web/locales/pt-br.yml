@@ -25,6 +25,7 @@ mario-kart:
   title: Mario Kart
 
 gameboy-wars: Game Boy Wars 3
+net-de-get: Net de Get
 pokemon-crystal: Pokémon Cristal
 pokemon-stadium: "Pokémon Stadium"
 rankings: Classificação
@@ -101,6 +102,7 @@ invalid-trade-setting: Não é uma configuração de região válida.
 invalid-pokemon-news-setting: Não é uma preferência de notícias Pokémon válida.
 invalid-mobile-stadium-setting: Não é uma preferência de Mobile Stadium válida.
 invalid-gbwars-setting: "Não é uma preferência de Game Boy Wars 3 válida."
+invalid-bmvj-setting: "Preferência de minijogos personalizados do Net de Get inválida."
 default-time-zone: Padrão (Japão, +0900)
 invalid-time-zone-setting: Não é um fuso horário válido.
 continue: Continuar
@@ -196,6 +198,10 @@ account:
   gbwars-custom-opt-in-blurb: "Quando ativado, o menu de mapas do Game Boy Wars 3 também lista mapas personalizados criados pela equipe REON. É conteúdo feito por fãs, não dado oficial. Os mapas oficiais sempre aparecem."
   gbwars-custom-opt-in-off: "Só mapas oficiais"
   gbwars-custom-opt-in-on: "Mapas oficiais e personalizados"
+  bmvj-custom-opt-in: "Minijogos personalizados"
+  bmvj-custom-opt-in-blurb: "Permite exibir minijogos personalizados da REON no catálogo do Net de Get. Os jogos oficiais continuam disponíveis."
+  bmvj-custom-opt-in-off: "Somente minijogos oficiais"
+  bmvj-custom-opt-in-on: "Minijogos oficiais e personalizados"
 
   adapter-settings: "Adaptador"
   adapter-color: "Cor do adaptador"
