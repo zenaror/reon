@@ -281,3 +281,11 @@ validated empty SRAM, erased flash sidecar and the exact 8 KiB D800 payload.
 It verifies input and response hashes, creates disposable saves, and owns the
 isolated DNS/connect-port remap. Use that runner's documented fixture inputs;
 this REON repository supplies only the HTTP harness.
+
+The portable runner's final post-commit repeat (`mGBA 358230c82`) also passed
+natural download/write, eight inputs, exit/relaunch and fresh-core reopen,
+per `/tmp/mgba-netdeget-local-scaagyaa/run.log` and `reopened/run.log`.
+Server-side GET/POST catalog/body hashes were independently checked again;
+final snapshots are `/tmp/reon-bmvj-portable-final-evidence`. The HTTP container
+was stopped after this final capture. mGBA reports its temporary DNS8053 was
+closed by the runner's `finally` block. No production deployment occurred.

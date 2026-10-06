@@ -73,5 +73,60 @@
     "SQLite adapter is not MySQL migration validation",
     "No production deployment",
     "No physical hardware validation"
-  ]
+  ],
+  "portable_post_commit_repeat": {
+    "mgba_commit": "358230c82",
+    "source_logs": "/tmp/reon-bmvj-portable-final-evidence",
+    "http_responses_verified_by_server": [
+      {
+        "time_utc": "2026-10-06T21:24:53+00:00",
+        "method": "GET",
+        "path": "/A4/CGB-BMVJ/RomList.cgb",
+        "status": 200,
+        "account": 7,
+        "custom_opt_in": 1,
+        "body_length": 434,
+        "body_sha256": "8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043",
+        "catalog_count": 5
+      },
+      {
+        "time_utc": "2026-10-06T21:24:53+00:00",
+        "method": "POST",
+        "path": "/A4/CGB-BMVJ/RomList.cgb",
+        "status": 200,
+        "account": 7,
+        "custom_opt_in": 1,
+        "body_length": 434,
+        "body_sha256": "8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043",
+        "catalog_count": 5
+      },
+      {
+        "time_utc": "2026-10-06T21:24:53+00:00",
+        "method": "GET",
+        "path": "/A4/CGB-BMVJ/0000.G001.cgb",
+        "status": 200,
+        "account": 7,
+        "custom_opt_in": 1,
+        "body_length": 1014,
+        "body_sha256": "a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24",
+        "catalog_count": null
+      },
+      {
+        "time_utc": "2026-10-06T21:24:53+00:00",
+        "method": "POST",
+        "path": "/A4/CGB-BMVJ/0000.G001.cgb",
+        "status": 200,
+        "account": 7,
+        "custom_opt_in": 1,
+        "body_length": 1014,
+        "body_sha256": "a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24",
+        "catalog_count": null
+      }
+    ],
+    "emulator_result": "PASS reported by mGBA: natural download/write/eight inputs/exit/relaunch/fresh core, all hashes passed",
+    "trace": "/tmp/mgba-netdeget-local-scaagyaa/run.log",
+    "fresh_core_trace": "/tmp/mgba-netdeget-local-scaagyaa/reopened/run.log",
+    "local_http_container": "stopped after final evidence capture",
+    "local_dns": "mGBA reports port8053 server stopped by runner finally"
+  }
 }
