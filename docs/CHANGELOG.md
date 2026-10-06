@@ -10,6 +10,12 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ## reon (servidor / reon-mail / web)
 
+### Net de Get — conteúdo personalizado
+
+* Catálogo e minijogos personalizados no MySQL, com opt-in desligado por padrão na conta e autenticação GB00. O catálogo original permanece para todos.
+* Publicação inicial do C PAD TEST gratuito do Maker, com licença MIT e corpo completo preservado; importador confere metadados, SHA-256 e bytes armazenados.
+* Migração e endpoints implantados em produção em 06/10; GET/POST, opt-in/out e hashes conferidos com conta sintética temporária. Validação natural contra produção em coordenação com mGBA.
+
 ### reon-mail — SMTP, POP3 e relay de saída
 
 * **A correspondência saiu do MySQL e foi para o Dovecot** — e o `2-setup-postfix-bridge.sh` passou a instalar esse desenho (pacotes, usuário `vmail`, configuração, filtro Sieve, chaves do `config.json`), então um servidor novo nasce assim. O servidor do

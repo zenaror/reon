@@ -350,3 +350,28 @@ stored database bytes. Existing IDs/filenames are refused. This first importer
 accepts free content only; paid SDK GET/POST billing needs separate lifecycle
 validation before paid publication. Deactivate with an operator-approved update
 to `bmvj_custom_games.is_active`; account opt-in stays independent.
+
+## Production deployment — 2026-10-06
+
+At 18:53 Brasília / 21:53 UTC the MySQL migration
+`20261006120000` and implementation files were deployed by restricted copy.
+All previously existing code files matched `feature/full_server` before
+replacement. PHP 8.5.4 lint and installed/staged byte comparisons passed.
+Database backup: `/var/backups/reon/mysql-reon_db-20261006-215156.sql.gz`.
+File backup: `/var/backups/reon/netdeget-20261006-215327/files-before.tar.gz`;
+`new-paths.json` records files to remove if reverting the code.
+
+C PAD TEST G001 was imported active and free with the exact body SHA above.
+Existing account preferences stayed off. A temporary synthetic test account
+first exercised GB00, unchanged opt-out baseline and GET/POST payload404;
+after its explicit opt-in, GET/POST catalog437B/count5 and body1114B matched
+the validated hashes byte-for-byte over the public endpoint. Duplicate import
+was refused. nginx/PHP-FPM/MySQL stayed active; PHP error log was empty.
+Natural emulator acquisition from the real server is being coordinated;
+credentials are kept only in protected temporary files and must be removed
+along with the synthetic account after that round. No hardware claim.
+
+To revert publication, deactivate G001 first. Restore the previous files and
+remove new code paths using the saved manifest if code rollback is necessary.
+The additive schema can remain while old code is restored; do not roll back
+other migrations or restore a whole database over later user activity.

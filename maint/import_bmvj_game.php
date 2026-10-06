@@ -36,6 +36,8 @@ try {
     $game = [
         'game_id' => $meta['gameId'] ?? '', 'blocks_needed' => $meta['blocks'] ?? null,
         'category_icon' => $meta['genre'] ?? null, 'minigame_type' => $meta['category'] ?? null,
+        'min_level_react' => 0, 'min_level_smart' => 0, 'min_level_sense' => 0,
+        'min_hidden_level_a' => 0, 'min_hidden_level_b' => 0,
         'title' => hex2bin($meta['titleHex']), 'description' => hex2bin($meta['descriptionHex']),
         'download_filename' => $filename, 'price_yen' => 0,
     ];
