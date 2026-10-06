@@ -310,3 +310,7 @@ Mobile Stadium and Game Boy Wars 3 each have an opt-in for custom content, off b
 default. Not opting in gives the official content, never nothing. Date of birth
 and time zone are under Account details; **a saved date of birth cannot be
 changed** (it is the rankings' age gate).
+
+## Net de Get minigames
+
+`/admin/bmvj.php`, linked from Game Content, manages `bmvj_custom_games`: complete `.cgb` upload, catalog metadata, official/custom classification, activation, replacement and deletion with typed-ID confirmation. See `NET_DE_GET.md`. Migration `20261006223000` preserves previous entries as custom. Panel writes are admin/CSRF protected and logged in the existing admin audit.

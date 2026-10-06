@@ -24,7 +24,7 @@ function handleBmvjRoute(string $path, ?string $sessionId = null): bool
 
         $includeCustom = BmvjUtil::userOptedInCustom($userId);
         $remainingSlots = max(0, 78 - ord($bytes[0]));
-        $customGames = $includeCustom ? BmvjUtil::activeCustomGames($remainingSlots) : [];
+        $customGames = BmvjUtil::activeCustomGames($remainingSlots, $includeCustom);
         $catalog = BmvjUtil::appendToCatalog($bytes, $customGames);
         if ($catalog === null) {
             http_response_code(503);
@@ -44,12 +44,7 @@ function handleBmvjRoute(string $path, ?string $sessionId = null): bool
     // is established. This prevents a guessed URL from charging an opted-out
     // account for a file it cannot receive.
     $userId = BmvjUtil::requireAuthenticatedUserId();
-    if (!BmvjUtil::userOptedInCustom($userId)) {
-        http_response_code(404);
-        return true;
-    }
-
-    $payload = BmvjUtil::customGamePayload($path);
+    $payload = BmvjUtil::customGamePayload($path, BmvjUtil::userOptedInCustom($userId));
     if ($payload === null) {
         http_response_code(404);
         return true;
