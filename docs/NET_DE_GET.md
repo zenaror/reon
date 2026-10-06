@@ -59,8 +59,9 @@ payload requests also use utility auth in the BMVJ route; the route checks
 opt-in and the stored filename/price pair before it charges the account and
 returns the payload. A guessed URL cannot charge an opted-out account.
 
-The original game's behavior with the utility-auth challenge and this
-personalized catalog still needs validation with a verified local test game.
+The natural emulator run authenticated the original game through GB00, fetched
+the personalized catalog and followed GET with empty POST on catalog and body.
+Console hardware remains untested.
 Do not infer that the menu, catalog rendering, download, Flash programming, or
 gameplay works solely from the serializer test.
 
@@ -85,18 +86,18 @@ stale counter rejection and invalid signature rejection.
 
 | Contract | Evidence and remaining limit |
 | --- | --- |
-| Catalog fields/offsets, `Gxyz`, price filename | Dan Docs plus offline serializer/HTTP tests; the natural game rendering of this personalized catalog is pending. |
-| GB00 and per-account selection | Existing REON auth code, exercised through HTTP; original Net de Get's utility-auth behavior remains pending. |
-| Stored body transport | HTTP bytes equal the stored synthetic body; the server adds no wrapper. |
+| Catalog fields/offsets, `Gxyz`, price filename | ROM-derived record offsets plus offline/HTTP tests; mGBA reported natural visibility of all five entries after the encoder correction. |
+| GB00 and per-account selection | Existing REON auth code exercised through HTTP; natural ROM GET401/GB00/GET200/POST200 passed locally. |
+| Stored body transport | HTTP bytes equal the stored body (synthetic or exact Maker fixture); natural body GET/POST are independently logged with matching SHA-256. |
 | Device-auth query/signatures | Existing `DeviceAuthUtil` and endpoint exercised with disposable fixture accounts; SQLite adapter does not validate MySQL migrations. |
 | Host recognition/launch | Disassembly/mGBA reported natural NASU listing/launch in BOX1/BOX2 using preloaded local flash/SRAM fixtures. This bypasses download. |
 | Host writer/persistence | Disassembly reported original caller/writer persisting artificial 4 KiB to a disposable sidecar. New synthetic traces also feed a wrapper in SRAM through the ROM producer and writer: 1,250-byte PAD TEST in modes 0/5, 32 operations, zero mismatches. Mode 0 reader skips 256 bytes per block of at most 512; mode 5 Maker compression passed without those extras. Acquisition HTTP/menu and final checksum validation are still bypassed; this is not an HTTP framing contract. |
-| Complete body and natural acquisition | One exact mode 5 Maker body passed the synthetic SRAM producer/write test and local HTTP transport (details below). Natural HTTP acquisition, association with that producer and final checksum validation remain pending. Other layouts/framing must not be generalized from this body. |
+| Complete body and natural acquisition | The exact mode 5 D800 body passed local HTTP and, per mGBA, natural ROM download/storage: 8 KiB at flash offset 0 equal the payload. Launch/input/exit/reopen are separate remaining gates. Other layouts/framing must not be generalized from this body. |
 
 The checked-in 168-byte PAD TEST is an older raw flash fixture. The separately
 reported 1,250-byte visually passing PAD TEST has not replaced it here. Neither
-raw image is a verified complete HTTP body. No production deployment or natural
-emulator download was used for these server checks.
+raw image is a verified complete HTTP body. No production deployment was used. The subsequent natural emulator download
+evidence is recorded below; the old raw fixture was not used for that path.
 
 ## Reproducible local HTTP harness
 
@@ -237,3 +238,23 @@ body length/hash and catalog count, without Authorization/request data.
 Authenticated catalog bodies are saved as
 `/tmp/reon-bmvj-local/catalog-{GET|POST}-{account}.bin` inside the container.
 This instrumentation belongs only to the local test router.
+
+### Natural download/write checkpoint, 2026-10-06
+
+The coordinated mGBA run used real ROM joypad/menu flow, original Mobile GB
+Adapter emulation, isolated DNS and an explicit connect80-to8088 remap.
+The corrected 434-byte catalog displayed PAD TEST. The ROM naturally requested
+`0000.G001.cgb` using GET401, GB00, GET200 and an empty POST200; both successful
+responses contained exactly 1,014 bytes with SHA-256
+`a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24`.
+Server logs independently confirm account 7, opt-in 1 and both body hashes;
+the captured snapshot is `/tmp/reon-bmvj-natural-stage114-evidence`.
+
+mGBA reports the natural download-complete/BOX2/storage-complete sequence and
+8,192 bytes persisted at flash offset 0, equal to the D800 payload SHA-256
+`0e42875ef2569905d056f895ab5d6998e4f17709875dd27f13cbd9b20c2158b0`.
+This run did not force CPU entry or inject the network response body. Those
+host/write assertions belong to the mGBA trace; the server independently
+verified its HTTP responses. Launch, all inputs, exit and reopen tests continue
+in that chat. The SQLite-backed harness does not validate MySQL migration or
+production/hardware behavior. Preserve logs before stopping its container.
