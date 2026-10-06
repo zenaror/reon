@@ -375,3 +375,5 @@ To revert publication, deactivate G001 first. Restore the previous files and
 remove new code paths using the saved manifest if code rollback is necessary.
 The additive schema can remain while old code is restored; do not roll back
 other migrations or restore a whole database over later user activity.
+
+Production natural acquisition also passed, per mGBA, in `/tmp/mgba-netdeget-production-zqeg16la/{run.log,reopened/run.log}`: real DNS53/standard sockets, exact8192B payload and unchanged remainder, eight controls, exit/relaunch and fresh-core persistence. Server activity independently confirms authenticated catalog/body200 at21:57:17–23UTC (18:57:17–23Brasília). The synthetic account was erased using AccountDataUtil with zero cost; all protected temporary credentials and its cached PHP sessions were removed. Services remain active and PHP error log empty. Durable summary: `web/tests/fixtures/bmvj/production-evidence.json`. Hardware remains unvalidated.

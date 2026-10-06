@@ -14,7 +14,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 * Catálogo e minijogos personalizados no MySQL, com opt-in desligado por padrão na conta e autenticação GB00. O catálogo original permanece para todos.
 * Publicação inicial do C PAD TEST gratuito do Maker, com licença MIT e corpo completo preservado; importador confere metadados, SHA-256 e bytes armazenados.
-* Migração e endpoints implantados em produção em 06/10; GET/POST, opt-in/out e hashes conferidos com conta sintética temporária. Validação natural contra produção em coordenação com mGBA.
+* Migração e endpoints implantados em produção em 06/10; GET/POST, opt-in/out e hashes conferidos com conta sintética temporária. Validação natural contra produção e fresh-core concluídas pelo mGBA; conta e credenciais de teste removidas.
 
 ### reon-mail — SMTP, POP3 e relay de saída
 

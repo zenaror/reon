@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-06",
+  "deployment": "18:53 America/Sao_Paulo / 21:53 UTC",
+  "migration": "20261006120000",
+  "content": "C PAD TEST G001 free opt-in",
+  "maker_commit": "727b06b607adea93e5fbe10b6890b45739be1070",
+  "body_sha256": "f46337ae8627482742511c5d508aaa0ac66930de93c9fe2814fd0c00a02324ba",
+  "payload_sha256": "ab49fffb02e1b918d442a876508ed83c75ffc32fbbfa482cb8a3b9e46d70381c",
+  "catalog_sha256": "d5323f206466632a447ceb68168175af5d8c6de66e441c9a58f7868c65e679e6",
+  "server_verified": [
+    "Real MySQL migration",
+    "Production PHP lint and installed bytes",
+    "GB00 authenticated opt-out baseline and payload GET/POST 404",
+    "Opt-in exact catalog437B/count5 and complete body1114B GET/POST",
+    "Natural request game-login/catalog200 at21:57:17UTC and body200 at21:57:22-23UTC",
+    "Temporary synthetic account erased via AccountDataUtil; zero cost",
+    "Protected test credentials and matching cached PHP sessions removed",
+    "nginx/PHP-FPM/MySQL active; PHP error log empty"
+  ],
+  "mgba_reported": {
+    "runner_logs": "/tmp/mgba-netdeget-production-zqeg16la/{run.log,reopened/run.log}",
+    "runtime_commit": "358230c82",
+    "dns_and_sockets": "Real production DNS port53 and standard sockets; no localhost remapping",
+    "results": [
+      "Natural joypad acquisition",
+      "Exact8192B flash payload; remainder unchanged",
+      "Eight controls/release/counters",
+      "Exit and relaunch",
+      "Fresh-core input/exit with unchanged flash"
+    ],
+    "sensitive_capture_disabled": true
+  },
+  "backup_database": "/var/backups/reon/mysql-reon_db-20261006-215156.sql.gz",
+  "backup_files": "/var/backups/reon/netdeget-20261006-215327/files-before.tar.gz",
+  "hardware_validated": false
+}
