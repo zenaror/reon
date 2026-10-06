@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-06",
+  "scope": "isolated local REON/mGBA, disposable accounts and saves",
+  "server_commit": "2037b85",
+  "record_layout_commit": "fea79ea",
+  "source_logs": "/tmp/reon-bmvj-natural-final-evidence",
+  "http_responses_verified_by_server": [
+    {
+      "time_utc": "2026-10-06T21:17:56+00:00",
+      "method": "GET",
+      "path": "/A4/CGB-BMVJ/RomList.cgb",
+      "status": 200,
+      "account": 7,
+      "custom_opt_in": 1,
+      "body_length": 434,
+      "body_sha256": "8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043",
+      "catalog_count": 5
+    },
+    {
+      "time_utc": "2026-10-06T21:17:56+00:00",
+      "method": "POST",
+      "path": "/A4/CGB-BMVJ/RomList.cgb",
+      "status": 200,
+      "account": 7,
+      "custom_opt_in": 1,
+      "body_length": 434,
+      "body_sha256": "8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043",
+      "catalog_count": 5
+    },
+    {
+      "time_utc": "2026-10-06T21:17:57+00:00",
+      "method": "GET",
+      "path": "/A4/CGB-BMVJ/0000.G001.cgb",
+      "status": 200,
+      "account": 7,
+      "custom_opt_in": 1,
+      "body_length": 1014,
+      "body_sha256": "a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24",
+      "catalog_count": null
+    },
+    {
+      "time_utc": "2026-10-06T21:17:57+00:00",
+      "method": "POST",
+      "path": "/A4/CGB-BMVJ/0000.G001.cgb",
+      "status": 200,
+      "account": 7,
+      "custom_opt_in": 1,
+      "body_length": 1014,
+      "body_sha256": "a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24",
+      "catalog_count": null
+    }
+  ],
+  "emulator_report": {
+    "source": "MGBA - Suporte completo MBC6 coordination message",
+    "trace": "/tmp/mgba-online-n7kfh2sm/typed.log",
+    "stages": [
+      114,
+      126,
+      142,
+      144,
+      180
+    ],
+    "result": "natural download, BOX2 storage, launch, eight inputs/release/counters, Start+Select exit, BOX1 relaunch with reset counters passed in same core",
+    "flash_payload_bytes": 8192,
+    "flash_payload_offset": 0,
+    "flash_payload_sha256": "0e42875ef2569905d056f895ab5d6998e4f17709875dd27f13cbd9b20c2158b0",
+    "fresh_core_reopen": "pending at time of this record"
+  },
+  "limits": [
+    "SQLite adapter is not MySQL migration validation",
+    "No production deployment",
+    "No physical hardware validation"
+  ]
+}
