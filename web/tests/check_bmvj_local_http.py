@@ -62,12 +62,12 @@ def login(user, password='fixture'):
     return auth(challenge, user, password)
 
 
-def sdk_catalog_post(authorization):
+def sdk_post(name, authorization):
     target = urlparse(args.url)
     connection = http.client.HTTPConnection(target.hostname, target.port or 80, timeout=10)
     connection._http_vsn = 10
     connection._http_vsn_str = 'HTTP/1.0'
-    connection.putrequest('POST', '/cgb/download?' + urlencode({'name': '/A4/CGB-BMVJ/RomList.cgb'}))
+    connection.putrequest('POST', '/cgb/download?' + urlencode({'name': '/A4/CGB-BMVJ/' + name}))
     connection.putheader('Authorization', authorization)
     connection.putheader('User-Agent', 'CGB-BMVJ-00')
     # Captured SDK request has neither Content-Length nor a request body.
@@ -81,20 +81,22 @@ def sdk_catalog_post(authorization):
 authorized = login('g000000007')
 status, headers, catalog = request('RomList.cgb', authorized)
 assert status == 200 and catalog[0] == baseline[0] + 1, (status, catalog[:20])
-assert sdk_catalog_post(authorized) == (200, catalog), 'SDK empty POST must return the same authenticated catalog'
+assert sdk_post('RomList.cgb', authorized) == (200, catalog), 'SDK empty POST must return the same authenticated catalog'
 offsets = struct.unpack('<' + 'H' * catalog[0], catalog[1:1 + 2 * catalog[0]])
 assert catalog[offsets[-1] + 6:offsets[-1] + 10] == args.filename.split('.')[1].encode()
 status, headers, body = request(args.filename, authorized)
 assert status == 200 and body == expected, (status, len(body), len(expected))
 assert headers.get_content_type() == 'application/octet-stream'
+assert sdk_post(args.filename, authorized) == (200, expected), 'SDK POST must preserve the complete body'
 status, _, body = request('h0000.cgb')
 assert status == 200 and body == (root / 'cgb/download/A4/CGB-BMVJ/h0000.cgb').read_bytes()
 opted_out = login('g000000008')
 status, _, catalog = request('RomList.cgb', opted_out)
 assert status == 200 and catalog == baseline, status
-assert sdk_catalog_post(opted_out) == (200, baseline), 'SDK POST must preserve opt-out'
+assert sdk_post('RomList.cgb', opted_out) == (200, baseline), 'SDK POST must preserve opt-out'
 status, _, body = request(args.filename, opted_out)
 assert status == 404 and body == b'', (status, body)
+assert sdk_post(args.filename, opted_out) == (404, b''), 'SDK payload POST must enforce opt-out'
 status, headers, _ = request('RomList.cgb', login('g000000007', 'wrong'))
 assert status == 401 and headers.get('Gb-Status') == '201', status
 
@@ -131,7 +133,7 @@ assert device_request('authorize', counter - 1)[0] == 403
 assert device_request('query', counter + 2, True)[0] == 403
 assert device_request('deauthorize', counter + 2)[0] == 200
 print('PASS: real HTTP GB00 challenge/auth, catalog opt-in/out, static menu, exact response body, invalid password')
-print('PASS: SDK HTTP/1.0 empty POST reuses GB00 and returns exact opted-in/out catalog')
+print('PASS: SDK HTTP/1.0 empty POST reuses GB00, preserves catalog/body bytes and enforces opt-out')
 print('PASS: real device-auth handler, signed query response, authorize/deauthorize, stale counter and bad signature')
 print('Body SHA256:', hashlib.sha256(expected).hexdigest())
 print('This script validates HTTP transport; consult docs for separate natural game trace evidence.')

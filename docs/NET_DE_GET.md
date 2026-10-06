@@ -289,3 +289,41 @@ Server-side GET/POST catalog/body hashes were independently checked again;
 final snapshots are `/tmp/reon-bmvj-portable-final-evidence`. The HTTP container
 was stopped after this final capture. mGBA reports its temporary DNS8053 was
 closed by the runner's `finally` block. No production deployment occurred.
+
+### C / GBDK fixture handoff
+
+Disassembly supplied the C PAD TEST built with GBDK 4.5.0 at
+`/tmp/net-de-get-maker-sdk/build/c-pad`. Its original `game.json` uses Maker
+names; normalize them into a separate harness metadata file without editing
+the original or re-encoding strings:
+
+```python
+metadata = {
+    "game_id": maker["gameId"],
+    "blocks_needed": maker["blocks"],
+    "category_icon": maker["genre"],
+    "minigame_type": maker["category"],
+    "title_hex": maker["titleHex"],
+    "description_hex": maker["descriptionHex"],
+    "download_filename": maker["downloadFilename"],
+    "price_yen": maker["price"],
+}
+```
+
+The mapping is backed by Maker `tools/package.py`: `category` comes from raw
+payload byte 6 (minigame type), `genre` from byte 7 (catalog icon).
+The isolated server directory `/tmp/reon-bmvj-c-pad-fixture` contains the
+unchanged body, original `maker-game.json`, and normalized `metadata.json`.
+No host ROM, payload or user configuration is added to this repository.
+
+- Payload 8,192 bytes: `ab49fffb02e1b918d442a876508ed83c75ffc32fbbfa482cb8a3b9e46d70381c`.
+- Complete body 1,114 bytes: `f46337ae8627482742511c5d508aaa0ac66930de93c9fe2814fd0c00a02324ba`.
+- Catalog 437 bytes/count 5: `d5323f206466632a447ceb68168175af5d8c6de66e441c9a58f7868c65e679e6`.
+
+The server independently verified block=1, icon=6, type=1 and title bytes
+`C PAD TEST` in the serialized record. HTTP GB00/device-auth/opt-in checks and
+exact GET/POST catalog/body equality passed; payload POST also rejects opt-out.
+The container for this coordinated fixture is `reon-bmvj-c-pad-http` on local
+8088. Natural C-example download/write/gameplay/fresh-core evidence belongs to
+the mGBA runner using its SHA-256 CLI options; HTTP success alone does not close
+those gates. Preserve local logs and stop the container after that round.
