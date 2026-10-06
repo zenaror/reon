@@ -411,3 +411,23 @@ Admin deployment on 2026-10-06 at 20:16 Brasília / 23:16 UTC: migration
 YAML parsing and read-only library/upload rendering with the production database
 passed. Anonymous admin access returns404. C PAD remains active/custom and
 services active; PHP error log empty. No CRUD test entries or accounts created.
+
+### Local maintenance fixtures
+
+For coordinated acquisition of multiple games, the test-only router accepts
+`BMVJ_FIXTURE_MANIFEST=/fixture/manifest.json`. The JSON array contains entries
+with `body_file`, `body_sha256`, and normalized `metadata` (the same keys as
+`BMVJ_METADATA`). IDs must be distinct, filenames match ID/price, and every
+complete body hash is checked. This option applies only to the disposable
+SQLite harness. Mount the fixture directory read-only and bind localhost only.
+
+The maintenance round served original G001 plus C PAD TWO G002, then changed
+only local G001 to C PAD NEW after mGBA preserved a natural-acquisition snapshot.
+Final GET/POST catalog:511 bytes/count6, SHA-256
+`19a727db8ec3b59785b4fc07a9cddc82946397336cfe2ae48ce80236c846c48a`.
+The mGBA chat reported maintenance acquisition/preservation/fresh-core passes
+after a core correction; detailed emulator conclusions belong to that chat.
+REON archived91 HTTP events at `/tmp/reon-bmvj-maintenance-final-evidence` and
+stopped/removed `reon-bmvj-maintenance-http` on completion. Manifests and bodies
+remain at `/tmp/reon-bmvj-maintenance-fixture` for reproduction. Production
+content was not changed and no hardware result is implied.
