@@ -268,3 +268,16 @@ response evidence is preserved in
 explicitly attributed to the separate trace. Final logs/catalog snapshots are
 in `/tmp/reon-bmvj-natural-final-evidence`. The coordinated local container
 was stopped after capture; no local HTTP service remains from this test.
+
+Fresh-core reopen subsequently passed in the mGBA task with persisted flash
+unchanged (`/tmp/mgba-downloaded-reopen-7fc8_kt9/reopen.log`). The evidence JSON
+records that result with its source. An additional short HTTP run was requested
+to validate the portable runner being saved in the mGBA repository.
+
+The mGBA task preserves its portable natural-flow runner at
+`tools/mbc6/run_netdeget_local.py` and `netdeget_local_trace.c` in its own
+repository. Its CLI accepts the original host ROM, Linux shared build,
+validated empty SRAM, erased flash sidecar and the exact 8 KiB D800 payload.
+It verifies input and response hashes, creates disposable saves, and owns the
+isolated DNS/connect-port remap. Use that runner's documented fixture inputs;
+this REON repository supplies only the HTTP harness.

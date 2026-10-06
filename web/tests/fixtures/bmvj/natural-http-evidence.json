@@ -64,7 +64,10 @@
     "flash_payload_bytes": 8192,
     "flash_payload_offset": 0,
     "flash_payload_sha256": "0e42875ef2569905d056f895ab5d6998e4f17709875dd27f13cbd9b20c2158b0",
-    "fresh_core_reopen": "pending at time of this record"
+    "fresh_core_reopen": {
+      "result": "PASS reported by mGBA; flash unchanged",
+      "trace": "/tmp/mgba-downloaded-reopen-7fc8_kt9/reopen.log"
+    }
   },
   "limits": [
     "SQLite adapter is not MySQL migration validation",
