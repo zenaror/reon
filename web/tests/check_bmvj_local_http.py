@@ -134,4 +134,4 @@ print('PASS: real HTTP GB00 challenge/auth, catalog opt-in/out, static menu, exa
 print('PASS: SDK HTTP/1.0 empty POST reuses GB00 and returns exact opted-in/out catalog')
 print('PASS: real device-auth handler, signed query response, authorize/deauthorize, stale counter and bad signature')
 print('Body SHA256:', hashlib.sha256(expected).hexdigest())
-print('Transport validation only; wrapper and natural game download remain unverified.')
+print('This script validates HTTP transport; consult docs for separate natural game trace evidence.')
