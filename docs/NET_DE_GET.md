@@ -60,7 +60,7 @@ stale counter rejection and invalid signature rejection.
 | Device-auth query/signatures | Existing `DeviceAuthUtil` and endpoint exercised with disposable fixture accounts; SQLite adapter does not validate MySQL migrations. |
 | Host recognition/launch | Disassembly/mGBA reported natural NASU listing/launch in BOX1/BOX2 using preloaded local flash/SRAM fixtures. This bypasses download. |
 | Host writer/persistence | Disassembly reported original caller/writer persisting artificial 4 KiB to a disposable sidecar. New synthetic traces also feed a wrapper in SRAM through the ROM producer and writer: 1,250-byte PAD TEST in modes 0/5, 32 operations, zero mismatches. Mode 0 reader skips 256 bytes per block of at most 512; mode 5 Maker compression passed without those extras. Acquisition HTTP/menu and final checksum validation are still bypassed; this is not an HTTP framing contract. |
-| Download wrapper and real buffer producer | Still unconfirmed. Header length/size, chunk/footer, padding, and association with the received HTTP body await Disassembly evidence. |
+| Complete body and natural acquisition | One exact mode 5 Maker body passed the synthetic SRAM producer/write test and local HTTP transport (details below). Natural HTTP acquisition, association with that producer and final checksum validation remain pending. Other layouts/framing must not be generalized from this body. |
 
 The checked-in 168-byte PAD TEST is an older raw flash fixture. The separately
 reported 1,250-byte visually passing PAD TEST has not replaced it here. Neither
@@ -158,3 +158,36 @@ HTTP auth endpoint has no frontend override. For an isolated game test:
 This harness provides the HTTP side. DNS redirection, disposable adapter config
 and connect-port remapping belong to the mGBA tracer; those have not been run
 by the server task. This is not an end-to-end game download result.
+
+### Complete Maker body checked on 2026-10-06
+
+Disassembly supplied `/tmp/netdeget-http-pad/0000.G001.cgb` (1,013 bytes), with
+SHA-256 `0c7e9f6b68878bde8d2610e3b553023f81305b4765a82303c2d992e5633d973a`,
+and matching `metadata.json`. This is the Maker publication body, mode 5,
+not the default synthetic transport marker. Its nine-byte header is
+`00 00 05 EC 03 00 20 00 00`: L=0, reserved=0, mode=5, input length 1,004,
+output length 8,192, check fields zero. These describe this specific artifact;
+no generalized wrapper generator is implemented in REON.
+
+Disassembly reports this exact L=0 body passing the synthetic SRAM entry through
+the original producer/writer, 64 operations and zero mismatches after reopening
+the sidecar. The local server independently checked its input hash and served
+all 1,013 bytes unchanged through real GB00/device-auth HTTP flows. These tests
+do not establish the natural game's HTTP acquisition or final checksum gate.
+Preserve the supplied title/description encoding verbatim (including space
+byte `20`); the Maker source owns reproduction of this disposable artifact.
+
+To test this specific body with the harness, mount its directory at `/fixture`,
+set `BMVJ_BODY=/fixture/0000.G001.cgb`, its SHA-256 above and
+`BMVJ_METADATA=/fixture/metadata.json`. Verify with:
+
+```sh
+python3 web/tests/check_bmvj_local_http.py \
+  --body /tmp/netdeget-http-pad/0000.G001.cgb --filename 0000.G001.cgb
+```
+
+For the coordinated run the server task leaves container `reon-bmvj-pad-http`
+on `127.0.0.1:8088` temporarily. Read logs with `podman logs reon-bmvj-pad-http`
+and `podman exec reon-bmvj-pad-http cat /var/log/reon/activity.log`.
+After the mGBA tracer finishes, stop it with `podman stop reon-bmvj-pad-http`;
+SQLite, sessions and logs disappear with that container.
