@@ -77,7 +77,7 @@ function expectSame($expected, $actual, string $message): void
 
 function makeBaselineRecord(string $id): string
 {
-    return "\0\0" . $id . "\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    return str_repeat("\0", 6) . $id . str_repeat("\0", 10) . "\x01X\x01Y\x0D0000." . $id . ".cgb\0\x01";
 }
 
 $fixturePath = __DIR__ . '/fixtures/bmvj/input_tester.flash';
@@ -122,17 +122,38 @@ $offsetCustom = unpack('v', substr($catalog, 3, 2))[1];
 expectSame($officialRecord, substr($catalog, $offsetOfficial, strlen($officialRecord)), 'official record preserved');
 
 $record = substr($catalog, $offsetCustom);
-expectSame($gameId, substr($record, 2, 4), 'custom game ID');
-expectSame([0, 0], array_values(unpack('v2', substr($record, 12, 4))), 'hidden level fields');
-$titleLength = ord($record[16]);
-$cursor = 17 + $titleLength;
-expectSame($title, substr($record, 17, $titleLength), 'title bytes');
+expectSame($gameId, substr($record, 6, 4), 'custom game ID');
+expectSame([0, 0], array_values(unpack('v2', substr($record, 16, 4))), 'hidden level fields');
+// Byte fixture derived from the original ROM's record readers, not Dan Docs.
+expectSame('000000000100473030310000000000000000000008', bin2hex(substr($record, 0, 21)), 'ROM-derived record prefix');
+$titleLength = ord($record[20]);
+$cursor = 21 + $titleLength;
+expectSame($title, substr($record, 21, $titleLength), 'title bytes');
 $descriptionLength = ord($record[$cursor++]);
 expectSame($description, substr($record, $cursor, $descriptionLength), 'description bytes');
 $cursor += $descriptionLength;
 $filenameLength = ord($record[$cursor++]);
 expectSame('1234.' . $gameId . '.cgb', substr($record, $cursor, $filenameLength), 'server filename');
 expectSame("\0\x01", substr($record, $cursor + $filenameLength, 2), 'filename terminator and type');
+
+$thresholdGame = $custom;
+$thresholdGame['min_level_react'] = 0x12;
+$thresholdGame['min_level_smart'] = 0x34;
+$thresholdGame['min_level_sense'] = 0x56;
+$thresholdGame['min_hidden_level_a'] = 0x1234;
+$thresholdGame['min_hidden_level_b'] = 0xABCD;
+$thresholdCatalog = BmvjUtil::appendToCatalog($baseline, [$thresholdGame]);
+if ($thresholdCatalog === null) throw new RuntimeException('threshold fixture rejected');
+$thresholdOffset = unpack('v', substr($thresholdCatalog, 3, 2))[1];
+$thresholdRecord = substr($thresholdCatalog, $thresholdOffset);
+expectSame('12345600', bin2hex(substr($thresholdRecord, 0x0C, 4)), 'ROM category level offsets');
+expectSame('3412cdab', bin2hex(substr($thresholdRecord, 0x10, 4)), 'ROM hidden threshold offsets');
+expectSame(strlen($title), ord($thresholdRecord[0x14]), 'ROM text offset independent of thresholds');
+
+$historical = file_get_contents(dirname(__DIR__) . '/cgb/download/A4/CGB-BMVJ/RomList.cgb');
+$historicalOffset = unpack('v', substr($historical, 1, 2))[1];
+expectSame(0x0B, ord($historical[$historicalOffset + 0x14]), 'historical first title length at ROM text offset');
+expectSame("Mini\x10Game\x10!", substr($historical, $historicalOffset + 0x15, 0x0B), 'historical title bytes at ROM offset');
 
 $withoutCustom = BmvjUtil::appendToCatalog($baseline, []);
 if ($withoutCustom === null) throw new RuntimeException('baseline-only catalog was rejected');
@@ -141,6 +162,7 @@ expectSame(1, ord($withoutCustom[0]), 'opt-out catalog contains no custom entrie
 $duplicate = $custom;
 $duplicate['game_id'] = 'G900';
 $duplicate['download_filename'] = '0000.G900.cgb';
+$duplicate['price_yen'] = 0;
 $deduplicated = BmvjUtil::appendToCatalog($baseline, [$duplicate]);
 if ($deduplicated === null) throw new RuntimeException('duplicate ID fixture catalog was rejected');
 expectSame(1, ord($deduplicated[0]), 'custom ID cannot shadow a baseline ID');

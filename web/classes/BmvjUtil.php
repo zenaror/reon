@@ -93,13 +93,13 @@ final class BmvjUtil
             if ($end <= $offset) return null;
             $record = substr($baseline, $offset, $end - $offset);
             $baselineRecords[] = $record;
-            $existingIds[] = strlen($record) >= 6 ? substr($record, 2, 4) : '';
+            $existingIds[] = strlen($record) >= 10 ? substr($record, 6, 4) : '';
         }
 
         $customRecords = [];
         foreach ($customGames as $game) {
             $record = self::encodeCatalogRecord($game);
-            if ($record === null || in_array(substr($record, 2, 4), $existingIds, true)) continue;
+            if ($record === null || in_array(substr($record, 6, 4), $existingIds, true)) continue;
             $customRecords[] = $record;
         }
         if (count($baselineRecords) + count($customRecords) > 78) return null;
@@ -155,7 +155,11 @@ final class BmvjUtil
         $hiddenB = (int)($game['min_hidden_level_b'] ?? -1);
         if ($hiddenA < 0 || $hiddenA > 0xFFFF || $hiddenB < 0 || $hiddenB > 0xFFFF) return null;
 
-        return $blocks . $category . $id . "\0\0"
+        // Original BMVJ ROM: blocks +04, category +05, ID +06,
+        // levels +0C, hidden fields +10/+12, title length +14.
+        // Four leading reserved bytes match the historical catalog; their
+        // meaning is unknown. Dan Docs omits them in its record description.
+        return str_repeat("\0", 4) . $blocks . $category . $id . "\0\0"
             . $levelReact . $levelSmart . $levelSense . "\0"
             . pack('v2', $hiddenA, $hiddenB)
             . chr(strlen($title)) . $title
