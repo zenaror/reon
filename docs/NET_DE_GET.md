@@ -335,3 +335,18 @@ independently checked the final authenticated GET/POST catalog and body hashes
 above. Logs are archived at `/tmp/reon-bmvj-c-pad-final-evidence`;
 `reon-bmvj-c-pad-http` was stopped and its absence confirmed.
 These local emulator results do not validate production MySQL or hardware.
+
+## Content publication
+
+The initial free opt-in content is C PAD TEST, built from Maker commit
+`727b06b607adea93e5fbe10b6890b45739be1070`. Copyright (c) 2026 zenaror,
+MIT; the complete notice is in `NET_DE_GET_C_PAD_LICENSE.txt`. Only original
+Maker additions and their generated example program/font are licensed this way.
+
+Run `php maint/import_bmvj_game.php /path/game.json` to import an inactive
+entry, or append `--activate` for explicitly approved publication. It checks
+complete body length/SHA-256, game-encoded metadata, baseline ID collision and
+stored database bytes. Existing IDs/filenames are refused. This first importer
+accepts free content only; paid SDK GET/POST billing needs separate lifecycle
+validation before paid publication. Deactivate with an operator-approved update
+to `bmvj_custom_games.is_active`; account opt-in stays independent.
