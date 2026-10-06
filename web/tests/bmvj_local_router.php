@@ -115,18 +115,44 @@ if ($bodyFile = getenv('BMVJ_BODY')) {
     }
     $game = array_replace($game, array_intersect_key($metadata, $game));
 }
-if (preg_match('/^G[0-9]{3}$/', $game['game_id']) !== 1
-    || $game['download_filename'] !== sprintf('%04d.%s.cgb', $game['price_yen'], $game['game_id'])) {
-    throw new RuntimeException('Fixture ID/filename/price mismatch');
+$fixtures = [[$game, $body]];
+// Test-only manifest for coordinated natural acquisition of distinct games.
+// Bodies remain verbatim, hash pinned, and outside the repository.
+if ($manifestFile = getenv('BMVJ_FIXTURE_MANIFEST')) {
+    $manifest = json_decode(file_get_contents($manifestFile), true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($manifest) || count($manifest) < 1 || count($manifest) > 74) {
+        throw new RuntimeException('Invalid local fixture manifest');
+    }
+    $fixtures = [];
+    foreach ($manifest as $entry) {
+        $complete = file_get_contents($entry['body_file']);
+        if ($complete === false || !hash_equals($entry['body_sha256'], hash('sha256', $complete))) {
+            throw new RuntimeException('Manifest complete body hash mismatch');
+        }
+        $metadata = $entry['metadata'];
+        foreach (['title', 'description'] as $key) {
+            $encoded = $metadata[$key . '_hex'] ?? '';
+            if ($encoded === '' || !ctype_xdigit($encoded) || strlen($encoded) % 2) {
+                throw new RuntimeException('Manifest encoded text missing');
+            }
+            $metadata[$key] = hex2bin($encoded);
+        }
+        $fixtures[] = [array_replace($game, array_intersect_key($metadata, $game)), $complete];
+    }
 }
-$columns = array_keys($game);
-$columns[] = 'game_binary';
-$columns[] = 'is_active';
-$values = array_values($game);
-$values[] = $body;
-$values[] = 1;
 $pdo->exec('DELETE FROM bmvj_custom_games');
-$stmt = $pdo->prepare('INSERT INTO bmvj_custom_games (' . implode(',', $columns) . ') VALUES ('
-    . implode(',', array_fill(0, count($columns), '?')) . ')');
-$stmt->execute($values);
+$ids = [];
+foreach ($fixtures as [$game, $body]) {
+    if (preg_match('/^G[0-9]{3}$/', $game['game_id']) !== 1
+        || $game['download_filename'] !== sprintf('%04d.%s.cgb', $game['price_yen'], $game['game_id'])
+        || in_array($game['game_id'], $ids, true)) {
+        throw new RuntimeException('Fixture ID/filename/price mismatch or duplicate');
+    }
+    $ids[] = $game['game_id'];
+    $columns = array_merge(array_keys($game), ['game_binary', 'is_active']);
+    $values = array_merge(array_values($game), [$body, 1]);
+    $stmt = $pdo->prepare('INSERT INTO bmvj_custom_games (' . implode(',', $columns) . ') VALUES ('
+        . implode(',', array_fill(0, count($columns), '?')) . ')');
+    $stmt->execute($values);
+}
 require dirname(__DIR__) . '/htdocs/cgb/download.php';
