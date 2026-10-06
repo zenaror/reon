@@ -124,6 +124,7 @@ pokemon-pages:
   battle-tower-description: レベルと部屋別にバトルタワーの殿堂を見る。
   bxt-save-converter-description: クリスタルのBYTセーブデータをブラウザ上でBXT形式に変換。
 gameboy-wars: ゲームボーイウォーズ3
+net-de-get: Net de Get
 
 mario-kart:
   title: マリオカート
@@ -1017,6 +1018,10 @@ account:
   gbwars-custom-opt-in-blurb: "有効にすると、ゲームボーイウォーズ3のマップメニューに、REONチームが作成したカスタムマップも表示されます。これはファンメイドのコンテンツであり、公式データではありません。公式マップは常に表示されます。"
   gbwars-custom-opt-in-off: "公式マップのみ"
   gbwars-custom-opt-in-on: "公式マップとカスタムマップ"
+  bmvj-custom-opt-in: "カスタムミニゲーム"
+  bmvj-custom-opt-in-blurb: "REON のカスタムミニゲームを Net de Get のカタログに表示します。公式ゲームも引き続き利用できます。"
+  bmvj-custom-opt-in-off: "公式ミニゲームのみ"
+  bmvj-custom-opt-in-on: "公式およびカスタムミニゲーム"
 
   adapter-settings: "アダプタ"
   adapter-color: "アダプタの色"
@@ -1060,6 +1065,7 @@ account:
 invalid-pokemon-news-setting: 無効なポケモンニュース設定です。
 invalid-mobile-stadium-setting: 無効なモバイルスタジアム設定です。
 invalid-gbwars-setting: "無効なゲームボーイウォーズ3設定です。"
+invalid-bmvj-setting: "Net de Get のカスタムミニゲーム設定が無効です。"
 
 mail:
   title: "REON Mail"

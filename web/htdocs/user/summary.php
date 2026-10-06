@@ -74,6 +74,19 @@
                 $errors[] = "gbwarsValue";
             }
         }
+        // Net de Get custom minigames use their own catalogue. The preference
+        // is explicit and off by default, like custom maps and Pokémon News.
+        if (array_key_exists("bmvjCustomOptIn", $_POST)) {
+            if (in_array($_POST["bmvjCustomOptIn"], array("0", "1"), true)) {
+                $db = DBUtil::getInstance()->getDB();
+                $stmt = $db->prepare("update sys_users set custom_bmvj_opt_in = ? where id = ?");
+                $opt_in = intval($_POST["bmvjCustomOptIn"]);
+                $stmt->bind_param("ii", $opt_in, $_SESSION["user_id"]);
+                $stmt->execute();
+            } else {
+                $errors[] = "bmvjValue";
+            }
+        }
         // Cor do adaptador e marca de não-tarifado, quando o painel libera.
         //
         // A checagem de `bin_user_choice` acontece AQUI, e não só no
@@ -182,7 +195,7 @@
 
 		
 		$db = $db_util->getDB();
-		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, custom_mobile_stadium_opt_in, custom_gbwars_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
+		$stmt = $db->prepare("select email, username, dion_ppp_id, dion_email_local, log_in_password, money_spent, trade_region_allowlist, custom_pokemon_news_opt_in, custom_mobile_stadium_opt_in, custom_gbwars_opt_in, custom_bmvj_opt_in, timezone, adapter_device, adapter_unmetered, rankings_opt_in, birth_date from sys_users where id = ?");
 		$stmt->bind_param("i", $_SESSION["user_id"]);
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
@@ -208,7 +221,8 @@
             "pokemon_news_custom_opt_in" => intval($result["custom_pokemon_news_opt_in"]),
             "mobile_stadium_custom_opt_in" => intval($result["custom_mobile_stadium_opt_in"]),
             "gbwars_custom_opt_in" => intval($result["custom_gbwars_opt_in"]),
-            "game_tab" => in_array((string)($_POST["gameTab"] ?? ""), array("crystal", "gbwars"), true) ? (string)$_POST["gameTab"] : "crystal",
+            "bmvj_custom_opt_in" => intval($result["custom_bmvj_opt_in"]),
+            "game_tab" => in_array((string)($_POST["gameTab"] ?? ""), array("crystal", "gbwars", "netdeget"), true) ? (string)$_POST["gameTab"] : "crystal",
             "birth_date_locked" => (($result["birth_date"] ?? "") !== "" && $result["birth_date"] !== "0000-00-00"),
             "time_zone" => $result["timezone"],
             "all_time_zones" => timezone_identifiers_list(),

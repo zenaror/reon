@@ -125,6 +125,7 @@ pokemon-pages:
   battle-tower-description: Consulta el cuadro de honor de la Torre de Combate por nivel y sala.
   bxt-save-converter-description: Convierte partidas guardadas BYT de Cristal al formato BXT localmente en tu navegador.
 gameboy-wars: Game Boy Wars 3
+net-de-get: Net de Get
 
 mario-kart:
   title: Mario Kart
@@ -942,6 +943,10 @@ account:
   gbwars-custom-opt-in-blurb: "Cuando está activado, el menú de mapas de Game Boy Wars 3 también muestra mapas personalizados creados por el equipo REON. Es contenido hecho por fans, no datos oficiales. Los mapas oficiales siempre aparecen."
   gbwars-custom-opt-in-off: "Solo mapas oficiales"
   gbwars-custom-opt-in-on: "Mapas oficiales y personalizados"
+  bmvj-custom-opt-in: "Minijuegos personalizados"
+  bmvj-custom-opt-in-blurb: "Mostrar minijuegos personalizados de REON en el catálogo de Net de Get. Los juegos oficiales seguirán disponibles."
+  bmvj-custom-opt-in-off: "Solo minijuegos oficiales"
+  bmvj-custom-opt-in-on: "Minijuegos oficiales y personalizados"
 
   your-reon-account: Tu cuenta REON
   account-details: Detalles de la cuenta
@@ -1022,6 +1027,7 @@ account:
 invalid-pokemon-news-setting: Preferencia de Noticias Pokémon no válida.
 invalid-mobile-stadium-setting: Preferencia de Mobile Stadium no válida.
 invalid-gbwars-setting: "Preferencia de Game Boy Wars 3 no válida."
+invalid-bmvj-setting: "La preferencia de juegos personalizados de Net de Get no es válida."
 
 mail:
   title: "REON Mail"

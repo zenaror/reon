@@ -112,6 +112,7 @@ invalid-trade-setting: Not a valid region pool setting.
 invalid-pokemon-news-setting: Not a valid Pokémon news preference.
 invalid-mobile-stadium-setting: Not a valid Mobile Stadium preference.
 invalid-gbwars-setting: "Not a valid Game Boy Wars 3 preference."
+invalid-bmvj-setting: "Not a valid Net de Get custom games preference."
 default-time-zone: Default (Japan, +0900)
 invalid-time-zone-setting: Not a valid time zone.
 auth:
@@ -221,6 +222,10 @@ account:
   gbwars-custom-opt-in-blurb: "When enabled, the Game Boy Wars 3 map menu also lists custom maps made by the REON Team. This is fan-made content, not official data. The official maps are always listed."
   gbwars-custom-opt-in-off: "Official maps only"
   gbwars-custom-opt-in-on: "Official and custom maps"
+  bmvj-custom-opt-in: "Custom minigames"
+  bmvj-custom-opt-in-blurb: "Show REON custom minigames in the Net de Get catalog. Official games remain available."
+  bmvj-custom-opt-in-off: "Official minigames only"
+  bmvj-custom-opt-in-on: "Official and custom minigames"
   adapter-settings: "Mobile Adapter"
   adapter-color: "Adapter colour"
   adapter-blurb: "Which adapter the games see when they read your mobile_config.bin. It changes the colour and the name the game shows — nothing else about how it works."
@@ -272,6 +277,7 @@ index:
   what-is-mobile-adapter: What is the Mobile Adapter?
   mobile-adapter-description: The Mobile Adapter was a thing.
 gameboy-wars: Game Boy Wars 3
+net-de-get: Net de Get
 pokemon-crystal: Pokémon Crystal
 pokemon-stadium: "Pokémon Stadium"
 rankings: Rankings

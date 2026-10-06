@@ -16,6 +16,7 @@ function serveFileOrExecScript($filePath, $type, $sessionId = null) {
 	require_once(dirname(__DIR__)."/classes/ActivityLog.php");
 	ActivityLog::gameRequest($type, $filePath);
 	$dir = dirname(__DIR__).DIRECTORY_SEPARATOR."cgb".DIRECTORY_SEPARATOR.$type;
+	$realBaseDir = realpath($dir);
 	
 	header_remove();
 	
@@ -29,7 +30,16 @@ function serveFileOrExecScript($filePath, $type, $sessionId = null) {
 		$GLOBALS['CGB_GAME_ID'] = extractGameIdFromPath($filePath);
 		$GLOBALS['CGB_GAME_REGION'] = $GLOBALS['CGB_GAME_ID'] ? extractGameRegionFromGameId($GLOBALS['CGB_GAME_ID']) : null;
 
-		$realBaseDir = realpath($dir);
+		// Net de Get's RomList must be personalized before the checked-in
+		// baseline file is considered. Minigame payloads are database-backed;
+		// all other BMVJ files continue through the normal static-file path.
+		if ($type === "download" && preg_match('#^/A4/CGB-BMVJ/(RomList\.cgb|[0-9]{4}\.G[0-9]{3}\.cgb)$#', $filePath, $bmvjMatch)) {
+			require_once dirname($realBaseDir) . "/bmvj/routes.php";
+			if (handleBmvjRoute($bmvjMatch[1], $sessionId)) {
+				return;
+			}
+		}
+
 		$realFilePath = realpath($dir.$filePath);
 		
 		// if a .cgb/.agb/.txt file was requested but doesn't exist, try .php instead

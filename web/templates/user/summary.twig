@@ -320,6 +320,9 @@
 							<li class="nav-item" role="presentation">
 								<button type="button" class="nav-link{{ game_tab == 'gbwars' ? ' active' : '' }}" id="tabGbwars" data-bs-toggle="tab" data-bs-target="#paneGbwars" data-game="gbwars" role="tab" aria-controls="paneGbwars" aria-selected="{{ game_tab == 'gbwars' ? 'true' : 'false' }}">{{ "gameboy-wars"|trans }}</button>
 							</li>
+							<li class="nav-item" role="presentation">
+								<button type="button" class="nav-link{{ game_tab == 'netdeget' ? ' active' : '' }}" id="tabNetDeGet" data-bs-toggle="tab" data-bs-target="#paneNetDeGet" data-game="netdeget" role="tab" aria-controls="paneNetDeGet" aria-selected="{{ game_tab == 'netdeget' ? 'true' : 'false' }}">{{ "net-de-get"|trans }}</button>
+							</li>
 						</ul>
 						<div class="tab-content">
 							<div class="tab-pane fade{{ game_tab == 'crystal' ? ' show active' : '' }}" id="paneCrystal" role="tabpanel" aria-labelledby="tabCrystal">
@@ -402,7 +405,21 @@
                             {% if ("gbwarsValue" in errors) %}
                             <small><p>{{ "invalid-gbwars-setting"|trans }}</p></small>
                             {% endif %}
-                        </div>
+								</div>
+							</div>
+							<div class="tab-pane fade{{ game_tab == 'netdeget' ? ' show active' : '' }}" id="paneNetDeGet" role="tabpanel" aria-labelledby="tabNetDeGet">
+								<h3 class="h6 game-pane-title">{{ "net-de-get"|trans }}</h3>
+								<div class="mb-3">
+									<label for="bmvjCustomOptIn">{{ "account.bmvj-custom-opt-in"|trans }}</label>
+									<small><p>{{ "account.bmvj-custom-opt-in-blurb"|trans }}</p></small>
+									<select id="bmvjCustomOptIn" name="bmvjCustomOptIn">
+										<option value="0"{% if bmvj_custom_opt_in == 0 %} selected{% endif %}>{{ "account.bmvj-custom-opt-in-off"|trans }}</option>
+										<option value="1"{% if bmvj_custom_opt_in == 1 %} selected{% endif %}>{{ "account.bmvj-custom-opt-in-on"|trans }}</option>
+									</select>
+									{% if ("bmvjValue" in errors) %}
+										<small><p>{{ "invalid-bmvj-setting"|trans }}</p></small>
+									{% endif %}
+								</div>
 							</div>
 						</div>
 						<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
