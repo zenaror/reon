@@ -186,7 +186,7 @@ Jails (config in `/etc/fail2ban/`, sources in `examples/fail2ban/`, installed by
 | --- | --- | --- | --- |
 | `sshd`, `postfix` | brute force on SSH and SMTP (Postfix has no SASL here, so no `postfix-sasl` jail); the server and the operator (`ignoreip`) are never banned | default | 1 h |
 | `reon-pop3` | 10 failed POP3 logins within 10 min. Its own filter (`reon-pop3`), **not** fail2ban's stock `dovecot` one: that one does not recognise the line Dovecot 2.4 writes (`... (auth failed, N attempts in S secs) (auth_failed) ...`) and the jail sat at "Total failed: 0" for weeks. Check with `fail2ban-regex systemd-journal reon-pop3` | 110 | 1 h |
-| `reon-web-scan` | web scanners: 3 requests within 10 min for `.env`, `.git`, phpunit, WordPress, phpMyAdmin, `phpinfo`, `HNAP1`, `config.json`, cgi-bin traversal... A plain 404 or a bare `../` is deliberately not matched | http, https | 1 day, doubling for repeat offenders, up to 1 week |
+| `reon-web-scan` | web scanners: one request matching known sensitive-file or scanner patterns such as `.env`, `.git`, phpunit, WordPress, phpMyAdmin, `phpinfo`, `HNAP1`, `config.json`, or cgi-bin traversal. A plain 404 or a bare `../` is deliberately not matched | http, https | 1 day, doubling for repeat offenders, up to 1 week |
 | `reon-manual` | nothing: holds the bans added by hand from the panel | web + mail ports, never SSH | 30 days |
 
 `fail2ban.d/reon-dbpurge.local` raises `dbpurgeage` to 31 days so a 30-day manual
