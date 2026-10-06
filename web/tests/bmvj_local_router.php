@@ -43,6 +43,37 @@ foreach ([7, 8] as $userId) $keyStmt->execute([$userId, str_repeat(chr(0x42), 32
 $GLOBALS['db'] = new BmvjLocalDatabase($pdo);
 // Prevent accidental loading of the workspace's real config.json.
 $GLOBALS['config'] = ['local_bmvj_fixture' => true];
+if ($download) {
+    // Local-only response evidence; never log Authorization or request data.
+    ob_start();
+    register_shutdown_function(static function () use ($pdo, $stateDir): void {
+        $body = ob_get_contents();
+        if ($body === false) return;
+        $userId = $_SESSION['utility_authed_user_id'] ?? $_SESSION['userId'] ?? null;
+        $optIn = null;
+        if ($userId !== null) {
+            $stmt = $pdo->prepare('SELECT custom_bmvj_opt_in FROM sys_users WHERE id=?');
+            $stmt->execute([(int)$userId]);
+            $value = $stmt->fetchColumn();
+            $optIn = $value === false ? null : (int)$value;
+        }
+        $name = $_GET['name'] ?? '';
+        $status = http_response_code() ?: 200;
+        $catalog = $status === 200 && $name === '/A4/CGB-BMVJ/RomList.cgb' && $body !== '';
+        $record = [
+            'time_utc' => gmdate('c'), 'method' => $_SERVER['REQUEST_METHOD'],
+            'path' => $name, 'status' => $status, 'account' => $userId,
+            'custom_opt_in' => $optIn, 'body_length' => strlen($body),
+            'body_sha256' => hash('sha256', $body),
+            'catalog_count' => $catalog ? ord($body[0]) : null,
+        ];
+        if ($catalog) {
+            $record['catalog_file'] = $stateDir . '/catalog-' . $_SERVER['REQUEST_METHOD'] . '-' . (int)$userId . '.bin';
+            file_put_contents($record['catalog_file'], $body, LOCK_EX);
+        }
+        file_put_contents('/var/log/reon/bmvj-http.jsonl', json_encode($record) . "\n", FILE_APPEND | LOCK_EX);
+    });
+}
 if ($deviceAuth) {
     require_once dirname(__DIR__) . '/classes/DeviceAuthUtil.php';
     // Inject the test adapter without running DBUtil's real-config constructor.
