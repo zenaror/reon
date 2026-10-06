@@ -83,7 +83,7 @@ status, headers, catalog = request('RomList.cgb', authorized)
 assert status == 200 and catalog[0] == baseline[0] + 1, (status, catalog[:20])
 assert sdk_catalog_post(authorized) == (200, catalog), 'SDK empty POST must return the same authenticated catalog'
 offsets = struct.unpack('<' + 'H' * catalog[0], catalog[1:1 + 2 * catalog[0]])
-assert catalog[offsets[-1] + 2:offsets[-1] + 6] == args.filename.split('.')[1].encode()
+assert catalog[offsets[-1] + 6:offsets[-1] + 10] == args.filename.split('.')[1].encode()
 status, headers, body = request(args.filename, authorized)
 assert status == 200 and body == expected, (status, len(body), len(expected))
 assert headers.get_content_type() == 'application/octet-stream'

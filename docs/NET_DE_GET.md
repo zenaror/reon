@@ -10,7 +10,7 @@ The download endpoint checks the same opt-in before returning a custom payload.
 
 ## Binary contract used by this implementation
 
-The implementation follows Dan Docs' Net de Get section and the local copy at
+The URL/catalog concepts follow Dan Docs' Net de Get section and the local copy at
 `MobileAdapterGB/MAGB-TestSuit/gbdk/docs/dandocs-magb.md`:
 
 - `h0000.cgb` is the menu configuration; `RomList.cgb` is the catalog.
@@ -22,6 +22,29 @@ The implementation follows Dan Docs' Net de Get section and the local copy at
   by a period and the game ID, for example `0000.G999.cgb`.
 - The payload is the game's download wrapper plus its compressed or
   uncompressed minigame data. The catalog code does not synthesize that binary.
+
+The original ROM's record readers establish the following byte layout, which
+corrects Dan Docs' missing four-byte leading reserved area:
+
+| Record offset | Field | Disassembly evidence in A-selector 23 |
+| --- | --- | --- |
+| `00..03` | Reserved, zero in baseline; meaning unresolved | Historical records; preserve as zero for custom entries. |
+| `04` | Required 8 KiB blocks | `47E9/47F5/4802` reads/limits blocks. |
+| `05` | Category | `486F` passes this byte to `5527`. |
+| `06..09` | Four-byte game ID | `4820` copies four bytes to `DB81`. |
+| `0C..0E` | Three minimum category levels | `4972` loop reads three bytes. |
+| `10..11`, `12..13` | Two hidden minimums, little endian | `49BD` filter. |
+| `14`, `15...` | Title byte length, then title | `44D7/4AE0` text readers. |
+
+The incorrect previous encoder placed the title at `10` and its text was
+interpreted as large hidden-level requirements (`5008`/`4441` for PAD TEST).
+Natural tests received five catalog entries but showed four, including with
+empty SRAM/flash; the ROM-derived layout corrects that filtering. Tests include
+nonzero level/hidden fields, real historical title bytes at `14`, and duplicate
+ID checks at `06`. The first corrected local catalog is 434 bytes, count 5,
+SHA-256 `8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043`;
+authenticated GET and SDK POST responses match exactly. Natural rendering of
+the corrected entry is a separate emulator check.
 
 The server rebuilds the offset table when appending records and keeps each
 baseline record's bytes intact. Invalid rows and IDs that collide with the
