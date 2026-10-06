@@ -207,3 +207,10 @@ with unchanged supplied metadata. Its mode 5 input length is 1,005 bytes; output
 length stays 8,192. HTTP tests (including the captured SDK POST) pass against
 this body. This is the currently coordinated version; the earlier body and its
 logs are preserved separately in `/tmp/reon-bmvj-http-1013-evidence`.
+
+The local harness also records response evidence in
+`/var/log/reon/bmvj-http.jsonl`: method, path, status, numeric account, opt-in,
+body length/hash and catalog count, without Authorization/request data.
+Authenticated catalog bodies are saved as
+`/tmp/reon-bmvj-local/catalog-{GET|POST}-{account}.bin` inside the container.
+This instrumentation belongs only to the local test router.
