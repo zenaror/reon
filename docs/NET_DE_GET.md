@@ -49,6 +49,14 @@ selection, opt-in/out, eligible charging, and exact synthetic body pass-through.
 `web/tests/check_bmvj_local_http.py` additionally passed against the local HTTP
 harness: real GB00 challenge/response, invalid password, opted-in catalog,
 opted-out baseline/download refusal, static menu bytes, and exact response body.
+A natural ROM trace captured a follow-up empty HTTP/1.0 POST to the catalog
+URL, retaining GB00 Authorization, without Content-Length or body (207-byte
+request, `/tmp/mgba-online-n7kfh2sm/tcp-send.bin`). The harness originally
+refused POST, unlike the production front controller. It now dispatches POST
+unchanged to that controller; HTTP tests reproduce the exact empty SDK POST
+and compare its response bytes with the authenticated GET for both opt-in/out.
+The game meaning of that follow-up remains under Disassembly review.
+
 It also checks the real device-auth handler's signed query, authorize/deauthorize,
 stale counter rejection and invalid signature rejection.
 
@@ -191,3 +199,11 @@ on `127.0.0.1:8088` temporarily. Read logs with `podman logs reon-bmvj-pad-http`
 and `podman exec reon-bmvj-pad-http cat /var/log/reon/activity.log`.
 After the mGBA tracer finishes, stop it with `podman stop reon-bmvj-pad-http`;
 SQLite, sessions and logs disappear with that container.
+
+The coordinated service subsequently switched to the independent WRAM bank 1
+`D800` fixture at `/tmp/netdeget-http-pad-wram1/0000.G001.cgb`, 1,014 bytes,
+SHA-256 `a8f6e181ddedf0f5d0b1b8e164d9e41edcddaadd14cf0c9f4730ede455560a24`,
+with unchanged supplied metadata. Its mode 5 input length is 1,005 bytes; output
+length stays 8,192. HTTP tests (including the captured SDK POST) pass against
+this body. This is the currently coordinated version; the earlier body and its
+logs are preserved separately in `/tmp/reon-bmvj-http-1013-evidence`.

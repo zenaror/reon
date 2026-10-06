@@ -7,7 +7,11 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $deviceAuth = in_array($path, ['/api/adapter/device-auth', '/api/adapter/device-auth.php'], true);
 $download = in_array($path, ['/cgb/download', '/cgb/download.php'], true)
     && preg_match('#^/A4/CGB-BMVJ/(?:RomList\.cgb|h0000\.cgb|[0-9]{4}\.G[0-9]{3}\.cgb)$#', $_GET['name'] ?? '');
-if ((!$deviceAuth && !$download) || !in_array($_SERVER['REQUEST_METHOD'], ['GET', 'HEAD'], true)) {
+// The original SDK follows its authenticated catalog GET with an empty POST
+// (HTTP/1.0, same GB00 Authorization). Preserve the real download controller's
+// method handling: dispatch POST unchanged, without rewriting it into GET.
+$allowedMethods = $download ? ['GET', 'HEAD', 'POST'] : ['GET', 'HEAD'];
+if ((!$deviceAuth && !$download) || !in_array($_SERVER['REQUEST_METHOD'], $allowedMethods, true)) {
     http_response_code(404);
     return;
 }
