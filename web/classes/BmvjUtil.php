@@ -50,6 +50,7 @@ final class BmvjUtil
         return $games;
     }
 
+    /** Return the stored HTTP body verbatim; wrapper construction is upstream. */
     public static function customGamePayload(string $filename): ?string
     {
         $db = connectMySQL();

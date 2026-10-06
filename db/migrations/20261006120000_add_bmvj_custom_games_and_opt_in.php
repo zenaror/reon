@@ -40,7 +40,7 @@ final class AddBmvjCustomGamesAndOptIn extends AbstractMigration
                   ->addColumn('download_filename', 'string', ['limit' => 64, 'null' => false])
                   ->addColumn('minigame_type', 'integer', ['signed' => false, 'limit' => MysqlAdapter::INT_TINY, 'null' => false, 'default' => 1])
                   ->addColumn('price_yen', 'integer', ['signed' => false, 'limit' => MysqlAdapter::INT_SMALL, 'null' => false, 'default' => 0])
-                  ->addColumn('game_binary', 'blob', ['limit' => MysqlAdapter::BLOB_MEDIUM, 'null' => false, 'comment' => 'Compressed BMVJ download payload'])
+                  ->addColumn('game_binary', 'blob', ['limit' => MysqlAdapter::BLOB_MEDIUM, 'null' => false, 'comment' => 'Complete HTTP body including the Net de Get download wrapper'])
                   ->addColumn('is_active', 'boolean', ['signed' => false, 'null' => false, 'default' => false])
                   ->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
                   ->addIndex(['is_active'], ['name' => 'idx_bmvj_custom_active'])
