@@ -258,3 +258,13 @@ host/write assertions belong to the mGBA trace; the server independently
 verified its HTTP responses. Launch, all inputs, exit and reopen tests continue
 in that chat. The SQLite-backed harness does not validate MySQL migration or
 production/hardware behavior. Preserve logs before stopping its container.
+
+The same-core natural run subsequently passed BOX2 PAD TEST launch, all eight
+inputs (press/release/mask and each counter once), Start+Select exit and BOX1
+relaunch with counters reset, as reported by mGBA stages 126/142/144/180.
+Fresh-core reopen was still in progress at this checkpoint. Server HTTP
+response evidence is preserved in
+`web/tests/fixtures/bmvj/natural-http-evidence.json`, with emulator assertions
+explicitly attributed to the separate trace. Final logs/catalog snapshots are
+in `/tmp/reon-bmvj-natural-final-evidence`. The coordinated local container
+was stopped after capture; no local HTTP service remains from this test.
