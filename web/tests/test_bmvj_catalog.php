@@ -1,8 +1,71 @@
 <?php
 // SPDX-License-Identifier: MIT
 // Standalone offline test: php web/tests/test_bmvj_catalog.php
+// The route path uses a small fake DB adapter and a synthetic HTTP body. This
+// validates selection/auth/session/charging and byte pass-through only; the
+// synthetic body is not a validated Net de Get download wrapper.
 
+define('CORE_PATH', dirname(__DIR__) . '/cgb');
+if (!defined('MYSQLI_ASSOC')) define('MYSQLI_ASSOC', 1);
+
+final class FixtureBmvjResult
+{
+    public function __construct(private array $rows) {}
+    public function fetch_assoc(): ?array { return array_shift($this->rows); }
+    public function fetch_all(int $mode): array { return $this->rows; }
+}
+
+final class FixtureBmvjDatabase
+{
+    public bool $optedIn = true;
+    public array $games = [];
+    public int $chargedYen = 0;
+
+    public function prepare(string $sql): FixtureBmvjStatement
+    {
+        return new FixtureBmvjStatement($this, $sql);
+    }
+}
+
+final class FixtureBmvjStatement
+{
+    private array $params = [];
+    private array $rows = [];
+
+    public function __construct(private FixtureBmvjDatabase $db, private string $sql) {}
+    public function bind_param(string $types, &...$params): bool
+    {
+        $this->params = [];
+        foreach ($params as $value) $this->params[] = $value;
+        return true;
+    }
+    public function execute(): bool
+    {
+        if (str_contains($this->sql, 'select custom_bmvj_opt_in')) {
+            $this->rows = [['custom_bmvj_opt_in' => $this->db->optedIn ? 1 : 0]];
+        } elseif (str_contains($this->sql, 'select game_id, blocks_needed')) {
+            $this->rows = $this->db->games;
+        } elseif (str_contains($this->sql, 'select game_binary, price_yen')) {
+            foreach ($this->db->games as $game) {
+                if ($game['download_filename'] === ($this->params[0] ?? null)) {
+                    $this->rows = [['game_binary' => $game['game_binary'], 'price_yen' => $game['price_yen']]];
+                    break;
+                }
+            }
+        } elseif (str_contains($this->sql, 'update sys_users set money_spent')) {
+            $this->db->chargedYen += (int)($this->params[0] ?? 0);
+        } else {
+            throw new RuntimeException('Unexpected BMVJ test SQL: ' . $this->sql);
+        }
+        return true;
+    }
+    public function get_result(): FixtureBmvjResult { return new FixtureBmvjResult($this->rows); }
+    public function close(): void {}
+}
+
+$GLOBALS['db'] = new FixtureBmvjDatabase();
 require_once dirname(__DIR__) . '/classes/BmvjUtil.php';
+require_once dirname(__DIR__) . '/cgb/bmvj/routes.php';
 
 function expectSame($expected, $actual, string $message): void
 {
@@ -46,9 +109,9 @@ $custom = [
     'min_hidden_level_b' => 0,
     'title' => $title,
     'description' => $description,
-    'download_filename' => '0000.' . $gameId . '.cgb',
+    'download_filename' => '1234.' . $gameId . '.cgb',
     'minigame_type' => 1,
-    'price_yen' => 0,
+    'price_yen' => 1234,
 ];
 
 $catalog = BmvjUtil::appendToCatalog($baseline, [$custom]);
@@ -68,7 +131,7 @@ $descriptionLength = ord($record[$cursor++]);
 expectSame($description, substr($record, $cursor, $descriptionLength), 'description bytes');
 $cursor += $descriptionLength;
 $filenameLength = ord($record[$cursor++]);
-expectSame('0000.' . $gameId . '.cgb', substr($record, $cursor, $filenameLength), 'server filename');
+expectSame('1234.' . $gameId . '.cgb', substr($record, $cursor, $filenameLength), 'server filename');
 expectSame("\0\x01", substr($record, $cursor + $filenameLength, 2), 'filename terminator and type');
 
 $withoutCustom = BmvjUtil::appendToCatalog($baseline, []);
@@ -81,5 +144,53 @@ $duplicate['download_filename'] = '0000.G900.cgb';
 $deduplicated = BmvjUtil::appendToCatalog($baseline, [$duplicate]);
 if ($deduplicated === null) throw new RuntimeException('duplicate ID fixture catalog was rejected');
 expectSame(1, ord($deduplicated[0]), 'custom ID cannot shadow a baseline ID');
+
+// Exercise the actual route functions with a fixture DB and an existing CGB
+// session. The envelope is intentionally synthetic and tests transport bytes,
+// not host parsing or natural minigame recognition.
+$syntheticBody = "SYNTHETIC-BMVJ-HTTP-BODY\0" . $payload;
+$custom['game_binary'] = $syntheticBody;
+$GLOBALS['db']->games = [$custom];
+$sessionId = 'bmvj-route-fixture-session-123456';
+session_save_path(sys_get_temp_dir());
+session_id($sessionId);
+session_start();
+$_SESSION = ['userId' => 7, 'type' => 'cgb', 'dionId' => 'fixture-account'];
+session_write_close();
+$_SERVER['HTTP_GB_AUTH_ID'] = $sessionId;
+
+$_GET['name'] = '/A4/CGB-BMVJ/RomList.cgb';
+ob_start();
+expectSame(true, handleBmvjRoute('RomList.cgb'), 'catalog route handled');
+$routedCatalog = ob_get_clean();
+expectSame(5, ord($routedCatalog[0]), 'opted-in route adds the custom entry');
+if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+
+$_GET['name'] = '/A4/CGB-BMVJ/1234.' . $gameId . '.cgb';
+ob_start();
+expectSame(true, handleBmvjRoute('1234.' . $gameId . '.cgb'), 'payload route handled');
+$servedBody = ob_get_clean();
+expectSame($syntheticBody, $servedBody, 'route response is byte-identical to stored game_binary');
+expectSame(1234, $GLOBALS['db']->chargedYen, 'eligible opted-in download charge');
+if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+
+$GLOBALS['db']->optedIn = false;
+http_response_code(200);
+$_GET['name'] = '/A4/CGB-BMVJ/RomList.cgb';
+ob_start();
+expectSame(true, handleBmvjRoute('RomList.cgb'), 'opt-out catalog route handled');
+$optOutCatalog = ob_get_clean();
+$routeBaseline = file_get_contents(dirname(__DIR__) . '/cgb/download/A4/CGB-BMVJ/RomList.cgb');
+expectSame($routeBaseline, $optOutCatalog, 'opt-out route preserves only baseline catalog bytes');
+if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+
+$_GET['name'] = '/A4/CGB-BMVJ/1234.' . $gameId . '.cgb';
+http_response_code(200);
+ob_start();
+expectSame(true, handleBmvjRoute('1234.' . $gameId . '.cgb'), 'opt-out payload route handled');
+$optOutBody = ob_get_clean();
+expectSame('', $optOutBody, 'opt-out cannot download custom payload');
+expectSame(404, http_response_code(), 'opt-out custom download is not found');
+expectSame(1234, $GLOBALS['db']->chargedYen, 'opt-out request is not charged');
 
 echo "BMVJ catalog fixture checks passed\n";
