@@ -44,10 +44,10 @@ final class FixtureBmvjStatement
         if (str_contains($this->sql, 'select custom_bmvj_opt_in')) {
             $this->rows = [['custom_bmvj_opt_in' => $this->db->optedIn ? 1 : 0]];
         } elseif (str_contains($this->sql, 'select game_id, blocks_needed')) {
-            $this->rows = $this->db->games;
+            $this->rows = array_values(array_filter($this->db->games, fn($game) => !str_contains($this->sql, 'and is_custom = 0') || (int)($game['is_custom'] ?? 1) === 0));
         } elseif (str_contains($this->sql, 'select game_binary, price_yen')) {
             foreach ($this->db->games as $game) {
-                if ($game['download_filename'] === ($this->params[0] ?? null)) {
+                if ($game['download_filename'] === ($this->params[0] ?? null) && (!str_contains($this->sql, 'and is_custom = 0') || (int)($game['is_custom'] ?? 1) === 0)) {
                     $this->rows = [['game_binary' => $game['game_binary'], 'price_yen' => $game['price_yen']]];
                     break;
                 }

@@ -12,6 +12,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Net de Get — conteúdo personalizado
 
+* Painel de minijogos em Conteúdo dos jogos: upload .cgb, preenchimento pelo JSON do Maker, edição de metadados, substituição/download do arquivo, ativação e exclusão com confirmação do ID. Classificação oficial/personalizado no banco, com opt-in aplicado ao personalizado.
+
 * Catálogo e minijogos personalizados no MySQL, com opt-in desligado por padrão na conta e autenticação GB00. O catálogo original permanece para todos.
 * Publicação inicial do C PAD TEST gratuito do Maker, com licença MIT e corpo completo preservado; importador confere metadados, SHA-256 e bytes armazenados.
 * Migração e endpoints implantados em produção em 06/10; GET/POST, opt-in/out e hashes conferidos com conta sintética temporária. Validação natural contra produção e fresh-core concluídas pelo mGBA; conta e credenciais de teste removidas.

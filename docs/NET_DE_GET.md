@@ -377,3 +377,37 @@ The additive schema can remain while old code is restored; do not roll back
 other migrations or restore a whole database over later user activity.
 
 Production natural acquisition also passed, per mGBA, in `/tmp/mgba-netdeget-production-zqeg16la/{run.log,reopened/run.log}`: real DNS53/standard sockets, exact8192B payload and unchanged remainder, eight controls, exit/relaunch and fresh-core persistence. Server activity independently confirms authenticated catalog/body200 at21:57:17–23UTC (18:57:17–23Brasília). The synthetic account was erased using AccountDataUtil with zero cost; all protected temporary credentials and its cached PHP sessions were removed. Services remain active and PHP error log empty. Durable summary: `web/tests/fixtures/bmvj/production-evidence.json`. Hardware remains unvalidated.
+
+## Admin minigame library
+
+Open Game Content → Net de Get (`/admin/bmvj.php`). The library lists stored
+entries with their ID, title, classification, activation state, byte size and
+SHA-256. Administrators can download the stored body, edit metadata, replace
+the body, activate/deactivate, and permanently delete by typing the exact ID.
+Every mutation requires the normal admin guard and CSRF token and is audited.
+
+The upload tab accepts a complete packaged `.cgb` (maximum 2 MiB); raw flash
+images are refused. Optionally load Maker `game.json` in the browser to fill
+ID, blocks, icon, type, encoded text and expected body hash. Review the fields
+before saving. ASCII text is supported; hexadecimal takes precedence for
+game-encoded text. The body is stored unchanged. Integrity/catalog validation
+does not establish gameplay validity; build and validate the game beforehand.
+Editing keeps the ID stable; changing the embedded ID requires rebuilding.
+
+Migration `20261006223000` adds `is_custom`, default1, preserving the existing
+C PAD classification. Checked custom entries require account opt-in for both
+listing and download. Official entries are visible to authenticated users
+without that opt-in. Only mark faithful historical content official. The
+checked-in historical baseline is preserved and is not editable in this panel.
+Free content is supported; publication of paid games remains pending billing
+lifecycle validation. New uploads start inactive and custom by default. Active
+catalog capacity is checked transactionally before publication.
+
+Admin deployment on 2026-10-06 at 20:16 Brasília / 23:16 UTC: migration
+`20261006223000` applied after database and file backups. Backup files are
+`/var/backups/reon/mysql-reon_db-20261006-231648.sql.gz` and
+`/var/backups/reon/bmvj-admin-20261006-231650/files-before.tar.gz` plus
+`new-paths.json`. Installed bytes matched staging. PHP lint, Twig compilation,
+YAML parsing and read-only library/upload rendering with the production database
+passed. Anonymous admin access returns404. C PAD remains active/custom and
+services active; PHP error log empty. No CRUD test entries or accounts created.

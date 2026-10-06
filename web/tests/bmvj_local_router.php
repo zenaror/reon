@@ -29,7 +29,7 @@ $pdo->exec('CREATE TABLE IF NOT EXISTS bmvj_custom_games (
     game_id TEXT PRIMARY KEY, blocks_needed INTEGER, category_icon INTEGER,
     min_level_react INTEGER, min_level_smart INTEGER, min_level_sense INTEGER,
     min_hidden_level_a INTEGER, min_hidden_level_b INTEGER, title BLOB, description BLOB,
-    download_filename TEXT, minigame_type INTEGER, price_yen INTEGER, game_binary BLOB, is_active INTEGER)');
+    download_filename TEXT, minigame_type INTEGER, price_yen INTEGER, game_binary BLOB, is_active INTEGER, is_custom INTEGER DEFAULT 1)');
 // Public, disposable fixture accounts; never real credentials/configuration.
 $pdo->exec("INSERT OR IGNORE INTO sys_users (id,dion_ppp_id,log_in_password,custom_bmvj_opt_in)
     VALUES (7,'g000000007','fixture',1),(8,'g000000008','fixture',0)");

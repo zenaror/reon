@@ -1,0 +1,70 @@
+{% extends 'admin/layout.twig' %}
+{% block admin_title %}Net de Get — {{ 'bmvj-admin.title'|trans }}{% endblock %}
+{% block admin_body %}
+<p class="admin-form__hint"><a href="/admin/games.php">{{ 'admin.games-back'|trans }}</a></p>
+<p>{{ 'bmvj-admin.intro'|trans }}</p>
+<div class="admin-tabs">
+ <a class="admin-btn" href="/admin/bmvj.php">{{ 'bmvj-admin.library'|trans }}</a>
+ <a class="admin-btn" href="/admin/bmvj.php?tab=upload">{{ 'bmvj-admin.upload'|trans }}</a>
+</div>
+{% if editing or current_tab == 'upload' %}
+<form method="post" enctype="multipart/form-data" class="admin-form" id="bmvj-form">
+ <input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+ <input type="hidden" name="form_action" value="save">
+ <h2 class="h5">{{ (editing ? 'bmvj-admin.edit' : 'bmvj-admin.upload')|trans }}</h2>
+ <label>{{ 'bmvj-admin.metadata'|trans }} <input type="file" id="bmvj-json" accept=".json,application/json"></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.metadata-hint'|trans }}</p>
+ <label>{{ 'bmvj-admin.id'|trans }} <input name="game_id" value="{{ form.game_id }}" pattern="G[0-9]{3}" maxlength="4" required {{ editing ? 'readonly' : '' }}></label>
+ <label>{{ 'bmvj-admin.body'|trans }} <input type="file" name="body" accept=".cgb,application/octet-stream" {{ editing ? '' : 'required' }}></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.body-hint'|trans }}</p>
+ <label>SHA-256 <input name="body_sha256" value="{{ form.body_sha256|default('') }}" pattern="[a-fA-F0-9]{64}" maxlength="64"></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.hash-hint'|trans }}</p>
+ {% for name in ['title','description'] %}
+ <label>{{ ('bmvj-admin.' ~ (name == 'title' ? 'game-title' : name))|trans }} <input name="{{ name }}_text" value="{{ attribute(form,name ~ '_text')|default('') }}" maxlength="255"></label>
+ <label>{{ ('bmvj-admin.' ~ name ~ '-hex')|trans }} <input name="{{ name }}_hex" value="{{ attribute(form,name ~ '_hex')|default('') }}" pattern="([a-fA-F0-9]{2}){1,255}" maxlength="510"></label>
+ {% endfor %}
+ <p class="admin-form__hint">{{ 'bmvj-admin.encoding-hint'|trans }}</p>
+ <label>{{ 'bmvj-admin.blocks'|trans }} <input type="number" name="blocks_needed" min="1" max="16" value="{{ form.blocks_needed }}" required></label>
+ <label>{{ 'bmvj-admin.icon'|trans }} <input type="number" name="category_icon" min="0" max="8" value="{{ form.category_icon }}" required></label>
+ <label>{{ 'bmvj-admin.type'|trans }} <select name="minigame_type">{% for type in [1,2,4,8] %}<option value="{{ type }}" {{ form.minigame_type == type ? 'selected' : '' }}>{{ type }}</option>{% endfor %}</select></label>
+ <label>{{ 'bmvj-admin.price'|trans }} <input type="number" name="price_yen" value="0" readonly></label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.free-hint'|trans }}</p>
+ <details><summary>{{ 'bmvj-admin.requirements'|trans }}</summary>
+ {% for name in ['min_level_react','min_level_smart','min_level_sense','min_hidden_level_a','min_hidden_level_b'] %}
+ <label>{{ ('bmvj-admin.' ~ (name == 'title' ? 'game-title' : name))|trans }} <input type="number" name="{{ name }}" min="0" max="{{ name starts with 'min_hidden' ? 65535 : 255 }}" value="{{ attribute(form,name) }}" required></label>
+ {% endfor %}
+ </details>
+ <label><input type="checkbox" name="is_custom" value="1" {{ form.is_custom|default(0) ? 'checked' : '' }}> {{ 'bmvj-admin.custom'|trans }}</label>
+ <p class="admin-form__hint">{{ 'bmvj-admin.custom-hint'|trans }}</p>
+ <label><input type="checkbox" name="is_active" value="1" {{ form.is_active|default(0) ? 'checked' : '' }}> {{ 'bmvj-admin.active'|trans }}</label>
+ <button type="submit" class="admin-btn">{{ 'bmvj-admin.save'|trans }}</button>
+</form>
+<script>
+(() => {
+ const form = document.getElementById('bmvj-form');
+ document.getElementById('bmvj-json').addEventListener('change', async event => {
+  try {
+   const data = JSON.parse(await event.target.files[0].text());
+   const fields = {gameId:'game_id', blocks:'blocks_needed',genre:'category_icon',category:'minigame_type',titleHex:'title_hex',descriptionHex:'description_hex',bodySha256:'body_sha256',price:'price_yen'};
+   for (const [key,name] of Object.entries(fields)) {
+    const input = form.elements.namedItem(name);
+    if (Object.hasOwn(data,key) && !input.readOnly) input.value = String(data[key]);
+   }
+   event.target.setCustomValidity('');
+  } catch { event.target.setCustomValidity({{ 'bmvj-admin.invalid'|trans|json_encode|raw }}); event.target.reportValidity(); }
+ });
+})();
+</script>
+{% else %}
+<table class="admin-table"><thead><tr><th>ID</th><th>{{ 'bmvj-admin.title'|trans }}</th><th>{{ 'bmvj-admin.classification'|trans }}</th><th>{{ 'bmvj-admin.status'|trans }}</th><th>{{ 'bmvj-admin.file'|trans }}</th><th>{{ 'bmvj-admin.actions'|trans }}</th></tr></thead>
+<tbody>{% for game in games %}<tr>
+<td>{{ game.game_id }}</td><td>{{ game.display_title }}</td>
+<td>{{ (game.is_custom ? 'bmvj-admin.custom' : 'bmvj-admin.official')|trans }}</td>
+<td>{{ (game.is_active ? 'bmvj-admin.active' : 'bmvj-admin.inactive')|trans }}</td>
+<td><a href="/admin/bmvj.php?download={{ game.game_id }}">{{ game.download_filename }}</a> ({{ game.body_bytes }} B)<details><summary>SHA-256</summary><code>{{ game.body_sha256 }}</code></details></td>
+<td><a class="admin-btn admin-btn--small" href="/admin/bmvj.php?edit={{ game.game_id }}">{{ 'bmvj-admin.edit'|trans }}</a>
+<form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="form_action" value="toggle"><input type="hidden" name="game_id" value="{{ game.game_id }}"><button class="admin-btn admin-btn--small">{{ (game.is_active ? 'bmvj-admin.deactivate' : 'bmvj-admin.activate')|trans }}</button></form>
+<details><summary>{{ 'bmvj-admin.delete'|trans }}</summary><form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="form_action" value="delete"><input type="hidden" name="game_id" value="{{ game.game_id }}"><label>{{ 'bmvj-admin.confirm'|trans }} <input name="confirmation" required pattern="{{ game.game_id }}" placeholder="{{ game.game_id }}"></label><button class="admin-btn admin-btn--small">{{ 'bmvj-admin.delete'|trans }}</button></form></details>
+</td></tr>{% else %}<tr><td colspan="6">{{ 'bmvj-admin.empty'|trans }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% endblock %}

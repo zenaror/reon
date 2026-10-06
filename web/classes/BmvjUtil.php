@@ -33,7 +33,7 @@ final class BmvjUtil
         return $row !== null && (int)$row['custom_bmvj_opt_in'] === 1;
     }
 
-    public static function activeCustomGames(int $limit = 78): array
+    public static function activeCustomGames(int $limit = 78, bool $includeCustom = true): array
     {
         $limit = max(0, min(78, $limit));
         if ($limit === 0) return [];
@@ -41,7 +41,8 @@ final class BmvjUtil
         $stmt = $db->prepare(
             'select game_id, blocks_needed, category_icon, min_level_react, min_level_smart, min_level_sense, '
             . 'min_hidden_level_a, min_hidden_level_b, title, description, download_filename, minigame_type, price_yen '
-            . 'from bmvj_custom_games where is_active = 1 order by game_id limit ' . $limit
+            . 'from bmvj_custom_games where is_active = 1 ' . ($includeCustom ? '' : 'and is_custom = 0 ')
+            . 'order by game_id limit ' . $limit
         );
         if (!$stmt || !$stmt->execute()) return [];
         $result = $stmt->get_result();
@@ -51,11 +52,12 @@ final class BmvjUtil
     }
 
     /** Return the stored HTTP body verbatim; wrapper construction is upstream. */
-    public static function customGamePayload(string $filename): ?string
+    public static function customGamePayload(string $filename, bool $includeCustom = true): ?string
     {
         $db = connectMySQL();
         $stmt = $db->prepare(
-            'select game_binary, price_yen from bmvj_custom_games where download_filename = ? and is_active = 1 limit 1'
+            'select game_binary, price_yen from bmvj_custom_games where download_filename = ? and is_active = 1 '
+            . ($includeCustom ? '' : 'and is_custom = 0 ') . 'limit 1'
         );
         if (!$stmt) return null;
         $stmt->bind_param('s', $filename);
