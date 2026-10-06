@@ -327,3 +327,11 @@ The container for this coordinated fixture is `reon-bmvj-c-pad-http` on local
 8088. Natural C-example download/write/gameplay/fresh-core evidence belongs to
 the mGBA runner using its SHA-256 CLI options; HTTP success alone does not close
 those gates. Preserve local logs and stop the container after that round.
+
+The coordinated C/GBDK round completed: mGBA reports natural download/write,
+eight input counters, exit/relaunch and fresh-core reopen with unchanged flash
+in `/tmp/mgba-netdeget-local-e964hi6b/{run.log,reopened/run.log}`. The server
+independently checked the final authenticated GET/POST catalog and body hashes
+above. Logs are archived at `/tmp/reon-bmvj-c-pad-final-evidence`;
+`reon-bmvj-c-pad-http` was stopped and its absence confirmed.
+These local emulator results do not validate production MySQL or hardware.

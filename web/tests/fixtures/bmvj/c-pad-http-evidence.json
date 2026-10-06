@@ -1,0 +1,31 @@
+{
+  "fixture": "C PAD TEST / GBDK 4.5.0",
+  "production_deployed": false,
+  "server_verified": {
+    "catalog_bytes": 437,
+    "catalog_count": 5,
+    "catalog_sha256": "d5323f206466632a447ceb68168175af5d8c6de66e441c9a58f7868c65e679e6",
+    "body_bytes": 1114,
+    "body_sha256": "f46337ae8627482742511c5d508aaa0ac66930de93c9fe2814fd0c00a02324ba",
+    "authenticated_methods": [
+      "GET",
+      "POST"
+    ],
+    "custom_opt_in": true,
+    "logs": "/tmp/reon-bmvj-c-pad-final-evidence",
+    "http_container_stopped": true
+  },
+  "mgba_reported": {
+    "payload_bytes": 8192,
+    "payload_sha256": "ab49fffb02e1b918d442a876508ed83c75ffc32fbbfa482cb8a3b9e46d70381c",
+    "natural_download_write": true,
+    "eight_inputs_exit_relaunch": true,
+    "fresh_core_reopen_unchanged_flash": true,
+    "logs": "/tmp/mgba-netdeget-local-e964hi6b/{run.log,reopened/run.log}"
+  },
+  "remaining": [
+    "Production MySQL migration and flow",
+    "Content publication and management",
+    "Hardware validation"
+  ]
+}
