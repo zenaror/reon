@@ -13,7 +13,8 @@ require_once(CORE_PATH.'/magbtest_log.php');
 
 	// Pokemon News *.news.php scripts and database-backed BMVJ resources
 	// implement utility authentication (doAuth(2)) so they can resolve the
-	// requesting user before selecting or charging for custom content.
+	// requesting user before selecting account-eligible content. BMVJ filename
+	// price prefixes are metadata only; its route never bills the account.
 	// If we let the download front-controller enforce cost-based auth for
 	// "NN.news.php" (because of the numeric prefix), the request will 401 forever:
 	// the client responds using the download-auth challenge, but the script expects

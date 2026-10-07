@@ -32,7 +32,7 @@
  <p class="admin-form__hint">{{ 'bmvj-admin.icon-hint'|trans }}</p>
  <label>{{ 'bmvj-admin.type'|trans }} <select name="minigame_type">{% for type in [1,2,4,8] %}<option value="{{ type }}" {{ form.minigame_type == type ? 'selected' : '' }}>{{ type }}</option>{% endfor %}</select></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.type-hint'|trans }}</p>
- <label>{{ 'bmvj-admin.price'|trans }} <input type="number" name="price_yen" value="0" readonly></label>
+ <label>{{ 'bmvj-admin.price'|trans }} <input type="number" name="price_yen" min="0" max="9999" value="{{ form.price_yen }}" required></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.free-hint'|trans }}</p>
  <details><summary>{{ 'bmvj-admin.requirements'|trans }}</summary>
  <p class="admin-form__hint">{{ 'bmvj-admin.requirements-hint'|trans }}</p>

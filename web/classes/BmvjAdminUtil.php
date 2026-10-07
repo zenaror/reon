@@ -35,8 +35,9 @@ final class BmvjAdminUtil
     {
         $id = (string)($input['game_id'] ?? '');
         if (!preg_match('/^G[0-9]{3}$/D', $id)) return 'invalid';
-        $game = ['game_id' => $id, 'download_filename' => '0000.' . $id . '.cgb', 'price_yen' => 0];
-        if ((string)($input['price_yen'] ?? '0') !== '0') return 'free-only';
+        $price = (string)($input['price_yen'] ?? '0');
+        if (!preg_match('/^[0-9]{1,4}$/D', $price)) return 'invalid';
+        $game = ['game_id' => $id, 'download_filename' => sprintf('%04d.%s.cgb', (int)$price, $id), 'price_yen' => (int)$price];
         foreach (['blocks_needed' => [1,16], 'category_icon' => [0,8], 'minigame_type' => [1,8],
             'min_level_react' => [0,255], 'min_level_smart' => [0,255], 'min_level_sense' => [0,255],
             'min_hidden_level_a' => [0,65535], 'min_hidden_level_b' => [0,65535]] as $key => [$min,$max]) {

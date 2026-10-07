@@ -193,7 +193,7 @@ ob_start();
 expectSame(true, handleBmvjRoute('1234.' . $gameId . '.cgb'), 'payload route handled');
 $servedBody = ob_get_clean();
 expectSame($syntheticBody, $servedBody, 'route response is byte-identical to stored game_binary');
-expectSame(1234, $GLOBALS['db']->chargedYen, 'eligible opted-in download charge');
+expectSame(0, $GLOBALS['db']->chargedYen, 'historical price does not charge an opted-in account');
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
 $GLOBALS['db']->optedIn = false;
@@ -213,6 +213,6 @@ expectSame(true, handleBmvjRoute('1234.' . $gameId . '.cgb'), 'opt-out payload r
 $optOutBody = ob_get_clean();
 expectSame('', $optOutBody, 'opt-out cannot download custom payload');
 expectSame(404, http_response_code(), 'opt-out custom download is not found');
-expectSame(1234, $GLOBALS['db']->chargedYen, 'opt-out request is not charged');
+expectSame(0, $GLOBALS['db']->chargedYen, 'opt-out request is not charged');
 
 echo "BMVJ catalog fixture checks passed\n";

@@ -40,22 +40,14 @@ function handleBmvjRoute(string $path, ?string $sessionId = null): bool
         return false;
     }
 
-    // Authenticate before checking opt-in, and only charge after eligibility
-    // is established. This prevents a guessed URL from charging an opted-out
-    // account for a file it cannot receive.
+    // Authentication and opt-in gate content access. The numeric filename
+    // prefix is historical game metadata; REON never bills or records a cost.
     $userId = BmvjUtil::requireAuthenticatedUserId();
     $payload = BmvjUtil::customGamePayload($path, BmvjUtil::userOptedInCustom($userId));
     if ($payload === null) {
         http_response_code(404);
         return true;
     }
-
-    $cost = getCost((string)($_GET['name'] ?? ''));
-    if (!is_int($cost) || $cost < 0) {
-        http_response_code(404);
-        return true;
-    }
-    addCostToAccount($userId, $cost);
 
     header('Content-Type: application/octet-stream');
     echo $payload;
