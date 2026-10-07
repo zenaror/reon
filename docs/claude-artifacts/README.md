@@ -15,7 +15,9 @@ statements about production and law were not re-audited during conversion.
 The register retains the original confidentiality notice. At the owner's request,
 the duplicated project changelog was removed from both Memo versions; only
 [CHANGELOG.md](../CHANGELOG.md) maintains that list. The register's own revision
-log remains part of its evidence history.
+log remains part of its evidence history. Personal account identifiers in examples
+were replaced with fictitious values on 2026-10-07; protocol structure, source
+links and technical provenance are preserved.
 
 For subsequent implementation and operations, see [Operations](../OPERATIONS.md),
 [Changelog](../CHANGELOG.md), and [Net de Get](../NET_DE_GET.md).

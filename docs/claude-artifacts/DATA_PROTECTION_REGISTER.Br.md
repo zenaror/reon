@@ -1,5 +1,6 @@
 > Convertido do [artifact do Claude](https://claude.ai/code/artifact/be2e0466-bfa8-4cbb-8fd3-c2849a7fe155) em 07/10/2026. Versão original em português; [English — principal](DATA_PROTECTION_REGISTER.md).
 > Preserva a revisão original, incluindo afirmações históricas e perguntas abertas. Não constitui nova auditoria da produção ou das exigências legais. Veja [OPERATIONS](../OPERATIONS.md), [CHANGELOG](../CHANGELOG.md) e [NET_DE_GET](../NET_DE_GET.md) para mudanças posteriores do projeto.
+> Identificadores pessoais de contas nos exemplos foram substituídos por valores fictícios em 2026-10-07; a estrutura do protocolo foi preservada.
 
 ## Atualizações técnicas posteriores à revisão original
 
@@ -646,9 +647,9 @@ Investigado, não decidido · Média
 Depois de um login POP3 clássico, o serviço de correio escreve o nome da conta em toda linha de log, ao lado do IP e da porta. Quem consegue ler o journal reconstrói qual conta conectou de qual endereço, e quando.
 
 ```text
-(POP3) 179.90.x.x:32831 (rafael00): PASS
-(POP3) 177.144.x.x:42381 (rafael00): RETR
-(POP3) 127.0.0.1:53294 (rafael00): QUIT
+(POP3) 179.90.x.x:32831 (player01): PASS
+(POP3) 177.144.x.x:42381 (player01): RETR
+(POP3) 127.0.0.1:53294 (player01): QUIT
 
 journalctl -u reon-mail.service     2 022 linhas POP3 em 7 dias
 contas distintas que aparecem        1 — a do próprio dono

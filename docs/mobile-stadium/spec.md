@@ -382,13 +382,13 @@ rule, the frame, the counts. `crystal_check.py MENU PAYLOAD [SAVE]` does exactly
 
 ## 6. Testing end to end without production (question 6: what exists on this machine)
 
-- **REON server locally**: `/home/rafael/REON_DEV/reon/docker-compose.yml` defines `db` (mysql), `migrate`, `web`
+- **REON server locally**: `$HOME/REON_DEV/reon/docker-compose.yml` defines `db` (mysql), `migrate`, `web`
   (php-fpm), `nginx` (:80), `mail`, and **`dns`**: dnsmasq on host port **5354/udp** that maps
   `gameboy.datacenter.ne.jp` and `*.dion.ne.jp` to `EXTERNAL_IP` (`docker-dns-entry.sh`). The README gives
   `docker compose up -d` and `…/scripts/add_user.php` to create an account. Run it from a **copy** of the repo, with the
   generated files dropped under the copy's `web/cgb/download/01/…/POKESTA/`, so the production checkout stays untouched.
 - **Emulators with an adapter**:
-  - BGB at `/home/rafael/Downloads/emulador/bgb.exe` (Windows, runs under Wine), plus libmobile-bgb:
+  - BGB at `$HOME/Downloads/emulador/bgb.exe` (Windows, runs under Wine), plus libmobile-bgb:
     `…/Reon Prod/_RELEASES/libmobile-bgb/mobile-linux`, source `…/MobileAdapterGB/libmobile-bgb`. Options: `--dns1`,
     `--dns2`, **`--dns_port`** (so `--dns1 127.0.0.1 --dns_port 5354` reaches the compose DNS), `--relay`.
   - The REON mGBA fork: `…/Reon Prod/_RELEASES/mGBA/Linux/mgba-qt.sh`, Tools > Mobile Adapter GB (DNS1 setting),

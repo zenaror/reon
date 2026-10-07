@@ -32,7 +32,11 @@ Ao terminar um trabalho:
 - deixe um `handoff` no escopo `reon-production`;
 - atualize a sua memória interna.
 
-Nunca grave segredos nem dados pessoais desnecessários.
+Nunca grave segredos nem dados pessoais desnecessários. Na documentação pública,
+use "Operador", "responsável pelo projeto" ou o papel adequado, sem nome ou
+e-mail pessoal. Use exemplos fictícios para contas; preserve URLs necessárias,
+licenças, atribuições de terceiros e referências técnicas. Não reescreva o
+histórico Git para essa revisão.
 
 ## Como trabalhar
 
