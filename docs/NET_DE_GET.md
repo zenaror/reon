@@ -438,3 +438,19 @@ game/catalog/filename attribute, editable0–9999, and must neither debit
 The former billing-validation task and zero-only publication restriction are
 superseded. Authentication, active state, metadata consistency and custom
 content opt-in continue to govern access.
+
+### C PAD exit-release publication
+
+After mGBA reported natural acquisition and fresh-core input/held-Select release
+exit with the catalog preserved, G001 was updated on2026-10-06 at21:36Brasília
+(2026-10-07 00:36UTC) from the original1114-byte body to the validated1123-byte
+Maker `ce5a9dc07156edea71837b0f0838b94c32e2b4b8` body. SHA-256:
+`b3cd44b784d9b96c03db32a1a1a588cf89f869a1a36992197aa640ee667006c3`;
+payload8192B SHA-256:
+`f91e5460d0c54c029fb4e8cde1d22f27d007c499eda1880ec6561a179b0e477a`.
+Database backup: `/var/backups/reon/mysql-reon_db-20261007-003651.sql.gz`.
+The update used the admin storage helper, checked the predecessor hash,
+preserved active/custom state and other stored content hashes. Services stayed
+active and PHP error log empty. The local three-example harness remains open
+for the coordinator's final repeat; ASM/Reaction were not published here.
+See `web/tests/fixtures/bmvj/exitwait-production-evidence.json`.

@@ -1,0 +1,25 @@
+{
+  "publication": "2026-10-06 21:36 America/Sao_Paulo / 2026-10-07 00:36 UTC",
+  "maker_source": "ce5a9dc07156edea71837b0f0838b94c32e2b4b8",
+  "game_id": "G001",
+  "body_bytes": 1123,
+  "body_sha256": "b3cd44b784d9b96c03db32a1a1a588cf89f869a1a36992197aa640ee667006c3",
+  "payload_bytes": 8192,
+  "payload_sha256": "f91e5460d0c54c029fb4e8cde1d22f27d007c499eda1880ec6561a179b0e477a",
+  "server_verified": [
+    "Predecessor body SHA verified before replacement",
+    "Database backup completed",
+    "Body update through BmvjAdminUtil metadata/capacity/hash checks",
+    "Stored body SHA and active/custom flags preserved",
+    "Other stored content body hashes unchanged",
+    "Services active and PHP error log empty"
+  ],
+  "mgba_reported": [
+    "Natural acquisition of all three new Maker bodies exact8192B and outside flash unchanged",
+    "Fresh-core C/ASM eight inputs and held-Select release exit with catalog preserved",
+    "Reaction WAIT/early/GO/result/reset/exit PASS"
+  ],
+  "backup_database": "/var/backups/reon/mysql-reon_db-20261007-003651.sql.gz",
+  "billing": "Historical metadata only; no billing",
+  "hardware_validated": false
+}
