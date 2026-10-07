@@ -36,8 +36,9 @@ Nunca grave segredos nem dados pessoais desnecessários.
 
 ## Como trabalhar
 
-- Branch `feature/full_server`. Push só no Gitea (remote `home`), nunca no
-  `upstream` (REONTeam). O GitHub do projeto é espelho do Gitea.
+- Branch `feature/full_server`. Push só no GitHub do dono (remote `home`,
+  `https://github.com/zenaror/reon`), nunca no `upstream` (REONTeam). O dono
+  alterou o destino de `home` do Gitea para o GitHub em 06/10/2026.
 - Commit e push só quando o dono autorizar aquele lote. Nunca use `git add .`:
   adicione só os seus arquivos.
 - Uma mudança só está pronta depois de implantada no servidor e conferida lá. O

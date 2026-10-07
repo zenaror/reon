@@ -1,7 +1,12 @@
 # Changelog
 
 Resumo em tópicos, por projeto — sem detalhamento, só pra bater o olho e ver
-o que mudou. Setembro/2026.
+o que mudou. Setembro–outubro/2026.
+
+Este é o resumo de mudanças mantido no repositório. Os
+[artifacts convertidos](claude-artifacts/README.md) preservam narrativas e
+o contexto histórico; as notas de comparação explicam trechos superados.
+A lista de mudanças fica somente neste arquivo, sem cópia no Memo.
 
 Dentro do reon os tópicos estão agrupados pela parte que mudou, para dar
 para ver de relance qual app mexeu e por quê. Onde existe um app de verdade
@@ -30,7 +35,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
   REONTeam guarda e-mail em Postfix + Dovecot; o nosso guardava numa tabela,
   e essa era a peça que impedia o nosso código de rodar lá. Agora é o mesmo
   armazém: o Postfix entrega por LMTP, o Dovecot guarda em Maildir, e o
-  MySQL segue sendo o cadastro de contas — e só isso. O que era coluna virou
+  MySQL mantém o cadastro, os metadados e as cópias em Enviados
+  (`sys_sent`); a caixa de entrada saiu da antiga tabela. O que era coluna virou
   marca do IMAP (`read_at` → `$WebRead`, coletada pelo jogo →
   `\Seen`/`$Retrieved`, apagada pelo jogo → `$DeletedByGame`, lixeira → pasta
   `Trash`)
@@ -1093,7 +1099,9 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Publicação
 
-* **Publicação no GitHub** (github.com/zenaror/*, espelho do Gitea): README
+* **Publicação no GitHub** (github.com/zenaror/*): a publicação começou
+  como espelho do Gitea; em 06/10 o dono mudou o remote `home` da REON
+  diretamente para GitHub. Push da REON vai para `home`, nunca `upstream`. README
   e instruções em inglês em todos os projetos (os quatro adaptadores já
   estavam; README de instalação, scripts de hardening e README do systemd
   traduzidos); toda URL de repositório dentro dos projetos aponta para o

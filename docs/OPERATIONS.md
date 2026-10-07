@@ -236,9 +236,10 @@ repositories and publishes **patches, never ROMs**.
   unit shows as failed.
 - To run it now: Admin -> Services -> Game patches -> run, or
   `sudo systemctl start reon-patch-build.service`. Logs: `journalctl -u
-  reon-patch-build`. A full rebuild takes about eight minutes on this
-  machine (peak memory about 400 MB); the unit is capped at 600 MB and runs
-  at low CPU/IO priority.
+  reon-patch-build`. Duration depends on which games rebuild; the old
+  eight-minute estimate predates the Stadium 2 build and its CPU limit. Use
+  that run’s journal for duration and resource measurements. The unit has a
+  hard 600 MB memory limit and runs at low CPU/IO priority.
 - The build runs the games' Makefiles, so the unit is sandboxed (own
   directory only, no home directories, no privileges) and runs as its own
   user.
@@ -299,6 +300,8 @@ Everything an administrator does is written to `sys_admin_log`.
 | `20260928180000` | `bww_map_drafts` (map creator drafts) |
 | `20260928190000` | `sys_reserved_usernames` (seeded, 120 names with comments) |
 | `20260928200000` | `sys_ip_bans` (who banned which address, and why) |
+| `20261006120000` | `bmvj_custom_games`, `sys_users.custom_bmvj_opt_in` |
+| `20261006223000` | `bmvj_custom_games.is_custom` (official/custom classification) |
 
 `setup-script/1-setup-reon.sh` runs `phinx migrate`, so a fresh install has all
 of them.
@@ -306,8 +309,8 @@ of them.
 ## Per-account content settings
 
 On the account page, under **Game Settings** (a tab per game): Pokémon News,
-Mobile Stadium and Game Boy Wars 3 each have an opt-in for custom content, off by
-default. Not opting in gives the official content, never nothing. Date of birth
+Mobile Stadium, Game Boy Wars 3 and Net de Get each have an opt-in for custom
+content, off by default. Not opting in gives the official content, never nothing. Date of birth
 and time zone are under Account details; **a saved date of birth cannot be
 changed** (it is the rankings' age gate).
 
