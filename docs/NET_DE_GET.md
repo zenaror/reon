@@ -431,7 +431,7 @@ content was not changed and no hardware result is implied.
 
 ## Owner decision: no billing
 
-On2026-10-06 Rafael confirmed the admin panel test passed and stated that
+On 2026-10-06 the project owner confirmed the admin panel test passed and stated that
 REON has no billing and will never have billing. Historical value remains a
 game/catalog/filename attribute, editable0–9999, and must neither debit
 `money_spent` nor block eligible content just because it is nonzero.

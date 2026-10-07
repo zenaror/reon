@@ -42,7 +42,7 @@
 		if (!password_verify((string)($_POST["password"] ?? ""), $conta["password"])) {
 			$erros[] = "senha";
 		}
-		// Comparação exata: "Rafael00" não é "rafael00". Aceitar variação
+		// Comparação exata: "Player01" não é "player01". Aceitar variação
 		// tiraria justamente o que o degrau serve para provar, que é que a
 		// pessoa leu o que está escrito.
 		if ((string)($_POST["confirmName"] ?? "") !== (string)$conta["username"]) {

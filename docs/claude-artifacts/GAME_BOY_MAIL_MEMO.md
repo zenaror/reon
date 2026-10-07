@@ -1,5 +1,6 @@
 > Converted from the [Claude artifact](https://claude.ai/code/artifact/e54c85bd-5416-41ba-afbd-d1cafcf1991e) on 2026-10-07. Original English version; [Português (Brasil)](GAME_BOY_MAIL_MEMO.Br.md).
 > This preserves the source revision, including historical statements and unresolved questions. It is not a fresh audit of production or legal requirements. See [OPERATIONS](../OPERATIONS.md), [CHANGELOG](../CHANGELOG.md), and [NET_DE_GET](../NET_DE_GET.md) for subsequent project changes.
+> Personal account identifiers in examples were replaced with fictitious values on 2026-10-07; protocol structure is preserved.
 
 ## Reading this alongside current documentation
 
@@ -342,13 +343,13 @@ Signup now asks for a **REON username** of up to 20 characters, and the 8-charac
 #### From the internet
 
 ```text
-rafaelzenaro@mail.reon.zsrv.com.br
+exampleplayer@mail.reon.zsrv.com.br
 ```
 
 #### From the Game Boy
 
 ```text
-rafaelze@reon.dion.ne.jp
+examplep@reon.dion.ne.jp
 ```
 
 Both forms reach the same mailbox.

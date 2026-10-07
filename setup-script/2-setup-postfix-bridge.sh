@@ -13,7 +13,7 @@ fi
 #     - Postfix is the sole listener on port 25 and accepts mail for the
 #       game-internal domains (config.json's email_domain_dion, plus the
 #       hardcoded gameboy.datacenter.ne.jp) and for a domain you actually own
-#       (MAIL_DOMAIN below), so a real address like rafael00@mail.reon.zsrv.com.br
+#       (MAIL_DOMAIN below), so a real address like player01@mail.reon.zsrv.com.br
 #       can receive real internet mail (e.g. from Gmail) into the very mailbox
 #       the game reads. Recipients are matched by local part against
 #       sys_users.dion_email_local (an alias also maps the account name).
@@ -542,7 +542,7 @@ print_summary() {
     echo "    ${MAIL_DOMAIN}.  MX  10 ${MAIL_DOMAIN}."
     echo
     log_info "Once that resolves: re-run this script to pick up the TLS cert, then test with:"
-    echo "    send a message to rafael00@${MAIL_DOMAIN} from any real mail account (Gmail, ...)"
+    echo "    send a message to player01@${MAIL_DOMAIN} from any real mail account (Gmail, ...)"
     echo
     log_info "Outbound (game -> real internet) is enabled, gated on device-auth:"
     log_info "  reon-relay-policy.service only lets a RCPT to a real address through while"

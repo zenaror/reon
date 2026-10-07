@@ -1,5 +1,6 @@
 > Convertido do [artifact do Claude](https://claude.ai/code/artifact/e54c85bd-5416-41ba-afbd-d1cafcf1991e) em 07/10/2026. Versão original em português; [English — principal](GAME_BOY_MAIL_MEMO.md).
 > Preserva a revisão original, incluindo afirmações históricas e perguntas abertas. Não constitui nova auditoria da produção ou das exigências legais. Veja [OPERATIONS](../OPERATIONS.md), [CHANGELOG](../CHANGELOG.md) e [NET_DE_GET](../NET_DE_GET.md) para mudanças posteriores do projeto.
+> Identificadores pessoais de contas nos exemplos foram substituídos por valores fictícios em 2026-10-07; a estrutura do protocolo foi preservada.
 
 ## Como ler junto da documentação atual
 
@@ -341,13 +342,13 @@ O cadastro passou a pedir um **usuário REON** de até 20 caracteres, e o endere
 #### Da internet
 
 ```text
-rafaelzenaro@mail.reon.zsrv.com.br
+exampleplayer@mail.reon.zsrv.com.br
 ```
 
 #### Do Game Boy
 
 ```text
-rafaelze@reon.dion.ne.jp
+examplep@reon.dion.ne.jp
 ```
 
 As duas formas chegam na mesma caixa.

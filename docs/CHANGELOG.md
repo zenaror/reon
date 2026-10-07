@@ -19,7 +19,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 * C PAD atualizado em produção com a espera pela soltura dos controles na saída, após download natural e reabertura validados pelo mGBA; demais conteúdos preservados.
 
-* Valor histórico do jogo editável (0–9999), sem tarifação, débito na conta ou bloqueio por valor maior que zero, conforme decisão do Rafael.
+* Valor histórico do jogo editável (0–9999), sem tarifação, débito na conta ou bloqueio por valor maior que zero, conforme decisão do responsável pelo projeto.
 
 * Ajuda nos campos do painel de minijogos: espaço instalado em blocos de 8 KiB, ID interno, ícone/tipo do Maker, título/descrição, níveis e efeito da ativação.
 
