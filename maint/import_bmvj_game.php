@@ -15,9 +15,10 @@ require_once dirname(__DIR__) . '/web/classes/BmvjUtil.php';
 try {
     $meta = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
     $filename = $meta['downloadFilename'] ?? '';
-    if (!is_string($filename) || !preg_match('/^0000\.G[0-9]{3}\.cgb$/D', $filename)
-        || ($meta['price'] ?? null) !== 0) {
-        throw new RuntimeException('Only free price-zero Maker content is currently supported.');
+    if (!is_string($filename) || !preg_match('/^[0-9]{4}\.G[0-9]{3}\.cgb$/D', $filename)
+        || !isset($meta['price']) || !is_int($meta['price']) || $meta['price'] < 0 || $meta['price'] > 9999
+        || (int)substr($filename, 0, 4) !== $meta['price']) {
+        throw new RuntimeException('Invalid historical price or filename metadata.');
     }
     $body = file_get_contents(dirname($argv[1]) . '/' . $filename);
     $expected = $meta['bodySha256'] ?? '';
@@ -39,7 +40,7 @@ try {
         'min_level_react' => 0, 'min_level_smart' => 0, 'min_level_sense' => 0,
         'min_hidden_level_a' => 0, 'min_hidden_level_b' => 0,
         'title' => hex2bin($meta['titleHex']), 'description' => hex2bin($meta['descriptionHex']),
-        'download_filename' => $filename, 'price_yen' => 0,
+        'download_filename' => $filename, 'price_yen' => $meta['price'],
     ];
     $baseline = file_get_contents(CORE_PATH . '/download/A4/CGB-BMVJ/RomList.cgb');
     $catalog = BmvjUtil::appendToCatalog($baseline, [$game]);
@@ -50,10 +51,10 @@ try {
     $db->begin_transaction();
     $stmt = $db->prepare('INSERT INTO bmvj_custom_games '
         . '(game_id,blocks_needed,category_icon,minigame_type,title,description,download_filename,price_yen,game_binary,is_active) '
-        . 'VALUES (?,?,?,?,?,?,?,0,?,?)');
+        . 'VALUES (?,?,?,?,?,?,?,?,?,?)');
     $active = isset($argv[2]) ? 1 : 0;
-    $stmt->bind_param('siiissssi', $game['game_id'], $game['blocks_needed'], $game['category_icon'],
-        $game['minigame_type'], $game['title'], $game['description'], $filename, $body, $active);
+    $stmt->bind_param('siiisssisi', $game['game_id'], $game['blocks_needed'], $game['category_icon'],
+        $game['minigame_type'], $game['title'], $game['description'], $filename, $game['price_yen'], $body, $active);
     $stmt->execute();
     $stmt = $db->prepare('SELECT game_binary FROM bmvj_custom_games WHERE game_id = ?');
     $stmt->bind_param('s', $game['game_id']);

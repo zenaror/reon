@@ -56,8 +56,8 @@ fixture; it has not been verified as a current official catalog.
 `RomList.cgb` uses the existing CGB utility-auth (`doAuth(2)`) path so the
 server can identify the account before applying its preference. Price-prefixed
 payload requests also use utility auth in the BMVJ route; the route checks
-opt-in and the stored filename/price pair before it charges the account and
-returns the payload. A guessed URL cannot charge an opted-out account.
+opt-in and the stored filename/value pair before returning the payload.
+The value is historical game metadata only: REON does not bill or debit accounts.
 
 The natural emulator run authenticated the original game through GB00, fetched
 the personalized catalog and followed GET with empty POST on catalog and body.
@@ -69,7 +69,7 @@ gameplay works solely from the serializer test.
 
 PHP 8.5 lint and `web/tests/test_bmvj_catalog.php` passed offline. The unit
 fixture covers baseline preservation, record encoding, duplicate IDs, session
-selection, opt-in/out, eligible charging, and exact synthetic body pass-through.
+selection, opt-in/out, historical values without charging, and exact synthetic body pass-through.
 `web/tests/check_bmvj_local_http.py` additionally passed against the local HTTP
 harness: real GB00 challenge/response, invalid password, opted-in catalog,
 opted-out baseline/download refusal, static menu bytes, and exact response body.
@@ -346,9 +346,7 @@ Maker additions and their generated example program/font are licensed this way.
 Run `php maint/import_bmvj_game.php /path/game.json` to import an inactive
 entry, or append `--activate` for explicitly approved publication. It checks
 complete body length/SHA-256, game-encoded metadata, baseline ID collision and
-stored database bytes. Existing IDs/filenames are refused. This first importer
-accepts free content only; paid SDK GET/POST billing needs separate lifecycle
-validation before paid publication. Deactivate with an operator-approved update
+stored database bytes. Existing IDs/filenames are refused. The importer accepts historical values0–9999; no billing or debiting occurs. Deactivate with an operator-approved update
 to `bmvj_custom_games.is_active`; account opt-in stays independent.
 
 ## Production deployment — 2026-10-06
@@ -399,8 +397,7 @@ C PAD classification. Checked custom entries require account opt-in for both
 listing and download. Official entries are visible to authenticated users
 without that opt-in. Only mark faithful historical content official. The
 checked-in historical baseline is preserved and is not editable in this panel.
-Free content is supported; publication of paid games remains pending billing
-lifecycle validation. New uploads start inactive and custom by default. Active
+Historical game values0–9999 are supported as metadata; REON never bills or debits users. New uploads start inactive and custom by default. Active
 catalog capacity is checked transactionally before publication.
 
 Admin deployment on 2026-10-06 at 20:16 Brasília / 23:16 UTC: migration
@@ -431,3 +428,13 @@ REON archived91 HTTP events at `/tmp/reon-bmvj-maintenance-final-evidence` and
 stopped/removed `reon-bmvj-maintenance-http` on completion. Manifests and bodies
 remain at `/tmp/reon-bmvj-maintenance-fixture` for reproduction. Production
 content was not changed and no hardware result is implied.
+
+## Owner decision: no billing
+
+On2026-10-06 Rafael confirmed the admin panel test passed and stated that
+REON has no billing and will never have billing. Historical value remains a
+game/catalog/filename attribute, editable0–9999, and must neither debit
+`money_spent` nor block eligible content just because it is nonzero.
+The former billing-validation task and zero-only publication restriction are
+superseded. Authentication, active state, metadata consistency and custom
+content opt-in continue to govern access.
