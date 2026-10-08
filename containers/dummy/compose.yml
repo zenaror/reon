@@ -1,17 +1,97 @@
+x-dummy: &dummy
+  image: "${DUMMY_SERVER_IMAGE:-localhost/reon-dummy-server:local}"
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  sysctls:
+    net.ipv4.ip_unprivileged_port_start: "0"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  healthcheck:
+    test: ["CMD", "node", "health.js"]
+    interval: 10s
+    timeout: 5s
+    retries: 3
+    start_period: 10s
+
 services:
-  dummy-server:
+  database:
+    image: docker.io/library/mysql:8.4.11
+    command: ["--log-bin-trust-function-creators=1"]
+    environment:
+      MYSQL_DATABASE: reon
+      MYSQL_USER: reon
+      MYSQL_PASSWORD: "${DUMMY_DB_PASSWORD:?Run stack.sh init}"
+      MYSQL_ROOT_PASSWORD: "${DUMMY_DB_ROOT_PASSWORD:?Run stack.sh init}"
+    volumes:
+      - dummy-mysql:/var/lib/mysql
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, 127.0.0.1, --protocol=tcp]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  migration:
+    image: "${DUMMY_WEB_IMAGE:-localhost/reon-dummy-web:local}"
     build:
       context: ../..
-      target: dummy-server
-    ports:
-      - "127.0.0.1:8080:8080"
-      - "127.0.0.1:2525:2525"
-      - "127.0.0.1:1110:1110"
-      - "127.0.0.1:5353:5353/udp"
-    environment:
-      SDK_EXTERNAL_IP: "127.0.0.1"
+      target: dummy-web
+    command: [migrate]
+    environment: &php-env
+      DUMMY_DB_PASSWORD: "${DUMMY_DB_PASSWORD}"
+      DUMMY_INTERNAL_TOKEN: "${DUMMY_INTERNAL_TOKEN}"
+      DUMMY_EXTERNAL_IP: "${DUMMY_EXTERNAL_IP:-127.0.0.1}"
+      DUMMY_HTTP_PORT: "${DUMMY_HTTP_PORT:-80}"
+      DUMMY_DNS_PORT: "${DUMMY_DNS_PORT:-53}"
+    depends_on:
+      database:
+        condition: service_healthy
+  web:
+    image: "${DUMMY_WEB_IMAGE:-localhost/reon-dummy-web:local}"
+    build:
+      context: ../..
+      target: dummy-web
+    environment: *php-env
     volumes:
-      - sdk-mail:/data
-      - ./content:/content:ro
+      - ./content:/var/www/reon/web/cgb/download/00/HBREW:ro
+    restart: unless-stopped
+    ports:
+      - "${DUMMY_BIND:-127.0.0.1}:${DUMMY_HTTP_PORT:-80}:80"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, php, -r, "exit(@file_get_contents('http://127.0.0.1/')===false?1:0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  email:
+    <<: *dummy
+    environment:
+      DUMMY_SERVICE: email
+      DUMMY_SMTP_LISTEN: "25"
+      DUMMY_POP3_LISTEN: "110"
+      DUMMY_DB_PASSWORD: "${DUMMY_DB_PASSWORD}"
+      DUMMY_INTERNAL_TOKEN: "${DUMMY_INTERNAL_TOKEN:?Run stack.sh init first}"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    ports:
+      - "${DUMMY_BIND:-127.0.0.1}:${DUMMY_SMTP_PORT:-25}:25"
+      # Submission uses exactly the same internal SMTP listener as host port 25.
+      - "${DUMMY_BIND:-127.0.0.1}:${DUMMY_SUBMISSION_PORT:-587}:25"
+      - "${DUMMY_BIND:-127.0.0.1}:${DUMMY_POP3_PORT:-110}:110"
+
+  dns:
+    <<: *dummy
+    environment:
+      DUMMY_SERVICE: dns
+      DUMMY_EXTERNAL_IP: "${DUMMY_EXTERNAL_IP:-127.0.0.1}"
+    ports:
+      - "${DUMMY_BIND:-127.0.0.1}:${DUMMY_DNS_PORT:-53}:5353/udp"
+
 volumes:
-  sdk-mail:
+  dummy-mysql:
+    name: "${DUMMY_DB_VOLUME:-reon-dummy-db}"

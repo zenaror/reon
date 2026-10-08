@@ -3,7 +3,7 @@
 This profile runs the real native REON installation inside an Ubuntu 24.04
 systemd container. It includes the website, MySQL, Postfix, Dovecot, mail policy,
 Node game workers, PHP maintenance timers, mobile-relay, legality checker and
-optional ROM patch toolchains. It is separate from the fixture SDK published by CI.
+optional ROM patch toolchains. It is separate from the dummy server published by CI.
 Package/runtime choices come from the six installation scripts.
 
 ## Build

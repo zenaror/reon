@@ -1,94 +1,125 @@
-# REON dummy server: local homebrew fixtures
+# REON local homebrew dummy server
 
-One Node process, zero npm dependencies. Simulated HTTP content, SMTP, POP3
-and DNS let a homebrew developer test downloads and internal messages without
-installing REON's database, website, Postfix, Dovecot or patch toolchains.
-This is a fixture SDK, not the production server or a complete cartridge emulator.
+The dummy server serves the **real REON PHP website** and its administration screens,
+backed by MySQL and the repository's Phinx migrations. Account creation,
+preferences, device authentication and game content handlers use the REON code.
+Node simulates internal SMTP/POP3 and DNS. No Oracle secrets or production data
+are copied. The PHP dummy server image omits the .NET legality checker and production jobs.
 
-## Run
+## Start with Podman
 
 From the repository root:
 
 ```sh
-mkdir -p containers/dummy/content
-cp containers/dummy/routes.example.json containers/dummy/content/routes.json
-printf '\001\002\003\004' > containers/dummy/content/content.bin
-podman build --skip-unused-stages=true --format docker --target dummy-server -t reon-dummy-server .
-podman run --rm --name reon-sdk \
-  -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 \
-  -p 127.0.0.1:1110:1110 -p 127.0.0.1:5353:5353/udp \
-  -v ./containers/dummy/content:/content:ro reon-dummy-server
+bash containers/dummy/stack.sh init
+# Edit containers/dummy/.env: DUMMY_BIND and DUMMY_EXTERNAL_IP must be your LAN IPv4.
+bash containers/dummy/stack.sh up
+bash containers/dummy/stack.sh status
 ```
 
-Open `http://127.0.0.1:8080/`. Docker works with the same target (omit Podman's
-`--skip-unused-stages` option), or use `docker compose -f containers/dummy/compose.yml up --build`.
-For a persistent mailbox add a named volume mounted at `/data`; without one,
-remove the anonymous volume when cleaning up with `podman rm -v`.
+Services: `web` (PHP/Apache), `database` (MySQL 8.4), `migration` (one-off),
+`email` (both SMTP and POP3), and `dns`. Persistent MySQL data survives `down`.
+The generated private `.env` stays outside Git and image layers.
+The development administrator is `devadmin`, password `dummyadmin1`.
+Use it only in this isolated development stack.
 
-## Publish test content
+Default host ports are HTTP **80**, SMTP **25**, submission **587** (mapped to
+that same container port 25), POP3 **110**, and DNS **53/UDP**.
+Rootless Podman requires host permission to bind low ports. The operator can
+allow this for the current boot with
+`sudo sysctl -w net.ipv4.ip_unprivileged_port_start=25`, then run
+`bash containers/dummy/stack.sh standard-ports`.
+High ports can be chosen with DUMMY_HTTP_PORT, DUMMY_SMTP_PORT,
+DUMMY_SUBMISSION_PORT, DUMMY_POP3_PORT and DUMMY_DNS_PORT; games using standard ports
+need those ports or an explicit transport mapping. DUMMY_BIND defaults to loopback.
 
-`/content/routes.json` is an array of HTTP fixtures. Each route has `path`,
-optional `method` (default GET), `host`, `status`, `headers` and one of `body`,
-`bodyBase64` or `file`. File paths stay inside `/content`. GET binary responses
-retain every byte, including zero bytes. Paths and methods match exactly;
-query parameters do not change the match. Files reload on each request.
-POST fixtures return a fixed response; they do not execute gameplay logic.
-Unknown routes return 404. Errors in a fixture return 500 and log a description.
-Mount a directory to edit files without rebuilding the image.
+## Create your own account
 
-Use `/_sdk/routes` to inspect the currently loaded routes and `/_sdk/mail`
-to inspect messages (raw MIME is base64). The SDK homepage is intentionally
-small: publish files through your editor, rather than a production admin panel.
+Open the normal REON `/signup.php`. Use a development email such as
+`developer@reon.test`. Read its confirmation email at
+`/dummy/inbox.php?address=developer@reon.test`, then follow the link to finish the
+normal REON signup. This capture page is dummy server-only and intentionally readable by
+local developers; never enter real personal data or expose this stack publicly.
+Registered players use the real account page and download `mobile_config.bin`.
+The generated configuration uses the dummy server DNS address; HTTP and POP3 must be reachable on 80 and 110. The dummy configuration enables
+libmobile's native SMTP redirection from 25 to 587 and includes the configured
+DNS port. Import this file into mGBA or Pico Adapter; use the eight-character
+ISP password shown on the account page when the game asks for it.
 
-## Internal mail
+## Publish content and exchange mail
 
-SMTP on 2525 accepts known recipients at `mail.reon.test` or `reon.dion.ne.jp`
-and rejects external recipients. Optional SMTP AUTH PLAIN/LOGIN accepts the
-same fixture credentials (delivery remains internal). POP3 on 1110 supports USER/PASS and APOP,
-STAT, LIST, UIDL, RETR, DELE, RSET and QUIT. Deletions commit on QUIT.
-Messages are stored locally and delivered as submitted; no charset shaping,
-Sieve, Internet relay, device authorization or production policy is simulated.
+Sign in to the **normal REON admin panel** to upload, edit and remove supported
+game content, including `.cgb` files, and select personalized content. Existing
+REON tables and opt-in checks remain authoritative. Binary content is stored by
+the real handlers in MySQL, not a substitute SQLite schema.
 
-Default fixture accounts:
+Players use the normal REON webmail. Internal SMTP and POP3 use the same MySQL
+accounts and dummy server mailbox table, including APOP with the downloaded device key.
+The dummy server image substitutes only the mailbox storage implementation; production
+continues to use Dovecot. Mail never relays to the Internet. `@reon.test` mail is
+captured for registration; game mail requires a registered DION recipient.
+DNS answers A queries with DUMMY_EXTERNAL_IP, with no Internet forwarding.
 
-| Account | Alias | Password |
-| --- | --- | --- |
-| player01 | g000000007 | test0001 |
-| player02 | g000000008 | test0002 |
+This is a development environment, not a production deployment or evidence of
+physical Pico compatibility. P2P relay, production timers, external email,
+TLS, patches and Pokemon legality checks are not supplied by this lightweight
+stack. The full production profile remains under `setup-script/container/`.
 
-Override them with `/content/accounts.json`, an array of objects with `name`,
-`password` and optional `aliases`. Restart after account changes. These are
-local fixture credentials, never real accounts. APOP uses this fixture password,
-not REON's real device key provisioning process.
+## Local port exception
 
-## DNS and adapter setup
+On the operator's current LAN the stack runs at `http://192.168.10.183/`,
+POP3 110, SMTP **587 only** and DNS **5453/UDP**. Host port 25 is not published.
+For this layout create a private `compose.local.yml` beside `compose.yml`:
 
-DNS UDP 5353 returns `SDK_EXTERNAL_IP` (default `127.0.0.1`) for every A query;
-other record types receive no answer. It does not forward Internet queries.
-Point your development adapter at the SDK address and its published ports.
-If the adapter expects standard ports, map host 80 to container 8080, 25 to
-2525, 110 to 1110 and UDP 53 to 5353 instead. Those host ports may need root
-or system configuration and must be free. For a separate device set
-`SDK_EXTERNAL_IP` to the host's LAN IPv4 address and explicitly bind the
-ports to that interface. Keep the default loopback bindings for local tests.
+```yaml
+services:
+  email:
+    ports: !override
+      - "${DUMMY_BIND}:587:25"
+      - "${DUMMY_BIND}:110:110"
+```
 
-The SDK does not generate `mobile_config.bin`, implement signed device-auth,
-P2P relay, rankings, official game catalogs, opt-in policy, ROM patches or
-Pokémon legality checks. Supply your game's response fixtures and client test
-configuration. Protocols and binary formats remain the caller's responsibility;
-success here is not hardware or production compatibility evidence.
+Set `DUMMY_HTTP_PORT=80`, `DUMMY_POP3_PORT=110`, `DUMMY_SMTP_PORT=587`,
+`DUMMY_SUBMISSION_PORT=587` and `DUMMY_DNS_PORT=5453` in the private `.env`.
+The host needs `net.ipv4.ip_unprivileged_port_start` at 80 or lower.
+`stack.sh` automatically includes this optional override (Compose supports
+`!override`); distribution defaults remain the standard ports above.
 
-## CI
+## Develop web tools and homebrew downloads
 
-The image workflow publishes only the `dummy-server` target as
-`ghcr.io/<owner>/reon-dummy-server`. Production containers are built separately
-with `setup-script/container/Containerfile` and real native service units.
+To edit the real PHP website directly, start with:
 
-## Smoke check
+```sh
+DUMMY_DEVELOPMENT=1 bash containers/dummy/stack.sh up
+```
 
-Use a disposable directory mounted at `/content` and run
-`python3 containers/dummy/smoke-test.py --content /absolute/disposable-directory`.
-The check writes its own route fixtures and exercises binary downloads, POST,
-internal mail, external refusal, APOP, deletion and DNS. Use its port flags
-when the host mappings differ from the defaults. It uses the default fixture
-accounts and default DNS answer. CI runs this gate before publishing the SDK.
+The development overlay mounts `web/`, preserves Composer dependencies in a
+volume, and retains the dummy mailbox and adapter configuration overlays.
+New pages and game handlers use the real REON routes and database. PHP changes
+may take a few seconds to be noticed by the runtime. Stop with the same
+`DUMMY_DEVELOPMENT=1` setting; omit it on a subsequent `up` to use image sources.
+
+For a simple homebrew binary, put `0.example.cgb` in
+`containers/dummy/content/`. It is served by the real authenticated download
+router at `/cgb/download?name=/00/HBREW/0.example.cgb`, including GB00 account
+authentication. A local file change needs no image rebuild. For supported games,
+use the normal admin upload screens instead: their catalog metadata, binary
+storage and personalized-content opt-in checks remain intact.
+
+The migration seeds the repository's Game Boy Wars 3 maps and messages.
+Other game content can be published through the real administration screens;
+a fresh dummy database is not a copy of Oracle's content library.
+
+## Validate the stack
+
+```sh
+python3 containers/dummy/flow-test.py --host 192.168.10.183 \
+  --http 80 --smtp 587 --pop3 110 --dns 5453
+```
+
+Use ports matching your environment. The gate creates synthetic accounts and
+mail, publishes and removes its own binary fixture, and checks real signup,
+config, internal mail/webmail, GB00, opt-in and byte-exact content downloads.
+See [VALIDATION.md](VALIDATION.md) for the emulator evidence and its limits.
+The CI builds and gates both images, `reon-dummy-server` (email/DNS) and
+`reon-dummy-web` (website/migration); it does not publish the production profile.

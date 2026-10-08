@@ -229,13 +229,40 @@ COPY docker-dns-entry.sh /entrypoint.sh
 EXPOSE 53/udp
 ENTRYPOINT ["/entrypoint.sh"]
 
-### Lightweight homebrew fixtures: Node only, no runtime dependencies.
+### Dummy server simulated email and DNS.
 FROM node:22.11.0-alpine AS dummy-server
-WORKDIR /sdk
+WORKDIR /dummy
 COPY containers/dummy/ ./
-RUN mkdir /data /content && chown node:node /data /content /sdk
+COPY --from=mail-deps /app/node_modules ./node_modules
+COPY mail/gameFormat.js ./gameFormat.js
+RUN mkdir /data /content && chown node:node /data /content /dummy
 USER node
-EXPOSE 8080 2525 1110 5353/udp
-VOLUME ["/data", "/content"]
-HEALTHCHECK --interval=10s --timeout=3s CMD node -e "fetch('http://127.0.0.1:8080/_sdk/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+EXPOSE 25 110 5353/udp
+HEALTHCHECK --interval=10s --timeout=5s CMD node health.js
 CMD ["node", "server.js"]
+
+### Dummy server: the real REON website without the production legality checker.
+FROM php:${PHP_VERSION}-apache AS dummy-web
+RUN apt-get update && apt-get install -y --no-install-recommends libpng-dev libonig-dev libzip-dev msmtp \
+    && docker-php-ext-install mysqli pdo_mysql gd mbstring zip pcntl \
+    && a2enmod rewrite && rm -rf /var/lib/apt/lists/*
+WORKDIR /var/www/reon
+COPY --from=web-deps /app /var/www/reon/web
+COPY phinx.php ./
+COPY db/ ./db/
+COPY config.example.json ./config.example.json
+COPY containers/dummy/apache.conf /etc/apache2/sites-available/000-default.conf
+COPY containers/dummy/web-entry.php ./dummy-entry.php
+COPY containers/dummy/seed.php ./dummy-seed.php
+COPY containers/dummy/MailStoreUtil.php ./web/classes/MailStoreUtil.php
+COPY containers/dummy/dummy-inbox.php ./web/htdocs/dummy/inbox.php
+RUN mv web/htdocs/user/adapter_config.php /var/www/reon/dummy-adapter-original.php
+COPY containers/dummy/adapter-config.php ./web/htdocs/user/adapter_config.php
+RUN sed -i 's|https://{{ hostname }}|http://{{ hostname }}|g' web/templates/email/*.twig
+RUN mkdir -p web/tmp /var/log/reon && chown -R www-data:www-data web/tmp /var/log/reon \
+    && find web -type f -exec chmod 644 {} + \
+    && find web -type d -exec chmod 755 {} +
+RUN echo 'sendmail_path=/usr/bin/msmtp -t' > /usr/local/etc/php/conf.d/dummy-mail.ini
+RUN ln -s /usr/bin/msmtp /usr/sbin/sendmail
+ENTRYPOINT ["php", "/var/www/reon/dummy-entry.php"]
+CMD ["apache2-foreground"]

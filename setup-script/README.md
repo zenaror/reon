@@ -197,4 +197,4 @@ A clean server creates schema and default settings, not production accounts,
 published user content, private certificates or original ROMs. Supply original
 ROMs separately for the patch builder. See [container/README.md](container/README.md)
 for the production container and [../containers/dummy/README.md](../containers/dummy/README.md)
-for the lightweight fixture SDK.
+for the lightweight dummy server.

@@ -16,3 +16,10 @@ docker-compose.yml
 setup-script/deploy/
 setup-script/.setup-tmp/
 config.json.bak
+
+# Host-specific dummy server port mappings; distributable defaults stay standard.
+containers/dummy/compose.local.yml
+
+# Bind target created by the optional dummy live-development overlay.
+web/htdocs/dummy/
+containers/dummy/content/
