@@ -228,3 +228,14 @@ RUN apk --no-cache add dnsmasq
 COPY docker-dns-entry.sh /entrypoint.sh
 EXPOSE 53/udp
 ENTRYPOINT ["/entrypoint.sh"]
+
+### Lightweight homebrew fixtures: Node only, no runtime dependencies.
+FROM node:22.11.0-alpine AS dummy-server
+WORKDIR /sdk
+COPY containers/dummy/ ./
+RUN mkdir /data /content && chown node:node /data /content /sdk
+USER node
+EXPOSE 8080 2525 1110 5353/udp
+VOLUME ["/data", "/content"]
+HEALTHCHECK --interval=10s --timeout=3s CMD node -e "fetch('http://127.0.0.1:8080/_sdk/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "server.js"]

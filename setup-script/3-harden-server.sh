@@ -34,7 +34,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 c_reset=$'\033[0m'; c_red=$'\033[31m'; c_green=$'\033[32m'; c_yellow=$'\033[33m'; c_blue=$'\033[34m'
 log_step()  { printf '\n%s==>%s %s\n' "$c_blue"  "$c_reset" "$*"; }
@@ -43,7 +43,7 @@ log_warn()  { printf '%s[warn]%s %s\n'  "$c_yellow" "$c_reset" "$*" >&2; }
 log_error() { printf '%s[error]%s %s\n' "$c_red"    "$c_reset" "$*" >&2; }
 
 apt_install() {
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends "$@"
 }
 
 install_fail2ban() {
@@ -255,10 +255,14 @@ print_summary() {
 }
 
 main() {
-    install_fail2ban
+    if [[ "${REON_CONTAINER:-0}" != 1 ]]; then
+        install_fail2ban
+        harden_ssh
+        disable_unused_services
+    else
+        log_info "Container: host firewall, SSH and fail2ban remain the operator’s responsibility."
+    fi
     restart_on_failure
-    harden_ssh
-    disable_unused_services
     nginx_security_headers
     print_summary
 }

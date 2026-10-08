@@ -1,0 +1,17 @@
+services:
+  dummy-server:
+    build:
+      context: ../..
+      target: dummy-server
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:2525:2525"
+      - "127.0.0.1:1110:1110"
+      - "127.0.0.1:5353:5353/udp"
+    environment:
+      SDK_EXTERNAL_IP: "127.0.0.1"
+    volumes:
+      - sdk-mail:/data
+      - ./content:/content:ro
+volumes:
+  sdk-mail:

@@ -1,0 +1,22 @@
+# Build from the REON repository with --build-context relay=../mobile-relay.
+# Native service units and installer stay the source of truth for production.
+FROM ubuntu:24.04
+ENV container=podman DEBIAN_FRONTEND=noninteractive REON_CONTAINER=1
+RUN apt-get update && apt-get install -y --no-install-recommends systemd systemd-sysv dbus sudo python3 ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && systemctl mask getty@.service console-getty.service systemd-logind.service
+COPY . /usr/share/reon-source/reon
+# Never copy the relay's tracked config.ini; production credentials are mounted.
+COPY --from=relay server.py users.py peers.py capture_merge.py create_db.sql config.example.ini /usr/share/reon-source/mobile-relay/
+COPY setup-script/container/entrypoint.sh /usr/local/bin/reon-container-entrypoint
+COPY setup-script/container/install.sh /usr/local/bin/reon-container-install
+COPY setup-script/container/reon-bootstrap.service /etc/systemd/system/reon-bootstrap.service
+RUN chmod 755 /usr/local/bin/reon-container-* \
+    && systemctl enable reon-bootstrap.service \
+    && find /usr/share/reon-source -type f -exec chmod 644 {} + \
+    && find /usr/share/reon-source -type d -exec chmod 755 {} + \
+    && cd /usr/share/reon-source && find reon mobile-relay -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum > /usr/share/reon-source/revision
+STOPSIGNAL SIGRTMIN+3
+EXPOSE 80 443 25 110 31227 5453/udp
+VOLUME ["/srv/reon-install", "/var/lib/mysql", "/var/lib/reon", "/var/vmail", "/var/spool/postfix", "/var/lib/reon-patches", "/var/lib/reon-captures", "/var/lib/reon-container", "/var/log", "/opt", "/etc/letsencrypt", "/var/backups/reon"]
+ENTRYPOINT ["/usr/local/bin/reon-container-entrypoint"]

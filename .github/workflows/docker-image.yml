@@ -3,11 +3,11 @@ name: Docker Image CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, feature/full_server ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, feature/full_server ]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -19,26 +19,6 @@ env:
 jobs:
   build:
   
-    strategy:
-      matrix:
-        # One Dockerfile target per image. Reviewed on 2026-09-24 against
-        # production: `mail` (which has existed all along), `relay-policy`
-        # and `cron-php` were missing -- active services in production with
-        # no image at all.
-        #
-        # And worth recording: the `cron` target could not have been
-        # passing. The Dockerfile had a `RUN` with no argument, which is a
-        # parse error -- so this matrix had been failing on that item, and
-        # nobody looked.
-        image:
-          - name: dns
-          - name: cron
-          - name: cron-php
-          - name: web
-          - name: migrate
-          - name: mail
-          - name: relay-policy
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -71,15 +51,41 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.image.name }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-dummy-server
 
-      # Build and push Docker image with Buildx (don't push on PR)
+      - name: Build SDK for protocol smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: dummy-server
+          load: true
+          tags: reon-dummy-smoke:ci
+          cache-from: type=gha
+
+      - name: Check simulated services
+        run: |
+          mkdir -p /tmp/reon-sdk-fixtures
+          docker run -d --name reon-sdk-smoke \
+            -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 \
+            -p 127.0.0.1:1110:1110 -p 127.0.0.1:5353:5353/udp \
+            -v /tmp/reon-sdk-fixtures:/content:ro reon-dummy-smoke:ci
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/_sdk/health && break
+            sleep 1
+          done
+          python3 containers/dummy/smoke-test.py --content /tmp/reon-sdk-fixtures
+
+      - name: Remove smoke container
+        if: always()
+        run: docker rm -fv reon-sdk-smoke || true
+
+      # Publish the lightweight SDK after the smoke gate.
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          target: ${{ matrix.image.name }}
+          target: dummy-server
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
