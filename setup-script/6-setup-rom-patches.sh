@@ -43,11 +43,11 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 if [[ -d "$SCRIPT_DIR/reon" ]]; then
     REON_SRC="$SCRIPT_DIR/reon"
 else
-    REON_SRC="$(cd "$SCRIPT_DIR/.." && pwd)"
+    REON_SRC="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 fi
 
 TOOL_DIR=/usr/local/lib/reon-patch-build
@@ -79,7 +79,7 @@ log_warn()  { printf '%s[warn]%s %s\n'  "$c_yellow" "$c_reset" "$*" >&2; }
 log_error() { printf '%s[error]%s %s\n' "$c_red"    "$c_reset" "$*" >&2; }
 
 apt_install() {
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends "$@"
 }
 
 install_packages() {

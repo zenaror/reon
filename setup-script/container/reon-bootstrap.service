@@ -1,0 +1,17 @@
+[Unit]
+Description=Install REON production services using the native installer
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/run/reon/environment
+ExecStart=/usr/local/bin/reon-container-install
+TimeoutStartSec=0
+RemainAfterExit=yes
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

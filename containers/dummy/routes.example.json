@@ -1,0 +1,5 @@
+[
+  {"path":"/01/HBRJ/hello", "body":"Hello, homebrew!", "headers":{"Content-Type":"text/plain"}},
+  {"path":"/01/HBRJ/content.bin", "file":"content.bin", "headers":{"Content-Type":"application/octet-stream"}},
+  {"method":"POST", "path":"/01/HBRJ/score", "status":200, "body":"OK"}
+]

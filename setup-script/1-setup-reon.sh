@@ -32,14 +32,14 @@ set -Eeuo pipefail
 # Globals
 # ---------------------------------------------------------------------------
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 if [[ -d "$SCRIPT_DIR/reon" && -d "$SCRIPT_DIR/mobile-relay" ]]; then
     # Packaged layout: reon/ and mobile-relay/ next to the script.
     REON_SRC="$SCRIPT_DIR/reon"
     RELAY_SRC="$SCRIPT_DIR/mobile-relay"
 else
     # Repository layout: reon/setup-script/<this>, mobile-relay beside reon.
-    REON_SRC="$(cd "$SCRIPT_DIR/.." && pwd)"
+    REON_SRC="$(cd "$SCRIPT_DIR/.." && pwd -P)"
     RELAY_SRC="$(cd "$REON_SRC/.." && pwd)/mobile-relay"
 fi
 # Generated nginx/php-fpm/systemd files live next to the script (ignored by
@@ -70,6 +70,7 @@ SYS_GROUP=reon
 # that a one-line change).
 NODE_VERSION="${NODE_VERSION:-22.11.0}"
 DOTNET_CHANNEL="${DOTNET_CHANNEL:-9.0}"
+DOTNET_VERSION="${DOTNET_VERSION:-9.0.317}"
 
 # Public-facing ports -> internal ports (matches reon/docker-compose.yml,
 # which already maps 587->container:25 and dns host:5453->container:53).
@@ -266,7 +267,7 @@ load_config() {
 # ---------------------------------------------------------------------------
 
 apt_install() {
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+    DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y --no-install-recommends "$@"
 }
 
 setup_base_packages() {
@@ -369,6 +370,12 @@ link_sources() {
     log_info "$OPT_RELAY -> $RELAY_SRC"
 
     fix_traversal_perms
+    # Runtime services share this group; configuration must remain private
+    # without requiring the operator to make credential files world-readable.
+    chgrp "$SYS_GROUP" "$REON_SRC/config.json" "$RELAY_SRC/config.ini"
+    chmod 0640 "$REON_SRC/config.json" "$RELAY_SRC/config.ini"
+    chmod 0600 "$REON_SRC/.env"
+    [[ ! -f "$REON_SRC/config.json.bak" ]] || chmod 0600 "$REON_SRC/config.json.bak"
 }
 
 # nginx (www-data), php-fpm/mail/mobile-relay/cron (reon) all need to chdir
@@ -607,19 +614,20 @@ install_dotnet() {
     # exists: a tar extraction that ran out of space mid-way can leave
     # `dotnet` executable while later files (e.g. sdk/*/dotnet.deps.json)
     # are empty/truncated, which passed a plain -x check but breaks on use.
-    if [[ -x /opt/dotnet/dotnet ]] && /opt/dotnet/dotnet --version >/dev/null 2>&1; then
+    if [[ -x /opt/dotnet/dotnet ]] && [[ "$(/opt/dotnet/dotnet --version 2>/dev/null)" == "$DOTNET_VERSION" ]]; then
+        ln -sfn /opt/dotnet/dotnet /usr/local/bin/dotnet
         return
     fi
     # Clear out any half-extracted/corrupted SDK before retrying.
     rm -rf /opt/dotnet
-    log_info "Installing .NET SDK ${DOTNET_CHANNEL} via dotnet-install.sh"
+    log_info "Installing .NET SDK ${DOTNET_VERSION} via dotnet-install.sh"
     local tmp
     tmp="$(mktemp -p "$DL_TMPDIR")"
     curl -sSL https://dot.net/v1/dotnet-install.sh -o "$tmp"
     chmod +x "$tmp"
     # TMPDIR set only for this one command (not exported) — dotnet-install.sh
     # downloads the full SDK tarball via its own internal temp file there.
-    TMPDIR="$DL_TMPDIR" "$tmp" --channel "$DOTNET_CHANNEL" --install-dir /opt/dotnet
+    TMPDIR="$DL_TMPDIR" "$tmp" --version "$DOTNET_VERSION" --install-dir /opt/dotnet
     rm -f "$tmp"
     ln -sfn /opt/dotnet/dotnet /usr/local/bin/dotnet
 }
@@ -627,6 +635,7 @@ install_dotnet() {
 run_migrations() {
     log_step "Running database migrations (phinx)"
     (cd "$OPT_REON" && php web/vendor/bin/phinx migrate)
+    php "$REON_SRC/setup-script/initialize-adapter-settings.php" "$EXTERNAL_IP"
 }
 
 # ---------------------------------------------------------------------------
@@ -785,6 +794,11 @@ EOF
 # ---------------------------------------------------------------------------
 
 setup_tls() {
+    case "${TLS_MODE:-auto}" in
+        disabled) log_info "Certificate provisioning disabled (TLS_MODE=disabled)."; return ;;
+        auto) ;;
+        *) log_error "TLS_MODE must be auto or disabled"; exit 1 ;;
+    esac
     log_step "Checking HTTPS (Let's Encrypt)"
 
     if [[ "$CFG_HOSTNAME" == "example.net" || "$CFG_HOSTNAME" != *.* ]]; then
@@ -884,7 +898,10 @@ EOF
 # ---------------------------------------------------------------------------
 
 install_node() {
-    if [[ -x /opt/node/bin/node ]] && /opt/node/bin/node --version | grep -q "v${NODE_VERSION}"; then
+    if [[ -x /opt/node/bin/node ]] && [[ "$(/opt/node/bin/node --version)" == "v${NODE_VERSION}" ]]; then
+        ln -sfn /opt/node/bin/node /usr/local/bin/node
+        ln -sfn /opt/node/bin/npm /usr/local/bin/npm
+        ln -sfn /opt/node/bin/npx /usr/local/bin/npx
         return
     fi
     log_step "Installing Node.js ${NODE_VERSION}"
@@ -915,14 +932,10 @@ npm_ci_dir() {
     else
         (cd "$dir" && npm install --omit=dev)
     fi
-    # `npm ci` installs exactly what's pinned in package-lock.json, which can
-    # be a stale, vulnerable resolution even though package.json's own semver
-    # range (e.g. ^3.5.2) already permits a patched version — this applies
-    # any fix available within that declared range (never a major bump, so
-    # it won't change the app's API surface). A remaining "needs --force"
-    # finding means the fix requires a breaking major version and is left
-    # for a deliberate, tested upgrade rather than being silently applied.
-    (cd "$dir" && npm audit fix --omit=dev) || log_warn "$dir: some vulnerabilities need a breaking upgrade (npm audit fix --force) — left as-is, review manually."
+    # Preserve the lockfile by default; dependency updates need a reviewed opt-in.
+    if [[ "${RUN_NPM_AUDIT_FIX:-0}" == 1 ]]; then
+        (cd "$dir" && npm audit fix --omit=dev) || log_warn "$dir: review dependency updates manually."
+    fi
 }
 
 setup_node_apps() {
@@ -1377,6 +1390,7 @@ enable_all_services() {
 
     for slug in pokemon-battle pokemon-exchange auto-schedule mail-bottle \
                 mail-trash-purge retention-purge service-status db-backup session-sweep monthly-reboot; do
+        [[ "${REON_CONTAINER:-0}" == 1 && "$slug" == monthly-reboot ]] && continue
         systemctl enable --now "reon-${slug}.timer"
     done
 }
@@ -1679,14 +1693,14 @@ main() {
     setup_base_packages
     load_config
 
-    setup_swap
+    [[ "${REON_CONTAINER:-0}" == 1 ]] || setup_swap
     setup_operator_timezone
     create_system_user
     link_sources
 
     # Open ports before setup_tls below — Let's Encrypt's HTTP-01 challenge
     # needs port 80 reachable, which requires this to have already run.
-    setup_firewall
+    [[ "${REON_CONTAINER:-0}" == 1 ]] || setup_firewall
 
     setup_mysql
     setup_php_web
@@ -1724,4 +1738,6 @@ main() {
     log_info "Re-run this script any time after 'git pull' to pick up updates."
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

@@ -9,7 +9,7 @@
         $email = prompt("Email: ");
         $password = prompt("Password: ");
         $passwordConfirm = prompt("Confirm Password: ");
-        $reonEmail = prompt("DION Account (8 chars): ");
+        $reonEmail = prompt("Username (3-20 lowercase letters or numbers): ");
 
         if (!isEmailAvailable($db, $email)) {
             exit("Email is unavailable");
@@ -20,9 +20,10 @@
         $detail = match ($result) {
             0 => "Account created!",
             1 => "Invalid email",
-            2 => "DION Email is invalid or unavailable",
+            2 => "Username is invalid, reserved or unavailable",
             3 => "Passwords do not match",
-            4 => "Password does not minimum requirements",
+            4 => "Password does not meet minimum requirements",
+            default => "Account could not be created (code ".$result.")",
         };
 
         echo $detail."\n";

@@ -7,11 +7,21 @@ web/vendor
 docker-compose*
 Dockerfile
 
-# Configuration holding credentials. Nothing here is copied into an image
-# today -- the Dockerfile's COPY instructions come from web/, db/, app/,
-# maint/ and mail/, none from the root -- but this is the safety net: the
-# day someone writes `COPY . .`, the MySQL password enters a layer and does
-# not come back out even by deleting the file afterwards. Config arrives by
-# volume or by environment; see docker-compose.example.yml.
+# Runtime credentials enter through private mounts, never build layers.
+# This also protects the production Containerfile's COPY of the source tree.
 config.json
 config.ini
+.env
+config.json.bak
+**/node_modules
+setup-script/deploy
+setup-script/.setup-tmp
+
+# Private deployment state must never enter a production image either.
+**/config.json
+**/config.ini
+**/.env
+**/*.key
+**/*.bak
+ssh/
+containers/dummy/content/

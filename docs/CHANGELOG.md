@@ -15,6 +15,13 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ## reon (servidor / reon-mail / web)
 
+### Instalação limpa e containers
+
+* Suporte a Ubuntu 24.04 e 26.04 no fluxo nativo, com configuração Dovecot por versão, migrações das configurações do painel e alinhamento do armazenamento Stadium.
+* Node/.NET e dependências de correio alinhados à Oracle; lockfiles preservados por padrão, permissões privadas e execução por symlink/repetição conferidas na VM de teste.
+* SDK `dummy-server` em Node puro: fixtures HTTP/binários, SMTP/POP3 internos e DNS simulado; a CI publica somente esse perfil após smoke test.
+* Perfil separado de produção em `setup-script/container`, usando os seis scripts e serviços reais com dados persistentes. Segurança de rede/SSH do host permanece responsabilidade do operador.
+
 ### Net de Get — conteúdo personalizado
 
 * C PAD atualizado em produção com a espera pela soltura dos controles na saída, após download natural e reabertura validados pelo mGBA; demais conteúdos preservados.

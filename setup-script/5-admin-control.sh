@@ -45,7 +45,7 @@ fi
 detect_web_user() {
 	local socket pool
 
-	socket=$(grep -rhoE 'fastcgi_pass[[:space:]]+unix:[^;]+' \
+	socket=$(grep -RhoE 'fastcgi_pass[[:space:]]+unix:[^;]+' \
 		/etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null |
 		head -1 | sed -E 's/.*unix:[[:space:]]*//')
 	[ -n "$socket" ] || return 1

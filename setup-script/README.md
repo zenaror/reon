@@ -19,8 +19,8 @@ order, all idempotent (the fifth and sixth are optional), plus two helpers:
 
 1. On the VM, clone `reon` and `mobile-relay` side by side:
    ```
-   git clone https://github.com/zenaror/reon
-   git clone https://github.com/zenaror/mobile-relay
+   git clone --branch feature/full_server https://github.com/zenaror/reon
+   git clone --branch feature/full_server https://github.com/zenaror/mobile-relay
    ```
    (The scripts also accept the packaged layout: a folder holding `reon/`,
    `mobile-relay/` and the scripts themselves.)
@@ -79,9 +79,8 @@ order, all idempotent (the fifth and sixth are optional), plus two helpers:
 - php-fpm in `ondemand` mode (a process only starts when there is a request).
 - Temporary downloads (Node, .NET) use the large disk instead of `/tmp`,
   which tends to be too small on these VMs.
-- Automatic `npm audit fix` after installing each Node app — fixes known
-  vulnerabilities that need no major version change (does not force
-  upgrades that could break the code).
+- `npm ci` preserves committed lockfiles. `RUN_NPM_AUDIT_FIX=1` is an explicit
+  dependency update opt-in; review the resulting lockfile before deployment.
 - `apt-get clean` at the end so no package cache piles up.
 - The site caches compiled templates and the parsed translations under
   `/tmp/reon/reon-twig-<uid>/` (the pool's temp dir, created and owned by the
@@ -176,3 +175,26 @@ And two files in `/var/log/reon/`, owned by the php-fpm user:
   relay refused shows up.
 - `magbtest.log` — instrumentation of the MAGB TestSuite ROM's requests
   (`/MAGBTEST/` paths only; real game traffic is not logged).
+
+## Ubuntu 24.04 and 26.04
+
+Both releases use their distribution PHP/MySQL/nginx packages. They provide
+the same application features, but their package versions differ. Node
+22.11.0 and .NET SDK 9.0.317 are pinned; override their version variables
+only for an intentional upgrade. Script 2 selects Dovecot 2.3 syntax on
+24.04 and 2.4 syntax on 26.04, deriving both authentication queries from
+the canonical template. The 2.3 SQL connection fields currently reject
+whitespace, double quotes and backslashes instead of silently misparsing them.
+
+For an isolated installation test, export `TLS_MODE=disabled`,
+`MAIL_MODE=internal` and `MAIL_DOMAIN=mail.reon.test` before scripts 1 and 2.
+This refuses external mail and does not request certificates. Production
+defaults remain `TLS_MODE=auto` and `MAIL_MODE=production`. Set the real
+server addresses in the admin adapter settings before generating client
+configuration: application defaults refer to the existing public server.
+
+A clean server creates schema and default settings, not production accounts,
+published user content, private certificates or original ROMs. Supply original
+ROMs separately for the patch builder. See [container/README.md](container/README.md)
+for the production container and [../containers/dummy/README.md](../containers/dummy/README.md)
+for the lightweight fixture SDK.
