@@ -25,3 +25,5 @@ setup-script/.setup-tmp
 **/*.bak
 ssh/
 containers/dummy/content/
+
+containers/dummy/compose.local.yml

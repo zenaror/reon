@@ -1,0 +1,16 @@
+# Optional live source editing for new web tools and PHP game handlers.
+services:
+  web:
+    volumes:
+      - ../../web:/var/www/reon/web
+      - dummy-vendor:/var/www/reon/web/vendor
+      - dummy-tmp:/var/www/reon/web/tmp
+      # The simulated mailbox backend remains active when using live source.
+      - ./MailStoreUtil.php:/var/www/reon/web/classes/MailStoreUtil.php:ro
+      - ../../web/htdocs/user/adapter_config.php:/var/www/reon/dummy-adapter-original.php:ro
+      - ./adapter-config.php:/var/www/reon/web/htdocs/user/adapter_config.php:ro
+      - ./dummy-inbox.php:/var/www/reon/web/htdocs/dummy/inbox.php:ro
+      - ./content:/var/www/reon/web/cgb/download/00/HBREW:ro
+volumes:
+  dummy-vendor:
+  dummy-tmp:

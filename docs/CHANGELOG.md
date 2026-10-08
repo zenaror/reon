@@ -19,7 +19,7 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 * Suporte a Ubuntu 24.04 e 26.04 no fluxo nativo, com configuração Dovecot por versão, migrações das configurações do painel e alinhamento do armazenamento Stadium.
 * Node/.NET e dependências de correio alinhados à Oracle; lockfiles preservados por padrão, permissões privadas e execução por symlink/repetição conferidas na VM de teste.
-* SDK `dummy-server` em Node puro: fixtures HTTP/binários, SMTP/POP3 internos e DNS simulado; a CI publica somente esse perfil após smoke test.
+* dummy server com site PHP e painel reais da REON, MySQL e migrações do projeto. Correio interno e DNS simulados em Node; captura local dos e-mails de cadastro. Serviços web, banco, migração, email (25/587 e 110) e DNS separados; cadastro próprio, opt-in, publicação de `.cgb`, webmail compartilhado e configuração nativa SMTP587. Edição web ao vivo opcional e gate de instalação limpa; sem copiar dados privados da Oracle.
 * Perfil separado de produção em `setup-script/container`, usando os seis scripts e serviços reais com dados persistentes. Segurança de rede/SSH do host permanece responsabilidade do operador.
 
 ### Net de Get — conteúdo personalizado
