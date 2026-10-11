@@ -65,9 +65,19 @@ refusal: failed login, failed game authentication, a request answered 4xx/5xx).
 | `signup-requested`, `signup` | sign-up e-mail sent; account created | `account`, `username` |
 | `login`, `login-failed` | web sign-in; failed (why, not what was typed) | `account`, `reason` |
 | `password-changed`, `password-reset-requested`, `password-reset`, `email-changed`, `game-password-rerolled`, `account-deleted` | the account changes | `account` |
-| `game-login`, `game-login-failed` | the console authenticated (or not) | `account`, `auth_type` |
+| `game-login`, `game-login-failed` | the console authenticated (or not) | `account` on success; `attempted_account` on failure when the supplied PPP identifier matches an existing account; `auth_type`, `auth_reason`, `request_id` |
 | `download`, `upload`, `ranking` | every game request, logged when it ends | `path`, `status`, `account` |
 | `trade` | Trade Corner / Mail de Cute pairing, after the commit | `kind`, `a`, `b`, species, region |
+
+Game authentication and its request outcome share a server-generated `request_id`.
+An `attempted_account` is an unverified claim, never an authenticated `account` or
+proof of who operated the device. Failed authentication distinguishes
+`unknown-account`, `password-mismatch`, and `account-banned` internally, while the
+game still receives the same 401 / `Gb-Status: 201`. Unknown identifiers are not
+stored. The admin Activity view displays these fields alongside the event; use
+its text search for `attempted_account=42` or a `request_id`. Request IDs correlate
+events within one HTTP request, not devices or subsequent connections. Older log
+entries cannot be retroactively attributed to an account.
 
 What is deliberately **not** in it: the IP address (the web server's log has
 it, at the same time and for the same 14 days; join on the time when needed),

@@ -17,6 +17,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Painel, logs e suporte por jogo
 
+* Recusas de autenticação dos jogos registram ID da conta tentada quando reconhecida, separado da conta autenticada, motivo interno e ID de correlação da requisição. Campos aparecem no painel de logs; senhas e identificadores desconhecidos não são gravados.
+
+* Mario Kart no seletor de jogos usa o mesmo cartão visual dos demais, com ícone próprio. Regras de copa mostram pistas e personagens por nome, moedas em quantidades reais e checkboxes antes do texto.
+
 * Nomes legíveis nos IDs de jogos legados; títulos corrigidos para Morita Shougi Advance e Sutakomi. Monster Guardians e Napoleon separados em controles próprios, preservando o estado anterior por migração; requisito de correio de Sutakomi explicitado.
 
 * Logs com atividade como fonte inicial, filtros adicionais recolhidos, ordem decrescente, limite após filtros, datas de Brasília, leitura de arquivos rotacionados e atualização opcional. Identificação do jogo e motivo de recusa nas novas requisições, sem registrar conteúdo dos uploads.

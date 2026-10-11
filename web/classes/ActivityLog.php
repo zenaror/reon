@@ -25,6 +25,9 @@
 		// $level: "info" for things that happened, "warn" for a refusal
 		// (failed login, failed game auth) so the level filter finds them.
 		public static function record($event, array $fields = [], $level = "info") {
+			if (isset($GLOBALS['game_request_id']) && in_array($event, ['game-login','game-login-failed','download','upload','ranking','utility'], true)) {
+				$fields['request_id'] = $GLOBALS['game_request_id'];
+			}
 			if (!isset($fields['game_id']) && in_array($event, ['game-login','game-login-failed'], true) && preg_match('#(?:AGB|CGB|SGB)-[A-Z0-9]{4}#i', (string)($_GET['name'] ?? ''), $match)) $fields['game_id'] = strtoupper($match[0]);
             $line = ["ts" => gmdate("Y-m-d\\TH:i:s\\Z"), "level" => $level, "component" => "activity",
 			         "event" => (string)$event, "msg" => (string)$event];
@@ -50,6 +53,7 @@
             $key = (string)$type.':'.(string)$path;
             if (isset($registered[$key])) return;
             $registered[$key] = true;
+			if (!isset($GLOBALS['game_request_id'])) $GLOBALS['game_request_id'] = bin2hex(random_bytes(8));
             $path = (string)$path;
 			register_shutdown_function(function () use ($type, $path) {
 				$status = http_response_code();
@@ -59,6 +63,7 @@
 					: (isset($_SESSION["utility_authed_user_id"]) ? (int)$_SESSION["utility_authed_user_id"] : null);
 				self::record($type, [
                     ...($GLOBALS['game_upload_metadata'] ?? []),
+					...($GLOBALS['game_auth_metadata'] ?? []),
 					"path" => $path,
                     "game_id" => preg_match('#(?:AGB|CGB|SGB)-[A-Z0-9]{4}#i', $path, $m) ? strtoupper($m[0]) : null,
                     "method" => $_SERVER['REQUEST_METHOD'] ?? null,

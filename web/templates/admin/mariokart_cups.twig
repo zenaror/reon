@@ -11,8 +11,15 @@
 <label>{{ 'mariokart-admin.region'|trans }} <select name="game_region">{% for r in ['j','e'] %}<option value="{{ r }}"{% if form.game_region==r %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
 <label>{{ 'mariokart-admin.file'|trans }} <input name="file_name" value="{{ form.file_name }}" required maxlength="48" pattern="[A-Za-z0-9_-]{1,48}"></label><p class="admin-form__hint">{{ 'mariokart-admin.file-hint'|trans }}</p>
 <div class="admin-form__row">{% for key in dates %}<label>{{ ('mariokart-admin.'~key)|trans }} <input name="{{ key }}" type="date" value="{{ form[key] }}" required></label>{% endfor %}</div><p class="admin-form__hint">{{ 'mariokart-admin.date-hint'|trans }}</p>
-<div class="admin-form__row">{% for key,max in {'course':19,'num_attempts':99,'character':15,'start_coins':15} %}<label>{{ ('mariokart-admin.'~key)|trans }} <input type="number" min="{{ key=='num_attempts'?1:0 }}" max="{{ max }}" name="{{ key }}" value="{{ form[key] }}" required></label>{% endfor %}</div><p class="admin-form__hint">{{ 'mariokart-admin.rule-hint'|trans }}</p>
-{% for key in flags %}<label><input type="checkbox" name="{{ key }}" value="1"{% if form[key] %} checked{% endif %}>{{ ('mariokart-admin.'~key)|trans }}</label>{% endfor %}
+<div class="admin-form__row">
+<label>{{ 'mariokart-admin.course'|trans }} <select name="course" required>{% for course in 0..19 %}<option value="{{ course }}"{% if form.course == course %} selected{% endif %}>{{ ('mario-kart.tracks.'~course)|trans }}</option>{% endfor %}</select></label>
+<label>{{ 'mariokart-admin.num_attempts'|trans }} <input type="number" min="1" max="99" name="num_attempts" value="{{ form.num_attempts }}" required></label>
+<label>{{ 'mariokart-admin.character'|trans }} <select name="character" required><option value="0"{% if form.character == 0 %} selected{% endif %}>{{ 'mariokart-admin.any-character'|trans }}</option>{% for driver in 0..7 %}<option value="{{ driver + 1 }}"{% if form.character == driver + 1 %} selected{% endif %}>{{ ('mario-kart.drivers.'~driver)|trans }}</option>{% endfor %}{% if form.character > 8 %}<option value="{{ form.character }}" selected>{{ 'mariokart-admin.legacy-character'|trans({'%value%': form.character}) }}</option>{% endif %}</select></label>
+<label>{{ 'mariokart-admin.start_coins'|trans }} <select name="start_coins" required>{% for coins in 0..15 %}<option value="{{ coins }}"{% if form.start_coins == coins %} selected{% endif %}>{{ coins * 5 }}</option>{% endfor %}</select></label>
+</div><p class="admin-form__hint">{{ 'mariokart-admin.rule-hint'|trans }}</p>
+<div class="admin-form__stacked">
+{% for key in flags %}<label class="admin-form__checkbox"><input type="checkbox" name="{{ key }}" value="1"{% if form[key] %} checked{% endif %}><span>{{ ('mariokart-admin.'~key)|trans }}</span></label>{% endfor %}
+</div>
 <label>{{ 'mariokart-admin.message'|trans }} <textarea name="message" rows="5">{{ form.message }}</textarea></label><p class="admin-form__hint">{{ 'mariokart-admin.message-hint'|trans }}</p>
 <button class="admin-btn">{{ 'mariokart-admin.publish'|trans }}</button>{% if editing %}<a href="/admin/mariokart_cups.php">{{ 'mariokart-admin.create'|trans }}</a>{% endif %}
 </form>{% endblock %}

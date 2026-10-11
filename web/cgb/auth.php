@@ -128,9 +128,14 @@
 						exit();
 					}
 				} else {
-					// Which account is not recorded: a failed attempt proves nothing
-					// about whose it was.
-					ActivityLog::record("game-login-failed", ["auth_type" => (int)$type], "warn");
+					// A matching identifier identifies the attempted account, not
+					// the caller. Never promote this to an authenticated account.
+					$GLOBALS['game_auth_metadata'] = [
+						"attempted_account" => $result["userId"] ?? null,
+						"auth_reason" => $result["reason"],
+					];
+					$GLOBALS['game_refusal_reason'] = "auth-rejected";
+					ActivityLog::record("game-login-failed", ["auth_type" => (int)$type, ...$GLOBALS['game_auth_metadata']], "warn");
 					// If unsuccessful, return error code 33-201
 					header_remove();
 					http_response_code(401);
@@ -238,7 +243,7 @@
 		$db = connectMySQL();
 		// A banned account is refused here like a wrong password (401, Gb-Status
 		// 201): the game gets no hint about why.
-		$stmt = $db->prepare("select id, log_in_password from sys_users where dion_ppp_id = ? and banned_at is null;");
+		$stmt = $db->prepare("select id, log_in_password, banned_at from sys_users where dion_ppp_id = ?;");
 		$stmt->bind_param("s", $dionId);
 		$stmt->execute();
 		$result = fancy_get_result($stmt);
@@ -246,14 +251,19 @@
 		// If the user doesn't exist it's a fail
 		if (sizeof($result) == 0) {
 			return array(
-				"isValid" => false
+				"isValid" => false,
+				"reason" => "unknown-account"
 			);
 		}
-		// Check if the hashes match
+		// Preserve the same client response for all refusals. The diagnostic
+		// reason and numeric attempted account are only written to server logs.
+		$isBanned = $result[0]["banned_at"] !== null;
+		$passwordMatches = $passwordHash === md5($challenge.$result[0]["log_in_password"]);
 		return array(
 			"dionId" => $dionId,
-			"isValid" => $passwordHash === md5($challenge.$result[0]["log_in_password"]),
-			"userId" => $result[0]["id"]
+			"isValid" => !$isBanned && $passwordMatches,
+			"userId" => (int)$result[0]["id"],
+			"reason" => $isBanned ? "account-banned" : ($passwordMatches ? null : "password-mismatch")
 		);
 	}
 	

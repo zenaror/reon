@@ -298,6 +298,19 @@
   font-weight: bold;
 }
 
+/* Checkbox labels stay on one line, with the control before its text. */
+.admin-form .admin-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+}
+
+.admin-form__checkbox input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .admin-form input[type="text"],
 .admin-form input[type="search"],
 .admin-form select,
