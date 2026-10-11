@@ -1,4 +1,7 @@
 <?php
+require_once dirname(__DIR__,2).'/classes/GameSupportUtil.php';
+if (!GameSupportUtil::enabled('mariokart')) { http_response_code(503); exit; }
+
 	require_once("../../classes/TemplateUtil.php");
 	require_once("../../classes/LogUtil.php");
 	require_once("../../classes/DBUtil.php");

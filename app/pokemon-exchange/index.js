@@ -1,3 +1,4 @@
+const gameSupport = require("../../lib/game-support");
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
@@ -3716,6 +3717,7 @@ async function tellPlayerAboutTrade(connection, row, outcome) {
 
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
+    if (!await gameSupport.enabled(connection, "crystal")) { await connection.end(); return; }
 
   try {
     if (!TRADE_CORNER_ENABLED) {

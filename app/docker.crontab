@@ -13,7 +13,7 @@
 # The PHP jobs live in docker-php.crontab, because the Node cron image has no
 # PHP -- and there are three of them in production, not zero.
 
-*/15 * * * * node /app/auto-schedule/index.js -c /app/config.json
-*/15 * * * * node /app/pokemon-exchange/index.js -c /app/config.json
-*/15 * * * * node /app/mail-bottle/index.js -c /app/config.json
-0 0 * * * node /app/pokemon-battle/index.js -c /app/config.json
+*/15 * * * * node /app/app/auto-schedule/index.js -c /app/config.json
+*/15 * * * * node /app/app/pokemon-exchange/index.js -c /app/config.json
+*/15 * * * * node /app/app/mail-bottle/index.js -c /app/config.json
+0 0 * * * node /app/app/pokemon-battle/index.js -c /app/config.json

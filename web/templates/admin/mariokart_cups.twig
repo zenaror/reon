@@ -1,0 +1,18 @@
+{% extends 'admin/layout.twig' %}
+{% block admin_title %}{{ 'mariokart-admin.title'|trans }}{% endblock %}
+{% block admin_body %}
+<p>{{ 'mariokart-admin.intro'|trans }}</p>
+<table class="admin-table"><thead><tr><th>ID</th><th>{{ 'mariokart-admin.region'|trans }}</th><th>{{ 'mariokart-admin.file'|trans }}</th><th>{{ 'mariokart-admin.dates'|trans }}</th><th></th></tr></thead><tbody>
+{% for cup in cups %}<tr><td>{{ cup.id }}</td><td>{{ cup.game_region }}</td><td>{{ cup.file_name }}</td><td>{{ cup.start_date }} – {{ cup.end_date }}</td><td><a href="?edit={{ cup.id }}">{{ 'mariokart-admin.edit'|trans }}</a>
+<form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ cup.id }}"><label>{{ 'mariokart-admin.confirm-delete'|trans }} <input name="confirmation" size="6" required></label><button class="admin-btn">{{ 'mariokart-admin.delete'|trans }}</button></form></td></tr>{% endfor %}
+</tbody></table>
+<h2>{{ (editing ? 'mariokart-admin.edit' : 'mariokart-admin.create')|trans }}</h2>
+<form method="post" class="admin-form"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="action" value="save">
+<label>{{ 'mariokart-admin.region'|trans }} <select name="game_region">{% for r in ['j','e'] %}<option value="{{ r }}"{% if form.game_region==r %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
+<label>{{ 'mariokart-admin.file'|trans }} <input name="file_name" value="{{ form.file_name }}" required maxlength="48" pattern="[A-Za-z0-9_-]{1,48}"></label><p class="admin-form__hint">{{ 'mariokart-admin.file-hint'|trans }}</p>
+<div class="admin-form__row">{% for key in dates %}<label>{{ ('mariokart-admin.'~key)|trans }} <input name="{{ key }}" type="date" value="{{ form[key] }}" required></label>{% endfor %}</div><p class="admin-form__hint">{{ 'mariokart-admin.date-hint'|trans }}</p>
+<div class="admin-form__row">{% for key,max in {'course':19,'num_attempts':99,'character':15,'start_coins':15} %}<label>{{ ('mariokart-admin.'~key)|trans }} <input type="number" min="{{ key=='num_attempts'?1:0 }}" max="{{ max }}" name="{{ key }}" value="{{ form[key] }}" required></label>{% endfor %}</div><p class="admin-form__hint">{{ 'mariokart-admin.rule-hint'|trans }}</p>
+{% for key in flags %}<label><input type="checkbox" name="{{ key }}" value="1"{% if form[key] %} checked{% endif %}>{{ ('mariokart-admin.'~key)|trans }}</label>{% endfor %}
+<label>{{ 'mariokart-admin.message'|trans }} <textarea name="message" rows="5">{{ form.message }}</textarea></label><p class="admin-form__hint">{{ 'mariokart-admin.message-hint'|trans }}</p>
+<button class="admin-btn">{{ 'mariokart-admin.publish'|trans }}</button>{% if editing %}<a href="/admin/mariokart_cups.php">{{ 'mariokart-admin.create'|trans }}</a>{% endif %}
+</form>{% endblock %}

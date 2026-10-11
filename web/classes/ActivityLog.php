@@ -25,7 +25,8 @@
 		// $level: "info" for things that happened, "warn" for a refusal
 		// (failed login, failed game auth) so the level filter finds them.
 		public static function record($event, array $fields = [], $level = "info") {
-			$line = ["ts" => gmdate("Y-m-d\\TH:i:s\\Z"), "level" => $level, "component" => "activity",
+			if (!isset($fields['game_id']) && in_array($event, ['game-login','game-login-failed'], true) && preg_match('#(?:AGB|CGB|SGB)-[A-Z0-9]{4}#i', (string)($_GET['name'] ?? ''), $match)) $fields['game_id'] = strtoupper($match[0]);
+            $line = ["ts" => gmdate("Y-m-d\\TH:i:s\\Z"), "level" => $level, "component" => "activity",
 			         "event" => (string)$event, "msg" => (string)$event];
 			foreach ($fields as $k => $v) {
 				if ($v === null || $k === "ts" || $k === "level" || $k === "component" || $k === "event" || $k === "msg") continue;
@@ -45,17 +46,27 @@
 		// authentication established are known. Scripts exit() in the middle of
 		// serving; shutdown functions still run.
 		public static function gameRequest($type, $path) {
-			$path = (string)$path;
+			static $registered = [];
+            $key = (string)$type.':'.(string)$path;
+            if (isset($registered[$key])) return;
+            $registered[$key] = true;
+            $path = (string)$path;
 			register_shutdown_function(function () use ($type, $path) {
 				$status = http_response_code();
+                $challenge = $status === 401 && count(array_filter(headers_list(), fn($h) => stripos($h, "WWW-Authenticate:") === 0)) > 0;
 				$account = (isset($_SESSION["type"]) && $_SESSION["type"] === "cgb" && isset($_SESSION["userId"]))
 					? (int)$_SESSION["userId"]
 					: (isset($_SESSION["utility_authed_user_id"]) ? (int)$_SESSION["utility_authed_user_id"] : null);
 				self::record($type, [
+                    ...($GLOBALS['game_upload_metadata'] ?? []),
 					"path" => $path,
+                    "game_id" => preg_match('#(?:AGB|CGB|SGB)-[A-Z0-9]{4}#i', $path, $m) ? strtoupper($m[0]) : null,
+                    "method" => $_SERVER['REQUEST_METHOD'] ?? null,
+                    "bytes_in" => isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : null,
+                    "reason" => $GLOBALS['game_refusal_reason'] ?? ($challenge ? "auth-challenge" : null),
 					"status" => $status === false ? 200 : $status,
 					"account" => $account,
-				], ($status !== false && $status >= 400) ? "warn" : "info");
+				], ($status !== false && $status >= 400 && !$challenge) ? "warn" : "info");
 			});
 		}
 	}

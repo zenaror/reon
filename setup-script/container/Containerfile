@@ -12,6 +12,7 @@ COPY setup-script/container/entrypoint.sh /usr/local/bin/reon-container-entrypoi
 COPY setup-script/container/install.sh /usr/local/bin/reon-container-install
 COPY setup-script/container/reon-bootstrap.service /etc/systemd/system/reon-bootstrap.service
 RUN chmod 755 /usr/local/bin/reon-container-* \
+    && chmod 644 /etc/systemd/system/reon-bootstrap.service \
     && systemctl enable reon-bootstrap.service \
     && find /usr/share/reon-source -type f -exec chmod 644 {} + \
     && find /usr/share/reon-source -type d -exec chmod 755 {} + \

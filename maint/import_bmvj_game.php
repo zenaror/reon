@@ -42,13 +42,22 @@ try {
         'title' => hex2bin($meta['titleHex']), 'description' => hex2bin($meta['descriptionHex']),
         'download_filename' => $filename, 'price_yen' => $meta['price'],
     ];
-    $baseline = file_get_contents(CORE_PATH . '/download/A4/CGB-BMVJ/RomList.cgb');
+    $baseline = "\0";
     $catalog = BmvjUtil::appendToCatalog($baseline, [$game]);
     if ($catalog === null || ord($catalog[0]) !== ord($baseline[0]) + 1) {
         throw new RuntimeException('Invalid metadata, full catalog or baseline ID collision.');
     }
     $db = connectMySQL();
     $db->begin_transaction();
+    $rows = $db->query('SELECT game_id,blocks_needed,category_icon,minigame_type,price_yen,download_filename,is_active,title,description,min_level_react,min_level_smart,min_level_sense,min_hidden_level_a,min_hidden_level_b FROM bmvj_custom_games ORDER BY game_id FOR UPDATE')->fetch_all(MYSQLI_ASSOC);
+    if (isset($argv[2])) {
+        $activeRows = array_values(array_filter($rows, static fn($r) => (int)$r['is_active'] === 1));
+        $activeRows[] = $game;
+        $activeCatalog = BmvjUtil::appendToCatalog("\0", $activeRows);
+        if ($activeCatalog === null || ord($activeCatalog[0]) !== count($activeRows)) {
+            throw new RuntimeException('Active catalog capacity or metadata check failed');
+        }
+    }
     $stmt = $db->prepare('INSERT INTO bmvj_custom_games '
         . '(game_id,blocks_needed,category_icon,minigame_type,title,description,download_filename,price_yen,game_binary,is_active) '
         . 'VALUES (?,?,?,?,?,?,?,?,?,?)');

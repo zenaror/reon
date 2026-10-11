@@ -3,6 +3,11 @@
 	require_once(CORE_PATH."/database.php");
 	require_once(dirname(CORE_PATH)."/classes/ActivityLog.php");
 	
+    require_once dirname(CORE_PATH).'/classes/GameSupportUtil.php';
+    GameSupportUtil::guardPath($_GET['name'] ?? '');
+    $requestType = basename(parse_url($_SERVER['SCRIPT_NAME'] ?? '', PHP_URL_PATH), '.php');
+    if (in_array($requestType, ['download','upload','ranking','utility'], true)) ActivityLog::gameRequest($requestType, $_GET['name'] ?? '');
+
 	// Auth procedure
 	// Will only be performed for files prefixed with a cost (e.g. "10.")
 	// The download and upload functions give the user a session that is to be used for the next request

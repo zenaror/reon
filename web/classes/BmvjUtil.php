@@ -64,7 +64,7 @@ final class BmvjUtil
         if (!$stmt->execute()) return null;
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        if ($row === null || (int)$row['price_yen'] !== (int)explode('.', $filename, 2)[0]) return null;
+        if ($row === null || $row['game_binary'] === '' || (int)$row['price_yen'] !== (int)explode('.', $filename, 2)[0]) return null;
         return (string)$row['game_binary'];
     }
 
@@ -74,9 +74,9 @@ final class BmvjUtil
      */
     public static function appendToCatalog(string $baseline, array $customGames): ?string
     {
-        if ($baseline === '' || strlen($baseline) < 3) return null;
+        if ($baseline === '') return null;
         $count = ord($baseline[0]);
-        if ($count < 1 || $count > 78 || strlen($baseline) < 1 + 2 * $count) return null;
+        if ($count > 78 || strlen($baseline) < 1 + 2 * $count) return null;
 
         $records = [];
         for ($i = 0; $i < $count; $i++) {
@@ -110,7 +110,7 @@ final class BmvjUtil
         $tableEnd = 1 + 2 * count($allRecords);
         // Keep the baseline header/padding bytes and expand only if the larger
         // offset table reaches past the existing first record.
-        $out = substr($baseline, 0, $offsets[0]);
+        $out = substr($baseline, 0, $offsets[0] ?? 1);
         if (strlen($out) < $tableEnd) {
             $out .= str_repeat("\0", $tableEnd - strlen($out));
         }

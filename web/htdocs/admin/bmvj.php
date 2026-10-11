@@ -18,7 +18,7 @@ if ($editing) {
 }
 if (isset($_GET['download'])) {
     $row = BmvjAdminUtil::find((string)$_GET['download']);
-    if ($row === null) { http_response_code(404); exit(); }
+    if ($row === null || $row['game_binary'] === '') { http_response_code(404); exit(); }
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . $row['download_filename'] . '"');
     echo $row['game_binary']; exit();
@@ -39,7 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target = (string)$form['game_id'];
     } elseif ($action === 'toggle') {
         $row = BmvjAdminUtil::find($target);
-        if ($row !== null) {
+        if ($row !== null && !empty($row['legacy_catalog_record'])) {
+            $error = 'upload-error';
+        } elseif ($row !== null) {
             $input = BmvjAdminUtil::form($row);
             if (!$row['is_custom']) unset($input['is_custom']);
             if ($row['is_active']) unset($input['is_active']); else $input['is_active'] = '1';

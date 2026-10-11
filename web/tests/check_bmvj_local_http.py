@@ -20,7 +20,7 @@ args = parser.parse_args()
 if urlparse(args.url).hostname not in ('127.0.0.1', 'localhost', '::1'):
     parser.error('This automated check only targets loopback')
 root = Path(__file__).resolve().parents[1]
-baseline = (root / 'cgb/download/A4/CGB-BMVJ/RomList.cgb').read_bytes()
+baseline = b'\0'  # No active official rows in this isolated database.
 expected = args.body.read_bytes() if args.body else b'SYNTHETIC-BMVJ-HTTP-BODY\0' + (
     root / 'tests/fixtures/bmvj/input_tester.flash').read_bytes()
 opener = build_opener(ProxyHandler({}))

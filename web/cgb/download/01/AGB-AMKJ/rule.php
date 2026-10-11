@@ -10,7 +10,7 @@
 		http_response_code(500);
 		return;
 	}
-$stmt = $db->prepare("select * from amk_rule where game_region = ? order by id desc limit 1;");
+$stmt = $db->prepare("select * from amk_rule where game_region = ? order by start_date desc, id desc limit 1;");
 	$stmt->bind_param("s", $game_region);
 	$stmt->execute();
 	$result = fancy_get_result($stmt);
@@ -46,8 +46,8 @@ $stmt = $db->prepare("select * from amk_rule where game_region = ? order by id d
 		."\r\n"
 		.sprintf('%02d', $messageLength)
 		."\r\n"
-		.mb_convert_encoding($result[0]["message"], "SJIS", "UTF-8");
+		.mb_convert_encoding((string)($result[0]["message"] ?? ""), "SJIS", "UTF-8");
 		
 		echo $data;
-	}
+	} else { $GLOBALS["game_refusal_reason"] = "no-published-cup"; http_response_code(404); }
 ?>

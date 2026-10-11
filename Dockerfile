@@ -11,12 +11,12 @@ ARG DOTNET_VERSION=9.0
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS pokemon-legality
-ARG DOTNET_VERSION
+ARG DOTNET_TARGET_FRAMEWORK=net9.0
 WORKDIR /src
 COPY "app/pokemon-legality/LegalityCheckerConsole/LegalityCheckerConsole.csproj" /src/
-RUN dotnet restore "LegalityCheckerConsole.csproj"
+RUN dotnet restore "LegalityCheckerConsole.csproj" --runtime linux-x64
 COPY "app/pokemon-legality/LegalityCheckerConsole/." .
-RUN dotnet build "LegalityCheckerConsole.csproj" --no-restore -c Release --framework net${DOTNET_VERSION} -r linux-x64 --self-contained -o /app/pokemon-legality
+RUN dotnet build "LegalityCheckerConsole.csproj" --no-restore -c Release --framework ${DOTNET_TARGET_FRAMEWORK} -r linux-x64 --self-contained -o /app/pokemon-legality
 
 ### Web Service
 FROM php:${PHP_VERSION} AS web-deps
@@ -79,9 +79,10 @@ COPY mail/package.json mail/package-lock.json* ./
 RUN npm ci
 
 FROM node:${NODE_VERSION2} AS mail
-WORKDIR /app
+WORKDIR /app/mail
 COPY --from=mail-deps /app/node_modules ./node_modules
-COPY mail /app
+COPY mail /app/mail
+COPY lib /app/lib
 # 10046, not 25/110. The service stopped being a mail server on
 # 2026-09-12: Postfix answers 25 and Dovecot answers 110, and `disable_pop3`
 # turned off the built-in POP3. What is left here are the side effects that
@@ -92,7 +93,7 @@ COPY mail /app
 # target does not deliver any mail on its own; see setup-script/2-setup-postfix-bridge.sh.
 EXPOSE 10046
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/mail/entrypoint.sh"]
 
 ### Outbound relay policy
 #
@@ -101,9 +102,10 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 # entirely, even though it is an active service in production
 # (reon-relay-policy.service).
 FROM node:${NODE_VERSION2} AS relay-policy
-WORKDIR /app
+WORKDIR /app/mail
 COPY --from=mail-deps /app/node_modules ./node_modules
-COPY mail /app
+COPY mail /app/mail
+COPY lib /app/lib
 EXPOSE 10045
 CMD ["node", "relayPolicy.js", "-c", "/app/config.json", "-p", "10045"]
 
@@ -162,7 +164,8 @@ RUN chmod 0644 /etc/cron.d/crontab
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-WORKDIR /app
+WORKDIR /app/app
+COPY lib /app/lib
 
 COPY app/pokemon-battle pokemon-battle
 COPY --from=battle-deps /app/node_modules ./pokemon-battle/node_modules
@@ -179,7 +182,7 @@ COPY --from=auto-schedule-deps /app/node_modules ./auto-schedule/node_modules
 COPY --from=pokemon-legality /app/pokemon-legality /app/pokemon-legality
 ENV POKEMON_LEGALITY_BIN=/app/pokemon-legality/LegalityCheckerConsole
 
-COPY app/bxt_config_loader.js /app/
+COPY app/bxt_config_loader.js /app/app/
 
 CMD ["/usr/local/bin/supercronic", "/etc/cron.d/crontab"]
 

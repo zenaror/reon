@@ -1,3 +1,4 @@
+const gameSupport = require("../../lib/game-support");
 const fs = require("fs");
 const path = require("path");
 // mysql2 compat: some installs (or older versions) don't expose the /promise entrypoint.
@@ -2220,8 +2221,8 @@ async function main() {
 
   try {
     const conn = await pool.getConnection();
-
     try {
+      if (!await gameSupport.enabled(conn, 'crystal')) return;
       // 1) Vanilla cycle (always)
       const vanillaRes = await processPokemonNewsCycle(
         conn,

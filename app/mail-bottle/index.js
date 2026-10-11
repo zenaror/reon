@@ -1,3 +1,4 @@
+const gameSupport = require("../../lib/game-support");
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
@@ -52,6 +53,7 @@ const dbConfig = {
 
 async function doExchange() {
   const connection = await mysql.createConnection(dbConfig);
+    if (!await gameSupport.enabled(connection, "mailbottle")) { await connection.end(); return; }
 
   try {
     await connection.beginTransaction();

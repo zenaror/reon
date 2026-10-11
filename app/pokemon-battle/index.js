@@ -1,3 +1,4 @@
+const gameSupport = require("../../lib/game-support");
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
@@ -43,6 +44,7 @@ const numRoomsPerLevel = 20;
 
 async function updateContent() {
     const connection = await mysql.createConnection(mysqlConfig);
+    if (!await gameSupport.enabled(connection, "crystal")) { await connection.end(); return; }
     await connection.beginTransaction();
     try {
         // Globally expire old records once per run.

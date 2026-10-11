@@ -302,6 +302,7 @@ Everything an administrator does is written to `sys_admin_log`.
 | `20260928200000` | `sys_ip_bans` (who banned which address, and why) |
 | `20261006120000` | `bmvj_custom_games`, `sys_users.custom_bmvj_opt_in` |
 | `20261006223000` | `bmvj_custom_games.is_custom` (official/custom classification) |
+| `20261011120000` | Historical BMVJ test records imported as inactive custom drafts; live catalog uses the database only |
 
 `setup-script/1-setup-reon.sh` runs `phinx migrate`, so a fresh install has all
 of them.
@@ -317,3 +318,174 @@ changed** (it is the rankings' age gate).
 ## Net de Get minigames
 
 `/admin/bmvj.php`, linked from Game Content, manages `bmvj_custom_games`: complete `.cgb` upload, catalog metadata, official/custom classification, activation, replacement and deletion with typed-ID confirmation. See `NET_DE_GET.md`. Migration `20261006223000` preserves previous entries as custom. Panel writes are admin/CSRF protected and logged in the existing admin audit.
+
+
+## Game support and Mario Kart cups
+
+`/admin/game_support.php` stores per-game switches in `sys_settings`. All
+games default to enabled. Disabling a module returns HTTP 503 at its game
+endpoints and public game pages; its scheduled workers skip their next run.
+Stored content and results remain intact. Mobile Trainer is mandatory. Its
+shared web, DNS and internal mail dependencies remain necessary even when
+all optional games are disabled. The panel prevents stopping mail daemons;
+restarts and operator maintenance remain available. Dependency names describe
+requirements, not automatic service installation. Health is the latest stored
+probe; DNS and legality checks may be unverified. Other game IDs should be
+audited when extending the registry.
+
+`/admin/mariokart_cups.php` publishes the existing `amk_rule` records: region,
+Japan calendar dates, rule fields and message. It does not upload a new cup
+binary format. No cup is seeded automatically. Cups with recorded results
+cannot be deleted through this panel. Mario Kart refusals now include a
+non-personal reason code; uploaded ghost bytes are never written to activity
+logs. An empty cup database is not proof of the cause of a particular emulator
+error: reproduce the operation and inspect its new reason.
+
+### Reading activity history
+
+The Logs page defaults to Activity, orders events newest first and applies
+the selected event limit after filtering. Additional filters are collapsed.
+File sources include the current file and up to 14 rotated files (including
+gzip), reading at most 1 MiB from each; older entries outside these tails are
+not guaranteed to appear. Journal sources read up to 1000 lines when filtering
+by date or game. Date boundaries use America/Sao_Paulo; server timestamps
+remain UTC. Refresh is on request, or every 15 seconds when enabled. Existing
+path fields supply game IDs for older entries; new game requests carry an
+explicit game ID and include authentication challenges and refused uploads.
+
+
+### Readable titles in Game Support
+
+The registry shows a title and its original game ID in separate columns.
+Research on 2026-10-11 corrected placeholder names and split Monster Guardians
+and Napoleon into separate switches. Migration `20261011130000` copies the
+previous shared switch state to Monster Guardians; existing operator choices
+remain effective. Internal setting keys are preserved for compatibility.
+
+| Game ID | Display title |
+| --- | --- |
+| AGB-ADRJ | Doraemon: Midori no Wakusei Doki Doki Daikyuushutsu! |
+| AGB-AGTJ | Zen Nihon GT Senshuken |
+| AGB-AMBJ | Mobile Pro Yakyuu: Kantoku no Saihai |
+| AGB-AMGJ | Exciting Bass |
+| AGB-AY5J | Yu-Gi-Oh! Duel Monsters 5: Expert 1 |
+| AGB-ASKJ | Sutakomi: Star Communicator |
+| AGB-AMSJ | Morita Shougi Advance |
+| AGB-AMNJ | Monster Guardians |
+| AGB-ANPJ | Napoleon |
+| AGB-AMOJ | EX Monopoly |
+
+Title/ID mapping was cross-checked against the [ROM-header name mapping](https://github.com/pladaria/gba-romname-gen/blob/master/romname.lst),
+with titles corroborated by Nintendo's [March–June](https://www.nintendo.co.jp/n08/before/01_0306.html),
+[July–September](https://www.nintendo.co.jp/n08/before/01_0709.html) and
+[October–December 2001](https://www.nintendo.co.jp/n08/before/01_1012.html) catalogs.
+The [Doraemon product record](https://www.retroplace.com/es/juegos/60137--doraemon-midori-no-wakusei-doki-doki-daikyuushuutsu)
+also identifies AGB-ADRJ. Title identification does not establish that every
+feature of the game has been implemented or validated.
+
+
+Mario Kart time-trial uploads also record the numeric `route_course`,
+`ghost_course`, `driver`, and boolean `checksum_valid` on completion. These
+fields distinguish a route/ghost mismatch from an invalid driver or checksum;
+player identifiers and the ghost body are excluded. Checks remain mandatory.
+
+### Mario Kart upload profile fields
+
+The time-trial upload intentionally omits personal profile data. The local
+AMKJ image inspected on 2026-10-11 (SHA-1
+`88ffde363b05264a99a4d5ada0c80a00196a94d7`) fills `full_name` with sixteen
+`0x2A` bytes, `phone_number` with twelve `0x0F` bytes, `postal_code` with eight
+`0x0F` bytes, and `address` with 128 `0x2A` bytes. Thumb instructions at
+`0x080590A0`–`0x080590CE` perform these fills when the profile inclusion flag
+is zero. This matches the omission described by
+[DanDocs, Mario Kart entry.cgb](https://shonumi.github.io/dandocs.html#mka_ent).
+The server reads these fixed fields and binds their bytes directly into binary
+columns. Read-only inspection found the same lengths and fills in both accepted
+Oracle records; no profile values were printed or logged.
+
+A Riverside Park/Yoshi upload on 2026-10-11 at 12:30:07 UTC (09:30:07 Brasilia)
+was rejected before its database transaction: route index 2, payload byte 20,
+driver 7, checksum valid. This establishes the refusal condition, not a mapping
+from Riverside Park to an internal track ID. The ROM upload builder at
+`0x08058FDC` stores its third argument into payload byte `0x10`; some callers
+supply a slot plus 20. Their relationship to the selected route still needs
+verification before changing the course guard. A valid checksum supports
+payload consistency, but is not proof that every client path is correct.
+
+
+### Isolated Mario Kart save reproduction (2026-10-11)
+
+The operator supplied a downloaded 64 KiB save (SHA-256
+`77318cbf3d4dceaf0b50521c89817ab4eedcf46e24b9b3955e270b94e5698b0b`).
+Only temporary copies were loaded with the Japanese ROM identified above.
+An ABI-matched mGBA `b1df94df5` helper enabled the Mobile GB Adapter and
+redirected HTTP/DNS exclusively to loopback fixtures. No Oracle credentials
+or production writes were involved, and the source save remained unchanged.
+
+A fresh, direct Riverside Park upload produced 4,288 bytes: course 2,
+driver 7, time 11,576. The same result occurred without the debugger.
+An observational breakpoint at `0x08058FDC` identified ghost slot 9,
+profile flag 0, course argument 2, caller return address `0x08065D69`.
+Updating rankings first with a structured, empty 88-byte response also
+produced course 2. The ROM requested ranks 1 through 11 even when the
+fixture reported no entries.
+
+An earlier attempt after malformed fixture replies produced course 20 with
+the same input-data hash. It is insufficient evidence for a legitimate
+course mapping or a production fix. These tests establish outbound packet
+construction only; fixture upload completion was not validated. The Oracle
+course-20 refusal and download error remain unresolved. A clean Oracle
+retry without a prior ranking update is requested to distinguish flows.
+
+
+A subsequent operator upload on Oracle at 2026-10-11 13:26:22 UTC
+(10:26:22 Brasilia) returned HTTP 200: route 2, payload course 2, driver 7,
+checksum valid. Successful `total.cgb` and `query.cgb` requests preceded it
+at 13:25:57 and 13:25:59 UTC. A prior ranking query alone therefore does
+not explain course 20. No runtime correction was applied for this retry;
+the earlier refusal remains unexplained.
+
+
+### Combined upload/ranking course marker (2026-10-11)
+
+Natural-menu reproduction distinguishes the dialog choices: registering a
+ghost **with** a ranking update calls `0x0806604C`, whose builder call at
+`0x080660DA` passes course 20 (return address `0x080660DF`) while the ranking
+and upload URLs select the actual time trial separately. On track 03 the
+fixture captured `total.cgb`, `query.cgb`, then a 4,288-byte upload with
+course 20, driver 4, time 6,068. Registering **without** the ranking update
+instead calls `0x08065D64` and sends course 3, with the same input-data hash.
+This supersedes the earlier attribution of the course-20 capture to malformed
+fixture replies: the combined menu choice generates that value itself.
+
+The server now accepts equality or the observed marker 20 for time-trial
+routes 00–19 only. Other course mismatches remain refused. Authentication,
+owner, size, driver and checksum checks remain required. The checksum is
+verified against the original packet, including course 20; storage already
+uses the selected URL course. Mobile GP handling is unchanged.
+
+`web/tests/test_mario_kart_upload.php` checks 5,395 synthetic cases without
+configuration or database access: valid checksum vectors, tampered fields,
+all route/wire-course combinations and invalid route boundaries. This is
+contract evidence, separate from operator verification in production.
+
+Deployed at 2026-10-11 13:41:59 UTC (10:41:59 Brasilia). Backup:
+`/var/backups/reon/amk-course-compat-20261011`. Production and local PHP hash:
+`f099bfcc7d542740e845a009bab713b9de443de514d65de54f631f28689e836b`.
+PHP syntax and isolated tests passed. Production game retries and the
+previous download error 24-000 remain pending.
+
+
+Operator verification after deployment: Oracle accepted the combined flow
+on time trials 03 and 04 at 2026-10-11 13:52:32 and 13:53:23 UTC
+(10:52:32 and 10:53:23 Brasilia). Both POSTs returned HTTP 200 with wire
+course 20 and valid checksums; drivers were 4 and 6 respectively. This
+confirms the previously refused wire value on two successive tracks.
+It does not establish hardware coverage or resolve download error 24-000.
+
+
+The cup filename form accepts the basename only. The backend appends `.cgb`,
+while edit forms omit the stored suffix. Older submitted names with `.cgb`
+are normalized to avoid duplicates. This change was deployed on 2026-10-11
+with PHP syntax and hash checks; backup `cup-filename-20261011`. No cup was
+created for validation.

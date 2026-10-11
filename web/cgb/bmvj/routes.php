@@ -15,17 +15,11 @@ function handleBmvjRoute(string $path, ?string $sessionId = null): bool
         // RomList itself has no cost prefix. Use the same utility-auth flow
         // as custom Pokémon News so the catalog can safely be per-account.
         $userId = BmvjUtil::requireAuthenticatedUserId();
-        $baseline = dirname(__DIR__) . '/download/A4/CGB-BMVJ/RomList.cgb';
-        $bytes = @file_get_contents($baseline);
-        if ($bytes === false) {
-            http_response_code(503);
-            return true;
-        }
-
         $includeCustom = BmvjUtil::userOptedInCustom($userId);
-        $remainingSlots = max(0, 78 - ord($bytes[0]));
-        $customGames = BmvjUtil::activeCustomGames($remainingSlots, $includeCustom);
-        $catalog = BmvjUtil::appendToCatalog($bytes, $customGames);
+        $games = BmvjUtil::activeCustomGames(78, $includeCustom);
+        // The database is the single library. Historical fixtures are imported
+        // as inactive drafts, so deletion cannot resurrect a static record.
+        $catalog = BmvjUtil::appendToCatalog("\0", $games);
         if ($catalog === null) {
             http_response_code(503);
             return true;

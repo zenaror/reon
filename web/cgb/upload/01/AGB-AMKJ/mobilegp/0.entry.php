@@ -7,24 +7,25 @@
 	
 	$size = (int) $_SERVER['CONTENT_LENGTH'];
 	if ($size != 0x10c0) {
-		http_response_code(400);
+		marioKartRefuse("invalid-upload-length");
 		return;
 	}
 	$data = parseGhostUpload(fopen("php://input", "rb"));
 	
 	if ($data["driver"] > 7 || $data["course"] != 20) {
-		http_response_code(400);
+		marioKartRefuse("course-or-driver-mismatch");
 		return;
 	}
 	
 	// Validate sent player ID
 	if (!checkPlayerID($data["player_id"], $_SESSION['userId'])) {
 		// Player ID claimed by a different user
-		http_response_code(400);
+		marioKartRefuse("player-id-does-not-match-account");
 		return;
 	}
 	
 	$gp_id = getCurrentMobileGP();
+    if ($gp_id < 0) { marioKartRefuse("no-published-cup", 404); return; }
 	
 	$db = connectMySQL();
 	

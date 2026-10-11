@@ -31,6 +31,7 @@
 	}
 
 	function decodePlayerID($myid) {
+        if (!is_string($myid) || strlen($myid) !== 16) return ['valid'=>false];
 		$data16 = array(0, 0, 0, 0, 0, 0, 0, 0);
 		for ($i = 0; $i < 16; $i++) {
 			$cur = ord(substr($myid, $i));
@@ -99,7 +100,7 @@
 
 		if (is_null($user_id)) {
 			return $result[0]["id"];
-		} elseif ($result[0]["id"] !== $user_id) {
+		} elseif ((int)$result[0]["id"] !== (int)$user_id) {
 			return false;
 		} else {
 			return true;
@@ -109,7 +110,7 @@
 	function getCurrentMobileGP() {
 		$datestamp = date("Y-m-d", time() + 32400);
 		$db = connectMySQL();
-		$stmt = $db->prepare("select id from amk_rule where start_date <= ? and game_region = ? order by id desc limit 1");
+		$stmt = $db->prepare("select id from amk_rule where start_date <= ? and game_region = ? order by start_date desc, id desc limit 1");
 		$game_region = getCurrentGameRegion();
 		$stmt->bind_param("ss", $datestamp, $game_region);
 		$stmt->execute();
@@ -363,6 +364,8 @@
 		$myid = hex2bin($params["myid"]);
 		if ($myid === false) {
 			http_response_code(400);
+            $GLOBALS["game_refusal_reason"] = "invalid-player-id-encoding";
+            return;
 		}
 		$decoded = decodePlayerID($myid);
 		if (!$decoded["valid"]) {
@@ -807,37 +810,66 @@
 		return $data["unk18"] == (($a & 0xff) << 8 | ($b & 0xff));
 	}
 
+    function marioKartTimeTrialCourseMatches($routeCourse, $wireCourse) {
+        // AMKJ's combined upload/ranking path (ROM 080660DA) sends 20
+        // while selecting the actual time-trial URL separately. The route
+        // remains authoritative for storage. Other mismatches are refused.
+        return $routeCourse >= 0 && $routeCourse < 20
+            && ($wireCourse === $routeCourse || $wireCourse === 20);
+    }
+
+    function marioKartRefuse($reason, $status = 400) {
+        $GLOBALS['game_refusal_reason'] = (string)$reason;
+        http_response_code($status);
+    }
+
 	function entry($course) { // 0.entry.cgb
 		$size = (int) $_SERVER['CONTENT_LENGTH'];
 		if ($size != 0x10c0) {
-			http_response_code(400);
+			marioKartRefuse("invalid-upload-length");
 			return;
 		}
 		$data = parseGhostUpload(fopen("php://input", "rb"));
-
-		if ($data["course"] != $course || $data["driver"] > 7) {
-			http_response_code(400);
+        // Numeric protocol diagnostics only; never retain the ghost body or
+        // its player ID, names, telephone or address fields.
+        $checksumValid = validateGhostUpload($data);
+        $GLOBALS['game_upload_metadata'] = [
+            'route_course' => (int)$course,
+            'ghost_course' => (int)$data['course'],
+            'driver' => (int)$data['driver'],
+            'checksum_valid' => $checksumValid,
+        ];
+		if (!marioKartTimeTrialCourseMatches((int)$course, (int)$data['course'])) {
+			marioKartRefuse("ghost-course-mismatch");
 			return;
 		}
+        if ($data['driver'] > 7) {
+            marioKartRefuse('invalid-driver');
+            return;
+        }
 
-		if (!validateGhostUpload($data)) {
-			http_response_code(400);
+		if (!$checksumValid) {
+			marioKartRefuse("ghost-checksum-mismatch");
 			return;
 		}
 
 		// Validate sent player ID
 		if (!checkPlayerID($data["player_id"], $_SESSION['userId'])) {
 			// Player ID invalid (eg email mismatch)
-			http_response_code(400);
+			marioKartRefuse("player-id-does-not-match-account");
 			return;
 		}
+
+        // The SQL below uses the selected route, never the wire marker.
+        // The checksum above always covers the unmodified wire packet.
 
 		$db = connectMySQL();
 		$db->begin_transaction();
 		try {
 			// Delete existing record
-			$stmt = $db->prepare("delete ignore from amk_ghosts where course = ? and player_id = ?");
-			$stmt->bind_param("is", $course, $data["player_id"]);
+			$stmt = $db->prepare("delete ignore from amk_ghosts where course = ? and player_id = ? and game_region = ?");
+			$game_region = getCurrentGameRegion();
+            $stmt->bind_param("iss", $course, $data["player_id"], $game_region);
 			$stmt->execute();
 
 			// Insert new record

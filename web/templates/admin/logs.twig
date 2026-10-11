@@ -20,6 +20,7 @@
 				{% endfor %}
 			</select>
 		</label>
+        <details{% if level or group or game_id or from or to or raw %} open{% endif %}><summary>{{ 'admin.logs-filters'|trans }}</summary><div class="admin-form__row">
 		<label>
 			{{ 'admin.logs-level'|trans }}
 			<select name="level">
@@ -29,6 +30,7 @@
 			</select>
 		</label>
 		{% if is_activity %}
+        <label>Game ID <input name="game" value="{{ game_id }}" placeholder="AGB-AMKJ" pattern="(?:AGB|CGB|SGB)-[A-Za-z0-9]{4}"></label>
 		<label>
 			{{ 'admin.logs-group'|trans }}
 			<select name="group">
@@ -39,13 +41,19 @@
 			</select>
 		</label>
 		{% endif %}
+        <label>{{ 'admin.logs-from'|trans }} <input type="date" name="from" value="{{ from }}"></label>
+        <label>{{ 'admin.logs-to'|trans }} <input type="date" name="to" value="{{ to }}"></label>
+        <label><input type="checkbox" name="refresh" value="1"{% if refresh %} checked{% endif %}>{{ 'admin.logs-auto-refresh'|trans }}</label>
 		<label>
 			<input type="checkbox" name="raw" value="1"{% if raw %} checked{% endif %}>
 			{{ 'admin.logs-raw'|trans }}
 		</label>
+        </div></details>
 		<button class="btn btn-outline-primary" type="submit">{{ 'admin.logs-show'|trans }}</button>
 	</form>
 
+    <p class="admin-form__hint">{{ 'admin.logs-reading-note'|trans }} {{ entries|length }} / {{ lines }}</p>
+    {% if refresh %}<script>setInterval(function () { if (!document.querySelector('form:focus-within')) location.reload(); }, 15000);</script>{% endif %}
 	{% if not available and is_file %}
 		<div class="admin-notice admin-notice--bad">
 			<p class="mb-0"><strong>{{ 'admin.logs-file-unreadable'|trans }}</strong></p>
@@ -77,7 +85,7 @@ sudo systemctl restart php8.5-fpm</pre>
 				<div class="log-row" role="row">
 					<span class="log-time" role="cell"{% if e.time_utc %} title="{{ e.time_utc }}"{% endif %}>{{ e.time_local ?: e.time }}</span>
 					<span class="log-level log-level--{{ e.level ?: 'none' }}" role="cell">{{ e.level }}</span>
-					<span class="log-where" role="cell">{{ e.component ?: e.source }}</span>
+					<span class="log-where" role="cell">{{ e.game_id ?: e.component ?: e.source }}</span>
 					<span class="log-msg" role="cell">{{ e.msg }}
 						{% if e.extra %}<details><summary>{{ 'admin.logs-details'|trans }}</summary><pre>{{ e.extra }}</pre></details>{% endif %}
 					</span>

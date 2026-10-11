@@ -1894,6 +1894,13 @@ pokemon:
     US-WY: Wyoming
 
 admin:
+  logs-source-activity: "Player and game activity"
+  logs-source-php: "Website errors (PHP)"
+  logs-filters: "More filters"
+  logs-from: 'From'
+  logs-to: 'Through'
+  logs-auto-refresh: 'Refresh every 15 seconds'
+  logs-reading-note: 'Newest first. Updated on refresh; date range uses Brasilia time. Includes available rotations (up to 14). Bounded log tails; older matches may lie outside the read window. Matching entries:'
   nav-adapter: "Adapter config"
   adapter-title: "mobile_config.bin"
   adapter-intro: "What the generator writes into every mobile_config.bin. Only what is the same for everyone is here — the e-mail address, the gID, the device key and the relay token come from each account and have nothing to configure."
@@ -2507,7 +2514,7 @@ admin:
   logs-level-all: "All levels"
   logs-level-warn: "Warnings and errors"
   logs-level-error: "Errors only"
-  logs-raw: "Raw text"
+  logs-raw: Text view (filtered)
   logs-details: "Details"
   logs-group: "Show"
   logs-group-all: "Everything"
@@ -2740,6 +2747,8 @@ errors:
   missing: "The error data has not been built yet. Run maint/build_adapter_errors.php."
 
 bmvj-admin:
+  legacy-hint: "Historical test catalog entry, imported as an inactive custom draft. The original download file is absent and the metadata is not valid for publication. Review the fields and upload a complete .cgb before activating, or delete this draft."
+  missing-body: "No download file uploaded"
   title: "Minigames"
   game-title: "Game title"
   intro: "Manage Net de Get files, catalog metadata and publication."
@@ -2803,3 +2812,57 @@ bmvj-admin:
   min_hidden_level_a-hint: "Additional internal eligibility threshold. Its player-facing meaning is not established; keep 0 unless the content specification supplies a validated value."
   min_hidden_level_b-hint: "Second internal eligibility threshold. Keep 0 unless the content specification supplies a validated value."
   active-hint: "When saved as active, eligible accounts can see and download the game immediately. Keep inactive while preparing the entry. Deactivation or deletion does not remove copies already installed on cartridges."
+
+mariokart-admin:
+  title: "Mario Kart cups"
+  intro: "Publish Mobile GP rules through the normal REON database. No cup is created automatically. Existing results are retained."
+  region: "Game region"
+  file: "Cup filename"
+  dates: "Period"
+  edit: "Edit"
+  create: "Create cup"
+  delete: "Delete"
+  confirm-delete: "Type the numeric ID to delete"
+  file-hint: "Enter only the name, using letters, digits, hyphens or underscores. The .cgb extension is added automatically. No binary upload is required."
+  date-hint: "The game uses calendar dates in Japan. Each start date must precede or equal its end date. Configure entry and ranking windows separately. Next dates advertise the following cup."
+  rule-hint: "Course is the existing wire index (0–19); attempts are 1–99. Character and starting coins occupy one hexadecimal digit (0–15); preserve known game values when reproducing historical rules."
+  message: "Game message"
+  message-hint: "UTF-8 text converted to Shift-JIS for the game; at most 99 lines. Keep text short and use characters supported by the game."
+  publish: "Publish rules"
+  error: "Cup was not saved"
+  saved: "Cup saved"
+  course: "Course index"
+  num_attempts: "Attempts"
+  character: "Character nibble"
+  start_coins: "Starting coins nibble"
+  start_date: "Cup start"
+  end_date: "Cup end"
+  next_start_date: "Next cup start"
+  next_end_date: "Next cup end"
+  entry_start_date: "Entry start"
+  entry_end_date: "Entry end"
+  ranking_start_date: "Ranking start"
+  ranking_end_date: "Ranking end"
+  coins_enabled: "Coins"
+  items_enabled: "Items"
+  start_item_triple_shroom_enabled: "Start with triple mushroom"
+  shrooms_only_enabled: "Mushrooms only"
+  cpu_enabled: "CPU opponents"
+  five_laps_enabled: "Five laps"
+
+game-support:
+  title: "Game support"
+  intro: "Enable or disable game HTTP endpoints and background work. Settings take effect on new requests and the next worker run; stored content and results are not erased."
+  health: "Last service probe (not a live dependency test; unknown means unverified):"
+  game: "Game"
+  dependencies: "Required components"
+  state: "Support"
+  always: "Always enabled"
+  on: "Enabled"
+  off: "Disabled"
+  enable: "Enable"
+  disable: "Disable"
+  shared: "Shared dependencies remain available for enabled modules; web/DNS/internal mail are also required by Mobile Trainer. Enabling a module does not install missing services."
+  required: "Mobile Trainer cannot be disabled."
+  saved: "Game support updated."
+  mail-down: "Internal mail is reported down. Restore mail before enabling this game."

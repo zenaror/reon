@@ -89,6 +89,39 @@ get('/logout.php')
 page=get('/login.php');post('/login.php',{'_csrf':field(page,'_csrf'),'email':'devadmin','password':'dummyadmin1'})
 for path in ['/admin/','/admin/bmvj.php']:
  page=get(path);assert 'Fatal error' not in page and 'Traceback' not in page
+# Exercise the real cup form and module switch using disposable local data.
+cup_name='probe-'+uuid.uuid4().hex[:12]
+page=get('/admin/mariokart_cups.php')
+dates=['start_date','end_date','next_start_date','next_end_date','entry_start_date','entry_end_date','ranking_start_date','ranking_end_date']
+values={'_csrf':field(page,'_csrf'),'action':'save','game_region':'j','file_name':cup_name,'course':'2','num_attempts':'3','character':'7','start_coins':'0','message':'Local validation',**{k:field(page,k) for k in dates}}
+save_response=post('/admin/mariokart_cups.php',values)
+assert 'Fatal error' not in save_response and 'Cup was not saved' not in save_response, 'Cup publication failed'
+page=get('/admin/mariokart_cups.php')
+row=re.search(r'<tr><td>([0-9]+)</td><td>j</td><td>'+re.escape(cup_name)+r'\.cgb</td>',page);assert row,'Automatic cup suffix not stored'
+cup_id=row[1]
+try:
+ page=get('/admin/mariokart_cups.php?edit='+cup_id);assert field(page,'file_name')==cup_name
+ values.update({'_csrf':field(page,'_csrf'),'file_name':cup_name+'.cgb'})
+ post('/admin/mariokart_cups.php?edit='+cup_id,values)
+ page=get('/admin/mariokart_cups.php');assert cup_name+'.cgb.cgb' not in page
+finally:
+ page=get('/admin/mariokart_cups.php')
+ post('/admin/mariokart_cups.php',{'_csrf':field(page,'_csrf'),'action':'delete','id':cup_id,'confirmation':cup_id})
+ assert cup_name not in get('/admin/mariokart_cups.php')
+page=get('/admin/game_support.php')
+form=re.search(r'<form[^>]*>[^<]*(?:(?!</form>).)*name="module" value="gbwars"(?:(?!</form>).)*</form>',page,re.S);assert form
+original='1' if field(form[0],'state')=='0' else '0'
+try:
+ post('/admin/game_support.php',{'_csrf':field(page,'_csrf'),'module':'gbwars','state':'0'})
+ assert wire('/cgb/download?name=/18/CGB-BWWJ/map/0/map_1001.cgb')[0]==503
+ assert wire('/cgb/trainer.html')[0]==200
+ page=get('/admin/game_support.php')
+ post('/admin/game_support.php',{'_csrf':field(page,'_csrf'),'module':'trainer','state':'0'})
+ assert wire('/cgb/trainer.html')[0]==200
+finally:
+ page=get('/admin/game_support.php')
+ post('/admin/game_support.php',{'_csrf':field(page,'_csrf'),'module':'gbwars','state':original})
+assert 'Fatal error' not in get('/admin/logs.php?limit=10')
 # Publish through the actual administration upload form.
 library=get('/admin/bmvj.php');game_id=next('G'+str(i) for i in range(900,1000) if 'G'+str(i) not in library)
 payload=bytes(range(256))*32;page=get('/admin/bmvj.php?tab=upload')
@@ -111,4 +144,4 @@ finally:
  get('/logout.php');page=get('/login.php');post('/login.php',{'_csrf':field(page,'_csrf'),'email':'devadmin','password':'dummyadmin1'})
  page=get('/admin/bmvj.php');post('/admin/bmvj.php',{'_csrf':field(page,'_csrf'),'form_action':'delete','game_id':game_id,'confirmation':game_id})
 if a.state:open(a.state,'w').write(json.dumps({'name':name,'email':email,'password':password,'password8':password8,'gid':gid,'local':local,'key':key,'config':base64.b64encode(config).decode()}))
-print('PASS: real REON home, signup email, account, login, 512-byte adapter config, SMTP/APOP, external refusal, webmail, real admin, DNS, GB00, CGB upload/catalog/opt-in/download, web-to-game mail and restore')
+print('PASS: real REON home, signup email, account, login, 512-byte adapter config, SMTP/APOP, external refusal, webmail, real admin, cup suffix/edit/delete, module disable/restore, Trainer always on, DNS, GB00, CGB upload/catalog/opt-in/download, web-to-game mail and restore')

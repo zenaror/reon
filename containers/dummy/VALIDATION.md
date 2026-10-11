@@ -71,3 +71,25 @@ database. The public site's service-status widget has no production checker in
 this profile and may show Unknown. These limits are intentional for local use.
 CI build/publication has been updated; remote execution is a separate check
 and is not covered by these local results.
+
+## Refresh — 2026-10-11
+
+Both dummy images were rebuilt with the current game modules, logs, cup panel
+and Mario Kart upload compatibility. Database migrations completed on the retained
+local MySQL volume. The real application gate passed again, including cup
+creation with an automatic `.cgb` suffix, editing legacy suffixed input without
+duplication, deletion, disabling/restoring GB Wars and rejecting a Mobile Trainer
+disable request. Disposable cups and uploaded binaries were removed by the gate;
+accounts/mail are synthetic fixtures in the local development database.
+
+This gate exposed a reserved SQL identifier (`character`) in cup insertion/update;
+identifiers are now quoted. The same correction was deployed to Oracle with a
+backup and checked hash. Both rebuilt web profiles passed all 5,395 synthetic
+Mario Kart checksum/course checks. These checks do not resolve download 24-000;
+that investigation remains explicitly pending. The natural emulator evidence
+above was not repeated in this refresh.
+
+The host low-port setting had reverted to 1024. Until the operator restores 80,
+the retained stack uses HTTP 8080, SMTP 1587, POP3 1110 and DNS 5453/UDP.
+Image/service ports remain 80/25/110/5353; production-style local publication is
+HTTP 80, SMTP 587 mapped to 25, POP3 110 and DNS 5453. No host SMTP25 is needed.

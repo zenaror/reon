@@ -45,7 +45,7 @@ fi
 detect_web_user() {
 	local socket pool
 
-	socket=$(grep -RhoE 'fastcgi_pass[[:space:]]+unix:[^;]+' \
+	socket=$(grep -rhoE 'fastcgi_pass[[:space:]]+unix:[^;]+' \
 		/etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null |
 		head -1 | sed -E 's/.*unix:[[:space:]]*//')
 	[ -n "$socket" ] || return 1
@@ -122,6 +122,7 @@ TIMED=(
 # that would start it again goes down with it. Restart is fine -- it comes
 # back on its own.
 NEVER_STOP=(
+    postfix dovecot reon-mail # Shared with the mandatory Mobile Trainer.
 	nginx
 )
 

@@ -1,4 +1,7 @@
 <?php
+require_once dirname(__DIR__,2).'/classes/GameSupportUtil.php';
+if (!GameSupportUtil::enabled('gbwars')) { http_response_code(503); exit; }
+
 /**
  * Game Boy Wars 3 - Map Gallery
  */

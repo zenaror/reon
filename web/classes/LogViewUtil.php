@@ -28,7 +28,7 @@
 			"accounts" => ["signup", "signup-requested", "login", "login-failed", "password-changed",
 			               "password-reset-requested", "password-reset", "game-password-rerolled",
 			               "email-changed", "account-deleted"],
-			"game"     => ["game-login", "game-login-failed", "download", "upload", "ranking"],
+			"game"     => ["game-login", "game-login-failed", "download", "upload", "ranking", "utility", "game-disabled"],
 			"trades"   => ["trade"],
 		];
 
@@ -48,9 +48,31 @@
 			return (string)$text;
 		}
 
+        // Read recent rotations too: the current file can be empty after logrotate.
+        // Bounded per-file reads; gzip rotations are streamed with a bounded tail.
+        public static function historyText($path, $bytes = 1048576) {
+            $parts = []; $readable = false;
+            for ($n = 14; $n >= 0; $n--) {
+                $file = $n ? $path.'.'.$n : $path;
+                if (!is_file($file) && is_file($file.'.gz')) $file .= '.gz';
+                if (!is_readable($file)) continue;
+                $readable = true;
+                if (str_ends_with($file, '.gz')) {
+                    $f = @gzopen($file, 'rb'); if (!$f) continue;
+                    $tail = '';
+                    while (!gzeof($f)) {
+                        $tail .= gzread($f, 65536);
+                        if (strlen($tail) > $bytes) { $tail = substr($tail, -$bytes); $cut = strpos($tail, "\n"); if ($cut !== false) $tail = substr($tail, $cut + 1); }
+                    }
+                    gzclose($f); $parts[] = $tail;
+                } else $parts[] = self::phpLogText($bytes, $file) ?? '';
+            }
+            return $readable ? implode("\n", $parts) : null;
+        }
+
 		// $kind: "journal" or "file". $minLevel: "" (all), "warn" or "error".
-		// Returns at most $limit of the newest entries, oldest first.
-		public static function parse($text, $kind, $minLevel = "", $limit = 200, $group = "") {
+		// Returns at most $limit matching entries, newest first.
+		public static function parse($text, $kind, $minLevel = "", $limit = 200, $group = "", $game = "", $from = "", $to = "") {
 			$entries = [];
 			foreach (preg_split('/\R/', (string)$text) as $line) {
 				if ($line === "" || strpos($line, "-- No entries --") === 0 || strpos($line, "-- Boot ") === 0) continue;
@@ -95,7 +117,18 @@
 					return self::RANK[$e["level"]] >= $min;
 				}));
 			}
-			return array_slice($entries, -$limit);
+			// Filter before limiting, including raw view. Dates are operator-local days.
+            $entries = array_values(array_filter($entries, function ($e) use ($game, $from, $to) {
+                if ($game !== '' && ($e['game_id'] ?? '') !== strtoupper($game)) return false;
+                $stamp = strtotime($e['time'] ?? '');
+                if ($from !== '' && ($stamp === false || $stamp < (new DateTimeImmutable($from.' 00:00:00', new DateTimeZone('America/Sao_Paulo')))->getTimestamp())) return false;
+                if ($to !== '' && ($stamp === false || $stamp >= (new DateTimeImmutable($to.' 00:00:00', new DateTimeZone('America/Sao_Paulo')))->modify('+1 day')->getTimestamp())) return false;
+                return true;
+            }));
+            // Equal timestamps retain reverse append order.
+            $entries = array_reverse($entries);
+            usort($entries, fn($a, $b) => (strtotime($b['time'] ?? '') ?: 0) <=> (strtotime($a['time'] ?? '') ?: 0));
+            return array_slice($entries, 0, max(1, (int)$limit));
 		}
 
 		private static function fromMessage($time, $source, $msg) {
@@ -117,6 +150,9 @@
 					if ($kv) $msgText .= "  ".implode(" ", $kv);
 					$e = self::entry($time, $source, $level, (string)($j["component"] ?? ""), $msgText, $extra);
 					if (isset($j["event"])) $e["event"] = (string)$j["event"];
+                    $game = strtoupper((string)($j['game_id'] ?? ''));
+                    if ($game === '' && preg_match('#(?:AGB|CGB|SGB)-[A-Z0-9]{4}#i', (string)($j['path'] ?? ''), $m)) $game = strtoupper($m[0]);
+                    $e['game_id'] = $game;
 					return $e;
 				}
 			}

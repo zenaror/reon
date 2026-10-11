@@ -66,7 +66,7 @@
 		// Stopping nginx from a page nginx is serving is a one-way door: the
 		// panel that would start it again goes down with it. The helper
 		// refuses it too -- this is only so the button is not offered.
-		const NEVER_STOP = ["nginx"];
+		const NEVER_STOP = ["nginx", "postfix", "dovecot", "reon-mail"];
 
 		// The verbs a request may name. Anything else never reaches the
 		// helper.

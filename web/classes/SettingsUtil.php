@@ -13,6 +13,21 @@
 		// Aceita só o que existe. A chave vem de formulário, e uma lista
 		// fechada é o que impede alguém de inventar nome e gravar linha solta.
 		const KNOWN = [
+            "game_support_agb_adrj" => "1",
+            "game_support_agb_agtj" => "1",
+            "game_support_agb_ambj" => "1",
+            "game_support_agb_amgj" => "1",
+            "game_support_agb_ay5j" => "1",
+            "game_support_crystal" => "1",
+            "game_support_gbwars" => "1",
+            "game_support_mariokart" => "1",
+            "game_support_netdeget" => "1",
+            "game_support_monopoly" => "1",
+            "game_support_mailbottle" => "1",
+            "game_support_sarukoro" => "1",
+            "game_support_puzzle" => "1",
+            "game_support_football" => "1",
+            "game_support_monster_guardians" => "1",
 			// Se o servidor ainda aceita USER/PASS com a senha de oito
 			// caracteres, ou se exige APOP. Ver examples/dovecot/.
 			"pop3_password_fallback" => "1",
@@ -71,6 +86,21 @@
 		// mundo, sem mensagem de erro em lugar nenhum. Validado ao gravar e
 		// conferido de novo ao gerar.
 		const REGRAS = [
+            "game_support_agb_adrj" => "bool",
+            "game_support_agb_agtj" => "bool",
+            "game_support_agb_ambj" => "bool",
+            "game_support_agb_amgj" => "bool",
+            "game_support_agb_ay5j" => "bool",
+            "game_support_crystal" => "bool",
+            "game_support_gbwars" => "bool",
+            "game_support_mariokart" => "bool",
+            "game_support_netdeget" => "bool",
+            "game_support_monopoly" => "bool",
+            "game_support_mailbottle" => "bool",
+            "game_support_sarukoro" => "bool",
+            "game_support_puzzle" => "bool",
+            "game_support_football" => "bool",
+            "game_support_monster_guardians" => "bool",
 			"pop3_password_fallback" => "bool",
 			"bin_dns1_host" => "ipv4",
 			"bin_dns2_host" => "ipv4_ou_vazio",

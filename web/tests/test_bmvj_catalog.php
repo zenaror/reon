@@ -185,7 +185,7 @@ $_GET['name'] = '/A4/CGB-BMVJ/RomList.cgb';
 ob_start();
 expectSame(true, handleBmvjRoute('RomList.cgb'), 'catalog route handled');
 $routedCatalog = ob_get_clean();
-expectSame(5, ord($routedCatalog[0]), 'opted-in route adds the custom entry');
+expectSame(1, ord($routedCatalog[0]), 'opted-in route serves the active database entry');
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
 $_GET['name'] = '/A4/CGB-BMVJ/1234.' . $gameId . '.cgb';
@@ -202,8 +202,8 @@ $_GET['name'] = '/A4/CGB-BMVJ/RomList.cgb';
 ob_start();
 expectSame(true, handleBmvjRoute('RomList.cgb'), 'opt-out catalog route handled');
 $optOutCatalog = ob_get_clean();
-$routeBaseline = file_get_contents(dirname(__DIR__) . '/cgb/download/A4/CGB-BMVJ/RomList.cgb');
-expectSame($routeBaseline, $optOutCatalog, 'opt-out route preserves only baseline catalog bytes');
+$routeBaseline = "\0";
+expectSame($routeBaseline, $optOutCatalog, 'opt-out route excludes unpublished historical fixtures and custom entries');
 if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
 
 $_GET['name'] = '/A4/CGB-BMVJ/1234.' . $gameId . '.cgb';

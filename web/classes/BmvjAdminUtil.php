@@ -10,7 +10,7 @@ final class BmvjAdminUtil
     public const MAX_BODY_BYTES = 2097152;
     public static function all(): array
     {
-        return DBUtil::getInstance()->getDB()->query('SELECT game_id,blocks_needed,category_icon,minigame_type,price_yen,download_filename,is_custom,is_active,title,description,created_at,HEX(title) AS title_hex,HEX(description) AS description_hex,SHA2(game_binary,256) AS body_sha256,OCTET_LENGTH(game_binary) AS body_bytes FROM bmvj_custom_games ORDER BY game_id')->fetch_all(MYSQLI_ASSOC);
+        return DBUtil::getInstance()->getDB()->query('SELECT game_id,blocks_needed,category_icon,minigame_type,price_yen,download_filename,is_custom,is_active,title,description,created_at,legacy_catalog_record IS NOT NULL AS is_legacy,HEX(title) AS title_hex,HEX(description) AS description_hex,SHA2(game_binary,256) AS body_sha256,OCTET_LENGTH(game_binary) AS body_bytes FROM bmvj_custom_games ORDER BY game_id')->fetch_all(MYSQLI_ASSOC);
     }
     public static function find(string $id): ?array
     {
@@ -20,14 +20,17 @@ final class BmvjAdminUtil
     }
     public static function form(array $row): array
     {
+        $row['is_legacy'] = !empty($row['is_legacy']) || !empty($row['legacy_catalog_record']);
+        $row['missing_body'] = isset($row['body_bytes']) ? (int)$row['body_bytes'] === 0 : empty($row['game_binary']);
         $row['title_hex'] = strtoupper(bin2hex($row['title']));
         $row['description_hex'] = strtoupper(bin2hex($row['description']));
         $row['display_title'] = preg_match('/^[\x20-\x7e]+$/D', $row['title']) ? $row['title'] : $row['title_hex'];
         foreach (['title','description'] as $key) {
             $row[$key . '_text'] = preg_match('/^[\x20-\x7e]+$/D', $row[$key]) ? $row[$key] : '';
         }
-        if (isset($row['game_binary'])) $row['body_sha256'] = hash('sha256', $row['game_binary']);
-        unset($row['game_binary']);
+        if (!empty($row['game_binary'])) $row['body_sha256'] = hash('sha256', $row['game_binary']);
+        if ($row['missing_body']) $row['body_sha256'] = '';
+        unset($row['game_binary'], $row['legacy_catalog_record']);
         unset($row['title'], $row['description']);
         return $row;
     }
@@ -74,13 +77,14 @@ final class BmvjAdminUtil
             if ($body === null || strlen($body) < 9 || ord($body[0]) === 0xC3 || strlen($body) > self::MAX_BODY_BYTES) { $db->rollback(); return 'upload-error'; }
             $hash = trim((string)($input['body_sha256'] ?? ''));
             if ($hash !== '' && (!preg_match('/^[a-fA-F0-9]{64}$/D', $hash) || !hash_equals(strtolower($hash), hash('sha256',$body)))) { $db->rollback(); return 'hash-error'; }
-            $baseline = file_get_contents(CORE_PATH . '/download/A4/CGB-BMVJ/RomList.cgb');
+            $baseline = "\0";
             $single = BmvjUtil::appendToCatalog($baseline, [$game]);
             if ($single === null || ord($single[0]) !== ord($baseline[0]) + 1) { $db->rollback(); return 'invalid'; }
             if ($game['is_active']) $active[] = $game;
             $catalog = BmvjUtil::appendToCatalog($baseline, $active);
             if ($catalog === null || ord($catalog[0]) !== ord($baseline[0]) + count($active)) { $db->rollback(); return 'capacity'; }
             $game['game_binary'] = $body;
+            $game['legacy_catalog_record'] = null;
             $columns = array_keys($game); $values = array_values($game);
             if ($editing) {
                 $sql = 'UPDATE bmvj_custom_games SET ' . implode(',', array_map(static fn($c) => $c . '=?', $columns)) . ' WHERE game_id=?';

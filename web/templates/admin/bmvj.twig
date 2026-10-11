@@ -11,6 +11,7 @@
 <form method="post" enctype="multipart/form-data" class="admin-form" id="bmvj-form">
  <input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
  <input type="hidden" name="form_action" value="save">
+ {% if form.is_legacy %}<p class="admin-form__hint">{{ 'bmvj-admin.legacy-hint'|trans }}</p>{% endif %}
  <h2 class="h5">{{ (editing ? 'bmvj-admin.edit' : 'bmvj-admin.upload')|trans }}</h2>
  <label>{{ 'bmvj-admin.metadata'|trans }} <input type="file" id="bmvj-json" accept=".json,application/json"></label>
  <p class="admin-form__hint">{{ 'bmvj-admin.metadata-hint'|trans }}</p>
@@ -66,12 +67,12 @@
 {% else %}
 <table class="admin-table"><thead><tr><th>ID</th><th>{{ 'bmvj-admin.title'|trans }}</th><th>{{ 'bmvj-admin.classification'|trans }}</th><th>{{ 'bmvj-admin.status'|trans }}</th><th>{{ 'bmvj-admin.file'|trans }}</th><th>{{ 'bmvj-admin.actions'|trans }}</th></tr></thead>
 <tbody>{% for game in games %}<tr>
-<td>{{ game.game_id }}</td><td>{{ game.display_title }}</td>
+<td>{{ game.game_id }}</td><td>{{ game.display_title }}{% if game.is_legacy %}<p class="admin-form__hint">{{ 'bmvj-admin.legacy-hint'|trans }}</p>{% endif %}</td>
 <td>{{ (game.is_custom ? 'bmvj-admin.custom' : 'bmvj-admin.official')|trans }}</td>
 <td>{{ (game.is_active ? 'bmvj-admin.active' : 'bmvj-admin.inactive')|trans }}</td>
-<td><a href="/admin/bmvj.php?download={{ game.game_id }}">{{ game.download_filename }}</a> ({{ game.body_bytes }} B)<details><summary>SHA-256</summary><code>{{ game.body_sha256 }}</code></details></td>
+<td>{% if game.missing_body %}{{ 'bmvj-admin.missing-body'|trans }}{% else %}<a href="/admin/bmvj.php?download={{ game.game_id }}">{{ game.download_filename }}</a> ({{ game.body_bytes }} B)<details><summary>SHA-256</summary><code>{{ game.body_sha256 }}</code></details>{% endif %}</td>
 <td><a class="admin-btn admin-btn--small" href="/admin/bmvj.php?edit={{ game.game_id }}">{{ 'bmvj-admin.edit'|trans }}</a>
-<form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="form_action" value="toggle"><input type="hidden" name="game_id" value="{{ game.game_id }}"><button class="admin-btn admin-btn--small">{{ (game.is_active ? 'bmvj-admin.deactivate' : 'bmvj-admin.activate')|trans }}</button></form>
+{% if not game.is_legacy %}<form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="form_action" value="toggle"><input type="hidden" name="game_id" value="{{ game.game_id }}"><button class="admin-btn admin-btn--small">{{ (game.is_active ? 'bmvj-admin.deactivate' : 'bmvj-admin.activate')|trans }}</button></form>{% endif %}
 <details><summary>{{ 'bmvj-admin.delete'|trans }}</summary><form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="form_action" value="delete"><input type="hidden" name="game_id" value="{{ game.game_id }}"><label>{{ 'bmvj-admin.confirm'|trans }} <input name="confirmation" required pattern="{{ game.game_id }}" placeholder="{{ game.game_id }}"></label><button class="admin-btn admin-btn--small">{{ 'bmvj-admin.delete'|trans }}</button></form></details>
 </td></tr>{% else %}<tr><td colspan="6">{{ 'bmvj-admin.empty'|trans }}</td></tr>{% endfor %}</tbody></table>
 {% endif %}

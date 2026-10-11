@@ -15,6 +15,15 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ## reon (servidor / reon-mail / web)
 
+### Painel, logs e suporte por jogo
+
+* Nomes legíveis nos IDs de jogos legados; títulos corrigidos para Morita Shougi Advance e Sutakomi. Monster Guardians e Napoleon separados em controles próprios, preservando o estado anterior por migração; requisito de correio de Sutakomi explicitado.
+
+* Logs com atividade como fonte inicial, filtros adicionais recolhidos, ordem decrescente, limite após filtros, datas de Brasília, leitura de arquivos rotacionados e atualização opcional. Identificação do jogo e motivo de recusa nas novas requisições, sem registrar conteúdo dos uploads.
+* Painel de copas Mario Kart usando `amk_rule`, com edição de datas, regras, mensagens e ajuda nos campos; nome de arquivo sem extensão no formulário, com `.cgb` acrescentado pelo servidor; exclusão bloqueada quando há resultados.
+* Ativação por jogo no banco e no painel, com bloqueio de endpoints e suspensão dos respectivos workers. Dependências compartilhadas preservadas; Mobile Trainer obrigatório.
+* Upload Mario Kart mantém as validações e informa o motivo das recusas; comparação de ID normalizada e exclusão de ghost limitada à região correta. Fluxo combinado de enviar ghost e atualizar ranking aceita o marcador20 da ROM, validando o checksum original e salvando pela pista da rota; teste sintético cobre todas as pistas e corrupção dos campos. Fluxo combinado confirmado pelo operador na Oracle em duas pistas seguidas após deploy; investigação do download24-000 permanece pendente.
+
 ### Instalação limpa e containers
 
 * Suporte a Ubuntu 24.04 e 26.04 no fluxo nativo, com configuração Dovecot por versão, migrações das configurações do painel e alinhamento do armazenamento Stadium.
@@ -23,6 +32,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 * Perfil separado de produção em `setup-script/container`, usando os seis scripts e serviços reais com dados persistentes. Segurança de rede/SSH do host permanece responsabilidade do operador.
 
 ### Net de Get — conteúdo personalizado
+
+* Catálogo servido exclusivamente a partir do banco, igual à biblioteca do admin. Quatro entradas históricas de teste (G900–G903), sem arquivos correspondentes e com metadados inválidos, importadas como rascunhos personalizados inativos. Bytes antigos preservados; edição/upload e exclusão disponíveis, sem reaparecer pelo catálogo estático.
 
 * C PAD atualizado em produção com a espera pela soltura dos controles na saída, após download natural e reabertura validados pelo mGBA; demais conteúdos preservados.
 
@@ -1275,3 +1286,10 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 * A senha do ISP passa a persistir na SRAM do cartucho (as duas ROMs viram
   MBC5+RAM+BATTERY), confirmado com ciclo de energia real; guias gbdk/rgbds
   reescritos; hardware do gbdk não desenha mais tela; `make check-banking`
+
+### Atualização de imagens — 11/10
+
+* Dummy reconstruído com os ajustes atuais de jogos, logs e copas; teste real do site inclui cadastro, correio, DNS, upload/opt-in/download CGB, copas e alternância de jogos.
+* Copas delimitam os identificadores SQL, incluindo `character`, para criação e edição funcionarem no MySQL. Correção implantada na Oracle.
+* Imagens separadas de produção incluem `lib/` e preservam a organização de caminhos dos workers/email. Build .NET usa framework distinto da variável de versão do runtime e restore para linux-x64.
+* Download Mario Kart 24-000 continua pendente por decisão do operador.

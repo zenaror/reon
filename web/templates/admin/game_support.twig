@@ -1,0 +1,11 @@
+{% extends 'admin/layout.twig' %}
+{% block admin_title %}{{ 'game-support.title'|trans }}{% endblock %}
+{% block admin_body %}
+<p>{{ 'game-support.intro'|trans }}</p>
+<p class="admin-form__hint">{{ 'game-support.health'|trans }} Web: {{ health.web.status }} · Mail: {{ health.mail.status }} · <a href="/admin/services.php">{{ 'admin.nav-services'|trans }}</a></p>
+<table class="admin-table"><thead><tr><th>{{ 'game-support.game'|trans }}</th><th>IDs</th><th>{{ 'game-support.dependencies'|trans }}</th><th>{{ 'game-support.state'|trans }}</th></tr></thead><tbody>
+{% for key,module in modules %}<tr><td>{{ module.label }}</td><td>{{ module.ids|join(', ') }}</td><td>{{ module.dependencies|join(', ') }}{% if module.jobs %}<small><br>{{ module.jobs|join(', ') }}</small>{% endif %}</td><td>{% if module.required %}{{ 'game-support.always'|trans }}{% else %}
+<form method="post"><input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}"><input type="hidden" name="module" value="{{ key }}"><input type="hidden" name="state" value="{{ module.enabled?'0':'1' }}"><button class="admin-btn">{{ (module.enabled?'game-support.disable':'game-support.enable')|trans }}</button> {{ (module.enabled?'game-support.on':'game-support.off')|trans }}</form>
+{% endif %}</td></tr>{% endfor %}</tbody></table>
+<p>{{ 'game-support.shared'|trans }} {{ dependencies|join(', ') }}</p>
+{% endblock %}

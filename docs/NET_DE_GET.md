@@ -46,10 +46,14 @@ SHA-256 `8f072d41c39146380053abe0281835b4a639511a523cd5963bc67ef222aec043`;
 authenticated GET and SDK POST responses match exactly. Natural rendering of
 the corrected entry is a separate emulator check.
 
-The server rebuilds the offset table when appending records and keeps each
-baseline record's bytes intact. Invalid rows and IDs that collide with the
-baseline are omitted. The baseline catalog in this checkout is a historical
-fixture; it has not been verified as a current official catalog.
+The server builds the catalog from active database entries, rebuilding the
+little-endian offset table. Invalid rows are omitted. The checked-in catalog
+is a historical fixture, not a verified official catalog. Migration
+`20261011120000` imports its four test entries (G900–G903) as inactive custom
+drafts, preserving the original records for provenance. They lack matching
+payload files and contain invalid publication metadata. They appear in the
+admin library; review the fields and upload a complete body before publishing.
+Deleting a draft cannot resurrect an entry from the static catalog.
 
 ## Authentication and account selection
 
@@ -345,7 +349,7 @@ Maker additions and their generated example program/font are licensed this way.
 
 Run `php maint/import_bmvj_game.php /path/game.json` to import an inactive
 entry, or append `--activate` for explicitly approved publication. It checks
-complete body length/SHA-256, game-encoded metadata, baseline ID collision and
+complete body length/SHA-256, game-encoded metadata, catalog capacity and
 stored database bytes. Existing IDs/filenames are refused. The importer accepts historical values0–9999; no billing or debiting occurs. Deactivate with an operator-approved update
 to `bmvj_custom_games.is_active`; account opt-in stays independent.
 
@@ -396,7 +400,10 @@ Migration `20261006223000` adds `is_custom`, default1, preserving the existing
 C PAD classification. Checked custom entries require account opt-in for both
 listing and download. Official entries are visible to authenticated users
 without that opt-in. Only mark faithful historical content official. The
-checked-in historical baseline is preserved and is not editable in this panel.
+historical test entries are now visible as inactive drafts in this panel. The
+original static fixture remains on disk for provenance and is not served as
+the live catalog. Older validation reports below refer to the previous catalog
+that always included those four records.
 Historical game values0–9999 are supported as metadata; REON never bills or debits users. New uploads start inactive and custom by default. Active
 catalog capacity is checked transactionally before publication.
 

@@ -14,15 +14,19 @@
 	// site's own log, which is a file rather than a journal unit.
 	const SITE = "@php";
 	const ACTIVITY = "@activity";
-	$sources = ServiceControlUtil::UNITS;
-	$sources[ACTIVITY] = ["label" => "Activity (sign-ups, logins, downloads, trades)"];
-	$sources[SITE] = ["label" => "Site (PHP)"];
+	$sources = [ACTIVITY => ['label'=>TemplateUtil::translate('admin.logs-source-activity')], SITE => ['label'=>TemplateUtil::translate('admin.logs-source-php')]];
+    $sources += array_filter(ServiceControlUtil::UNITS, fn($meta) => empty($meta['hidden']));
 
-	$unit = isset($_GET["unit"]) && isset($sources[$_GET["unit"]]) ? $_GET["unit"] : array_key_first($sources);
-	$lines = max(10, min(1000, (int)($_GET["lines"] ?? 200)));
+	$unit = isset($_GET["unit"]) && is_string($_GET["unit"]) && isset($sources[$_GET["unit"]]) ? $_GET["unit"] : ACTIVITY;
+	$lines = in_array((int)($_GET["lines"] ?? 200), [50,100,200,500,1000], true) ? (int)($_GET["lines"] ?? 200) : 200;
 	$level = in_array($_GET["level"] ?? "", ["warn", "error"], true) ? $_GET["level"] : "";
 	$raw = !empty($_GET["raw"]);
-	$group = isset(LogViewUtil::EVENT_GROUPS[$_GET["group"] ?? ""]) ? $_GET["group"] : "";
+	$group = is_string($_GET["group"] ?? "") && isset(LogViewUtil::EVENT_GROUPS[$_GET["group"] ?? ""]) ? $_GET["group"] : "";
+
+    $game = strtoupper((string)($_GET['game'] ?? ''));
+    if (!preg_match('/^(?:AGB|CGB|SGB)-[A-Z0-9]{4}$/D', $game)) $game = '';
+    $date = function ($v) { return preg_match('/^\d{4}-\d{2}-\d{2}$/D', $v) && DateTimeImmutable::createFromFormat('!Y-m-d', $v)?->format('Y-m-d') === $v ? $v : ''; };
+    $from = $date((string)($_GET['from'] ?? '')); $to = $date((string)($_GET['to'] ?? ''));
 
 	// Reading a log is a read, so it stays a GET -- but it is still a
 	// privileged read, and it goes through the same helper as everything
@@ -31,16 +35,17 @@
 	if ($unit === SITE || $unit === ACTIVITY) {
 		$kind = "file";
 		$text = $unit === ACTIVITY
-			? (LogViewUtil::phpLogText(4194304, LogViewUtil::ACTIVITY_LOG) ?? (is_readable(dirname(LogViewUtil::ACTIVITY_LOG)) ? "" : null))
-			: LogViewUtil::phpLogText();
+			? (LogViewUtil::historyText(LogViewUtil::ACTIVITY_LOG) ?? (is_readable(dirname(LogViewUtil::ACTIVITY_LOG)) ? "" : null))
+			: LogViewUtil::historyText(LogViewUtil::PHP_LOG);
 	} else {
 		$kind = "journal";
-		$text = $control->journal($unit, $lines, LogViewUtil::journalPriority($level));
+		$text = $control->journal($unit, ($game !== "" || $from !== "" || $to !== "") ? 1000 : $lines, LogViewUtil::journalPriority($level));
 	}
-	$entries = ($raw || $text === null) ? [] : LogViewUtil::parse($text, $kind, $level, $lines, $unit === ACTIVITY ? $group : "");
+	$entries = ($text === null) ? [] : LogViewUtil::parse($text, $kind, $level, $lines, $unit === ACTIVITY ? $group : "", $game, $from, $to);
 
+    if ($raw && $text !== null) $text = implode("\n", array_map(fn($e) => ($e['time_utc'] ?? '').' '.($e['level'] ?? '').' '.($e['msg'] ?? '').(($e['extra'] ?? '') !== '' ? "\n".$e['extra'] : ''), $entries));
 	echo TemplateUtil::render("admin/logs", [
-		"units" => $sources,
+		"units" => $sources, "game_id" => $game, "from" => $from, "to" => $to, "refresh" => !empty($_GET["refresh"]),
 		"unit" => $unit,
 		"lines" => $lines,
 		"level" => $level,
