@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the real REON signup/login/config and Dummy server internal mail."""
-import base64,hashlib,http.client,socket,struct
+import base64,hashlib,http.client,socket,struct,time
 from pathlib import Path
 import argparse,http.cookiejar,urllib.request,urllib.parse,re,html,uuid,smtplib,poplib,json
 p=argparse.ArgumentParser();p.add_argument('--host',default='127.0.0.1');p.add_argument('--http',type=int,default=8080);p.add_argument('--smtp',type=int,default=2525);p.add_argument('--pop3',type=int,default=1110);p.add_argument('--state');p.add_argument('--dns',type=int,default=5354);a=p.parse_args()
@@ -10,7 +10,14 @@ def get(path):return client.open(base+path,timeout=15).read().decode()
 def post(path,data):return client.open(base+path,urllib.parse.urlencode(data).encode(),timeout=15).read().decode()
 def field(page,name):
  m=re.search(r'name="'+re.escape(name)+r'"[^>]*value="([^"]*)"',page);assert m,(name,'Missing form field');return html.unescape(m[1])
-page=get('/');assert '<title>Home - REON</title>' in page and 'signup.php' in page
+# Apache can accept sockets before all startup configuration is ready.
+for attempt in range(60):
+ try:
+  page=get('/')
+  if '<title>Home - REON</title>' in page and 'signup.php' in page:break
+ except (OSError,urllib.error.URLError):pass
+ time.sleep(1)
+else:raise TimeoutError('REON homepage was not ready within 60 attempts')
 name='dev'+uuid.uuid4().hex[:8];email=name+'@reon.test';password='DummyTest123'
 page=get('/signup.php');post('/signup.php',{'_csrf':field(page,'_csrf'),'email':email,'agree':'1'})
 capture=get('/dummy/inbox.php?address='+email)
