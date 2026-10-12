@@ -499,3 +499,15 @@ while edit forms omit the stored suffix. Older submitted names with `.cgb`
 are normalized to avoid duplicates. This change was deployed on 2026-10-11
 with PHP syntax and hash checks; backup `cup-filename-20261011`. No cup was
 created for validation.
+
+### Removing a registered device
+
+Only the admin account detail page offers **Remove**, alongside Block/Unblock.
+The POST requires an administrator session and CSRF validation, scopes the
+device to the selected account, and records `device.remove` in the admin audit.
+Removal deletes the device counter row and its authorization window, including
+an empty-ID legacy record. It does not revoke the account key: a client holding
+that key can enroll again, and its previous counters are forgotten. Use Block
+for persistent refusal. User device pages do not offer removal. The POP3
+`pop3_password_fallback` setting is separate from device registration and GB00
+game authentication.

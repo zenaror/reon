@@ -38,6 +38,15 @@
 				header("Location: /admin/users.php?deleted=1");
 				return;
 			}
+		} elseif ($action === "device-remove") {
+			$target = $admin->getUser($userId);
+			if ($target === null) {
+				$error = "no-such-user";
+			} elseif (!$devices->removeDevice($userId, (string)($_POST["device"] ?? ""))) {
+				$error = "no-such-device";
+			} else {
+				$admin->log("device.remove", $target["username"], (string)($_POST["device"] ?? ""));
+			}
 		} elseif ($action === "device-block" || $action === "device-unblock") {
 			$target = $admin->getUser($userId);
 			if ($target === null) {

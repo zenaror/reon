@@ -17,6 +17,8 @@ na árvore, a seção leva o caminho dele (`app/pokemon-exchange`,
 
 ### Painel, logs e suporte por jogo
 
+* Administradores podem remover registros de dispositivos, além de bloquear/desbloquear, com proteção CSRF, confirmação e auditoria. Remoção não é oferecida no painel do usuário; adaptadores com chave válida podem se cadastrar novamente.
+
 * Recusas de autenticação dos jogos registram ID da conta tentada quando reconhecida, separado da conta autenticada, motivo interno e ID de correlação da requisição. Campos aparecem no painel de logs; senhas e identificadores desconhecidos não são gravados.
 
 * Mario Kart no seletor de jogos usa o mesmo cartão visual dos demais, com ícone próprio. Regras de copa mostram pistas e personagens por nome, moedas em quantidades reais e checkboxes antes do texto.

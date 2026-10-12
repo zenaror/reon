@@ -65,6 +65,7 @@
 
 	<section class="admin-section">
 		<h2 class="admin-section__title">{{ 'admin.user-devices'|trans }}</h2>
+		<p class="admin-form__hint">{{ 'admin.user-device-remove-hint'|trans }}</p>
 		{% if devices is empty %}
 			<p>{{ 'admin.user-no-devices'|trans }}</p>
 		{% else %}
@@ -99,6 +100,13 @@
 										<input type="hidden" name="device" value="{{ d.device_id }}">
 										<input type="hidden" name="action" value="{{ d.blocked ? 'device-unblock' : 'device-block' }}">
 										<button class="btn btn-sm btn-outline-secondary" type="submit">{{ d.blocked ? 'admin.user-device-unblock'|trans : 'admin.user-device-block'|trans }}</button>
+									</form>
+									<form method="post" onsubmit="return confirm('{{ 'admin.user-device-remove-confirm'|trans|e('js') }}');">
+										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
+										<input type="hidden" name="user" value="{{ user.id }}">
+										<input type="hidden" name="device" value="{{ d.device_id }}">
+										<input type="hidden" name="action" value="device-remove">
+										<button class="btn btn-sm btn-outline-danger" type="submit">{{ 'admin.user-device-remove'|trans }}</button>
 									</form>
 								</td>
 							</tr>

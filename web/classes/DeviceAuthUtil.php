@@ -138,6 +138,16 @@
 			return true;
 		}
 
+		// Removing a row closes its authorization and forgets its counters.
+		// A key holder may enroll again; use blocking to prevent that.
+		public function removeDevice($userId, $deviceId) {
+			$db = DBUtil::getInstance()->getDB();
+			$stmt = $db->prepare("delete from sys_device_counter where user_id = ? and device_id = ?");
+			$stmt->bind_param("is", $userId, $deviceId);
+			$stmt->execute();
+			return $stmt->affected_rows === 1;
+		}
+
 		private function ownsDevice($userId, $deviceId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("select 1 from sys_device_counter where user_id = ? and device_id = ?");
