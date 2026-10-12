@@ -45,6 +45,9 @@ histórico Git para essa revisão.
   alterou o destino de `home` do Gitea para o GitHub em 06/10/2026.
 - Commit e push só quando o dono autorizar aquele lote. Nunca use `git add .`:
   adicione só os seus arquivos.
+- Não acrescente automaticamente trailers `Co-authored-by` de Claude/Anthropic
+  aos commits. Preserve autoria e coautoria humanas, créditos upstream e licenças.
+  O uso de IA neste fork é declarado no README.
 - Uma mudança só está pronta depois de implantada no servidor e conferida lá. O
   servidor não usa git: o deploy é cópia de arquivo.
 - Toda mudança feita direto no servidor vai também para `setup-script/`.

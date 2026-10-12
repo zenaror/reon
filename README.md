@@ -2,6 +2,12 @@
 
 REON is a service replacement for Nintendo's [Mobile Adapter GB](https://bulbapedia.bulbagarden.net/wiki/Mobile_Game_Boy_Adapter) service for the Game Boy Color and Advance. This service aims to target all officially released games, as well as potentially allow homebrew games to use the service.
 
+# AI assistance in this fork
+
+Parts of our modifications in this fork were developed with assistance from AI
+tools, including code generation. This statement applies to our modifications
+and does not describe the upstream project's development process.
+
 # Services
 
 This repository holds various folders for the service, and each has its own README.md which should be checked out.
