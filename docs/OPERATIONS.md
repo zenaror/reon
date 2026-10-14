@@ -10,6 +10,33 @@ To get around the server without remembering any of these paths, run
 `reon-menu` or open `~/shortcuts/` (both described in "Getting around the
 server from a terminal" below, and in `setup-script/README.md`).
 
+## Repository organization and existing validation tools
+
+The upstream layout is the code layout: PHP website and game endpoints in
+`web/`, Node mail service in `mail/`, game workers in `app/`, shared Node helpers
+in `lib/`, and schema/migrations in `db/`. Maintenance tools live in `maint/`
+and `web/scripts/`; installation tools in `setup-script/`. These are the
+project's equivalents of `src/` and `tools/`, not candidates for relocation.
+
+Existing commands below are documented entry points, not a request to run them:
+
+| Entry point (from repository root) | Requirements and evidence limits |
+| --- | --- |
+| `php web/tests/test_mario_kart_upload.php` | PHP CLI; synthetic checksum and upload-parser coverage, no database/config reads or natural emulator flow. |
+| `php web/tests/test_bmvj_catalog.php` | PHP CLI; fake database and synthetic HTTP body; selection/authentication and byte pass-through, not a validated game download wrapper. |
+| `bash containers/dummy/stack.sh init` / `up` / `status` | Podman/Compose and private local settings; see the dummy README for ports and prerequisites. `up` changes local runtime state. |
+| `python3 containers/dummy/flow-test.py` | Python 3 and an isolated running dummy stack; pass the actual host/ports as shown in its README. Creates synthetic accounts/content; never target Oracle for this gate. |
+
+The existing `.github/workflows/` records CI execution separately from the dated
+dummy validation record. Neither replaces physical adapter/console evidence.
+Native setup, production containers and ROM patch builds have their own
+README prerequisites. No new tests are introduced or run for documentation.
+Production planning and findings remain in the workspace `PENDENCIAS.md` and
+`CONCLUIDAS.md`; OMM `reon-production` provides the handoff. The root AGENTS.md
+and each repository's instructions determine ownership: this server checkout
+does not authorize editing sibling repositories or dirty submodules owned by
+other sessions. The cleanup policy below governs checkpoint artifact retention.
+
 ## Logs
 
 | what | where | kept | created by |
@@ -139,6 +166,33 @@ legality checker's raw dumps are `debug`.
 - The privacy page discloses the backups, including that a deleted account
   leaves them only when they age out (7 days).
 - Created by `1-setup-reon.sh` (script, service, timer).
+
+## Task cleanup and artifact retention
+
+At task completion, checkpoints and requested pauses, classify the artifacts
+owned by the current task before removing anything. Ignored or untracked files
+are not automatically disposable. This policy does not change production log,
+mail or database retention and does not authorize a historical bulk cleanup.
+
+| Category / location | Producer and reproduction | Retention / removal condition |
+| --- | --- | --- |
+| Explicit deploy staging such as `/tmp/reon-auth-observability-20261011` and `/tmp/reon-device-remove-20261012` | This chat's file-copy deployment; reproduce from the recorded source revision | Remove only the exact task directory after transfer ends, deployment hashes are checked and rollback copies exist on the server. |
+| Local container build layers, images and validation containers | Podman build/compose for the dummy or production profiles | Remove only individually identified objects created by the task after preserving source revision, commands, image digests and relevant outcomes. Never prune globally or remove the running dummy stack or its database/mail/content volumes. |
+| Intermediate analysis outputs and duplicate reports | The analysis or deployment task | Keep unexplained failures and decisions pending. Remove a proven duplicate only after checking identical hashes and retaining its canonical durable copy. Keep the commands, environment, relevant cases and hashes needed to reproduce accepted results. |
+| ROM originals, saves, fixtures, emulator logs, hardware/console evidence and accepted releases | User inputs or identified validation/release runs | Preserve. Copies in `/tmp` must be moved to durable task storage before cleanup when they are needed for reproduction; OMM prose is not a replacement for the artifact. |
+| `../history-ai-attribution-20261012/` | Git attribution maintenance; `prepare.py`, inventory, original bundle/checksum, commit map and publication receipt | Keep recovery materials privately outside publication refs. Retain `original.bundle`, hash map and receipt while old clones or historical references need recovery. Retain `prepared.git` until its recovery/reproduction role is reviewed and a sufficient replacement is established. No automatic expiry or publication of backups. |
+| Oracle rollback copies under `/var/backups/reon/<task>/` | An identified deployment or targeted maintenance operation | Preserve until rollback is no longer needed and retention is explicitly reviewed. Account data remains private on the server; do not copy it into public artifacts. |
+| Sibling repositories, the dirty Pokémon News submodule, active outputs and unknown-origin paths | Other sessions or ownership not established | Preserve and list the uncertainty in the handoff. Resolve ownership before cleanup. |
+
+The cleanup sequence is: inventory exact paths and owners; check active
+operations and symlink destinations; preserve the minimum durable evidence;
+inspect the proposed deletions; remove only explicitly classified objects; then
+record removed paths, retained locations, easy-to-measure sizes and remaining
+questions in `PENDENCIAS.md`, `CONCLUIDAS.md` and the merged OMM handoff.
+Do not use `git clean -xfd`, broad globs, global Podman pruning or age alone to
+classify task artifacts. No new generic clean command is introduced: any future
+automation must have an explicit allowlist and an inspection mode. Run no new
+tests merely to apply this policy.
 
 ## Caches (safe to delete)
 

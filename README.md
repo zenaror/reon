@@ -16,6 +16,31 @@ This repository holds various folders for the service, and each has its own READ
 - `app/` holds various non-web applications, such as the Pokémon Trade Corner program by [thomasnet](https://github.com/thomasnet-mc)
 - `web/` holds the web-facing section of the service; this includes scripts for various games.
 
+# Local development and project map
+
+For local game and web development, start with the
+[dummy server](containers/dummy/README.md). It uses the real REON website and
+game handlers with MySQL, while Node provides local email and DNS. It is an
+isolated development environment; emulator results and synthetic checks do not
+establish hardware compatibility or production readiness. Dated validation and
+remaining limits are in [VALIDATION.md](containers/dummy/VALIDATION.md).
+
+| Responsibility | Existing location |
+| --- | --- |
+| Contributor instructions | [AGENTS.md](AGENTS.md) |
+| Application code | `web/`, `mail/`, `app/`, shared helpers in `lib/` |
+| Database schema and migrations | [db/](db/README.md) |
+| Technical and operational documentation | [docs/OPERATIONS.md](docs/OPERATIONS.md), game-specific documents under `docs/` |
+| Installation and production containers | [setup-script/](setup-script/README.md), [container profile](setup-script/container/README.md) |
+| Maintenance tools | `maint/`, `web/scripts/`, [ROM patch tools](maint/rom-patches/README.md) |
+| Existing checks and evidence | `web/tests/`, `containers/dummy/flow-test.py`, [validation record](containers/dummy/VALIDATION.md), `.github/workflows/` |
+| Change history | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
+
+The upstream layout is retained; no separate `src/` or `tools/` directory is
+required. Ongoing production planning lives in the workspace's `PENDENCIAS.md`
+and `CONCLUIDAS.md` outside Git, with handoffs in OMM scope `reon-production`.
+Those operator records are not prerequisites for using this repository.
+
 # Server Setup
 
 The production server runs without Docker, installed by the scripts in
@@ -39,6 +64,12 @@ A per-project changelog is kept in [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 (in Portuguese).
 
 # Docker Setup
+
+For the local dummy image, follow [its current guide](containers/dummy/README.md).
+For the full production container profile, follow
+[setup-script/container/](setup-script/container/README.md); production ingress,
+mail delivery and restore still require environment-specific validation. The
+root Compose recipe below is retained as the legacy setup path.
 
 A `docker-compose.yml` is provided which will run all the required services. To get started, be sure to have docker available on your system.
 
