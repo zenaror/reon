@@ -59,6 +59,8 @@ Entries describe the difference between each fork's baseline and
 - **Operations:** structured application/activity logs, newest-first admin log
   views, game/date/limit filters, rotated-log access and request correlation.
   Failed game authentication distinguishes attempted from authenticated accounts.
+- **Pokémon upload diagnostics:** Battle Tower rejection events use structured
+  application logging; submitted text is included only when debug logging is enabled.
 - **Maintenance:** schema migrations, scheduling, synthetic-data tools,
   reproducible patch builds, CI container publishing and documented artifact
   retention/cleanup boundaries.
@@ -69,8 +71,8 @@ Entries describe the difference between each fork's baseline and
   including the cartridge's combined upload/ranking flow; region-scoped deletion.
 - **GB00 authentication:** one-time challenge/session handling and utility-session
   reuse bound to the complete authentication response.
-- **Game data handling:** safer legality checks, nickname/message validation,
-  ranking interpretation and preservation of custom/official content boundaries.
+- **Game content boundaries:** custom minigames are kept separate from official
+  catalog entries, including protection against custom IDs shadowing official IDs.
 
 #### Security
 
