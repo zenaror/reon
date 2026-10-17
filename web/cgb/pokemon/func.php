@@ -1,9 +1,8 @@
 <?php
 // SPDX-License-Identifier: MIT
-
-// bxt_debug_log() vem daqui. Este arquivo é incluído por vários pontos de
-// entrada e não incluía nada, então a função podia não existir ainda --
-// dependendo de quem carregasse primeiro. require_once é idempotente.
+//
+// Load bxt_debug_log() before any entry point uses it. require_once makes repeated
+// inclusion safe.
 if (defined('CORE_PATH')) {
     require_once(CORE_PATH . "/pokemon/bxt_config.php");
 } else {

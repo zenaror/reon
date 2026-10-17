@@ -56,10 +56,9 @@
 			list.appendChild(li);
 			links.push({ h: h, a: a });
 		});
-		// Escondido continua escondido: numa página de abas este script roda
-		// no DOMContentLoaded, DEPOIS do game-tabs.js, que é síncrono. Um
-		// `false` cru aqui reabria o menu da aba que o outro acabara de
-		// fechar, e os dois menus apareciam juntos.
+		// Respect existing hidden state: game-tabs.js runs synchronously before this
+		// DOMContentLoaded handler. Reopening its hidden section menu would show menus from two
+		// tabs together.
 		nav.hidden = body.offsetParent === null;
 
 		// The ids only exist now, so a link that arrived with #section has

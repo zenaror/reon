@@ -1,13 +1,5 @@
-// Os prêmios do minijogo escolhido.
-//
-// O servidor desenha o conjunto de TODOS os minijogos e esconde todos menos
-// um; aqui só se troca qual aparece, sem ida e volta ao servidor e sem montar
-// campo nenhum no navegador.
-//
-// Cada conjunto é um <fieldset>, e o que importa é que ele seja `disabled`
-// junto com o `hidden`: um controle escondido continua mandando o valor dele
-// no POST, um controle desabilitado não. Sem isso, o servidor receberia os
-// prêmios de todos os minijogos de uma vez.
+// All minigame reward fieldsets are server-rendered; switch only visibility. Disable
+// hidden sets too: hidden controls still submit values, whereas disabled controls do not.
 (function () {
 	var select = document.querySelector("[data-news-minigame]");
 	var box = document.querySelector("[data-news-prizes]");

@@ -33,10 +33,8 @@ Those are not handed out here — get them, and their instructions, from
 <div class="reon-note">These are unofficial builds. Please do not report
 problems with them to the emulators' original authors.</div>
 
-<!-- A seção "Real hardware" saiu daqui: esta página é só para o que se
-     baixa dela, e o PicoAdapterGB não se baixa. Ele é citado no guia, em
-     "Other ways to connect", apontando para
-     https://github.com/zenaror/PicoAdapterGB -->
+<!-- Hardware guidance belongs in the setup guide under Other ways to connect;
+     this page lists downloadable builds and patches only. -->
 
 ## Game patches
 
@@ -60,7 +58,4 @@ should have.
 
 <!--reon:patches-->
 
-<!-- A seção "For developers" (ROM de teste do Mobile Adapter GB) foi tirada
-     por ora, a pedido do dono. O texto anterior era:
-       "A test ROM that exercises an adapter against REON, in GBDK and RGBDS
-        builds." -- com o download ainda por publicar. -->
+<!-- The unpublished developer Test ROM download section is intentionally omitted. -->

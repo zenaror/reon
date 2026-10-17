@@ -272,10 +272,8 @@
 				"admins" => $one("select count(*) from sys_users where is_admin = 1"),
 				"devices" => $one("select count(*) from sys_device_counter"),
 				"devices_blocked" => $one("select count(*) from sys_device_counter where blocked = 1"),
-				// Vem do Dovecot, nao mais da sys_inbox: desde a migracao aquela
-				// tabela nao recebe mensagem nenhuma, e estes dois numeros
-				// mostravam o retrato parado do dia do corte -- errados sem
-				// nunca dar erro, que e o pior jeito de estar errado.
+				// Read mailbox totals from Dovecot, not the obsolete sys_inbox table, which stopped
+				// receiving messages at migration.
 				"mail_today" => $this->mailStats()["recentes"],
 				"mail_total" => $this->mailStats()["total"],
 				"trades_waiting" => $one("select count(*) from bxt_exchange"),
@@ -283,18 +281,15 @@
 				"notifications" => $one("select count(*) from sys_notifications"),
 			];
 		}
-		// Soma das caixas de todo mundo. Uma chamada ao Dovecot por conta --
-		// nao ha como perguntar por todas de uma vez, porque o nosso userdb e
-		// estatico e nao sabe listar usuarios. Guardado pelo tempo da
-		// requisicao porque o painel pede os dois numeros separadamente.
+		// Sum mailbox statistics with one Dovecot call per account; the static userdb cannot
+		// enumerate all users. Cache within the request because the panel asks for the two totals
+		// separately.
 		private $cacheMail = null;
 		private function mailStats() {
 			if ($this->cacheMail !== null) return $this->cacheMail;
 
-			// Em disco, por cinco minutos. Sem isto sao 13 processos doveadm
-			// por carregamento do painel -- 2,5 segundos hoje, e o custo cresce
-			// junto com o numero de contas. Numero de painel nao precisa ser do
-			// segundo; precisa ser rapido e estar mais ou menos certo.
+			// Cache these statistics on disk for five minutes to avoid one doveadm process per account
+			// on every dashboard load. Approximate recent totals are sufficient for the panel.
 			$arquivo = dirname(__DIR__) . "/cache/mail-stats.json";
 			if (is_file($arquivo) && (time() - filemtime($arquivo)) < 300) {
 				$guardado = json_decode((string)@file_get_contents($arquivo), true);
@@ -313,20 +308,15 @@
 				$recentes += $s["recentes"];
 			}
 			$this->cacheMail = ["total" => $total, "recentes" => $recentes];
-			// Falha em gravar o cache nao pode derrubar o painel: perde-se a
-			// economia, nao a pagina.
+			// Cache-write failure must only lose the optimization, not fail the admin page.
 			@mkdir(dirname($arquivo), 0775, true);
 			@file_put_contents($arquivo, json_encode($this->cacheMail));
 			return $this->cacheMail;
 		}
 
-		// Devolve a edição oficial da região para a linha custom, copiando o
-		// conteúdo da linha vanilla para dentro dela.
-		//
-		// É isto, e não apagar a linha, porque `bxt_ranking.news_id` aponta para
-		// o id dela: apagar e deixar o agendador recriar daria um id novo e
-		// deixaria os rankings enviados pelos jogadores apontando para uma linha
-		// que não existe mais. Copiar por cima mantém o id e troca só o conteúdo.
+		// Restore the official edition by copying vanilla content into the existing custom row. Do
+		// not delete the row: bxt_ranking.news_id references its ID, and recreation would orphan
+		// submitted rankings.
 		public function restoreOfficialNews(array $regions) {
 			$regions = array_values(array_unique(array_filter($regions)));
 			if ($regions === []) return [0, "ok"];
@@ -346,8 +336,7 @@
 				$stmt->bind_param("s", $region);
 				$stmt->execute();
 				$rows = DBUtil::fancy_get_result($stmt);
-				// Sem linha oficial não há o que devolver. Acontece numa região
-				// que a notícia vanilla ainda não alcançou, e não é erro.
+				// A region without an official edition has nothing to restore; this is not an error.
 				if (!$rows || count($rows) === 0) continue;
 				$v = $rows[0];
 
@@ -360,9 +349,8 @@
 					        timestamp = current_timestamp()
 					  where game_region = ? and is_custom = 1");
 				if (!$up) return [$done, "prepare-failed"];
-				// `message` e `news_binary` vão como string: a string do PHP é
-				// binária-segura e o mysqli manda o comprimento, então um byte
-				// nulo no meio do binário não termina o valor.
+				// Bind message and news_binary as binary-safe PHP strings. mysqli transmits their length,
+				// so embedded NUL bytes do not truncate the value.
 				$up->bind_param("isisisssss",
 					$v["ranking_category_1"], $v["ranking_category_1_decode"],
 					$v["ranking_category_2"], $v["ranking_category_2_decode"],

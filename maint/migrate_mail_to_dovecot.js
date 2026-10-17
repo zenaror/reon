@@ -1,29 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// CUMPRIDO em 12/09/2026, e a tabela que ele lê foi apagada depois -- este
-// script não roda mais. Guardado porque é o registro de COMO a migração foi
-// feita, e das decisões de mapeamento que ela tomou.
-//
-// Leva a correspondência que está em sys_inbox para as caixas do Dovecot,
-// falando LMTP -- o mesmo caminho que o Postfix usa. Idempotente não é:
-// rodar duas vezes entrega duas vezes. É de uso único, no corte.
-//
-//   node maint/migrate_mail_to_dovecot.js -c config.json [--dry-run]
-//
-// O que se preserva, e como:
-//
-//   o remetente do envelope   vira o MAIL FROM, que é de onde o POP3 decide
-//                             se a mensagem é interna -- perder isso faria
-//                             correspondência de jogo ser tratada como
-//                             externa e reduzida, que é o defeito que já
-//                             custou o Trade Corner
-//   a hora de chegada         vira um cabeçalho Date na própria mensagem. O
-//                             Dovecot carimba a hora da ENTREGA, que no
-//                             corte é "agora"; sem isto as doze pareceriam
-//                             ter chegado todas no mesmo minuto de 2026
-//   já coletada               vira a palavra-chave $Retrieved
-//   já lida no webmail        vira a flag \Seen
-//   na lixeira                vai para a pasta Trash
+// One-time migration completed on 2026-09-12; its source sys_inbox table was subsequently
+// removed. Preserve this script as the migration record, not a rerunnable operation. node
+// maint/migrate_mail_to_dovecot.js -c config.json [--dry-run] submits via LMTP. Envelope
+// sender becomes MAIL FROM, original arrival time becomes Date, retrieved status becomes
+// $Retrieved, web-read status becomes \Seen, and deleted messages go to Trash. Running
+// twice delivers duplicates.
 
 const fs = require("fs");
 const net = require("net");
@@ -52,13 +34,11 @@ function lmtpDeliver(from, to, message) {
 				if (r[3] === "-") continue;               // resposta em várias linhas
 				if (r[0] !== "2" && r[0] !== "3") { s.destroy(); reject(new Error(r)); return; }
 				if (passo < roteiro.length) { s.write(roteiro[passo++] + "\r\n"); continue; }
-				if (passo === roteiro.length) {           // depois do 354
+				if (passo === roteiro.length) {           // After the 354 response.
 					passo++;
 					s.write(Buffer.from(message, "binary"));
-					// O ponto final precisa começar em linha nova, mas só se
-					// a mensagem já não terminar em quebra -- acrescentar uma
-					// sempre deixa uma linha em branco a mais no fim, e o
-					// corpo deixa de bater byte a byte com o original.
+					// Start the SMTP terminator on a new line only if the message does not already end with
+					// one; otherwise an extra blank line changes the original payload.
 					s.write(message.endsWith("\r\n") ? ".\r\n" : "\r\n.\r\n");
 					continue;
 				}
@@ -95,8 +75,8 @@ const RFC = t => new Date(t).toUTCString().replace("GMT", "+0000");
 	for (const m of linhas) {
 		const destino = `${m.caixa}@${config["email_domain_dion"]}`;
 		const cru = m.message.toString("binary");
-		// Date só entra se a mensagem já não tiver um -- duas datas não é
-		// data, é ambiguidade, e é a mesma regra que o POP3 aplica.
+		// Insert Date only when absent; duplicate dates are ambiguous and the POP3 path follows
+		// the same rule.
 		const temData = /^date:/im.test(cru.split("\r\n\r\n")[0] || "");
 		const corpo = temData ? cru
 			: cru.replace(/\r\n\r\n/, `\r\nDate: ${RFC(m.timestamp)}\r\n\r\n`);
@@ -109,14 +89,12 @@ const RFC = t => new Date(t).toUTCString().replace("GMT", "+0000");
 
 		try {
 			await lmtpDeliver(m.sender || `system@${config["email_domain_dion"]}`, destino, corpo);
-			// O UID recém-criado é o maior da caixa.
+			// The newly created UID is the highest UID in the mailbox.
 			const lista = await doveadm(["fetch", "-u", m.caixa, "uid", "mailbox", "INBOX"]);
 			const uids = [...lista.matchAll(/^uid:\s*(\d+)/gm)].map(x => Number(x[1]));
 			const uid = Math.max(...uids);
 
-			// Coletada pelo jogo e lida no webmail são coisas diferentes e
-			// sempre foram duas colunas: o cartucho baixa sem ninguém ler, e
-			// o site é lido sem o cartucho ter passado. São duas marcas.
+			// Cartridge retrieval and webmail reading are independent states; preserve both markers.
 			const marcas = [];
 			if (m.retrieved_at) marcas.push("$Retrieved");
 			if (m.read_at) marcas.push("\\Seen");

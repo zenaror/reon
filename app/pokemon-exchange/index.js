@@ -25,9 +25,9 @@ program
 const options = program.opts();
 const config = JSON.parse(fs.readFileSync(options.config, "utf8"));
 
-// Escolhe o transporte: SMTP local quando `local_smtp_host` existir, senão o
-// binário de sendmail. Ver lib/rawmail.js -- e cuidado para não confundir com
-// `smtp_host`, que é o relay EXTERNO e tem significado oposto.
+// Select local SMTP when local_smtp_host is configured; otherwise use sendmail. See
+// lib/rawmail.js. smtp_host is the EXTERNAL relay and must not be used for internal
+// delivery.
 configurarEnvio(config, config["local_smtp_host"] ? require("nodemailer") : null);
 
 const phpConfigPath = path.resolve(
@@ -3518,15 +3518,10 @@ async function sendExchangeSuccessEmail(
     return;
   }
 
-  // Entregue FALANDO SMTP, e não gravando na caixa. Gravar direto só
-  // funciona num servidor que use a nossa tabela: no do REONTeam, que é
-  // Postfix entregando ao Dovecot, o insert dava certo e nenhum jogador
-  // recebia nada -- sem erro em log nenhum. A submissão local funciona nos
-  // dois, e é literalmente o que eles pediram.
-  //
-  // O endereço vem da linha que acabou de ser validada, nunca do texto que
-  // o cartucho mandou: a checagem acima existe para o payload malformado
-  // não virar destino de entrega, e reaproveitar o valor cru desfaria isso.
+  // Submit through local SMTP rather than directly inserting into an inbox table. Direct
+  // inserts silently bypass delivery on the upstream Postfix/Dovecot stack. Use the
+  // validated database address above, never the raw cartridge payload, so malformed input
+  // cannot become a delivery destination.
   const to = rows[0]["dion_email_local"] + "@" + config["email_domain_dion"];
   await sendRaw("system@" + config["email_domain_dion"], to, raw);
 }

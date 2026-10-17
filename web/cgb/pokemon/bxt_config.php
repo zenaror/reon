@@ -121,26 +121,14 @@ if (!function_exists('bxt_get_runtime_feature_flags')) {
     }
 }
 
-// -------- Registro de depuração --------
-//
-// Estes arquivos nasceram com dezenas de error_log() sem condição nenhuma, e
-// o que eles escrevem no log de erro do servidor web não é diagnóstico de
-// servidor: é dado de quem está jogando. O pior deles gravava, numa falha de
-// validação de ranking, account_id, trainer_id, secret_id, gênero, IDADE e
-// CEP -- exatamente as colunas que o registro de proteção de dados trata nas
-// divergências 6 e 18.
-//
-// Depurar continua possível: o interruptor liga tudo de uma vez. Só que ele
-// nasce DESLIGADO, e ligar passa a ser um ato deliberado de quem administra,
-// em vez do estado natural do servidor.
-//
-// Mesmo ligado, o que se escreve deve dizer O QUE aconteceu e não O QUE A
-// PESSOA ESCREVEU: apelido, mensagem e CEP não ajudam a achar defeito, e o
-// log é o lugar de onde eles vazam para um pedido de ajuda colado num chat.
+// Debug logging is disabled by default and must be explicitly enabled by the operator.
+// Prefer describing the event and affected field over recording personal values.
+// Unconditional ranking logs previously exposed account/trainer identifiers, age, gender
+// and postal codes; avoid leaking those values into support logs.
 if (!function_exists('bxt_debug_enabled')) {
     function bxt_debug_enabled(): bool {
-        // A constante é a saída de emergência para depurar uma requisição
-        // sem mexer em arquivo de estado.
+        // The constant provides an emergency per-request debugging override without editing
+        // persistent state.
         if (defined('BXT_DEBUG') && BXT_DEBUG) {
             return true;
         }

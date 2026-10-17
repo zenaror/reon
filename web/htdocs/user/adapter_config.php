@@ -123,27 +123,15 @@
 
 		$lib_data = "";
 
-		// Daqui para baixo, o que NÃO depende da conta vem do painel de
-		// administração (SettingsUtil), e não mais fixo no código. O
-		// `getValid` devolve o padrão quando o que está no banco não passa
-		// na regra, então uma linha ruim não produz arquivo que o cartucho
-		// não entende -- ela só é ignorada.
+		// Shared adapter fields come from SettingsUtil, not hardcoded constants. getValid returns
+		// a default for invalid stored values so malformed settings do not produce unreadable
+		// cartridge configuration.
 		$cfgAdmin = SettingsUtil::getInstance();
 		$vAdmin = function ($k) use ($cfgAdmin) { return $cfgAdmin->getValid($k); };
 
-		// Modelo do adaptador, mais a marca de não-tarifado no bit 0x80
-		// (MOBILE_CONFIG_DEVICE_UNMETERED, config.h da libmobile).
-		//
-		// Estes dois são os únicos campos do arquivo que a própria pessoa
-		// pode escolher, e só quando o painel libera (`bin_user_choice`).
-		// Nulo na conta quer dizer "não escolhi", e aí vale o painel -- por
-		// isso a coluna é nula em vez de nascer com uma cópia do padrão:
-		// quem nunca escolheu acompanha a mudança global.
-		//
-		// A escolha guardada passa pela MESMA validação do painel antes de
-		// virar byte. É a segunda rede: uma linha que tenha entrado por
-		// outro caminho não produz arquivo que o cartucho não entende, ela
-		// só é ignorada.
+		// Encode the adapter enum with MOBILE_CONFIG_DEVICE_UNMETERED in bit 0x80. Only model and
+		// metering can be chosen per account when bin_user_choice permits. NULL follows global
+		// settings; validate stored personal choices using the same rules as the admin panel.
 		$escolhaLiberada = $vAdmin("bin_user_choice") === "1";
 		$modeloConta = $result["adapter_device"];
 		$usaConta = $escolhaLiberada && $modeloConta !== null &&
@@ -166,13 +154,9 @@
 		// games' *.dion.ne.jp queries (see docs, "REON DNS is on port
 		// 53").
 		$dns2Host = $vAdmin("bin_dns2_host");
-		$lib_data .= hex2bin("01"); // DNS1 type = MOBILE_ADDRTYPE_IPV4
-		// DNS2 fica VAZIO: o REON tem um servidor de DNS só, e repetir o
-		// mesmo endereço nos dois campos não dá redundância nenhuma --
-		// anuncia um segundo servidor que, quando o primeiro falhar, vai
-		// falhar pelo mesmo motivo. Com o tipo em NONE o core nem lê o host
-		// e a porta (config_library_load_host só copia quando o tipo é IPV4
-		// ou IPV6), e o DNS2 do jogo fica como estava.
+		$lib_data .= hex2bin("01"); // DNS1 uses MOBILE_ADDRTYPE_IPV4. Leave DNS2 at NONE rather than duplicate the single
+// server and imply redundancy. The core does not copy a host/port for NONE, leaving the
+// game DNS2 unchanged.
 		$lib_data .= pack('C', $dns2Host === "" ? 0 : 1); // DNS2 type
 
 		// P2P port
@@ -205,10 +189,8 @@
 		$lib_data .= pack('v', $dns2Host === "" ? 0 : (int)$vAdmin("bin_dns2_port"));
 		$lib_data .= pack('v', (int)$vAdmin("bin_relay_port"));
 
-		// DNS1/relay host (offset 0x20/0x40) -- mesmo servidor nos dois, o
-		// REON só roda um. O host do DNS2 (0x30) fica zerado pelo skip_to:
-		// escrever endereço num campo anunciado como NONE deixaria a bin
-		// mostrando um segundo DNS que ninguém usa, para quem a inspecionar.
+		// DNS1 and relay hosts at offsets 0x20/0x40 point to the single REON host. skip_to leaves
+		// the DNS2 host at 0x30 zeroed because its type is NONE.
 		$emBytes = function ($ip) { return pack('C*', ...array_map('intval', explode('.', $ip))); };
 		$lib_data = skip_to($lib_data, 0x20 - 5);
 		$lib_data .= $emBytes($vAdmin("bin_dns1_host"));
@@ -249,12 +231,9 @@
 
 		$out = skip_to($out, 0x200);
 
-		// O nome vem daqui, e não só do atributo `download` do link.
-		//
-		// mobile_config.bin é o nome que o mGBA usa, então é o nome que o
-		// arquivo já deve ter ao chegar ao disco -- sem renomear à mão. Sem
-		// este cabeçalho, quem abre a URL direto recebe "adapter_config.php",
-		// e o nome certo depende de ter vindo pelo botão.
+		// Set the response filename to mobile_config.bin, which mGBA loads directly.
+		// Content-Disposition must provide it even when users open the endpoint without the
+		// download button.
 		header("Content-Type: application/octet-stream");
 		header('Content-Disposition: attachment; filename="mobile_config.bin"');
 		header("Content-Length: " . strlen($out));

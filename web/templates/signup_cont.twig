@@ -40,10 +40,8 @@
 										<code><span id="reonNameExternalShort"></span>@{{ email_domain|e }}</code>
 									</span>
 								</div>
-								{# Só quando o endereço do jogo realmente difere do nome: um
-								   nome de 8 caracteres passa inteiro, e explicar um corte que
-								   não houve confunde em vez de ajudar. Mesma condição do
-								   endereço alternativo acima, aplicada pelo mesmo lugar. #}
+								{# Explain the alternative game address only when it actually differs from the username,
+								   using the same condition as the address above. #}
 								<div id="reonNameTruncated" class="small text-muted mt-1 d-none">{{'auth.reon-username-mail-truncated'|trans}}</div>
 							</div>
 						</div>
@@ -200,9 +198,8 @@
 		if (external) external.textContent = name;
 		if (internal) internal.textContent = dionLocal || name.slice(0, 8);
 		var differs = !!(dionLocal && dionLocal !== name);
-		// A nota fala de corte, então só vale para o nome que foi cortado.
-		// Completar um nome curto não perde nada, e um dígito no fim de um
-		// nome de 8 é colisão, não tamanho.
+		// The note describes actual truncation only. Padding short names loses no characters, and
+		// collision suffixes are not length truncation.
 		var truncated = name.length > 8;
 		if (altWrap && altShort) {
 			if (differs) {

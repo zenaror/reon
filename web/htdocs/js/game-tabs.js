@@ -1,20 +1,7 @@
-/* Abas de um hub de jogo: um par de botões em cima e um painel para cada.
- *
- *   <div class="game-tabs" data-game-tabs>
- *     <button data-tab="crystal" aria-selected="true">…</button>
- *     <button data-tab="stadium" aria-selected="false">…</button>
- *   </div>
- *   <div data-tab-panel="crystal"> … </div>
- *   <div data-tab-panel="stadium" hidden> … </div>
- *
- * A aba escolhida vai para o hash, então o endereço da página aponta para
- * ela -- um link para o Stadium não pode cair no Crystal e pedir um clique.
- * Um hash de seção (#what-you-can-do) continua funcionando: o que não for
- * nome de aba é deixado em paz para o page-sections.js tratar.
- *
- * Sem JavaScript os dois painéis aparecem um debaixo do outro, cada um com
- * seu título -- fora de ordem, mas inteiro. Esconder um deles no servidor
- * deixaria conteúdo inalcançável. */
+/* Game hub tabs connect [data-tab] buttons with [data-tab-panel] content. Store the active
+ * tab in the URL hash for direct links, while leaving unrelated section hashes to
+ * page-sections.js. Without JavaScript, keep both titled panels visible so content remains
+ * accessible. */
 (function () {
 	var bar = document.querySelector("[data-game-tabs]");
 	if (!bar) return;
@@ -33,15 +20,13 @@
 			b.setAttribute("aria-selected", on ? "true" : "false");
 			var panel = panels[b.getAttribute("data-tab")];
 			if (panel) panel.hidden = !on;
-			// O menu de seções da aba escondida some junto: ele pertence
-			// àquele painel, e deixá-lo listaria seções fora da tela.
+			// Hide the section menu with its panel to avoid listing invisible sections.
 			var nav = document.querySelector(
 				'[data-sections-nav="' + b.getAttribute("data-tab") + '"]');
 			if (nav) nav.hidden = !on || !nav.querySelector("li");
 		});
 		if (push) history.replaceState(null, "", "#" + name);
-		// O destaque do menu de seções é calculado ao rolar; sem um empurrão
-		// a aba recém-aberta ficaria sem nenhum item marcado até o primeiro
+		// Refresh the scroll-based section highlight when opening a tab, before the first user
 		// scroll.
 		window.dispatchEvent(new Event("scroll"));
 		return true;
@@ -54,7 +39,7 @@
 		});
 	});
 
-	// Estado inicial: o hash manda, se ele nomear uma aba.
+	// Initial state: use the URL hash when it identifies a tab.
 	var first = buttons.length ? buttons[0].getAttribute("data-tab") : null;
 	var wanted = (location.hash || "").slice(1);
 	if (!panels[wanted]) wanted = first;

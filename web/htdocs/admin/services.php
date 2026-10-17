@@ -17,9 +17,8 @@
 
 	if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["setting"])) {
 		CsrfUtil::check();
-		// Interruptor de política, não de serviço: não passa pelo auxiliar
-		// privilegiado porque não há nada de privilegiado a fazer -- é uma
-		// linha no banco que o Dovecot e o nosso POP3 leem na próxima conexão.
+		// This is a database policy switch, not a service operation. Dovecot and Node POP3 read it
+		// at the next login, so no privileged helper is needed.
 		$name = (string)$_POST["setting"];
 		$value = ($_POST["value"] ?? "") === "1" ? "1" : "0";
 

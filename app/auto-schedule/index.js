@@ -1825,17 +1825,11 @@ async function mirrorVanillaToCustom(conn, region, vanillaId, existingCustomId) 
   return res.insertId;
 }
 
-// Marca a definição da edição como publicada, no instante em que ela entra
-// no bxt_news.
-//
-// O painel não deixa editar uma edição que já foi ao ar -- para mexer, apaga
-// e republica. Quem sabe a verdade sobre isso é este processo, e não o painel:
-// é ele que aplica. A marca fica na própria definição, então sobrevive a
-// retirar do calendário e a substituição por uma edição mais nova.
-//
-// Best-effort de propósito: falhar em marcar não pode impedir a notícia de
-// sair. O painel tem sua própria regra por data, que erra para o lado de
-// travar, então uma marca perdida não libera edição do que já foi publicado.
+// Mark the edition definition as published when it enters bxt_news. The marker survives
+// calendar removal and replacement by a newer edition. Editing a published definition
+// requires deleting and republishing it. This update is best effort: failure must not
+// block publication, and the admin date guard still prevents editing an already published
+// edition.
 function stampIssuePublished(newsCfg, articleId) {
   try {
     const slug = String(articleId || "").replace(/\.bin$/i, "");
@@ -1953,17 +1947,10 @@ async function processPokemonNewsCycle(
         cycleState[cycleStateKey][region] = { lastSlot: candidate.parsed.slot };
       }
     } else {
-      // Pure date-based mode, no slots.
-      //
-      // O track custom não pode se guiar pelo timestamp da linha. Ele compara
-      // a data da edição com a última atualização da linha e descarta o que
-      // não for mais novo -- e a linha custom é tocada com a hora de agora
-      // sempre que o espelho é criado ou a vanilla muda. Resultado: uma
-      // edição marcada para hoje cai fora em silêncio, sem log nenhum, que é
-      // justamente o caso de quem acaba de escrever uma notícia no painel.
-      //
-      // Aqui a repetição é evitada mais abaixo, comparando o que está no ar
-      // com o que seria gravado -- não pela data.
+      // Pure date-based mode without slots. Do not use the custom row timestamp to reject an
+      // edition: mirror creation and vanilla updates touch that timestamp, which would silently
+      // discard editions scheduled for today. Deduplicate against the published content below
+      // instead.
       const selection = refresh
         ? selectCurrentScheduledEntry(regionEntries, todayDate)
         : selectArticleForRegionDateOnly(
@@ -2059,12 +2046,9 @@ async function processPokemonNewsCycle(
       }
     }
 
-    // 3) Upsert into bxt_news
-    //
-    // Sem a data para servir de freio, o track custom regravaria a mesma
-    // edição a cada quinze minutos -- e cada regravação limpa os rankings da
-    // região, jogando fora o que os jogadores enviaram. Então a comparação é
-    // com o conteúdo: se o que está no ar já é isto, não há o que fazer.
+    // 3) Upsert into bxt_news. Compare content before updating: rewriting the same custom
+    // edition every fifteen minutes would reset the region rankings and discard player
+    // submissions.
     if (isCustom && !refresh && existingId != null) {
       const [currentRows] = await conn.execute(
         "SELECT ranking_category_1, ranking_category_2, ranking_category_3, " +

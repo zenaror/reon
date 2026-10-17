@@ -671,13 +671,9 @@
 				"dion_email" => $row["dion_email_local"]."@".$cfg["email_domain_dion"],
 				"external_email" => $username."@".$cfg["email_domain"],
 				"external_email_short" => $row["dion_email_local"]."@".$cfg["email_domain"],
-				// A nota só aparece para o nome que foi CORTADO. Os outros
-				// dois jeitos de o endereço diferir não precisam dela:
-				// completar um nome curto com zeros ("liz" vira "liz00000")
-				// não perde nada, e um dígito no fim de um nome de 8 é
-				// colisão, não tamanho -- creditar qualquer um dos dois ao
-				// limite de 8 seria explicar errado. Sobra o corte, que é o
-				// único caso em que a pessoa perde parte do nome.
+				// Show the length explanation only for genuinely truncated names. Zero-padding a short
+				// name loses no text, and a collision suffix is unrelated to the eight-character length
+				// limit.
 				"mail_truncated" => strlen($username) > 8,
 				"dion_id" => $row["dion_ppp_id"],
 			]);

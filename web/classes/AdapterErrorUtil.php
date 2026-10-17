@@ -1,27 +1,15 @@
 <?php
-	// Os códigos de erro do Mobile Adapter, prontos para a página.
-	//
-	// Duas metades, de origens diferentes e por isso em arquivos diferentes:
-	//
-	//   adapter_errors.json              gerado. Códigos, o texto que cada
-	//                                    jogo imprime, e a descrição curta da
-	//                                    fonte em inglês. Refeito por
-	//                                    maint/build_adapter_errors.php.
-	//   adapter_error_notes.<lang>.json  escrito à mão. A explicação amigável,
-	//                                    um arquivo por idioma.
-	//
-	// A junção acontece aqui, na hora de desenhar, e não no gerador: é aqui
-	// que se sabe qual idioma a pessoa está lendo. Guardar os sete idiomas
-	// dentro do arquivo gerado multiplicaria por sete um dado de 400 KB para
-	// entregar um sétimo dele.
+	// Combine generated adapter_errors.json (codes, game screen text and source descriptions)
+	// with handwritten adapter_error_notes.<lang>.json explanations at render time. Language
+	// selection belongs here, not in the generator; do not duplicate all language notes into
+	// the large generated dataset.
 	class AdapterErrorUtil {
 
 		const DIR = __DIR__ . "/../data";
 		const FALLBACK = "en";
 
-		// As linhas com a explicação do idioma pedido. Campo a campo: uma
-		// nota traduzida pela metade cai para o inglês só no que falta, em
-		// vez de derrubar a entrada inteira.
+		// Load requested-language explanations with field-level English fallback, preserving
+		// translated fields in partially translated entries.
 		public static function rows($locale) {
 			$data = self::json(self::DIR . "/adapter_errors.json");
 			if (!$data) return null;
@@ -38,19 +26,15 @@
 				$row["title"] = $own["title"] ?? ($fam["title"] ?? "");
 				$row["means"] = $own["means"] ?? ($fam["means"] ?? "");
 				$row["todo"] = $own["todo"] ?? ($fam["todo"] ?? "");
-				// Quando o código tem explicação própria, a da família vira
-				// contexto embaixo: é ela que diz que 5xx vem do servidor de
-				// e-mail, e não do jogo.
+				// When a code has its own explanation, retain the family explanation as context below it,
+				// for example that 5xx comes from the mail server.
 				$row["family"] = isset($own["means"]) ? ($fam["means"] ?? "") : "";
 			}
 			unset($row);
 
-			// O texto que cada cartucho imprime sai daqui antes de ir para a
-			// página. Ele continua no arquivo gerado, que é a fonte, mas a
-			// página não o mostra mais -- e mandá-lo assim mesmo custava 190
-			// KB dos 206 KB da resposta, quase tudo dado que ninguém lê. O
-			// mesmo vale para a lista de jogos, que só existia para rotular
-			// esses textos.
+			// Remove cartridge screen text and its game labels from the page response, while retaining
+			// them in the generated source data. The page no longer displays these fields; shipping
+			// them accounted for most of the response size.
 			foreach ($data["rows"] as &$row) unset($row["messages"]);
 			unset($row);
 			unset($data["games"]);
@@ -58,8 +42,8 @@
 			return $data;
 		}
 
-		// As notas do idioma, com o inglês por baixo. `same_as` evita repetir
-		// o mesmo parágrafo em cinco famílias que dizem a mesma coisa.
+		// Overlay language notes on English fallback. same_as avoids repeating identical
+		// explanations for multiple families.
 		private static function notes($locale) {
 			$base = self::json(self::DIR . "/adapter_error_notes." . self::FALLBACK . ".json") ?: [];
 			$own = [];

@@ -11,19 +11,17 @@ class POP3Server {
 	constructor(mysqlConfig, emailDomain, emailDomainDion, config) {
 		this.connections = new Set();
 		this.mysql = mysql.createPool(mysqlConfig);
-		// De onde a correspondência sai. Hoje só existe uma resposta: as
-		// caixas do Dovecot. A tabela sys_inbox foi apagada em 12/09/2026 e
-		// o outro caminho ficou sem destino -- ver mailStore.js. O MySQL
-		// segue sendo o cadastro de contas e a chave de device-auth.
+		// Production mail lives in Dovecot. sys_inbox was removed on 2026-09-12. MySQL retains
+		// account registration and device authorization keys, not production mailbox contents.
 		this.store = createStore(config || {}, this.mysql);
 		log.info("POP3 storage backend: " + this.store.name);
 		// Mail sent from one of our own domains was written for these games
 		// and is handed over untouched; see POP3Connection#_getMail.
 		this.internalDomains = [emailDomain, emailDomainDion]
 			.filter(Boolean).map(domain => String(domain).toLowerCase());
-		// Ligado quando o filtro de entrega do Dovecot ja aplica as
-		// tratativas. Daqui em diante este servidor so entrega os bytes
-		// guardados -- que e o que o Dovecot vai fazer quando assumir a 110.
+		// Enabled when the Dovecot delivery filter already shapes mail.
+		// This optional POP3 reader then serves the stored bytes unchanged,
+		// matching the production Dovecot reader on port 110.
 		this.shapedAtDelivery = (config || {})["shaped_at_delivery"] === true;
 		if (this.shapedAtDelivery) log.info("POP3: tratativas ja aplicadas na entrega");
 		net.createServer(sock => this._onClientConnect(sock)).listen(110, "0.0.0.0");

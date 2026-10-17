@@ -5,11 +5,9 @@
 	require_once("../classes/PageUtil.php");
 	session_start();
 
-	// Os dois documentos que o checkbox de consentimento cita, prontos para o
-	// modal. Vêm do MESMO Markdown que /terms.php e /privacy.php servem, então
-	// não há segunda cópia do texto para divergir, e vêm embutidos na página:
-	// é o documento que o consentimento referencia, e ele tem de estar legível
-	// ali mesmo, sem depender de uma segunda requisição dar certo.
+	// Embed the consent documents using the same Markdown served by terms.php and privacy.php.
+	// This avoids divergent copies and lets users read them without depending on a second
+	// request.
 	$legal = [
 		"terms_html" => PageUtil::html("terms"),
 		"privacy_html" => PageUtil::html("privacy"),

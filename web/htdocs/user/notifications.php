@@ -14,13 +14,12 @@
 	$userId = $_SESSION["user_id"];
 	$notify = NotificationUtil::getInstance();
 
-	// Limpar é POST, e não um link: um GET que destrói é seguido por
-	// prefetch de navegador, por crawler e por <img> alheia. Mesma regra das
-	// ações da caixa de correio.
+	// Clearing history requires POST: destructive GET links can be followed by prefetch,
+	// crawlers or third-party images.
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
 		if (($_POST["action"] ?? "") === "clear") $notify->clearForUser($userId);
-		// Redireciona depois do POST para que um F5 não repita a ação.
+		// Redirect after POST so refresh does not repeat the mutation.
 		header("Location: /user/notifications.php");
 		return;
 	}

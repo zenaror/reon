@@ -16,17 +16,16 @@
 	$notice = null;
 	$noticeKind = "ok";
 
-	// Baixar. GET, porque é leitura, e o nome passa pela peneira da loja
-	// antes de virar caminho -- servir arquivo arbitrário de um diretório é
-	// como "baixar log" se transforma em "ler qualquer coisa do disco".
+	// Download uses GET because it is read-only. Validate the filename through the capture
+	// store before constructing its path; do not serve arbitrary filesystem paths.
 	if (isset($_GET["file"])) {
 		$caminho = $loja->path($_GET["file"]);
 		if ($caminho === null) {
 			http_response_code(404);
 			exit;
 		}
-		// Quem baixou o quê fica no registro: é conversa de dois jogadores,
-		// não log de sistema.
+		// Audit who downloaded each capture: it contains two players communication, not merely
+		// system diagnostics.
 		$admin->log("tournament.download", basename($caminho),
 			"bytes=" . filesize($caminho));
 		header("Content-Type: application/jsonl; charset=utf-8");
@@ -39,9 +38,8 @@
 
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
-		// Caixa desmarcada não chega no POST: a ausência é "0", e não "não
-		// mexeu" -- que deixaria o modo ligado para sempre depois da
-		// primeira vez.
+		// An absent checkbox means zero, otherwise capture mode would remain enabled after its
+		// first activation.
 		$novo = (($_POST["relay_capture"] ?? "") === "1") ? "1" : "0";
 		$ok = $cfg->set("relay_capture", $novo);
 		$admin->log($ok ? "tournament.mode" : "tournament.mode-failed",
@@ -52,11 +50,10 @@
 	}
 
 	$sessoes = $loja->sessions();
-	// O par de cada gravação, calculado aqui e não no template: é uma busca
-	// na lista, e o template não é lugar de fazer busca.
+	// Find each capture counterpart here rather than performing list searches in the template.
 	foreach ($sessoes as &$s) $s["peer"] = $loja->peerOf($s);
 	unset($s);
-	// Nome da conta de cada lado, numa consulta só para a lista inteira.
+	// Resolve both participant account names with one query for the complete list.
 	$nomes = $loja->usernames($sessoes);
 
 	echo TemplateUtil::render("admin/tournament", [

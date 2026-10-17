@@ -11,10 +11,8 @@
 		.game-pane-title {
 			display: none;
 		}
-		/* A moldura. Mesma linguagem do resto do site (.reon-panel): borda
-		   dura, canto reto, sombra deslocada sem desfoque. O fundo é o campo
-		   cinza claro e não o branco do cartão, para a caixa ler como um
-		   mostrador em vez de um retângulo perdido no meio do formulário. */
+		/* Match the site reon-panel frame: hard border, square corners and offset shadow. A
+		 * light-gray display background distinguishes it from the white form card. */
 		.adapter-art {
 			background: var(--reon-paper);
 			border: 2px solid var(--reon-line);
@@ -24,11 +22,9 @@
 			margin: 1.25rem auto 1.5rem;
 			max-width: 420px;
 		}
-		/* A arte nasce em pé (281x842) e o adaptador se lê deitado. Girar não
-		   muda a caixa que o elemento ocupa, então o palco é declarado já
-		   deitado e a imagem é medida contra ele: largura 281/842 do palco,
-		   que depois do giro vira a altura. As duas proporções são a mesma,
-		   então não sobra borda nem corta desenho. */
+		/* Portrait artwork is 281x842 but the adapter is displayed horizontally. Rotation does not
+		 * change layout bounds, so declare a horizontal stage and size the image using 281/842 of
+		 * its width before rotating. */
 		.adapter-art__stage {
 			position: relative;
 			width: 100%;
@@ -42,8 +38,7 @@
 			height: auto;
 			transform: translate(-50%, -50%) rotate(-90deg);
 		}
-		/* A sombra dura é 3px para a direita e para baixo: sem isto ela sai
-		   da caixa do cartão em telas estreitas. */
+		/* Allow the hard shadow its 3px right/down offset so it remains inside narrow cards. */
 		@media (max-width: 575.98px) {
 			.adapter-art { margin-right: 3px; }
 		}
@@ -127,17 +122,14 @@
 					<hr>
 					<a href="change_email.php" class="btn btn-primary">{{'account.change-email'|trans}}</a>
 					<a href="change_password.php" class="btn btn-primary">{{'account.change-password'|trans}}</a>
-					{# O download mora aqui quando não há cartão de adaptador. Com a
-					   escolha liberada ele muda de casa, para ficar junto do que
-					   decide o conteúdo do arquivo -- escolher a cor e baixar a bin
-					   viram um gesto só, em vez de dois cartões distantes. #}
+					{# Show the standalone download here only without an adapter-choice card. Otherwise move it
+					   beside the settings that determine the generated binary. #}
 					{% if not adapter_choice_allowed %}
 						<a href="adapter_config.php" class="btn btn-primary" download="mobile_config.bin">{{'account.download-config-data'|trans}}</a>
 					{% endif %}
 					<hr>
-					{# Os dois direitos sobre os próprios dados: levar embora e
-					   apagar. Ficam juntos e no fim do cartão, e o de apagar é o
-					   único vermelho da página -- é o único que não tem volta. #}
+					{# Group account data export and deletion at the card end. Deletion alone uses the danger
+					   color because it is irreversible. #}
 					<a href="export_data.php" class="btn btn-primary" download>{{'account.download-my-data'|trans}}</a>
 					<a href="delete_account.php" class="btn btn-outline-danger">{{'account.delete-account'|trans}}</a>
 					<p class="form-text mt-2">{{'account.data-rights-note'|trans}}</p>
@@ -230,9 +222,8 @@
 					</div>
 				</div>
 			</div>
-			{# Só existe quando o painel libera. O formulário é separado do
-			   de Pokémon Crystal de propósito: são assuntos diferentes, e
-			   juntá-los faria um salvar mexer no outro. #}
+			{# Show only when admin policy permits. Keep this form separate from Crystal preferences so
+			   saving one does not mutate the other. #}
 			{% if adapter_choice_allowed %}
 			<div class="card mb-4">
 				<div class="card-header">{{ "account.adapter-settings"|trans }}</div>
@@ -242,17 +233,9 @@
 						<div class="mb-3">
 							<label for="adapterDevice" class="form-label">{{ "account.adapter-color"|trans }}</label>
 							<small><p>{{ "account.adapter-blurb"|trans }}</p></small>
-							{# O desenho do adaptador escolhido. As artes são retratos
-							   (281x842) e o adaptador se lê deitado, então giram -90°,
-							   o que dá exatamente o 842x281 da arte horizontal que já
-							   existe. Decorativo: quem nomeia a cor é o menu abaixo,
-							   e repetir o nome aqui faria o leitor de tela dizer duas
-							   vezes a mesma coisa.
-
-							   Os quatro ficam no HTML e só um aparece, para a troca
-							   ser instantânea e não piscar enquanto baixa. Sem
-							   JavaScript, aparece o que está salvo -- que é o certo,
-							   já que sem script o menu também não muda nada. #}
+							{# Rotate portrait adapter artwork -90 degrees for horizontal display. It is decorative
+							   because the selector already names the color. Keep all four images in the HTML for
+							   instant switching; without JavaScript show the saved choice. #}
 							<div class="adapter-art" aria-hidden="true">
 								<div class="adapter-art__stage">
 									{% for code, nome in adapter_models %}
@@ -287,12 +270,8 @@
 							<small><p>{{ "account.adapter-following-default"|trans }}</p></small>
 						{% endif %}
 						<small><p>{{ "account.adapter-download-note"|trans }}</p></small>
-						{# Os dois lado a lado, e o de baixar é um SUBMIT, não um
-						   link. Como link ele baixaria o que está gravado, e quem
-						   acabou de trocar a cor sem salvar receberia uma bin que
-						   não corresponde à tela -- justamente no gesto em que as
-						   duas coisas parecem uma só. Enviando o formulário, o
-						   servidor grava e só então entrega o arquivo. #}
+						{# Download is a form submit beside Save, not a link. The server saves the current choice
+						   before serving the file rather than downloading an older stored configuration. #}
 						<div class="d-flex flex-wrap gap-2">
 							<button type="submit" class="btn btn-primary">{{ "account.update-settings"|trans }}</button>
 							<button type="submit" name="downloadAfterSave" value="1" class="btn btn-primary">{{'account.download-config-data'|trans}}</button>

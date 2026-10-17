@@ -15,10 +15,8 @@
 		<div class="mt-panel mt-panel--flat">
 			<h2 class="mt-panel__bar">{{ 'notify.title'|trans }} <span class="mt-panel__count">{{ total }}</span></h2>
 
-			{# Dito na página porque é o que o botão abaixo faz e o que ele
-			   não faz: o histórico fica guardado até a PESSOA limpá-lo, e
-			   limpar não desfaz nada -- a mensagem ou a troca que o aviso
-			   apontava continua onde estava. #}
+			{# Notification history remains until the owner clears it. Clearing does not undo the
+			   underlying mail or trade referenced by a notification. #}
 			<p class="mt-summary">{{ 'notify.history-note'|trans }}</p>
 
 			{# Same notice as the rankings page, in the place where the person

@@ -252,25 +252,13 @@
 			return $found;
 		}
 
-		// Minijogos que a ferramenta upstream não monta hoje, por erro de
-		// digitação no fonte dela. Não fazemos fork, então a correção não é
-		// nossa -- o que é nosso é não oferecer na tela o que não vai
-		// funcionar.
-		//
-		// Cada entrada carrega a LINHA exata que causa o erro, e só vale
-		// enquanto essa linha estiver no arquivo. Assim a lista expira sozinha
-		// quando o upstream corrigir, em vez de virar uma mentira que alguém
-		// aqui teria de lembrar de apagar.
-		//
-		// Vazia hoje: os três erros que existiam foram corrigidos no nosso
-		// fork em 11/09/2026 (`9130492`). Fica o mecanismo, porque a
-		// ferramenta é de fora e a próxima atualização dela pode trazer
-		// outro -- e porque ter isto pronto é a diferença entre a tela dizer
-		// o que houve e a pessoa preencher uma edição inteira para receber o
-		// despejo do montador.
+		// Disable known broken upstream minigames only while their exact error line remains in
+		// source. Full-line markers expire automatically when fixed. The list is currently empty:
+		// the three known assembly errors were repaired in the fork on 2026-09-11. Keep the
+		// mechanism to report future incompatible sources before a user builds a complete edition.
 		const BROKEN_MINIGAMES = [];
 
-		// A linha que impede este minijogo de montar, ou null se ele monta.
+		// Return the source line preventing assembly, or NULL when the minigame builds.
 		public function brokenMinigame($minigame) {
 			$marker = self::BROKEN_MINIGAMES[$minigame] ?? null;
 			if ($marker === null) return null;
@@ -278,12 +266,9 @@
 			$dir = $this->sourceDir();
 			if ($dir === false) return null;
 
-			// Linha inteira, e não `strpos`: o primeiro marcador que escrevi
-			// era `lang I, next "PARCO NAZIONALE?` -- sem a aspa final, que era
-			// justamente o defeito. A correção só acrescenta a aspa no fim, e
-			// o marcador continuava sendo substring da linha corrigida. A
-			// detecção nunca teria expirado, que é o contrário do que ela
-			// existe para fazer.
+			// Match the entire source line, not a substring. A missing-quote marker remains a prefix
+			// after the closing quote is restored and would otherwise keep marking the repaired game
+			// as broken.
 			$text = (string)@file_get_contents($dir . "/" . $minigame);
 			foreach (explode("\n", $text) as $line) {
 				if (rtrim($line, "\r") === $marker) return $marker;
@@ -291,8 +276,8 @@
 			return null;
 		}
 
-		// Os minijogos quebrados hoje, para a tela não oferecer prêmio onde
-		// não adianta escolher.
+		// List currently broken minigames so the editor does not offer reward choices for builds
+		// that cannot succeed.
 		public function brokenMinigames() {
 			$found = [];
 			foreach (array_keys($this->minigames()) as $minigame) {
@@ -301,25 +286,10 @@
 			return $found;
 		}
 
-		// Onde cada prêmio está escrito no minijogo, na ordem em que o script
-		// chega neles.
-		//
-		// Um prêmio nem sempre é um item literal num `nsc_giveitem`. Dois dos
-		// minijogos passam por macro, e ler só a linha do `nsc_giveitem`
-		// mostrava o token cru da macro -- um "\4" que não diz nada a quem
-		// está escrevendo uma revista, e, pior, contava UM prêmio onde o jogo
-		// entrega seis:
-		//
-		//   game_personality   `nsc_giveitem \4` dentro de MACRO quizresult,
-		//                      invocada 6 vezes, uma por resultado do quiz
-		//   game_cry_memory    `nsc_giveitem CRYSET1_BIG_PRIZE`, e a constante
-		//                      vem de `DEF CRYSET\1_BIG_PRIZE EQU \6` dentro
-		//                      de MACRO def_cryset
-		//
-		// Então o que se procura não é a linha do `nsc_giveitem`, é o lugar
-		// onde o nome do item está escrito de verdade -- que pode ser um
-		// argumento de uma invocação de macro lá em outra parte do arquivo.
-		// Cada entrada carrega esse endereço, e é por ele que a troca é feita.
+		// Locate reward definitions in script order, including macro arguments rather than only
+		// nsc_giveitem lines. game_personality uses quizresult argument 4 for six results;
+		// game_cry_memory derives CRYSET1_BIG_PRIZE from def_cryset argument 6. Record the actual
+		// source span where the item name is defined so replacements edit the meaningful argument.
 		private function prizeSites($minigame) {
 			$dir = $this->sourceDir();
 			if ($dir === false || !isset($this->minigames()[$minigame])) return [];
@@ -327,7 +297,7 @@
 			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
 			$items = $this->items();
 
-			// 1. Corpos de macro, para saber o que é definição e o que é uso.
+			// 1. Identify macro bodies to distinguish definitions from invocations.
 			$macros = [];
 			$open = null;
 			foreach ($lines as $i => $line) {
@@ -347,8 +317,8 @@
 				return null;
 			};
 
-			// 2. O que cada macro faz com os argumentos dela: entregar um item
-			//    direto, ou definir uma constante que vira item depois.
+			// 2. Determine whether each macro directly grants an argument item or
+			// defines a constant resolved as an item later.
 			$gives = [];
 			$defines = [];
 			foreach ($lines as $i => $line) {
@@ -362,9 +332,8 @@
 				}
 			}
 
-			// 3. As invocações no nível de cima, com a posição exata de cada
-			//    argumento -- posição, e não o texto separado por vírgula,
-			//    para a troca não estragar o alinhamento do arquivo.
+			// 3. Locate top-level invocations and the exact source span of each argument, preserving
+			// surrounding alignment during replacement.
 			$calls = [];
 			$constants = [];
 			foreach ($lines as $i => $line) {
@@ -378,8 +347,8 @@
 
 				foreach ($defines[$name] ?? [] as $def) {
 					if (!isset($args[$def["arg"]])) continue;
-					// O nome da constante também sai dos argumentos:
-					// `CRYSET\1_BIG_PRIZE` com \1 = 1 vira CRYSET1_BIG_PRIZE.
+					// Resolve constant names from arguments: CRYSET\1_BIG_PRIZE with argument 1 becomes
+					// CRYSET1_BIG_PRIZE.
 					$constant = preg_replace_callback('/\\\\(\d)/',
 						function ($c) use ($args) {
 							return $args[(int)$c[1] - 1]["text"] ?? $c[0];
@@ -391,7 +360,7 @@
 				}
 			}
 
-			// 4. Os prêmios, na ordem em que o script chega neles.
+			// 4. Collect rewards in script execution order.
 			$found = [];
 			foreach ($lines as $i => $line) {
 				if (!preg_match('/^\s*nsc_giveitem\s+(.+)$/', $line, $m)) continue;
@@ -403,9 +372,8 @@
 				$owner = $inMacro($i);
 
 				if ($owner !== null) {
-					// Dentro de macro: um prêmio por invocação dela. O som não
-					// precisa de conserto aqui -- o próprio minijogo escolhe
-					// pelo prefixo do item (`STRSUB("\4", 1, 3)`).
+					// A macro-body reward expands once per invocation. No sound replacement is needed where
+					// the minigame derives the sound from the item prefix itself.
 					if (!isset($gives[$owner])) continue;
 					$arg = $gives[$owner];
 					foreach ($calls[$owner] ?? [] as $call) {
@@ -431,9 +399,8 @@
 					continue;
 				}
 
-				// Sobrou algo que não dá para nomear. Marcado, não escondido:
-				// se um minijogo novo aparecer com outra forma, isso vira uma
-				// linha visível na tela em vez de um prêmio que some.
+				// Expose unnamed reward forms rather than hiding them. An unfamiliar future minigame
+				// should produce a visible diagnostic instead of silently losing a reward.
 				$found[] = self::prizeEntry($first, $quantity, null, null, null, $items);
 			}
 			return $found;
@@ -449,9 +416,8 @@
 			];
 		}
 
-		// Os argumentos separados por vírgula a partir de $at, cada um com o
-		// recorte exato no texto original, para trocar um deles sem mexer no
-		// espaçamento em volta.
+		// Split comma-separated arguments from $at while retaining exact source spans so one
+		// argument can be replaced without changing surrounding whitespace.
 		private static function argumentSpans($line, $at) {
 			$text = (string)preg_replace('/;.*$/', "", $line);
 			$spans = [];
@@ -471,8 +437,8 @@
 			return $spans;
 		}
 
-		// A linha do som de presente que pertence ao prêmio da linha $at: a
-		// primeira depois dele e antes do próximo prêmio.
+		// Find the gift sound belonging to the reward at $at: the first sound after it and before
+		// the next reward.
 		private static function giftSoundLine($lines, $at) {
 			$last = min($at + 12, count($lines) - 1);
 			for ($i = $at + 1; $i <= $last; $i++) {
@@ -484,8 +450,7 @@
 			return null;
 		}
 
-		// Os prêmios de um minijogo, como a tela precisa vê-los: sem os
-		// endereços internos, que são detalhe da substituição.
+		// Present rewards to the editor without internal replacement offsets.
 		public function prizes($minigame) {
 			if ($this->brokenMinigame($minigame) !== null) return [];
 			$shown = [];
@@ -496,13 +461,9 @@
 			return $shown;
 		}
 
-		// O fonte do minijogo com os prêmios desta edição dentro, ou null
-		// quando a edição não trocou nenhum -- e aí o build inclui o arquivo
-		// da ferramenta como sempre, sem cópia nenhuma.
-		//
-		// O som acompanha o item onde o minijogo não escolhe sozinho. Trocar
-		// só o item faria o jogo tocar a fanfarra de TM para uma BERRY; a
-		// regra é a do próprio upstream, que decide pelo prefixo `TM_`.
+		// Return minigame source with this edition rewards, or NULL to include the original tool
+		// file without copying it. Replace gift sound with the item where needed; the upstream TM_
+		// prefix rule distinguishes TM fanfare from ordinary item rewards.
 		public function minigameWithPrizes($minigame, $chosen) {
 			$dir = $this->sourceDir();
 			if ($dir === false) return null;
@@ -513,9 +474,8 @@
 			$items = $this->items();
 			$lines = explode("\n", (string)@file_get_contents($dir . "/" . $minigame));
 
-			// Agrupadas por linha, porque uma invocação só pode carregar dois
-			// prêmios -- `def_cryset` define o grande e o segundo grande na
-			// mesma linha -- e cada troca move o que vem depois dela.
+			// Group edits by line: one def_cryset invocation can define both major rewards, and each
+			// substitution shifts later offsets.
 			$edits = [];
 			foreach ($sites as $i => $site) {
 				if ($site["fixed"]) continue;
@@ -535,8 +495,8 @@
 			if (!$edits) return null;
 
 			foreach ($edits as $at => $list) {
-				// Da direita para a esquerda: uma troca de tamanho diferente
-				// desloca tudo que está depois dela na mesma linha.
+				// Apply edits right to left so replacements of different lengths do not invalidate
+				// remaining spans on the same line.
 				usort($list, function ($a, $b) { return $b["span"]["at"] - $a["span"]["at"]; });
 				foreach ($list as $edit) {
 					$lines[$at] = substr_replace($lines[$at], $edit["to"],
@@ -951,9 +911,8 @@
 				$data["date"] = $this->scheduledDate($slug);
 			}
 			$data["locked"] = $this->lockedFrom($data);
-			// Veio do disco, logo existe. É o que separa uma edição gravada de
-			// um formulário que só tem nome digitado: sem isso, a tela oferecia
-			// "apagar" para algo que nunca foi salvo.
+			// A definition loaded from disk exists. Do not offer deletion for an unsaved form that
+			// only has a typed name.
 			$data["exists"] = true;
 			return $data;
 		}
@@ -1049,18 +1008,10 @@
 			return [$results, $log];
 		}
 
-		// O número que o agendador grava em ranking_category_N.
-		//
-		// A numeração autoritativa é a de bxt_encoding.json -- é a mesma
-		// tabela que decodeRankingCategory lê de volta para montar o rótulo,
-		// então casar por ela é casar com quem vai ler. O casamento é pelo
-		// nome, porque a posição em ranking_types.asm não serve: as três
-		// reservadas são filtradas da lista e deslocariam todos os índices
-		// seguintes.
-		//
-		// Devolve null quando não casa, e quem chama recusa em vez de gravar
-		// um número inventado -- categoria errada num artigo é ranking errado
-		// na tela do jogador.
+		// Resolve ranking_category_N using authoritative bxt_encoding.json names, the same mapping
+		// used by decodeRankingCategory. Do not use ranking_types.asm list positions because
+		// filtering its three reserved entries shifts indices. Return NULL on mismatch; callers
+		// reject rather than invent a cartridge category ID.
 		public function rankingNumber($constant) {
 			$labels = $this->rankingCategories();
 			if (!isset($labels[$constant])) return null;
@@ -1068,8 +1019,8 @@
 			$path = dirname(__DIR__, 2) . "/web/scripts/bxt_encoding.json";
 			$raw = @file_get_contents($path);
 			$data = $raw === false ? [] : (json_decode($raw, true) ?: []);
-			// Os números não dependem de região; a tabela inglesa serve de
-			// referência para todas.
+			// Ranking identifiers are region-independent; use the English table as the shared
+			// reference.
 			$table = $data["btxe_btxp_btxu_ranking_category"] ?? [];
 
 			foreach ($table as $number => $label) {
@@ -1078,24 +1029,16 @@
 			return null;
 		}
 
-		// Larguras, medidas nas sete edições reais e não deduzidas.
-		//
-		//   artigo   a caixa é declarada `nsc_textbox 1, 14, 18, 4` -- 18 de
-		//            largura -- e a mais longa das 245 linhas reais tem
-		//            exatamente 18. Declaração e dado concordam.
-		//   título   maior real: "NACHRICHTEN Nr. 12", "NOTICIA PKMN N.º12".
-		//   caixa    as oito mensagens reais têm de 14 a 17 caracteres.
-		//
-		// Não há teto de linhas no artigo: o texto rola com `cont`, então o
-		// que importa é a largura de cada uma.
+		// Widths measured from the seven original editions: article nsc_textbox is 18 characters
+		// wide and the longest of 245 lines is 18; title limits cover the longest real localized
+		// titles; the eight mailbox messages range from 14 to 17 characters. Articles scroll with
+		// cont, so constrain line width rather than total line count.
 		const HEADLINE_MAX = 18;
 		const BODY_LINE_MAX = 18;
 		const MESSAGE_MAX = 17;
 
-		// Confere os textos contra essas larguras. Devolve uma lista de
-		// problemas, cada um já dizendo idioma, campo e o trecho culpado --
-		// "passou do limite" sem apontar qual linha manda alguém contar
-		// caractere à mão em seis idiomas.
+		// Validate text widths and return diagnostics identifying language, field and offending
+		// line instead of an unlocated overflow message.
 		public function checkText($issue) {
 			$problems = [];
 
@@ -1118,8 +1061,8 @@
 					];
 				}
 
-				// Medido depois da quebra em macros, que é o que de fato vira
-				// linha na tela -- contar o texto cru diria outra coisa.
+				// Measure after conversion to line macros, matching the text actually shown on screen
+				// rather than the raw form text.
 				foreach ($this->textMacros((string)(($issue["body"] ?? [])[$key] ?? "")) as $i => [$macro, $line]) {
 					if (mb_strlen($line, "UTF-8") <= self::BODY_LINE_MAX) continue;
 					$problems[] = [
@@ -1133,20 +1076,9 @@
 			return $problems;
 		}
 
-		// Destinos de compilação, agrupados pelo texto que consomem.
-		//
-		// São oito regiões para seis idiomas: `e`, `p` e `u` -- Estados
-		// Unidos, Europa e Austrália -- consomem todos o texto inglês, e
-		// compilam binário byte a byte idêntico (mesmo md5, medido). Pedir
-		// três cliques para escrever o mesmo arquivo em três pastas é ruído.
-		//
-		// Os outros cinco NÃO se agrupam, por mais que a ROM os trate igual:
-		// a desmontagem tem só duas flags de região (_CRYSTAL_AU e
-		// _CRYSTAL_EU) e nenhuma diferença de lógica entre EU/FR/DE/IT/ES,
-		// mas isso é sobre o que o cartucho *executa*. Aqui a letra escolhe
-		// que **texto** o servidor entrega, e francês, alemão, italiano e
-		// espanhol são conteúdos diferentes -- juntá-los mandaria alemão para
-		// um cartucho francês.
+		// Group build destinations by consumed language. Regions e, p and u use English and
+		// produce byte-identical binaries; build once for all three. Keep French, German, Italian,
+		// Spanish and Japanese content separate even where cartridge execution flags are shared.
 		public function buildTargets() {
 			$targets = [];
 			foreach (self::REGION_LANGUAGE as $region => $language) {
@@ -1155,21 +1087,9 @@
 			return $targets;
 		}
 
-		// Confere se cada região marcada para compilar tem o texto do idioma
-		// dela escrito. Devolve a lista de regiões que não têm, com o campo
-		// que falta.
-		//
-		// Duas leituras da mesma regra: não se marca a Espanha sem escrever
-		// em espanhol, e não se deixa o espanhol vazio tendo marcado a
-		// Espanha. Várias regiões compartilham idioma (e, p e u usam o
-		// inglês), então a checagem é pelo idioma que a região consome.
-		//
-		// Título e artigo são exigidos; a linha da caixa não, porque ela tem
-		// queda documentada para o título -- exigir seria contradizer um
-		// comportamento que existe de propósito.
-		//
-		// O artigo é o que mais importa aqui: deixado em branco, o que sai
-		// não é uma página vazia, é o texto de 2002 que veio no template.
+		// Require title and article in every language consumed by a selected region. The mailbox
+		// line intentionally falls back to title. Regions e/p/u share English. A missing article
+		// would retain the original 2002 template rather than produce a harmless empty page.
 		public function checkBuildable($issue, $regions) {
 			$missing = [];
 			foreach ($regions as $region) {
@@ -1187,8 +1107,8 @@
 			return $missing;
 		}
 
-		// Quais idiomas já têm texto suficiente para serem compilados. Usado
-		// pela tela para não oferecer uma região que ainda não daria certo.
+		// Determine which languages have enough text to build, so the UI does not offer an
+		// incomplete region.
 		public function filledLanguages($issue) {
 			$filled = [];
 			foreach (array_keys(self::LANGUAGES) as $language) {
@@ -1199,15 +1119,11 @@
 			return $filled;
 		}
 
-		// Dias por mês, com fevereiro sempre em 28.
-		//
-		// A data é **sem ano**: ela se repete todo ano, e é por isso que o
-		// campo não é um calendário. 29 de fevereiro só existiria em ano
-		// bissexto, ou seja, a edição não sairia em três de cada quatro anos
-		// -- um agendamento que quase nunca acontece é pior que um recusado.
+		// Month lengths for a yearless annual schedule; February is always 28 days. Reject
+		// February 29 because it would skip publication in three out of four years.
 		const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-		// Monta "MM-DD" a partir de mês e dia, ou null se não formar data.
+		// Build MM-DD from month/day, or return NULL for an invalid date.
 		public static function composeDate($month, $day) {
 			$month = (int)$month;
 			$day = (int)$day;
@@ -1216,28 +1132,17 @@
 			return sprintf("%02d-%02d", $month, $day);
 		}
 
-		// Edição que já foi ao ar não se edita: só se olha.
-		//
-		// Recompilar por cima do que o jogo já está servindo trocaria o
-		// conteúdo de uma edição que jogadores podem ter lido, com o mesmo
-		// nome e a mesma data -- não há como alguém perceber que mudou. Para
-		// mexer, apaga e publica outra.
-		//
-		// Duas fontes, e basta uma para travar:
-		//
-		//  - `published_at`, gravado pelo agendador no instante em que a
-		//    edição entrou no bxt_news. É a verdade, e sobrevive a retirar do
-		//    calendário ou a ser substituída por uma mais nova.
-		//  - a data agendada já ter chegado. Cobre a janela entre a data virar
-		//    e o agendador rodar, e cobre uma marca que não tenha sido
-		//    gravada. Erra para o lado de travar, que é o lado seguro.
+		// Published editions are read-only: delete and republish to change their content. Lock if
+		// either published_at was recorded by the scheduler or the scheduled date has arrived. The
+		// marker survives calendar removal/replacement; the date also covers scheduler delay or a
+		// missing marker and intentionally errs toward locking.
 		public function isPublished($slug) {
 			$issue = $this->issue($slug);
 			return is_array($issue) ? $this->lockedFrom($issue) : false;
 		}
 
-		// Recebe a definição já carregada, para `issue()` poder marcar o campo
-		// sem chamar `isPublished()` e voltar a carregar a si mesma.
+		// Accept an already loaded definition so issue() can annotate publication state without
+		// recursively reloading itself.
 		private function lockedFrom($data) {
 			if (!is_array($data)) return false;
 			if (trim((string)($data["published_at"] ?? "")) !== "") return true;
@@ -1250,11 +1155,8 @@
 			return $when !== false && $when <= mktime(0, 0, 0);
 		}
 
-		// "MM-DD" -> "YYYY-MM-DD", no ano corrente.
-		//
-		// O formulário só pede mês e dia (pedido do dono), então o ano sai
-		// daqui. Sempre o ano corrente: um dia que já passou significa "vai
-		// ao ar agora", e não "espera onze meses".
+		// Convert MM-DD to YYYY-MM-DD in the current year. A past date means publish now, not wait
+		// until next year.
 		public static function withYear($date) {
 			$parts = explode("-", (string)$date);
 			if (count($parts) !== 2) return (string)$date;
@@ -1269,24 +1171,16 @@
 			return sprintf("%02d-%02d", (int)$parts[1], (int)$parts[2]);
 		}
 
-		// O valor que o formulário manda quando a escolha é "sortear".
+		// Form value representing a randomized selection.
 		const RANKING_RANDOM = "__random__";
 
-		// Toda edição real da Pokémon News cabe nisto; é o aviso, não uma
-		// recusa, porque o limite de verdade é o da tela e não o da coluna
-		// (que é varbinary(100), folgada).
+		// All original Pokemon News messages fit this width. This is a warning, not a rejection;
+		// the display limit is more relevant than the generous varbinary(100) column.
 		const MESSAGE_SOFT_LIMIT = 17;
 
-		// Resolve as três categorias: sorteia as marcadas como aleatórias e
-		// garante que as três sejam diferentes.
-		//
-		// As três precisam diferir porque a tela de rankings mostra as três
-		// lado a lado -- repetir uma é gastar um terço do espaço dizendo duas
-		// vezes a mesma coisa. Vale tanto para o que a pessoa escolheu quanto
-		// para o que foi sorteado, então o sorteio tira do que sobrou em vez
-		// de sortear e conferir depois.
-		//
-		// Devolve [ok, três-categorias-ou-motivo].
+		// Resolve three distinct categories, honoring manual choices first and sampling random
+		// categories from those remaining. Duplicate categories waste a third of the ranking
+		// screen. Return [ok, categories-or-reason].
 		public function resolveRankings($chosen) {
 			$pool = array_keys($this->rankingCategories());
 			if (count($pool) < 3) return [false, "no-categories"];
@@ -1295,8 +1189,7 @@
 			while (count($chosen) < 3) $chosen[] = self::RANKING_RANDOM;
 			$chosen = array_slice($chosen, 0, 3);
 
-			// Primeiro o que foi escolhido à mão, para o sorteio já saber do
-			// que precisa fugir.
+			// Reserve manually selected categories first so randomized choices cannot repeat them.
 			$out = [null, null, null];
 			$taken = [];
 			foreach ($chosen as $slot => $value) {
@@ -1354,21 +1247,11 @@
 			);
 			if ($body === false || json_decode($body, true) === null) return false;
 
-			// Escrito no lugar, e não num vizinho renomeado por cima.
-			//
-			// A troca atômica precisaria de escrita no *diretório*, e o
-			// diretório é justamente o que não foi concedido -- ao lado mora
-			// o config que carrega o agendamento das notícias comuns. A
-			// permissão é de um arquivo só, então a gravação é de um arquivo
-			// só.
-			//
-			// O que se perde é a atomicidade: um processo morto no meio da
-			// escrita deixa JSON truncado. O que segura isso é o outro lado,
-			// que já foi testado -- o carregador do auto-schedule engole
-			// overlay ilegível com um aviso e segue com agendamento vazio,
-			// então o pior caso é a trilha custom não sair numa execução.
-			// Aqui o arquivo é relido depois de escrito, para que isso vire
-			// erro na tela em vez de silêncio.
+			// Write the allowed overlay file in place: atomic replacement would require directory
+			// write permission, which is deliberately denied because the official schedule
+			// configuration is adjacent. A partial write can truncate JSON; the scheduler tolerates an
+			// unreadable overlay by warning and skipping the custom track for that run. Read back the
+			// result so the admin receives an error instead of silent failure.
 			if (@file_put_contents($path, $body) === false) return false;
 
 			$back = @file_get_contents($path);
@@ -1388,8 +1271,8 @@
 		public function setScheduled($slug, $date, $regions, $rankings = []) {
 			$slug = $this->slug($slug);
 			if ($slug === "") return [false, "bad-name"];
-			// Conferida pelo mês de verdade, e não por um padrão que aceitaria
-			// 02-30 e 04-31 por terem a forma certa.
+			// Validate actual month lengths rather than accepting shape-only dates such as 02-30 and
+			// 04-31.
 			$parts = explode("-", (string)$date);
 			if (count($parts) !== 2 || self::composeDate($parts[0], $parts[1]) === null) {
 				return [false, "bad-date"];
@@ -1400,10 +1283,9 @@
 			$schedule = $this->schedule();
 			$id = $slug . ".bin";
 
-			// As categorias vão escritas, e não deixadas para o agendador
-			// deduzir do binário. O caminho de dedução dele grava o objeto
-			// inteiro devolvido por findRankingSlots numa coluna inteira e
-			// falha -- por isso toda entrada real que existe traz a lista.
+			// Store explicit ranking categories. The scheduler binary-inference path returns
+			// structured slots unsuitable for an integer column; real schedule entries therefore
+			// provide the list.
 			$numbers = [];
 			foreach ($rankings as $constant) {
 				$n = $this->rankingNumber($constant);
@@ -1433,15 +1315,9 @@
 					// the one that goes out -- which is what "goes live on
 					// this day" is supposed to mean.
 					$entries[$id] = [
-						// Com ano, e não só mês-dia.
-						//
-						// O agendador trata "MM-DD" como data que se repete
-						// todo ano, então resolve uma que ainda não chegou
-						// para a ocorrência do ano passado -- que já passou.
-						// Uma edição marcada para dezembro entraria no ar
-						// hoje. Com "YYYY-MM-DD" ele compara a data de
-						// verdade e espera, que é o que "goes live on"
-						// quer dizer.
+						// Store YYYY-MM-DD, not MM-DD. The scheduler interprets a future yearless date as the
+						// previous annual occurrence and could publish a December edition immediately instead of
+						// waiting for its intended date.
 						"date" => self::withYear($date),
 						"file" => "bxt_custom/" . $region . "/" . $id,
 						"message_file" => "bxt_custom/" . $region . "/" . $id . ".message",

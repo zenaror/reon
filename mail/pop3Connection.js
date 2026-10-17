@@ -22,11 +22,8 @@ function xapopSubkey(deviceAuthKey) {
 	return crypto.createHmac("sha256", deviceAuthKey).update("pop3-xapop").digest();
 }
 
-// RFC 1939: a resposta multilinha termina em CRLF "." CRLF. Se a mensagem já
-// acaba em CRLF, acrescentar outro insere uma linha em branco que não existia
-// -- o que se fazia aqui sem olhar. Para correspondência comum ninguém nota;
-// para um payload de troca é byte a mais no fim de algo que o cartucho lê
-// inteiro.
+// RFC 1939 multiline replies end with CRLF dot CRLF. If the message already ends with
+// CRLF, adding another would insert a spurious blank line and alter binary trade payloads.
 function terminaEmCRLF(texto) {
 	return texto.endsWith("\r\n") ? texto : texto + "\r\n";
 }
@@ -53,18 +50,9 @@ class POP3Connection extends EventEmitter {
 		// arrives), bound into every XAPOP signature so a signature can't
 		// be replayed against a different connection.
 		this._nonce = crypto.randomBytes(16).toString("hex");
-		// A saudação carrega o MESMO nonce em duas formas, e isso é
-		// deliberado, não enfeite.
-		//
-		// A primeira é a que o XAPOP sempre usou: o adaptador em campo
-		// procura "service ready " seguido de 32 hexa, e mudar isso deixaria
-		// todo mundo sem correio hoje.
-		//
-		// A segunda é o desafio do RFC 1939, entre < e >, que é o que o APOP
-		// exige e o que o Dovecot emite. Com as duas na mesma linha, quem
-		// implementa APOP agora escreve o mesmo código que vai valer quando o
-		// Dovecot assumir a porta -- e quem ainda fala XAPOP não vê
-		// diferença. O desafio do APOP inclui os sinais de maior e menor.
+		// The greeting presents the same nonce in the historical service-ready hex form and the
+		// RFC 1939 angle-bracket challenge. The latter includes < and > in the APOP digest and
+		// matches the Dovecot greeting format; preserve compatibility with existing clients.
 		this._challenge = "<" + this._nonce + "@reon.dion.ne.jp>";
 		this._send(true, "service ready " + this._nonce + "@reon.dion.ne.jp "
 			+ this._challenge);
@@ -156,12 +144,9 @@ class POP3Connection extends EventEmitter {
         if (this._state == POP3State.AUTHORIZATION) {
 			if (param != null && param != "") {
 				if (this._user != null) {
-					// A senha de oito caracteres só vale se o servidor ainda
-					// aceitar esse degrau. É um interruptor no painel, e não
-					// uma constante aqui, porque a hora de fechá-lo depende de
-					// quando os adaptadores em campo souberem APOP -- coisa
-					// que quem administra sabe e o código não. Fechado, sobra
-					// só XAPOP (hoje) e APOP (quando a 110 for do Dovecot).
+					// The admin-controlled password fallback determines whether the eight-character game
+					// password is accepted. Disabling it leaves the supported key-based authentication
+					// methods; rollout policy belongs to the operator.
 					this._server.mysql.query(
 						"select u.id, u.log_in_password, " +
 						"  coalesce((select s.value from sys_settings s where s.name = 'pop3_password_fallback'), '1') as fallback " +
@@ -171,9 +156,8 @@ class POP3Connection extends EventEmitter {
 							this._onError(error);
 						} else {
 							if (results.length > 0 && results[0]["fallback"] !== "1") {
-								// O texto é distinto de propósito: "invalid user
-								// or pass" mandaria quem administra procurar
-								// senha errada onde o problema é o interruptor.
+								// Distinguish disabled password authentication from an invalid credential so operators do
+								// not diagnose the policy switch as a wrong password.
 								this._send(false, "password authentication disabled");
 							} else if (results.length > 0) {
 								// Check password
@@ -199,28 +183,12 @@ class POP3Connection extends EventEmitter {
 		}
     }
 	
-	// XAPOP <ppp_id> <hmac-sha256-hex> -- replaces the entire USER+PASS pair
-	// for a device that already holds a device_auth_key (see
-	// DeviceAuthUtil.php): libmobile never has the game's real mailbox
-	// password available outside the very first session, so this proves
-	// identity with the same durable key device-auth already uses instead.
-	// Signature = HMAC-SHA256(xapopSubkey(device_auth_key), ppp_id + "|" +
-	// this connection's greeting nonce). Failure leaves the connection in
-	// AUTHORIZATION exactly as if nothing had been sent yet, so a caller
-	// whose device_auth_key was revoked/never provisioned can fall back to
-	// classic USER/PASS on the same connection with no special handling.
-	// APOP <user> <digest>, RFC 1939. Substitui USER+PASS inteiro, como o
-	// XAPOP, mas usando o que qualquer servidor de verdade sabe verificar:
-	// MD5(desafio + segredo).
-	//
-	// O segredo é a chave de device-auth em hexa minúsculo, 64 caracteres
-	// ASCII -- o TEXTO, não os 32 bytes crus. É assim que o Dovecot serve a
-	// coluna para o processo de autenticação, e o objetivo aqui é que o
-	// adaptador calcule exatamente o mesmo digest nos dois servidores.
-	//
-	// Oito caracteres de senha não entram nesta conta: quem faz o digest é o
-	// adaptador, não o cartucho de 2001, então é o único ponto da
-	// autenticação do jogo onde cabe um segredo de 256 bits.
+	// XAPOP authenticates a provisioned device using HMAC-SHA256(xapopSubkey(device_auth_key),
+	// ppp_id + "|" + greeting nonce), replacing USER/PASS. Failure leaves the connection in
+	// AUTHORIZATION so fallback remains possible when policy permits. RFC 1939 APOP instead
+	// uses MD5(challenge + secret). The secret is the device key encoded as 64 lowercase ASCII
+	// hex characters, not its raw 32 bytes, matching Dovecot. The adapter computes this
+	// digest; the cartridge password is not used.
 	_commandHandler_APOP(param) {
 		if (this._state != POP3State.AUTHORIZATION) {
 			this._send(false, "command not allowed");
@@ -235,7 +203,7 @@ class POP3Connection extends EventEmitter {
 		let digest = Buffer.from(params[1].toLowerCase(), "hex");
 
 		this._server.mysql.query(
-			// Conta banida responde como conta inexistente, igual ao XAPOP.
+			// Refuse banned accounts like unknown accounts on this authentication path too.
 			"select u.id, u.dion_email_local, a.device_auth_key from sys_users u " +
 			"inner join sys_device_authorization a on a.user_id = u.id " +
 			"where u.dion_email_local = ? and u.banned_at is null",
@@ -270,13 +238,9 @@ class POP3Connection extends EventEmitter {
 				let pppId = params[0];
 				let sig = Buffer.from(params[1], "hex");
 				this._server.mysql.query(
-					// A banned account answers as an unknown one on both auth
-					// paths: a ban that leaves the mailbox reachable is not a
-					// ban, it is a locked front door with the window open.
-					// dion_email_local vem junto porque é o nome da caixa no
-					// Dovecot. O XAPOP nunca viu um USER, então sem isto a
-					// sessão saberia o id da conta e não saberia onde a
-					// correspondência dela mora.
+					// A banned account is refused like an unknown account. Also fetch dion_email_local:
+					// key-based authentication supplies no prior USER command, and Dovecot needs the mailbox
+					// name as well as the numeric account ID.
 					"select u.id, u.dion_email_local, a.device_auth_key from sys_users u inner join sys_device_authorization a on a.user_id = u.id where u.dion_ppp_id = ? and u.banned_at is null",
 					[pppId],
 					function (error, results, fields) {
@@ -539,25 +503,15 @@ class POP3Connection extends EventEmitter {
 	}
 
 	_getMail(id, callback) {
-		// Roda num tique próprio do laço de eventos, bem depois de o
-		// try/catch de _onData ter voltado -- nada acima consegue capturar o
-		// que estourar aqui, e sem o try/catch a conexão fica muda para
-		// sempre em vez de responder.
+		// This callback runs in a later event-loop turn, beyond _onData try/catch. Catch errors
+		// here so the connection replies instead of remaining silent indefinitely.
 		this._server.store.fetch(this._storeCtx(), id).then(function (row) {
 			const results = [row];
 			try {
-				// Quando o filtro de entrega esta ligado, a mensagem JA chegou
-				// moldada e este caminho tem que sair da frente.
-				//
-				// Nao e so evitar trabalho repetido: moldar duas vezes perde
-				// informacao. A decisao "interna ou externa" aqui embaixo sai
-				// do Return-Path, e e justamente um dos cabecalhos que a
-				// entrega remove -- entao correspondencia de jogo passaria por
-				// interna na entrega e por EXTERNA aqui, levando a reducao que
-				// nunca pode tocar nela.
-				//
-				// E tambem o estado que este servidor precisa ter na vespera
-				// da virada: servindo os bytes guardados, como o Dovecot faz.
+				// If the delivery filter already shaped the message, serve the stored bytes without
+				// shaping again. Reclassification from Return-Path after the delivery filter removed that
+				// header would treat internal game mail as external and corrupt it. This also matches
+				// Dovecot behavior.
 				if (this._server.shapedAtDelivery) {
 					callback.call(this, results[0]["message"].toString("binary"));
 					return;
@@ -576,10 +530,8 @@ class POP3Connection extends EventEmitter {
 					? this._stripTransportHeaders(results[0]["message"])
 					: this._slimMessage(results[0]["message"]);
 
-				// Acrescentada quando a mensagem não traz uma: as gravadas
-				// direto nunca traziam, e das que passam pelo Postfix o Date
-				// sai junto com o resto do envelope. A caixa tem a hora a
-				// oferecer nos dois casos.
+				// Add a Date only when missing. Directly inserted mail lacked one, while Postfix envelope
+				// removal may strip it; the mailbox timestamp is available in both cases.
 				mailContent = this._withDate(mailContent, results[0]["timestamp"]);
 
 				callback.call(this, mailContent);
@@ -587,24 +539,20 @@ class POP3Connection extends EventEmitter {
 				this._onError(thrown);
 			}
 		}.bind(this)).catch(function (error) {
-			// A mensagem pode ter sumido entre o PASS que montou o maildrop e
-			// este RETR -- outra sessão apagando, ou o cartucho de outro
-			// aparelho. Erro, e não silêncio: silêncio trava a conexão.
+			// The message may disappear between PASS building the maildrop and RETR, due to another
+			// session or device. Reply with an error rather than leaving the connection waiting.
 			this._onError(error);
 		}.bind(this));
 	}
 
-	// Quem a camada de armazenamento precisa saber: o id da conta, que o
-	// MySQL endereça, e o nome da caixa, que o Dovecot endereça. Os dois são
-	// preenchidos no login, pelos dois caminhos (USER/PASS e XAPOP).
+	// Storage context requires both the account ID used by MySQL and the mailbox name used by
+	// Dovecot. Populate both during each supported authentication path.
 	_storeCtx() {
 		return { id: this._userId, name: this._user };
 	}
 
-	// As tratativas moraram aqui até 12/09/2026 e foram para
-	// gameFormat.js, para o filtro de entrega poder usar exatamente o
-	// mesmo código. Estes repasses existem para o resto da classe não
-	// precisar saber que mudaram de casa.
+	// Delegate transformations to the shared gameFormat.js module so delivery filtering and
+	// the optional POP3 reader use the same implementation.
 	_decodeQuotedPrintable(...args) { return gameFormat.decodeQuotedPrintable(...args); }
 	_decodeSubjectText(...args) { return gameFormat.decodeSubjectText(...args); }
 	_extractTextPlainPart(...args) { return gameFormat.extractTextPlainPart(...args); }

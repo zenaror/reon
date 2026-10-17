@@ -87,21 +87,15 @@
                 $errors[] = "bmvjValue";
             }
         }
-        // Cor do adaptador e marca de não-tarifado, quando o painel libera.
-        //
-        // A checagem de `bin_user_choice` acontece AQUI, e não só no
-        // template: esconder o formulário não impede um POST, e a diferença
-        // importa porque estes dois valores vão parar dentro de um arquivo
-        // binário que um cartucho lê. Com a opção desligada, o que vier no
-        // POST é ignorado em silêncio -- não é erro da pessoa, é campo que
-        // não existe mais.
+        // Enforce bin_user_choice on the server, not only by hiding the form. Ignore
+        // model/metering POST fields when policy disables them; these values otherwise enter
+        // cartridge binary configuration.
         if (SettingsUtil::getInstance()->getValid("bin_user_choice") === "1"
             && array_key_exists("adapterDevice", $_POST)) {
             $modelo = (string)$_POST["adapterDevice"];
             $unmetered = (($_POST["adapterUnmetered"] ?? "") === "1") ? 1 : 0;
-            // Mesma regra que o painel usa, pela mesma função: o conjunto de
-            // modelos válidos é o enum da libmobile, e ele não pode divergir
-            // entre as duas telas que escrevem no mesmo byte.
+            // Use the same libmobile enum validation as the admin panel so both writers agree on valid
+            // encoded adapter models.
             if (SettingsUtil::isValid("bin_adapter_device", $modelo)) {
                 $db = DBUtil::getInstance()->getDB();
                 $stmt = $db->prepare("update sys_users set adapter_device = ?, adapter_unmetered = ? where id = ?");
@@ -112,14 +106,9 @@
                 $errors[] = "adapterValue";
             }
 
-            // "Baixar" é o mesmo envio, com um botão a mais: grava e só então
-            // entrega o arquivo. É por isso que ele é submit e não link -- um
-            // link baixaria o que está GRAVADO, e quem acabou de trocar a cor
-            // sem salvar receberia uma bin que não corresponde à tela.
-            //
-            // Só redireciona se a gravação passou. Com valor recusado a pessoa
-            // volta para a página com o erro, em vez de receber calada um
-            // arquivo com o valor antigo.
+            // Download submits and saves current choices before returning the configuration. A plain
+            // link would download stale stored values. Redirect only after successful validation;
+            // otherwise show the error instead of silently serving the old file.
             if (!$errors && array_key_exists("downloadAfterSave", $_POST)) {
                 header("Location: /user/adapter_config.php");
                 exit;
@@ -200,8 +189,7 @@
 		$stmt->execute();
 		$result = DBUtil::fancy_get_result($stmt)[0];
 		
-		// A mesma contagem que o webmail mostra -- vinda do Dovecot, e já sem
-		// a correspondência dos jogos, que não aparece em lista nenhuma.
+		// Use the same Dovecot-backed unread count as webmail, excluding game payload messages.
 		$inbox_size = MailUtil::getInstance()->countForUser($_SESSION["user_id"]);
 
 		$relay = RelayUtil::getInstance()->getForUser($_SESSION["user_id"]);
@@ -229,10 +217,8 @@
 			"relay_token" => $relay !== null ? bin2hex($relay["token"]) : null,
 			"relay_number" => $relay !== null ? $relay["number"] : null,
 			"inbox_size" => $inbox_size,
-			// O cartão do adaptador só existe quando o painel libera. Nulo
-			// na conta quer dizer "não escolhi": o formulário abre no que o
-			// painel está mandando hoje, e é isso que a pessoa recebe se
-			// nunca salvar.
+			// Show adapter choices only when policy permits. NULL account values follow the current
+			// global defaults until the user saves an override.
 			"rankings_opt_in" => ((int)$result["rankings_opt_in"] === 1),
 			"birth_date" => ($result["birth_date"] ?? ""),
 			// true only when there is a date AND it says under 13. With no
@@ -247,10 +233,8 @@
 				? ((int)$result["adapter_unmetered"] === 1)
 				: (SettingsUtil::getInstance()->getValid("bin_unmetered") === "1"),
 			"adapter_is_default" => $result["adapter_device"] === null,
-			// Sem o verde (10) por decisão do dono. O buraco no meio da
-			// sequência é de propósito: o número é o enum da libmobile, não
-			// uma posição de lista, então preencher a lacuna renomearia um
-			// adaptador em vez de arrumar a numeração.
+			// Model 10 (green) is intentionally excluded by operator policy. Do not close the enum
+			// gap: these are libmobile IDs, not sequential list positions.
 			"adapter_models" => [8 => "Blue", 9 => "Yellow", 11 => "Red"],
             "errors" => $errors
 		]);

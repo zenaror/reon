@@ -5,23 +5,13 @@
 	require_once(__DIR__ . "/RelayUtil.php");
 	require_once(__DIR__ . "/ActivityLog.php");
 
-	// Levar embora e apagar: os dois direitos que faltavam.
-	//
-	// Uma conta do REON não mora num lugar só. Ela tem linha no cadastro,
-	// chave de aparelho, contadores por dispositivo, avisos do sino, cópias
-	// em Enviados, registro de envio externo, token de relay num SEGUNDO
-	// banco, marcas em seis tabelas de jogo -- e correspondência, que nem
-	// sequer está no banco: está em Maildir, do lado do Dovecot.
-	//
-	// Por isso as duas operações moram juntas aqui, e não espalhadas por
-	// cada tela. Uma lista só, usada pelas duas: o que a exportação entrega
-	// é exatamente o que a exclusão apaga. Quando alguém acrescentar uma
-	// tabela e esquecer desta lista, as duas erram do mesmo jeito -- e uma
-	// exportação com buraco é bem mais fácil de notar do que uma exclusão
-	// com sobra.
+	// Account export and deletion share one data inventory, covering account/device rows,
+	// counters, notifications, Sent copies, external delivery records, relay credentials in a
+	// separate database, game tables and Dovecot Maildir. Keeping both operations here ensures
+	// they cover the same account-owned records and makes omissions visible through export.
 	class AccountDataUtil {
 
-		// Tabelas presas à conta pelo id. [tabela, coluna].
+		// Account-owned tables keyed by ID: [table, column].
 		const POR_ID = [
 			["sys_device_authorization", "user_id"],
 			["sys_device_counter",       "user_id"],
@@ -39,12 +29,9 @@
 			["bxt_ranking",              "account_id"],
 		];
 
-		// Tabelas de jogo que guardam o endereço em vez do id. O jogo grava o
-		// que o cartucho conhece, e o cartucho não conhece id de conta.
-		//
-		// bxt_exchange aparece nas DUAS listas de propósito: tem as duas
-		// colunas, e um depósito antigo pode ter só uma delas preenchida.
-		// Apagar por uma chave só deixaria a outra metade para trás.
+		// Some game tables identify players by address rather than account ID because the
+		// cartridge does not know server IDs. bxt_exchange appears in both inventories: older
+		// deposits may populate only one identity column, so deletion must cover both.
 		const POR_EMAIL = [
 			["amc_trades",       ["email"]],
 			["amo_ranking",      ["email"]],
@@ -60,8 +47,8 @@
 			return self::$instance;
 		}
 
-		// A conta, como o resto do sistema a enxerga. Devolve null quando não
-		// existe -- o chamador decide o que dizer.
+		// Return the account as the rest of the system sees it, or NULL if it does not exist; the
+		// caller chooses the response.
 		private function conta($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("select * from sys_users where id = ?");
@@ -83,9 +70,8 @@
 			])));
 		}
 
-		// Existe a tabela? O esquema mudou bastante, e uma instalação mais
-		// nova (ou mais velha) pode não ter todas. Faltar tabela não pode
-		// derrubar nem a exportação nem a exclusão.
+		// Tolerate missing tables across schema versions. An optional table must not break account
+		// export or deletion.
 		private function existe($db, $tabela) {
 			$stmt = $db->prepare(
 				"select 1 from information_schema.tables
@@ -95,19 +81,9 @@
 			return count(DBUtil::fancy_get_result($stmt)) > 0;
 		}
 
-		// ------------------------------------------------------------------
-		// EXPORTAÇÃO
-		// ------------------------------------------------------------------
-
-		// Tudo o que o servidor guarda sobre a conta, como estrutura pronta
-		// para virar JSON.
-		//
-		// Campos de segredo saem de fora, e isso não é omissão: a chave de
-		// aparelho e o token de relay são credenciais em uso. Entregá-las num
-		// arquivo que a pessoa vai guardar no computador, mandar por e-mail
-		// ou anexar num chamado é criar uma cópia da chave onde não havia --
-		// e o direito é de saber o que existe, não de receber a credencial em
-		// claro. O arquivo diz que elas existem, e desde quando.
+		// EXPORT: return account data as a JSON-ready structure, excluding live device keys and
+		// relay tokens. Report their presence and creation dates rather than creating additional
+		// plaintext credential copies in downloadable files.
 		public function export($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$conta = $this->conta($userId);
@@ -131,7 +107,7 @@
 				$stmt->execute();
 				$linhas = DBUtil::fancy_get_result($stmt);
 				foreach ($linhas as &$linha) {
-					// A chave de aparelho vira presença, não valor.
+					// Represent the device key by its presence, never its value.
 					if (isset($linha["device_auth_key"])) {
 						$linha["device_auth_key"] = "<guardada, não exportada>";
 					}
@@ -154,13 +130,12 @@
 				}
 			}
 
-			// O relay mora em outro banco. Vazio não entra: uma seção
-			// "relay_users: []" no arquivo faria a pessoa procurar o que não
-			// existe.
+			// Relay records live in a separate database. Omit an absent section instead of suggesting
+			// missing data with an empty relay_users array.
 			$relay = $this->linhasRelay($userId);
 			if (!empty($relay)) $saida["tabelas"]["relay_users"] = $relay;
 
-			// E a correspondência não está em banco nenhum.
+			// Mailbox contents live outside the database.
 			foreach (["INBOX", MailStoreUtil::TRASH] as $pasta) {
 				$msgs = MailStoreUtil::rows($conta["dion_email_local"], $pasta, true);
 				if ($msgs) $saida["correio"][$pasta] = $msgs;
@@ -169,12 +144,10 @@
 			return $saida;
 		}
 
-		// Token de relay: banco à parte, e a tabela pode não existir numa
-		// instalação sem relay. O token em si não sai -- é credencial viva,
-		// como a chave de aparelho.
+		// The optional relay has a separate database and may have no user table. Never export its
+		// live token in plaintext.
 		private function linhasRelay($userId, $paraApagar = false) {
-			// O relay pode não estar configurado nesta instalação; o
-			// getRelayDB devolve false nesse caso, em vez de explodir.
+			// getRelayDB returns false when this installation has no relay configuration.
 			try {
 				$db = RelayUtil::getInstance()->getRelayDB();
 			} catch (\Throwable $e) {
@@ -192,20 +165,9 @@
 			return DBUtil::fancy_get_result($stmt);
 		}
 
-		// ------------------------------------------------------------------
-		// EXCLUSÃO
-		// ------------------------------------------------------------------
-
-		// Apaga a conta e tudo que é dela. Devolve o que foi tirado de cada
-		// lugar, para a tela poder dizer o que aconteceu e o registro de
-		// administração guardar o número.
-		//
-		// A correspondência vai PRIMEIRO, e de propósito: ela mora fora do
-		// banco, então não entra em transação nenhuma. Se ela falhar, o
-		// cadastro ainda está de pé e a pessoa pode tentar de novo. Na ordem
-		// inversa, uma falha no Dovecot deixaria correio órfão de uma conta
-		// que não existe mais -- sem dono, sem tela que o mostre e sem
-		// ninguém para pedir que apague.
+		// DELETE: return per-store deletion counts for the UI and audit. Remove mail first because
+		// it is outside the database transaction. If Dovecot fails, retain the account so deletion
+		// can be retried; deleting registration first would orphan the mailbox.
 		public function erase($userId) {
 			$conta = $this->conta($userId);
 			if ($conta === null) return null;
@@ -268,8 +230,8 @@
 				$feito["email_bloqueado"] = UserUtil::blockEmailAfterDeletion($conta["email"]);
 			}
 
-			// O cadastro por último: enquanto ele existir, o que sobrou tem
-			// dono e pode ser apagado numa segunda tentativa.
+			// Delete registration last so any remaining data retains an owner and can be removed on
+			// retry.
 			$stmt = $db->prepare("delete from sys_users where id = ?");
 			$id = (int)$userId;
 			$stmt->bind_param("i", $id);

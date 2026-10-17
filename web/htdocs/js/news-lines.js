@@ -1,9 +1,6 @@
-// Conta as linhas do artigo enquanto se escreve, e aponta a que não cabe.
-//
-// O campo não pode ter maxlength: o limite é por linha, não do texto inteiro,
-// e um maxlength global recusaria um artigo longo e correto enquanto deixaria
-// passar uma linha comprida demais. O servidor é quem recusa; isto aqui é só
-// para ninguém descobrir no momento de salvar.
+// Report article line overflow while editing. Do not impose a global maxlength: width is
+// constrained per rendered line, while total article length can be validly much larger.
+// The server remains authoritative.
 (function () {
 	var fields = document.querySelectorAll("[data-news-body]");
 	if (!fields.length) return;
@@ -14,8 +11,8 @@
 		var max = parseInt(field.getAttribute("data-max"), 10) || 18;
 
 		function count() {
-			// Linha em branco separa parágrafo e não vira linha na tela, então
-			// não entra na contagem -- a mesma regra que o servidor aplica.
+			// Blank lines separate paragraphs and produce no on-screen line, matching the server
+			// count.
 			var lines = field.value.split("\n").filter(function (l) { return l.trim() !== ""; });
 			var over = lines.filter(function (l) { return l.length > max; });
 

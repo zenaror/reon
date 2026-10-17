@@ -4,11 +4,10 @@ ini_set('log_errors', 1);
 
 require_once(CORE_PATH . "/database.php");
 require_once(CORE_PATH . "/pokemon/func.php");
-// bxt_debug_log(): estes arquivos registram recusas, e o texto recusado
-// só aparece com a depuração ligada. require_once é idempotente.
+// Load bxt_debug_log() for refusal diagnostics. Rejected text is recorded only under
+// explicit debugging; require_once is idempotent.
 require_once(CORE_PATH . "/pokemon/bxt_config.php");
-// Depois do require acima: esta linha chama bxt_debug_log(), definida lá.
-// No topo do arquivo ela rodava antes de a função existir.
+// Call bxt_debug_log() after its definition has been loaded by the require above.
 bxt_debug_log('BXT_DEBUG_TRADE_CORNER_LEG_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 require_once(__DIR__ . "/../../scripts/bxt_legality_check.php");
 require_once(__DIR__ . "/../../scripts/bxt_legality_policy.php");

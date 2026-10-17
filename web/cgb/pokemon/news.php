@@ -733,22 +733,10 @@ if ($region == "j") {
 
     $message = fread($post_data, $sram["message"]["size"]);
 
-    // O jogo manda idade, gênero, CEP, nome e mensagem, e o servidor tem de
-    // aceitar -- é o protocolo do cartucho.
-    //
-    // Isto gravava o conjunto inteiro no log de erro do servidor web A CADA
-    // ENVIO, sem interruptor nenhum: idade, CEP, nome e mensagem de quem
-    // jogou, indo para um arquivo que é aberto por quem cuida do servidor,
-    // colado em pedido de ajuda, e guardado sem prazo (o journald não tem
-    // limite de tempo). O problema nunca foi o CONTEÚDO da linha -- era ela
-    // sair sempre.
-    //
-    // Por isso os valores continuam aqui, inteiros, incluindo o CEP cru em
-    // hexa: quando um campo chega incoerente, como já aconteceu com o CEP, é
-    // exatamente o byte que entrou que resolve, e um log que só diz o
-    // tamanho não serve para nada nessa hora. O que mudou é que a linha só
-    // sai com a depuração ligada -- um ato deliberado de quem administra,
-    // para investigar um caso, e não o estado natural do servidor.
+    // The cartridge protocol supplies age, gender, postal code, name and message, which the
+    // handler must accept. Raw values, including hexadecimal postal-code bytes, can help
+    // diagnose malformed fields but must be logged only under explicitly enabled debugging,
+    // never unconditionally for every upload.
     bxt_debug_log(
         'news_ranking_submit:' .
         ' account_id=' . (isset($userId) ? $userId : 'none') .

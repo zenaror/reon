@@ -1,9 +1,6 @@
-// Mantém a lista de dias coerente com o mês escolhido.
-//
-// Fevereiro para em 28 de propósito, e não por descuido: a data é sem ano,
-// então 29 de fevereiro só aconteceria em ano bissexto -- a edição ficaria
-// três anos em cada quatro sem sair. A contagem vem do servidor, no
-// data-days, para os dois lados não discordarem sobre quantos dias tem abril.
+// Keep day choices consistent with the selected month using server-provided data-days.
+// February ends at 28 because these annual schedules have no year and February 29 would
+// skip most years.
 (function () {
 	var hosts = document.querySelectorAll("[data-news-date]");
 	if (!hosts.length) return;
@@ -18,9 +15,8 @@
 
 		function fit() {
 			var limit = days[parseInt(month.value, 10) - 1] || 31;
-			// O dia escolhido é preservado quando ainda existe no mês novo;
-			// quando não existe (31 -> fevereiro) cai para o último do mês,
-			// que é o vizinho mais próximo do que a pessoa queria.
+			// Keep the selected day when valid for the new month; otherwise use its last day as the
+			// closest valid choice.
 			var wanted = parseInt(day.value, 10) || 1;
 
 			day.textContent = "";

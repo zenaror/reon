@@ -197,42 +197,24 @@ async function main() {
 		if (headers[i][0].toLowerCase() === "x-reon-origin") headers.splice(i, 1);
 	}
 
-	// Idem para a conversa. O webmail sabe se o que está saindo responde a
-	// algo ou abre assunto novo; aqui, do outro lado do Postfix, não há como
-	// saber -- então a resposta vem escrita na própria mensagem. Sai daqui
-	// pelo mesmo motivo que o de origem: é cabeçalho de serviço nosso, não
-	// tem por que chegar a quem recebe.
+	// Webmail records whether outgoing mail starts or continues a conversation. Remove that
+	// internal relay instruction after reading it; recipients do not need service-control
+	// headers.
 	const rawThread = getHeader(headers, "X-REON-Thread") || "";
 	const threadKey = /^[0-9a-f]{32}$/.test(rawThread.trim()) ? rawThread.trim() : null;
 	for (let i = headers.length - 1; i >= 0; i--) {
 		if (headers[i][0].toLowerCase() === "x-reon-thread") headers.splice(i, 1);
 	}
 
-	// Cabeçalhos de controle do relay, vindos do config.
-	//
-	// Cada provedor tem o seu dialeto para a mesma instrução, e nenhum deles
-	// pertence a este código: quem escolhe o relay é quem opera o servidor.
-	// Por isso a lista vem de fora, e não de um `if` por fornecedor aqui
-	// dentro -- trocar de relay passa a ser trocar config, não editar código.
-	//
-	// O caso que motivou isto: um relay que rastreia abertura precisa de uma
-	// imagem, imagem precisa de HTML, e então ele converte o nosso text/plain
-	// em HTML só para caber o pixel. Uma carta escrita num Game Boy chega
-	// embrulhada em `<html><body>`, com pixel e link de descadastro. Desligar
-	// o rastreamento é o que remove o motivo da conversão.
-	//
-	// Valores conhecidos, para quem for configurar:
-	//   Mailjet   "X-Mailjet-TrackOpen": "0", "X-Mailjet-TrackClick": "0"
-	//   Brevo     não tem -- rastreamento em transacional só sai em plano
-	//             Enterprise, mediante pedido
-	//   SMTP2GO   não precisa -- é por credencial no painel, e mensagem de
-	//             texto puro não é reescrita de qualquer forma
-	//
-	// Trocou de relay? Troque estes cabeçalhos junto. Um X-Mailjet-* enviado a
-	// outro provedor não desliga nada e ainda pode chegar visível a quem lê.
+	// Provider-specific relay headers come from configuration, not vendor branches in code.
+	// Disable tracking to prevent a provider converting text/plain to HTML just to insert a
+	// tracking pixel. Known settings: Mailjet X-Mailjet-TrackOpen=0 and
+	// X-Mailjet-TrackClick=0; Brevo transaction tracking opt-out requires an Enterprise
+	// request; SMTP2GO controls tracking per credential and does not rewrite plain text.
+	// Recheck provider policies and replace these headers when changing relay providers.
 	for (const [nome, valor] of Object.entries(config["smtp_headers"] || {})) {
-		// Nada com quebra de linha: um valor mal digitado no config viraria
-		// cabeçalho injetado no meio da mensagem.
+		// Reject line breaks in configured values to prevent header injection.
+		// Configuration must never inject a second message header.
 		if (/[\r\n]/.test(nome) || /[\r\n]/.test(String(valor))) {
 			process.stderr.write(`outboundRelay.js: smtp_headers["${nome}"] ignorado (contem quebra de linha)\n`);
 			continue;

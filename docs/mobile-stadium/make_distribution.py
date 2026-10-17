@@ -2,7 +2,7 @@
 # PROVENANCE -- copied verbatim from the "PKHeX Linux Port" session's temporary
 # scratchpad on 2026-09-27, before it disappeared with that session. Not written
 # by the REON server side. It is the command-line version of what will become
-# the plugin's "Compilar dados para REON" button -- same editable fields
+# the plugin export-for-REON button, using the same editable fields
 # (message of the day, Delibird flags, File ID, cost, slug, region).
 #
 # Copied unmodified except for this header. Original md5: 95553196e31ef793e797a82e3ea90e1a

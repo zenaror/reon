@@ -61,7 +61,7 @@ the database migrations in the [database README](db/README.md). The
 mail system — Postfix and Dovecot, the real-internet bridge, per-device
 authorization, APOP — is covered in the changelog's `reon-mail` section.
 A per-project changelog is kept in [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
-(in Portuguese).
+(in English).
 
 # Docker Setup
 

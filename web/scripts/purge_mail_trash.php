@@ -1,28 +1,11 @@
 <?php
 // SPDX-License-Identifier: MIT
-// Esvazia a lixeira de correio depois da janela de retenção.
 //
-// Apagar, tanto no Mobile Trainer quanto no site, nunca destrói: este é o
-// único lugar do sistema que remove correspondência de vez, e a janela de
-// retenção é a rede de segurança inteira.
-//
-// Desde que o armazenamento passou para o Dovecot há DUAS formas de estar na
-// lixeira, uma por ator:
-//
-//   o JOGO apaga com DELE, e o Dovecot só marca ($DeletedByGame,
-//   pop3_deleted_flag) -- a mensagem fica na INBOX, escondida das sessões
-//   POP3 seguintes;
-//   o SITE apaga movendo para a pasta Trash, que o POP3 não serve.
-//
-// Por isso este job tem dois passos. O primeiro move as marcadas para a
-// Trash, mantendo a marca (é ela que faz o site continuar dizendo "apagada
-// pelo jogo"). Isso não é arrumação: é o que dá a elas uma DATA de exclusão.
-// A data que o Dovecot guarda é a de gravação na pasta, então enquanto a
-// mensagem ficar na INBOX a única data disponível é a da chegada -- e uma
-// carta que passou quarenta dias na caixa antes de ser apagada seria expurgada
-// no mesmo dia, sem retenção nenhuma.
-//
-// Roda pelo reon-mail-trash-purge.timer (diário).
+// Purge mail Trash after its retention window via the daily reon-mail-trash-purge.timer.
+// Game deletion marks messages in INBOX; web deletion moves them to Trash. First move
+// game-marked messages to Trash, retaining the actor marker and starting their retention
+// clock there; then expunge expired Trash. Using the original arrival date would
+// immediately purge older mail just deleted by a player.
 
 require_once(__DIR__ . "/../classes/DBUtil.php");
 require_once(__DIR__ . "/../classes/MailUtil.php");
@@ -43,8 +26,8 @@ while ($u = $res->fetch_assoc()) {
 	$caixa = $u["dion_email_local"];
 	$contas++;
 
-	// Passo 1: as que o jogo apagou saem da INBOX para a Trash, com a marca
-	// junto, e o relógio da retenção começa a contar a partir daí.
+	// Step 1: move game-deleted messages from INBOX to Trash with their marker, starting
+	// retention at that move.
 	$marcadas = [];
 	foreach (MailStoreUtil::rows($caixa, "INBOX") as $r) {
 		if ($r["deleted_by"] === "game") $marcadas[] = $r["id"];
@@ -53,7 +36,7 @@ while ($u = $res->fetch_assoc()) {
 		$movidas += MailStoreUtil::moveToTrash($caixa, $marcadas);
 	}
 
-	// Passo 2: o que está na Trash há mais tempo que a retenção vai embora.
+	// Step 2: permanently remove messages whose time in Trash exceeds retention.
 	$expurgadas += MailStoreUtil::purgeOlderThan($caixa, $days);
 }
 

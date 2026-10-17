@@ -1,33 +1,17 @@
 <?php
 // SPDX-License-Identifier: MIT
 //
-// Monta web/data/adapter_errors.json a partir das duas fontes públicas que
-// descrevem os erros do Mobile Adapter GB, e de mais nada. Rode de novo
-// quando qualquer uma das duas mudar:
-//
-//     php maint/build_adapter_errors.php
-//
-// As duas fontes respondem perguntas diferentes, e é por isso que são duas:
-//
-//   ADAPTER_ERROR_CODES.MD   o que o código SIGNIFICA, em inglês. Cobre uma
-//                            dúzia deles.
-//   a planilha pública       o que cada JOGO ESCREVE na tela para aquele
-//                            código, em japonês. Cobre 23 jogos.
-//
-// O jogador vê o texto japonês e não vê código nenhum; quem depura tem o
-// código e não sabe o texto. A página junta os dois lados.
-//
-// O arquivo gerado é versionado de propósito: a página não pode depender de
-// duas requisições externas para desenhar, e uma planilha que o dono não
-// controla não pode derrubar uma página do site ao ficar fora do ar.
+// Build web/data/adapter_errors.json from the two public error references. Regenerate with
+// php maint/build_adapter_errors.php when either source changes. ADAPTER_ERROR_CODES.MD
+// supplies English meanings; the public spreadsheet supplies Japanese screen text for 23
+// games. Keep the generated data in Git so page availability does not depend on either
+// external source.
 
 const SHEET = "https://docs.google.com/spreadsheets/d/1noSmA-ilQUWQlgPE9WEi8tGPvWt7DqLtkdLq4YyXC2Y/export?format=csv&gid=0";
 const CODES = "https://raw.githubusercontent.com/Incineroar/MobileAdapterGB/refs/heads/master/ADAPTER_ERROR_CODES.MD";
 
-// Nomes só onde o NOSSO código os afirma -- o prefixo de tabela de cada
-// handler em web/cgb/ diz qual jogo é qual. O resto fica com o código do
-// cartucho, que é o que se pode provar. Inventar vinte títulos japoneses
-// seria enfeitar a página com chute.
+// Assign readable titles only where our handlers establish the game identity. Otherwise
+// retain the cartridge code instead of inventing Japanese titles.
 const NAMES = [
 	"CGB-BXTJ" => "Pokémon Crystal",   // bxt_*, web/cgb/pokemon/
 	"AGB-AMKJ" => "Mario Kart Super Circuit", // amk_*, web/cgb/mario_kart.php
@@ -53,7 +37,7 @@ function fetchText($url) {
 	return $body;
 }
 
-// ------------------------------------------------- o que o código significa
+// Error-code meanings.
 $descriptions = [];
 foreach (explode("\n", fetchText(CODES)) as $line) {
 	// | 10-000  | Adapter is not connected |
@@ -61,7 +45,7 @@ foreach (explode("\n", fetchText(CODES)) as $line) {
 	$descriptions[strtoupper($m[1])] = rtrim($m[2], " |");
 }
 
-// ------------------------------------------- o que cada jogo mostra na tela
+// Cartridge screen messages
 $csv = fetchText(SHEET);
 $tmp = tmpfile();
 fwrite($tmp, $csv);
@@ -79,8 +63,8 @@ while (($line = fgetcsv($tmp)) !== false) {
 	$key = trim($line[0] ?? "");
 	if ($key === "") continue;
 
-	// Algumas linhas trazem um apelido na segunda linha da célula, tipo
-	// "15-000\n(83-XXX)": o código é a primeira, o resto é nota.
+	// Some cells include an alias on a second line, such as 15-000 and (83-XXX).
+	// The first line is the code; retain the remainder as a note.
 	$parts = preg_split('/\r?\n/', $key, 2);
 	$code = strtoupper(trim($parts[0]));
 	$note = isset($parts[1]) ? trim($parts[1], " ()\r\n") : "";
@@ -102,9 +86,8 @@ while (($line = fgetcsv($tmp)) !== false) {
 }
 fclose($tmp);
 
-// Um código descrito que a planilha não lista ainda merece uma linha: a
-// descrição é o que quem depura procura, e escondê-la por falta de texto de
-// tela seria perder a metade útil.
+// Keep a documented error code even if the spreadsheet has no screen text: its meaning
+// remains useful for debugging.
 $seen = array_column($rows, "code");
 foreach ($descriptions as $code => $text) {
 	if (in_array($code, $seen, true)) continue;
@@ -117,11 +100,9 @@ usort($rows, function ($a, $b) {
 	return [(int)$an, $as] <=> [(int)$bn, $bs];
 });
 
-// A explicação amigável NÃO entra aqui. Ela é escrita à mão, um arquivo por
-// idioma (web/data/adapter_error_notes.<lang>.json), e web/classes/
-// AdapterErrorUtil.php a junta a este dado na hora de desenhar -- que é onde
-// se sabe qual idioma a pessoa está lendo. Guardar os sete aqui multiplicaria
-// por sete um arquivo de 400 KB para entregar um sétimo dele.
+// Handwritten explanations belong in web/data/adapter_error_notes.<lang>.json.
+// AdapterErrorUtil selects the reader language at rendering time rather than duplicating
+// all translations in the generated dataset.
 
 $out = [
 	"generated" => gmdate("Y-m-d"),
@@ -141,12 +122,11 @@ printf("%s\n  %d jogos, %d códigos, %d com descrição upstream, %d mensagens\n
 	count(array_filter($rows, fn($r) => $r["description"] !== "")),
 	array_sum(array_map(fn($r) => count($r["messages"]), $rows)));
 
-// Aviso útil: um código sem nota em inglês sai na página sem explicação.
+// Warn when a code has no English explanation and would render without one.
 $notes = json_decode((string)@file_get_contents(
 	__DIR__ . "/../web/data/adapter_error_notes.en.json"), true) ?: [];
-// As chaves "10", "11"... voltam do json_decode como INTEIRO, então a
-// comparação estrita contra a string do prefixo nunca casava e isto acusava
-// os 108 códigos de uma vez. Comparação por string dos dois lados.
+// json_decode returns keys such as 10 and 11 as integers. Compare string values on both
+// sides; a strict integer/string comparison incorrectly flagged all 108 codes.
 $fam = array_map("strval", array_keys($notes["families"] ?? []));
 $sem = array_values(array_filter(array_map(fn($r) => $r["code"], $rows),
 	fn($c) => !in_array(explode("-", $c)[0], $fam, true)

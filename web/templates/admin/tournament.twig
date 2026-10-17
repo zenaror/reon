@@ -26,10 +26,8 @@
 	<section class="admin-section">
 		<h2 class="admin-section__title">{{ 'admin.tournament-sessions'|trans }}</h2>
 
-		{# Três estados, e eles não são a mesma coisa: não consigo ver onde o
-		   relay grava, consigo ver e está vazio, e tenho gravações. Juntar os
-		   dois primeiros faria um problema de permissão parecer "ninguém
-		   jogou ainda". #}
+		{# Keep three states distinct: unreadable capture directory, readable but empty directory,
+		   and available captures. Permission failure must not appear as no sessions played. #}
 		{% if not readable %}
 			<p class="admin-form__hint">{{ 'admin.tournament-unreadable'|trans({'%dir%': directory}) }}</p>
 		{% elseif sessions is empty %}
@@ -50,10 +48,8 @@
 					{% for s in sessions %}
 						<tr>
 							<td>{{ s.when_text }}</td>
-							{# A conta, e não só o número do relay: é por ela que se
-							   acha a partida de alguém. O id sem nome quer dizer
-							   conta apagada depois da gravação -- dizer isso é melhor
-							   que mostrar um campo vazio. #}
+							{# Identify participants by account as well as relay number. An unresolved account ID
+							   indicates registration removed after capture, not an unexplained empty name. #}
 							<td>
 								{% if s.user_id and usernames[s.user_id] is defined %}
 									{{ usernames[s.user_id] }}
@@ -68,9 +64,8 @@
 							<td>{{ s.size }}</td>
 							<td>
 								<a href="/admin/tournament.php?file={{ s.name|url_encode }}">{{ 'admin.tournament-download'|trans }}</a>
-								{# A metade do outro console. Uma partida são dois
-								   arquivos, e quem for converter precisa dos dois:
-								   cada um tem uma direção só. #}
+								{# Offer the counterpart from the other console. Each file contains one direction, so a
+								   converter requires both. #}
 								{% if s.peer %}
 									&middot; <a href="/admin/tournament.php?file={{ s.peer|url_encode }}">{{ 'admin.tournament-download-peer'|trans }}</a>
 								{% else %}

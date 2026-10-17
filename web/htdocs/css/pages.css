@@ -220,12 +220,8 @@
 [data-section="guide"] { --section-gem: var(--reon-pink); }
 [data-section="downloads"] { --section-gem: var(--reon-silver); }
 
-/* ------------------------------------------------------- modal de documento
-
-   Termos de uso e política de privacidade abertos por cima do cadastro. O
-   corpo é o mesmo HTML que as páginas /terms.php e /privacy.php mostram, e
-   herda os estilos de `.reon-note` daqui de cima -- por isso este bloco mora
-   neste arquivo, e não no do tema. */
+/* Legal-document modal over signup. It uses the same HTML as terms.php and privacy.php and
+ * inherits the reon-note styles, so these rules belong with document styles. */
 .legal-modal .modal-content {
   border: 2px solid var(--reon-line, #1a1c26);
   border-radius: 0;
@@ -255,9 +251,8 @@
   font-size: .9rem;
 }
 
-/* O documento é longo; quem rola é o corpo, não a página atrás. Os títulos
-   começam em h1 no Markdown, e aqui o h1 já é a barra do modal -- então o
-   primeiro nível de dentro desce de tamanho para não competir com ela. */
+/* Scroll the modal body instead of the page behind it. Reduce document h1 size because the
+ * modal toolbar already supplies its primary heading. */
 .legal-modal__body {
   max-height: 70vh;
 }
@@ -279,11 +274,8 @@
   margin-top: 0;
 }
 
-/* --------------------------------------------- códigos de erro do adaptador
-
-   Uma resposta por código, em lista e não em tabela: o conteúdo é um
-   parágrafo por linha, e tabela com parágrafo dentro é tabela que rola de
-   lado no celular sem precisar. */
+/* Adapter errors use one paragraph entry per code rather than a paragraph-heavy table that
+ * overflows mobile screens. */
 .err-filters {
   display: flex;
   flex-wrap: wrap;
@@ -354,8 +346,8 @@
   line-height: 1.55;
 }
 
-/* O contexto da família vem depois da explicação específica e mais apagado:
-   é pano de fundo, não a resposta. */
+/* Show family context after the code-specific explanation with less emphasis; it is
+ * background rather than the primary answer. */
 .err-family {
   opacity: .7;
 }

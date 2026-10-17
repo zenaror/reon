@@ -7,10 +7,8 @@ require_once(__DIR__ . '/../../classes/LogUtil.php');
 require_once(__DIR__ . '/../../scripts/bxt_decode_helpers.php');
 require_once(__DIR__ . '/../../scripts/bxt_value_validation.php');
 require_once(CORE_PATH . "/pokemon/bxt_config.php");
-// Depois do require acima, e não no topo do arquivo: esta linha chama
-// bxt_debug_log(), que o bxt_config.php define. No topo ela rodava antes
-// de a função existir -- fatal em toda requisição que tocasse este
-// arquivo, e foi assim que o teste a pegou.
+// Call after the require above defines bxt_debug_log(); placing this earlier would cause
+// an undefined-function fatal error.
 bxt_debug_log('BXT_DEBUG_TRADE_CORNER_FILE_LOADED account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
 require_once(__DIR__ . '/../../scripts/bxt_legality_check.php');
 require_once(__DIR__ . "/../../scripts/bxt_legality_policy.php");
@@ -70,9 +68,8 @@ function process_trade_request($region, $request_data) {
 
 
     if ($decoded_name_for_policy !== '' && bxt_contains_banned($decoded_name_for_policy, $banned, $allowed)) {
-        // A recusa sai sempre, com a conta; o texto recusado só com a
-        // depuração ligada. Quem modera precisa saber QUE houve recusa e de
-        // quem; quem investiga um caso liga a depuração e vê o quê.
+        // Always log the refusal and account for moderation. Rejected text is available only with
+        // explicit debugging enabled.
         LogUtil::warn("trade-corner", 'trade_corner_gateway: banned player name'
             . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none'));
         bxt_debug_log('trade_corner_gateway: banned player name: ' . $decoded_name_for_policy);
@@ -153,8 +150,7 @@ function process_trade_request($region, $request_data) {
         $decoded_data["mail"],
         $validation_errors
     )) {
-        // Os NOMES das regras sempre; os valores, que são o que a pessoa
-        // escreveu, só com a depuração ligada.
+        // Log rule names unconditionally; log submitted values only when debugging is enabled.
         LogUtil::warn("trade-corner", 'trade_corner_gateway: value validation failed'
             . ' account_id=' . (isset($_SESSION['userId']) ? $_SESSION['userId'] : 'none')
             . ' rules=' . implode(',', array_keys((array)$validation_errors)));

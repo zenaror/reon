@@ -1,22 +1,9 @@
-// Aplica as tratativas na correspondência que JÁ estava guardada.
-//
-// O filtro de entrega só molda o que chega. Tudo que foi entregue antes de ele
-// existir -- inclusive as mensagens migradas do MySQL -- continua com o
-// envelope do Postfix dentro. Enquanto o nosso POP3 servia a porta isso não
-// aparecia, porque ele moldava na leitura; quando o Dovecot assumiu a 110 e
-// passou a servir os bytes guardados, essa correspondência começou a chegar
-// crua no Game Boy, com Return-Path, Received e Delivered-To.
-//
-// Passagem única. Usa o MESMO gameFormat.js do filtro e do POP3, então o
-// resultado é byte a byte o que o jogo recebia antes da virada.
-//
-//   node shape_existing_mail.js            -- só mostra o que faria
-//   node shape_existing_mail.js --aplicar  -- grava
-//
-// Preserva as marcas ($Retrieved, $WebRead, $DeletedByGame) porque são elas
-// que dizem se o cartucho baixou, se a pessoa leu e quem apagou. Perde a data
-// de gravação na pasta, que só importa para a retenção da lixeira -- e errar
-// para o lado de guardar mais tempo é o lado certo de errar.
+// Shape messages stored before the delivery filter existed, including mail migrated from
+// MySQL. Dovecot serves stored bytes directly, unlike the previous POP3 read-time
+// transformation. This one-time pass uses the same gameFormat.js implementation. node
+// shape_existing_mail.js inspects; node shape_existing_mail.js --aplicar writes. Preserve
+// $Retrieved, $WebRead and $DeletedByGame. Replacing a file resets its folder timestamp
+// and may extend Trash retention; err toward retention.
 
 const fs = require("fs");
 const path = require("path");
@@ -55,9 +42,8 @@ function cabecalhoDe(t) {
 	return f === -1 ? t : t.slice(0, f);
 }
 
-// As marcas que importam. \Seen fica de fora: quem a põe agora é o POP3 do
-// Dovecot, ao entregar, e reaplicá-la aqui mentiria dizendo que o cartucho
-// baixou algo que ele não baixou.
+// Preserve application markers. Exclude \Seen: Dovecot POP3 now sets it on actual
+// retrieval, so reapplying it here would falsely claim a cartridge download.
 const MARCAS = ["$Retrieved", "$WebRead", "$DeletedByGame", "\\Answered", "\\Flagged"];
 
 (async () => {

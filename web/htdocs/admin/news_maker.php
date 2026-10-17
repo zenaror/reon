@@ -26,8 +26,8 @@
 			"template" => (string)($_POST["template"] ?? ""),
 			"minigame" => (string)($_POST["minigame"] ?? ""),
 			"message" => [],
-			// Mês e dia vêm separados; a data é remontada aqui, para o resto
-			// do sistema continuar vendo um "MM-DD" só.
+			// Recombine separate month/day inputs into the MM-DD value expected by the rest of the
+			// system.
 			"date" => (string)NewsMakerUtil::composeDate(
 				$_POST["date_month"] ?? "", $_POST["date_day"] ?? ""),
 			"rankings" => [],
@@ -38,10 +38,8 @@
 			$issue["rankings"][] = (string)($_POST["ranking"][$slot] ?? "");
 		}
 
-		// Um prêmio por slot do minijogo escolhido, na ordem em que o script
-		// chega neles. Slot vazio ou ausente significa "o que o minijogo já
-		// dava" -- guardar o padrão explicitamente faria a edição envelhecer
-		// mal se o minijogo mudasse de prêmio numa atualização da toolchain.
+		// Use one reward per selected minigame slot in script order. An empty slot retains the
+		// minigame default instead of storing a stale explicit default after a toolchain update.
 		$issue["prizes"] = [];
 		foreach ((array)($_POST["prize"] ?? []) as $slot => $item) {
 			if (!ctype_digit((string)$slot)) continue;
@@ -58,19 +56,9 @@
 		return $issue;
 	}
 
-	// "Publicar agora" põe no ar hoje uma edição que já existe e já foi
-	// compilada. Mora na lista, e não no editor: no editor ela convidava a
-	// publicar um formulário em branco -- o aviso de confirmação aparecia
-	// antes de qualquer validação, avisando que a edição ficaria imutável,
-	// sobre uma edição que ainda não tinha nada dentro.
-	//
-	// Daqui vem só o slug. A definição sai do disco e as regiões saem do que
-	// já está compilado, e não de caixas marcadas num formulário que esta
-	// tela não tem.
-	//
-	// A data é reescrita para hoje, e não ignorada: o agendador escolhe pela
-	// data, e mandar ir ao ar sem mexer no calendário deixaria a linha
-	// dizendo uma data e o jogo servindo outra.
+	// Publish now operates on an existing compiled edition from the list, not an unsaved
+	// editor form. Load its definition and compiled regions from disk using only its slug.
+	// Rewrite the schedule date to today so the calendar and served edition agree.
 	function publishNow($maker, $admin, $slug) {
 		$issue = $maker->issue($slug);
 		if ($issue === null) {
@@ -110,10 +98,9 @@
 				["%detail%" => $why]), "bad"];
 		}
 
-		// O agendador roda pelo mesmo auxiliar que a página de serviços usa --
-		// nada de privilégio novo. Se ele não estiver autorizado, a edição
-		// fica compilada e agendada para hoje e a tela diz isso, em vez de
-		// fingir que foi ao ar.
+		// Run the scheduler through the existing service helper without new privileges. If
+		// unavailable, leave the edition compiled and scheduled for today and report that it was
+		// not immediately published.
 		[$ran, $ranWhy] = ServiceControlUtil::getInstance()->act("reon-auto-schedule", "run");
 		$admin->log("news.publish-now", $slug, $ranWhy);
 		if (!$ran) {
@@ -142,9 +129,8 @@
 
 		$issue = readIssue($maker);
 
-		// Sorteia o que ficou como aleatório e recusa repetição. Feito antes
-		// de salvar, para a definição guardar o que de fato saiu -- sortear
-		// de novo a cada build daria edições diferentes com o mesmo nome.
+		// Resolve randomized categories and reject duplicates before saving so repeated builds
+		// retain the same edition choices.
 		[$resolved, $rankings] = $maker->resolveRankings($issue["rankings"]);
 		if ($resolved) {
 			$issue["rankings"] = $rankings;
@@ -157,16 +143,15 @@
 			($action !== "delete" && $action !== "withdraw")
 			&& $maker->isPublished($issue["slug"])
 		) {
-			// Recusa no servidor, e não só botão escondido na tela. Uma edição
-			// que já foi ao ar é imutável: tirar do ar e apagar continuam
-			// valendo, gravar e publicar por cima não.
+			// Enforce published-edition immutability on the server. Removing or deleting remains
+			// allowed, but editing or overwriting publication does not.
 			$notice = TemplateUtil::translate("admin.news-maker-locked");
 			$noticeKind = "bad";
 			$issue = $maker->issue($issue["slug"]) ?: $issue;
 
 		} elseif (($problems = ($action === "delete" || $action === "withdraw" ? [] : $maker->checkText($issue))) !== []) {
-			// Recusado, com o trecho culpado. O montador aceitaria calado e o
-			// texto sairia da caixa na tela do console.
+			// Reject oversized text with the offending excerpt; the assembler would otherwise allow
+			// display overflow.
 			$lines = [];
 			foreach (array_slice($problems, 0, 6) as $one) {
 				$lines[] = TemplateUtil::translate("admin.news-maker-lang-" . $one["language"])
@@ -180,18 +165,16 @@
 			($action !== "delete" && $action !== "withdraw")
 			&& $maker->brokenMinigame((string)($issue["minigame"] ?? "")) !== null
 		) {
-			// Recusado aqui, e não lá na frente: sem isto a pessoa preenche a
-			// edição inteira, aperta Publicar e recebe o erro cru do
-			// montador sobre um arquivo que ela não escreveu.
+			// Reject an unsupported minigame before the user completes an edition and receives a raw
+			// assembler error.
 			$notice = TemplateUtil::translate("admin.news-maker-minigame-broken");
 			$noticeKind = "bad";
 		} elseif (
 			($action !== "delete" && $action !== "withdraw")
 			&& ($unknown = $maker->checkPrizes($issue)) !== []
 		) {
-			// O montador recusaria um nome de item inexistente, mas só na
-			// hora de compilar e com a mensagem dele; aqui a recusa diz qual
-			// prêmio e antes de gravar.
+			// Reject unknown item names before saving, with a reward-specific diagnostic rather than a
+			// later assembler failure.
 			$notice = TemplateUtil::translate("admin.news-maker-bad-prize")
 				. " " . implode(" · ", array_slice($unknown, 0, 6));
 			$noticeKind = "bad";
@@ -200,8 +183,7 @@
 			$noticeKind = "bad";
 
 		} elseif ($action === "withdraw") {
-			// As regiões são lidas ANTES de retirar: retirar apaga os arquivos
-			// compilados, e é deles que sai a lista.
+			// Read compiled regions before removal deletes the files used to determine that list.
 			$affected = array_merge(
 				$maker->builtRegions($issue["slug"]),
 				$maker->scheduledRegions($issue["slug"]));
@@ -210,10 +192,9 @@
 			[$gone, $why] = $maker->withdraw($issue["slug"]);
 			$admin->log("news.withdraw", $issue["slug"], $why);
 			if ($gone) {
-				// E a oficial volta no lugar, aqui e agora. Tirar do calendário
-				// só impede a próxima rodada de reaplicar: a linha custom
-				// continuaria servindo esta edição até a notícia vanilla girar
-				// a região, o que pode levar um mês.
+				// Immediately restore official content too. Calendar removal alone prevents future
+				// scheduling but would leave the custom row serving this edition until the next vanilla
+				// rotation.
 				[$back] = $admin->restoreOfficialNews($affected);
 				$admin->log("news.restore-official", $issue["slug"], (string)$back);
 				$notice = TemplateUtil::translate("admin.news-maker-withdrawn")
@@ -246,10 +227,8 @@
 				$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => $detail]);
 				$noticeKind = "bad";
 			} elseif ($action === "publish") {
-				// O formulário marca idiomas; cada um vira as regiões que o
-				// consomem. Inglês são três pastas, e escrever nas três é o
-				// que o agendador precisa -- o que não precisa é de três
-				// cliques para o mesmo arquivo.
+				// Expand each selected language to its consuming regions. English needs three destination
+				// folders but only one editor choice.
 				$targets = $maker->buildTargets();
 				$regions = [];
 				foreach ((array)($_POST["regions"] ?? []) as $language) {
@@ -264,9 +243,8 @@
 					$notice = TemplateUtil::translate("admin.news-maker-need-region");
 					$noticeKind = "bad";
 				} elseif ($gaps !== []) {
-					// Recusado antes de compilar: uma região sem o texto dela
-					// não sairia vazia, sairia com o texto de 2002 que veio no
-					// template.
+					// Reject a missing region translation before compiling; otherwise the template original
+					// 2002 article would be published.
 					$lines = [];
 					foreach ($gaps as $one) {
 						$fields = [];
@@ -294,11 +272,8 @@
 							$issue["slug"], $issue["date"], $good, $issue["rankings"]);
 						if (!$sched) $log .= "\nschedule: " . $why;
 
-						// Publicar compila e agenda pela data da edição. Quem
-						// roda o agendador é "publicar agora", na lista: aqui
-						// não se sabe se a data já chegou, e disparar a rodada
-						// para uma edição marcada para dezembro não adianta
-						// nada além de gastar um ciclo.
+						// Publish compiles and schedules for the edition date. Publish now on the list runs the
+						// scheduler; triggering it here would waste a run for an edition scheduled in the future.
 					}
 					if (!is_array($results) || $results === []) {
 						$notice = TemplateUtil::translate("admin.news-maker-failed", ["%detail%" => (string)$log]);

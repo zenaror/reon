@@ -8,23 +8,11 @@ final class AddSentThreadKey extends AbstractMigration
 {
     public function change(): void
     {
-        // Qual conversa uma mensagem enviada continua.
-        //
-        // Até aqui a conversa era deduzida: mesmo assunto (sem o "Re:") e
-        // mesma outra parte davam a mesma thread. Deduzir basta para o
-        // correio que CHEGA, que não traz cabeçalho nenhum quando vem de um
-        // Game Boy -- mas para o que SAI é errado, e de um jeito que o dono
-        // viu na prática: escrever uma mensagem nova com um título que por
-        // acaso repetia o de uma antiga grudava as duas na mesma conversa.
-        //
-        // A intenção ("isto é resposta àquilo" x "isto é assunto novo") só
-        // existe na hora de enviar, e não dá para recuperá-la depois. Por
-        // isso vira coluna.
-        //
-        // Nula de propósito nas linhas que já existem: nulo quer dizer "use
-        // a dedução antiga", então nenhuma conversa já formada se desfaz com
-        // esta migração. Só o que for enviado daqui para a frente carrega
-        // identidade própria.
+        // Persist which conversation an outgoing message continues. Matching subject (without Re:)
+        // and correspondent is sufficient for headerless incoming game mail, but incorrectly
+        // groups a newly composed message with an older message sharing its subject. Reply intent
+        // exists only when sending and must be stored. Existing rows remain NULL to retain their
+        // previous inferred grouping; newly sent mail carries an explicit thread identity.
         $this->table('sys_sent')
              ->addColumn('thread_key', 'char', [
                  'limit' => 32,

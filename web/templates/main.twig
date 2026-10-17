@@ -167,12 +167,8 @@
 		{% block body %}
 		{% endblock %}
 
-		{# Rodapé de toda página, com a mesma caixa do ticker de notícias lá em
-		   cima -- e parado, porque aqui o texto é para ser lido quando a
-		   pessoa procurar, não quando passar.
-
-		   No fluxo, e não grudado na tela: barra fixa come altura em celular,
-		   que é justamente onde o conteúdo tem menos espaço. #}
+		{# Static legal footer in normal page flow, matching the news ticker frame. A fixed or
+		   moving bar would consume scarce mobile screen space and compete with page content. #}
 		<footer class="container-xxl">
 			<div class="reon-legalbar">
 				<nav class="reon-legalbar__links">

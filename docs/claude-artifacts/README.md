@@ -1,19 +1,20 @@
 # Claude artifact documents
 
-The two Claude artifacts were converted to Markdown on 2026-10-07. English
-is the primary version; Brazilian Portuguese files use the `.Br.md` suffix.
-Each language comes from the artifact's own text rather than a new translation.
+The two Claude artifacts were converted to Markdown on 2026-10-07. The
+repository keeps their English versions. Redundant Portuguese translations were
+removed during the English-only documentation review on 2026-10-17; the English
+records retain the same section structure and equivalent source references.
 
-| Document | English | Português (Brasil) |
-| --- | --- | --- |
-| Data protection register | [Register](DATA_PROTECTION_REGISTER.md) | [Registro](DATA_PROTECTION_REGISTER.Br.md) |
-| Game Boy mail memo | [Memo](GAME_BOY_MAIL_MEMO.md) | [Memo](GAME_BOY_MAIL_MEMO.Br.md) |
+| Document | English source record |
+| --- | --- |
+| Data protection register | [Register](DATA_PROTECTION_REGISTER.md) |
+| Game Boy mail memo | [Memo](GAME_BOY_MAIL_MEMO.md) |
 
 These documents preserve their September 2026 narratives, including
 historical evidence, decisions, unresolved questions and qualifications. Their
 statements about production and law were not re-audited during conversion.
 The register retains the original confidentiality notice. At the owner's request,
-the duplicated project changelog was removed from both Memo versions; only
+the duplicated project changelog was removed from the Memo; only
 [CHANGELOG.md](../CHANGELOG.md) maintains that list. The register's own revision
 log remains part of its evidence history. Personal account identifiers in examples
 were replaced with fictitious values on 2026-10-07; protocol structure, source
@@ -25,12 +26,12 @@ For subsequent implementation and operations, see [Operations](../OPERATIONS.md)
 Original sources:
 
 - [REON Data Protection Register](https://claude.ai/code/artifact/be2e0466-bfa8-4cbb-8fd3-c2849a7fe155)
-- [Correio do Game Boy](https://claude.ai/code/artifact/e54c85bd-5416-41ba-afbd-d1cafcf1991e)
+- [Game Boy mail memo](https://claude.ai/code/artifact/e54c85bd-5416-41ba-afbd-d1cafcf1991e)
 
 ## Consistency review (2026-10-07)
 
 The current change summary is [CHANGELOG.md](../CHANGELOG.md). The artifacts
-retain their narrative text, with English and Portuguese notes identifying
+retain their narrative text, with English notes identifying
 superseded passages. The Memo's former cross-project change list was a September
 snapshot; it has been replaced by a link to the repository changelog.
 
@@ -44,7 +45,7 @@ snapshot; it has been replaced by a link to the repository changelog.
 | Git publication | Memo, changelog and AGENTS described GitHub as the Gitea mirror/push target relationship. | REON's actual `home` remote is `https://github.com/zenaror/reon`, changed by the owner on 2026-10-06. Repository instructions and changelog updated. Other repositories' remotes are not inferred from REON's. |
 | Net de Get | The source artifact's removed change list ended before the October work. | [NET_DE_GET.md](../NET_DE_GET.md) and changelog record the database, opt-in, admin panel and historical price without billing. Operations now lists its two migrations and account opt-in. |
 | Patch build duration | Operations still promised an eight-minute full build despite the later Stadium build and CPU throttle. | Removed that estimate; use each run's journal. Production reports `MemoryHigh=380 MiB`, `MemoryMax=600 MiB`, CPU quota 50%, checked over SSH on 2026-10-07. The pending item for the stale sentence was closed; the separate measurement task remains. |
-| Outbound relay provider | Memo names Brevo in the mail investigation. | [RELAY-DE-SAIDA.md](../RELAY-DE-SAIDA.md) describes configurable providers and headers. The historic provider is not a mandatory dependency. |
+| Outbound relay provider | Memo names Brevo in the mail investigation. | [OUTBOUND_MAIL.md](../OUTBOUND_MAIL.md) describes configurable providers and headers. The historic provider is not a mandatory dependency. |
 
 The deployed retention script's complete SHA-256 differs from the local file;
 the checked retention constants agree (the deployed names/comments are in

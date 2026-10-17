@@ -1,12 +1,6 @@
-/* A lista de erros do Mobile Adapter GB.
- *
- * Uma resposta por código, e não uma tabela por jogo: quem chega aqui está
- * olhando para um erro e quer saber o que fazer, não comparar como vinte e
- * três cartuchos escrevem a mesma frase.
- *
- * O texto que o jogo imprime continua no dado, escondido atrás de um
- * <details> e varrido pela busca -- é assim que alguém que só tem a tela à
- * frente, sem código nenhum, encontra a entrada. */
+/* Show one Mobile Adapter error explanation per code rather than a table per game. Retain
+ * cartridge screen text in searchable details so a player without the numeric code can
+ * find the entry. */
 (function () {
 	var holder = document.getElementById("err-data");
 	var list = document.getElementById("err-list");
@@ -26,10 +20,8 @@
 		return n;
 	}
 
-	// Códigos que dizem exatamente a mesma coisa viram UMA entrada com
-	// vários números. `10-000` e `10-XXX` são o mesmo conselho, e as cinco
-	// famílias de "erro de comunicação" também -- repetir o parágrafo cinco
-	// vezes é o contrário de consolidar.
+	// Merge equivalent explanations into one entry with several code labels, avoiding repeated
+	// paragraphs for wildcard and specific codes or equivalent communication-error families.
 	function consolidate(rows) {
 		var out = [], index = {};
 		rows.forEach(function (row) {
@@ -47,9 +39,8 @@
 		return out;
 	}
 
-	// `10-XXX` já quer dizer "qualquer 10-": ao lado dele, `10-000` não
-	// acrescenta nada e só ocupa a linha. O código específico continua no
-	// dado e continua casando no filtro -- some da etiqueta, não da busca.
+	// A wildcard such as 10-XXX already covers 10-000. Hide the redundant specific label but
+	// retain its data and search match.
 	function visibleCodes(codes) {
 		var wild = {};
 		codes.forEach(function (c) {
@@ -84,12 +75,12 @@
 			item.appendChild(head);
 
 			if (row.means) item.appendChild(el("p", "err-means", row.means));
-			// A explicação da família entra abaixo da específica: é ela que
-			// diz que 5xx vem do servidor de e-mail, e não do jogo.
+			// Show family context beneath the code explanation, including when a 5xx error originates
+			// from the mail server rather than the game.
 			if (row.family) item.appendChild(el("p", "err-family", row.family));
 			if (row.todo) {
 				var todo = el("p", "err-todo");
-				todo.innerHTML = row.todo;   // o texto é nosso, escrito à mão
+				todo.innerHTML = row.todo;   // Handwritten local explanation.
 				item.appendChild(todo);
 			}
 

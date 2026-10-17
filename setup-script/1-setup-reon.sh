@@ -49,15 +49,10 @@ DEPLOY_DIR="$SCRIPT_DIR/deploy"
 OPT_REON=/opt/reon
 OPT_RELAY=/opt/mobile-relay
 
-# Onde o modo torneio guarda a conversa entre dois consoles. É um
-# StateDirectory= do systemd: o nome é relativo a /var/lib, e o systemd cria
-# o diretório já com o dono certo quando o serviço sobe.
-#
-# Fora do checkout de propósito. O relay roda como ${SYS_USER} e o checkout
-# pertence a outro usuário, então gravar lá falha com Permission denied -- e
-# o modo torneio pareceria ligado sem gravar nada. O painel (/admin) lê deste
-# caminho para listar e entregar os arquivos, e o valor está em duas pontas:
-# aqui e em CaptureStoreUtil::DIRECTORY.
+# Tournament capture state directory, relative to /var/lib. systemd creates it with the
+# service owner via StateDirectory=. Keep it outside the checkout, whose owner differs
+# from the relay service user. Admin capture listing must use the same path as
+# CaptureStoreUtil::DIRECTORY.
 RELAY_CAPTURES_NAME=reon-captures
 RELAY_CAPTURES=/var/lib/$RELAY_CAPTURES_NAME
 

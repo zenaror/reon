@@ -18,22 +18,18 @@ const mysqlConfig = {
 	database: config["mysql_database"]
 }
 
-// O SMTP próprio saiu em 12/09/2026. Quem atende a porta 25 é o Postfix desde
-// o setup-postfix-bridge.sh, e `disable_smtp` estava ligado havia semanas --
-// o código ficava aqui sem nunca rodar. Ver mail/README ou o histórico do git
-// se algum dia for preciso olhar o que ele fazia.
-// disable_pop3: ligado quando o Dovecot assume a porta 110. O serviço continua
-// existindo pelos efeitos colaterais abaixo -- a cópia em Enviados e o sino --,
-// que não são trabalho de servidor POP3 e não têm dono do lado do Dovecot.
+// Postfix owns production SMTP. The previous Node SMTP implementation was removed on
+// 2026-09-12; use Git history for its implementation. disable_pop3 is enabled when Dovecot
+// owns port 110. This service still handles Sent copies and notifications through the
+// side-effects listener below.
 let pop3 = config["disable_pop3"] === true ? null
 	: new POP3Server(mysqlConfig, config["email_domain"], config["email_domain_dion"], config);
 if (pop3 === null) log.info("POP3: a porta 110 e do Dovecot; servidor proprio desligado");
 
-// O pool do MySQL vinha do POP3; sem ele, monta-se um aqui.
+// Create a MySQL pool here when the optional POP3 service did not create one.
 const poolEfeitos = pop3 ? pop3.mysql : require("mysql2").createPool(mysqlConfig);
 
-// Cópia em Enviados e linha no sino. Moravam no deliver.js, que saiu do
-// caminho quando o Postfix passou a entregar pelo LMTP do Dovecot -- e levou
-// as duas junto, sem ninguém notar. Ver mail/sideEffects.js.
+// Sent copies and recipient notifications are handled by mail/sideEffects.js. They must
+// remain active when Dovecot LMTP replaces the previous delivery agent.
 const sideEffects = require("./sideEffects");
 sideEffects.iniciar(poolEfeitos);

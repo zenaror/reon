@@ -23,9 +23,8 @@
 					{% if not errors %}
 						<div class="reon-note reon-note--warn">{{ 'errors.missing'|trans }}</div>
 					{% else %}
-						{# Um filtro só: a página é consulta por código. O texto que o
-						   jogo imprime continua em cada entrada, fechado, para confirmar
-						   que se achou a certa. #}
+						{# Use one code lookup filter; retain collapsed cartridge screen text to confirm the
+						   matching error entry. #}
 						<div class="err-filters">
 							<label>
 								{{ 'errors.filter-code'|trans }}
@@ -35,8 +34,8 @@
 
 						<p class="err-count" id="err-count" data-template="{{ 'errors.count'|trans }}"></p>
 
-						{# Dito aqui, e não no guia de início: quem chega com um
-						   código na mão está nesta página, não lá. #}
+						{# Explain this on the error lookup page, where users arrive with a code, rather than only
+						   in the setup guide. #}
 						<div class="reon-note">{{ 'errors.partial'|trans }}</div>
 
 						<div class="err-list" id="err-list"

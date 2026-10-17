@@ -19,22 +19,10 @@
 			<h2 class="admin-nav__title">{{ 'admin.panel'|trans }}</h2>
 			<nav>
 				<ul class="admin-nav__list">
-					{# "Game Content" replaces separate top-level items for each
-					   game's own pages (Pokémon News, Mobile Stadium, Mobile
-					   Stadium Replays, Mobile Trainer) with one entry that opens
-					   a game picker (admin/games.php) -- owner's request,
-					   2026-09-28: "Crystal já tem 2 telas só dele... ainda tem o
-					   GB Wars também". Tournament and every other non-per-game
-					   page stays exactly where it was; only the per-game pages
-					   moved. "News" (news.php) does NOT belong here even though
-					   its old nav label sat right next to "Pokémon News" --
-					   it manages the SITE's own news (NewsUtil, the homepage
-					   ticker), not anything Crystal-specific (owner's
-					   correction, 2026-09-28: it was wrongly filed under
-					   Crystal with Pokémon News' own description on the first
-					   pass). match is a list here because the item should stay
-					   highlighted on every page that belongs under it, not only
-					   on games.php itself. #}
+					{# Game Content groups per-game admin pages under admin/games.php and remains highlighted
+					   for every child page. Tournament and other global pages stay separate. Site News manages
+					   the homepage ticker through NewsUtil; it is not Pokemon News and does not belong under
+					   Crystal. #}
 					{% set items = [
 						{ href: '/admin/index.php',         key: 'admin.nav-dashboard',     match: ['/admin/index.php'] },
 						{ href: '/admin/news.php',          key: 'admin.nav-news',          match: ['/admin/news.php'] },

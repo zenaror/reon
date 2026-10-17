@@ -1,45 +1,44 @@
-# Dovecot do REON
+# REON Dovecot configuration
 
-A configuração que o servidor usa. **Quem instala é o
-`setup-script/2-setup-postfix-bridge.sh`** (função `configure_dovecot`): pacotes,
-o usuário `vmail`, `99-reon.conf`, o `dovecot-sql.conf.ext` gerado a partir do
-`config.json` (com uma senha do doveadm sorteada uma vez), o drop-in do host do
-APOP e o filtro Sieve com os domínios do `config.json`. Rodar de novo é seguro.
+`setup-script/2-setup-postfix-bridge.sh` installs this configuration through
+`configure_dovecot`: packages, the `vmail` user, `99-reon.conf`, SQL settings
+rendered from private `config.json`, a once-generated doveadm password, the APOP
+hostname drop-in and the Sieve delivery filter using configured mail domains.
+The installer supports rerunning the configuration step.
 
-À mão, o equivalente é:
+Manual destination equivalents:
 
-    99-reon.conf              -> /etc/dovecot/conf.d/99-reon.conf
-    dovecot-sql.conf.ext      -> /etc/dovecot/dovecot-sql.conf.ext   (root:reon 0640)
-    reon-delivery.sieve       -> /etc/dovecot/sieve/reon-delivery.sieve  (sievec depois)
+```text
+99-reon.conf              -> /etc/dovecot/conf.d/99-reon.conf
+dovecot-sql.conf.ext      -> /etc/dovecot/dovecot-sql.conf.ext (root:reon 0640)
+reon-delivery.sieve       -> /etc/dovecot/sieve/reon-delivery.sieve (then sievec)
+```
 
-O `.example` do segundo arquivo é o que sobe para o git; o de verdade guarda
-senha em claro e fica só no servidor. O grupo é `reon` (o usuário do serviço de
-correio) porque o doveadm lê a configuração inteira como quem o invoca.
+Only the `.example` SQL configuration belongs in Git; the rendered file contains
+plaintext credentials and stays on the server. Group `reon` is the mail service
+user group because doveadm reads configuration with its invoking identity.
 
-## O que esta configuração decide
+## Storage and authentication
 
-O Dovecot é o dono do armazenamento de correspondência e da porta 110; o MySQL
-continua sendo o cadastro de contas e nada mais. O Postfix entrega por LMTP e o
-webmail lê pelo socket do `doveadm`. O nosso POP3 em Node está desligado
-(`disable_pop3` no `config.json`).
+Dovecot owns mailbox storage and production POP3 port 110. MySQL stores account
+registration; Postfix delivers over LMTP and webmail reads through the privileged
+doveadm socket. The optional Node POP3 listener is disabled with `disable_pop3`.
 
-Autenticação: **APOP e CRAM-MD5** com a chave de device-auth de 32 bytes (o
-segredo é a chave em 64 caracteres hex), e `plain`/`login` com a senha de oito
-caracteres **atrás de um interruptor do painel** (`sys_settings.pop3_password_fallback`,
-padrão ligado no repositório; **desligado neste servidor, por decisão do dono**).
-Com o interruptor fechado, ou sem chave, ou com a **conta banida**, a consulta
-devolve `*` como senha, que não casa com nada: a linha não some porque o
-`doveadm` resolve o usuário pela mesma consulta, e uma consulta sem linha
-deixaria a caixa ilegível, webmail junto. Banir bloqueia todas as portas do
-serviço; esta é a do POP3.
+APOP and CRAM-MD5 use the 32-byte device key represented as 64 hexadecimal ASCII
+characters. `plain`/`login` with the eight-character game password are controlled
+by `sys_settings.pop3_password_fallback`: the repository default is enabled;
+Oracle was observed with it disabled by operator policy. Check the live setting
+rather than inferring current state from this document.
 
-## Portas
+When fallback is disabled, a key is missing or an account is banned, the affected
+authentication query returns `*` as a nonmatching password. Keep the user row:
+doveadm uses the same lookup and omitting it would also make webmail unreadable.
 
-    110     POP3 do Dovecot, aberta para a internet: é por ela que o Game Boy
-            busca o correio
-    10143   IMAP, só para desenvolvimento. No Dovecot 2.4 o endereço é global,
-            então ele escuta em todas as interfaces e é o firewall que o
-            mantém fora da internet
+## Ports
+
+- **110:** public Dovecot POP3 used by game clients.
+- **10143:** development IMAP. Dovecot 2.4 uses a global listening address, so the
+  firewall must prevent public access to this port.
 
 ## `dovecot-hostname.conf.example`
 

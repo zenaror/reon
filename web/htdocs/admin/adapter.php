@@ -11,9 +11,8 @@
 	$admin = AdminUtil::getInstance();
 	$cfg = SettingsUtil::getInstance();
 
-	// O que esta tela edita. O resto do arquivo -- endereço de e-mail, gID,
-	// chave de aparelho, token de relay -- sai do cadastro de cada pessoa e
-	// não tem o que configurar aqui.
+	// Edit only shared adapter fields here. Account email, gID, device key and relay token are
+	// derived from individual registration.
 	$CAMPOS = [
 		"bin_dns1_host", "bin_dns1_port",
 		"bin_dns2_host", "bin_dns2_port",
@@ -29,16 +28,13 @@
 	if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		CsrfUtil::check();
 
-		// Valida TUDO antes de gravar QUALQUER coisa. Gravar campo a campo
-		// deixaria o arquivo metade novo e metade velho se o terceiro campo
-		// fosse recusado -- e esse arquivo é lido por um cartucho, não por
-		// uma tela que a pessoa possa corrigir depois.
+		// Validate all fields before saving any, avoiding partially updated adapter configuration
+		// when a later field is rejected.
 		$novos = [];
 		foreach ($CAMPOS as $k) {
 			$v = trim((string)($_POST[$k] ?? ""));
-			// Caixa desmarcada não chega no POST, então a ausência é o
-			// valor "0" -- e não "não mexeu", que deixaria a marca ligada
-			// para sempre depois da primeira vez.
+			// Unchecked checkboxes are absent from POST; treat absence as zero rather than leave a
+			// previously enabled flag unchanged.
 			if ($k === "bin_unmetered" || $k === "bin_user_choice") $v = ($v === "1") ? "1" : "0";
 			if (!SettingsUtil::isValid($k, $v)) { $invalidos[] = $k; continue; }
 			$novos[$k] = $v;
@@ -59,9 +55,8 @@
 		}
 	}
 
-	// Sem o verde (10) por decisão do dono. A lacuna na sequência é de
-	// propósito: estes números são o enum mobile_adapter_device da libmobile,
-	// não posições de uma lista.
+	// Exclude model 10 (green) by operator policy. The gap is intentional: these values are
+	// libmobile enum IDs, not list positions.
 	$MODELOS = [8 => "Blue", 9 => "Yellow", 11 => "Red"];
 
 	$valores = [];
@@ -72,9 +67,8 @@
 		"notice_kind" => $noticeKind,
 		"invalidos" => $invalidos,
 		"v" => $valores,
-		// O dispositivo gravado hoje, em palavras. O byte que isso vira no
-		// arquivo é detalhe de implementação e não tem por que aparecer numa
-		// tela de administração.
+		// Show the current adapter model as a readable name; its encoded byte is an implementation
+		// detail.
 		"device_words" => ($MODELOS[(int)$valores["bin_adapter_device"]] ?? "?") . " · " .
 			TemplateUtil::translate($valores["bin_unmetered"] === "1"
 				? "admin.adapter-unmetered-short" : "admin.adapter-metered"),

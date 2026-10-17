@@ -1,43 +1,24 @@
 <?php
 require_once(__DIR__."/LogUtil.php");
-	// A caixa de entrada do webmail, vinda do Dovecot.
-	//
-	// Desde o corte, quem guarda correspondência é o Dovecot -- a mesma peça
-	// que o servidor do REONTeam usa. O MySQL continua sendo o diretório de
-	// contas, e nada mais.
-	//
-	// Esta classe devolve as linhas no MESMO formato que as consultas a
-	// sys_inbox devolviam: id, sender, timestamp, message, deleted_at. É
-	// deliberado -- tudo o que MailUtil faz acima disso (montar conversas,
-	// filtrar, paginar, decidir o que é correspondência de jogo) continua
-	// valendo sem uma linha alterada. Trocar o armazém não pode virar
-	// reescrever o webmail.
-	//
-	// Fala por `doveadm` pelo socket do doveadm-server, como o nosso POP3:
-	// ler a caixa de outra conta exige privilégio que o usuário do site não
-	// tem e não deve ter, então ele não lê, pede.
+	// Dovecot-backed webmail storage. MySQL retains account registration. Return the former
+	// sys_inbox row shape (id, sender, timestamp, message, deleted_at) so MailUtil
+	// conversation/filter/pagination behavior stays independent of storage. Use the privileged
+	// doveadm-server socket instead of granting the web service direct access to other users
+	// mailboxes.
 	class MailStoreUtil {
 
 		const SOCKET = "/run/dovecot/doveadm-server";
 		const TRASH = "Trash";
-		// Palavras-chave no lugar das colunas que a tabela tinha. O cifrão é
-		// a convenção do IMAP para palavra-chave de aplicação, e elas
-		// sobrevivem a mudar de pasta.
+		// Application IMAP keywords replace former table columns; the conventional $ prefix and
+		// values survive folder moves.
 		const RETRIEVED = '$Retrieved';
-		// "Lida" no site e "coletada pelo jogo" sao coisas diferentes, e e
-		// essa diferenca que deixa a lixeira dizer se o cartucho chegou a
-		// baixar a mensagem antes de apaga-la.
-		//
-		// O site usava \Seen, o que funcionava enquanto o POP3 era nosso --
-		// ele so marcava $Retrieved. O POP3 do Dovecot marca \Seen ao
-		// entregar, entao, com ele servindo a porta, \Seen passa a querer
-		// dizer "o jogo coletou" e o site precisa de marca propria.
+		// Web reading and cartridge retrieval are separate states. Dovecot POP3 sets
+		// \Seen on retrieval, so webmail requires its own $WebRead keyword.
 		const WEB_READ = '$WebRead';
 		const BY_GAME = '$DeletedByGame';
 
-		// O id que o webmail passa em URL. O UID do IMAP é por pasta, então
-		// sozinho não identifica: "INBOX:12" e "Trash:12" são mensagens
-		// diferentes. O par resolve, e o webmail sempre lista antes de agir.
+		// A webmail URL ID includes folder and UID, such as INBOX:12. UIDs are folder-local, so
+		// Trash:12 is a different message. List the mailbox before acting on its IDs.
 		public static function makeId($mailbox, $uid) {
 			return $mailbox . ":" . (int)$uid;
 		}
@@ -66,16 +47,11 @@ require_once(__DIR__."/LogUtil.php");
 			return $out;
 		}
 
-		// Uma pasta inteira, na ordem de chegada. O webmail pagina em cima
-		// disso, como sempre fez -- as caixas aqui têm dezenas de mensagens,
-		// não milhares, e paginar no doveadm custaria mais do que economiza.
+		// Read a folder in arrival order; MailUtil paginates the small mailbox in memory rather
+		// than adding per-page doveadm overhead.
 		public static function rows($mailboxUser, $folder = "INBOX", $comCorpo = false) {
-			// Tudo numa chamada só. A listagem precisa do corpo de cada
-			// mensagem para montar assunto e prévia, e pedir uma por uma
-			// seria um processo por mensagem a cada vez que alguém abre a
-			// caixa. O `text` vem por último de propósito: é o único campo
-			// com quebras de linha dentro, e assim o que vem antes se separa
-			// por linha sem ambiguidade.
+			// Fetch all listing fields and bodies in one call rather than spawning one process per
+			// message. Put multiline text last so preceding fields can be split unambiguously by line.
 			$campos = "uid flags hdr.return-path hdr.from hdr.date date.received size.physical"
 				. ($comCorpo ? " text" : "");
 			$out = self::run(["fetch"], $mailboxUser, [$campos, "mailbox", $folder]);
@@ -90,26 +66,16 @@ require_once(__DIR__."/LogUtil.php");
 					"uid" => (int)$u[1],
 					"sender" => self::remetente($bloco),
 					"timestamp" => self::when($bloco),
-					// Duas formas de estar na lixeira, uma por ator, e as duas
-					// contam como apagada:
-					//
-					//   o JOGO apaga com DELE, e o Dovecot so marca
-					//   ($DeletedByGame, pop3_deleted_flag) -- a mensagem fica
-					//   na INBOX, escondida das sessoes POP3 seguintes;
-					//   o SITE apaga movendo para a pasta Trash, que o POP3
-					//   nao serve.
-					//
-					// Cada ator usa o mecanismo natural dele; o campo
-					// deleted_by abaixo e que diz qual foi.
+					// Both deletion mechanisms count as trash: game DELE sets $DeletedByGame while the message
+					// remains in INBOX but is hidden from later POP3 sessions; webmail moves it to Trash,
+					// outside POP3. deleted_by preserves which actor deleted it.
 					"deleted_at" => ($folder === self::TRASH
 						|| stripos($flags, self::BY_GAME) !== false)
 						? self::when($bloco) : null,
 					"size" => preg_match('/^size\.physical:\s*(\d+)/m', $bloco, $s) ? (int)$s[1] : 0,
-					// As colunas de antes, agora como palavras-chave do IMAP.
+					// Represent the previous table state with IMAP application keywords.
 					"read_at" => stripos($flags, self::WEB_READ) !== false ? self::when($bloco) : null,
-					// \Seen conta como coletada porque e o que o POP3 do
-					// Dovecot marca no RETR; $Retrieved continua sendo lido
-					// para as mensagens que o nosso POP3 marcou antes disso.
+					// Dovecot sets \Seen on RETR; accept legacy $Retrieved markers too.
 					"retrieved_at" => (stripos($flags, self::RETRIEVED) !== false
 						|| stripos($flags, "\\Seen") !== false) ? self::when($bloco) : null,
 					"deleted_by" => stripos($flags, self::BY_GAME) !== false ? "game" : ($folder === self::TRASH ? "web" : null),
@@ -121,8 +87,7 @@ require_once(__DIR__."/LogUtil.php");
 			return $rows;
 		}
 
-		// A mensagem inteira, byte a byte. O Maildir guarda com LF; o resto
-		// do sistema espera CRLF, e é assim que ela estava no banco.
+		// Return exact message contents, converting Maildir LF to the CRLF expected by callers.
 		public static function message($mailboxUser, $id) {
 			$parts = self::splitId($id);
 			if ($parts === null) return null;
@@ -132,7 +97,7 @@ require_once(__DIR__."/LogUtil.php");
 			return self::afterTextMarker($out);
 		}
 
-		// Uma linha só, no formato das outras, com a mensagem junto.
+		// Return one record in the same shape as folder listings, including its message.
 		public static function row($mailboxUser, $id) {
 			$parts = self::splitId($id);
 			if ($parts === null) return null;
@@ -146,17 +111,10 @@ require_once(__DIR__."/LogUtil.php");
 			return null;
 		}
 
-		// O site apaga movendo de pasta: o POP3 so serve a INBOX, entao sair
-		// dela e o que esconde a mensagem do jogo. Marcar nao bastaria -- so
-		// a marca do pop3_deleted_flag e escondida, e usa-la aqui seria mentir
-		// sobre quem apagou.
-		// Quantas mensagens uma caixa tem, e quantas chegaram nas ultimas
-		// $horas. As duas numa chamada so: o doveadm ja devolve a data de
-		// gravacao junto, e pedir duas vezes dobraria processos.
-		//
-		// Nao existe forma de perguntar por todas as contas de uma vez -- o
-		// `-A` do doveadm precisa que o userdb saiba listar usuarios, e o
-		// nosso e estatico. Por isso quem chama passa a lista de caixas.
+		// Web deletion moves mail out of INBOX so POP3 cannot serve it; using the game deletion
+		// flag would misattribute the actor. Count all messages and recent arrivals in a single
+		// call per mailbox, using the supplied mailbox list because static userdb does not support
+		// doveadm -A enumeration.
 		public static function stats($mailboxUser, $horas = 24) {
 			$out = self::run(["fetch"], $mailboxUser,
 				["uid date.saved", "mailbox", "INBOX"]);
@@ -178,8 +136,8 @@ require_once(__DIR__."/LogUtil.php");
 			return self::moveMany($mailboxUser, $ids, self::TRASH);
 		}
 
-		// Restaurar desfaz o que o ator fez: tira a marca de quem ja esta na
-		// INBOX, traz de volta quem esta na pasta Trash.
+		// Restore reverses the relevant actor operation: clear a game marker in INBOX or move the
+		// message back from Trash.
 		public static function restore($mailboxUser, $ids) {
 			$naInbox = [];
 			$naLixeira = [];
@@ -199,9 +157,8 @@ require_once(__DIR__."/LogUtil.php");
 		}
 
 		private static function moveMany($mailboxUser, $ids, $destino) {
-			// INBOX existe sempre. A lixeira é criada na primeira vez que
-			// alguém apaga algo, e daí em diante a criação falha por já
-			// existir -- que é o caso normal, não um erro para registrar.
+			// INBOX always exists. Trash is created on first deletion; already-existing is a normal
+			// mailbox-create outcome, not a reportable failure.
 			if ($destino !== "INBOX") {
 				self::run(["mailbox", "create"], $mailboxUser, [$destino], true);
 			}
@@ -220,9 +177,8 @@ require_once(__DIR__."/LogUtil.php");
 			return $n;
 		}
 
-		// Tudo o que está na lixeira há mais tempo que a janela. A data é a
-		// de gravação NA PASTA, que é o que o `savedbefore` do doveadm usa --
-		// por isso o job move as marcadas para cá antes de contar os dias.
+		// Expire Trash messages by their folder save timestamp, as doveadm savedbefore does. Move
+		// game-marked messages here before measuring the retention window.
 		public static function purgeOlderThan($mailboxUser, $dias) {
 			$antes = self::run(["search"], $mailboxUser,
 				["mailbox", self::TRASH, "savedbefore", ((int)$dias) . "d"]);
@@ -271,12 +227,9 @@ require_once(__DIR__."/LogUtil.php");
 			return $out !== null && stripos($out, self::WEB_READ) !== false;
 		}
 
-		// O doveadm imprime "text: " e logo em seguida a PRIMEIRA LINHA da
-		// mensagem, na mesma linha. Pular até a primeira quebra -- que é o
-		// que eu fazia -- come essa linha inteira. No POP3 o defeito ficou
-		// escondido porque a primeira linha costuma ser o Return-Path, que a
-		// entrega descarta de qualquer jeito; numa mensagem com outra ordem
-		// de cabeçalhos, perderia um de verdade.
+		// doveadm emits text: followed by the first message line on that same line. Skipping to
+		// the next newline would discard a real header when the first line is not a disposable
+		// Return-Path.
 		private static function afterTextMarker($texto) {
 			$marca = "text: ";
 			$pos = strpos($texto, "\n" . $marca);
@@ -287,48 +240,39 @@ require_once(__DIR__."/LogUtil.php");
 			} else {
 				return null;
 			}
-			// O doveadm fecha o campo com uma quebra que é dele, não da
-			// mensagem: o arquivo no Maildir termina em "\n" e o fetch devolve
-			// "\n\n". Sem tirar esta, toda mensagem ganha uma linha em branco
-			// no fim.
+			// Strip only the extra newline added by doveadm fetch, not the message own final newline;
+			// otherwise every message gains a blank line.
 			if ($raw !== "" && substr($raw, -1) === "\n") $raw = substr($raw, 0, -1);
 			return str_replace("\n", "\r\n", str_replace("\r\n", "\n", $raw));
 		}
 
-		// [ \t]* e nao \s*: com o modificador m, \s* atravessa a quebra de
-		// linha e faz um campo VAZIO colher o valor do campo seguinte. Foi
-		// assim que o remetente virou "hdr.date: ..." quando o filtro de
-		// entrega passou a remover o Return-Path.
+		// Use [ \t]* instead of \s*: in multiline mode the latter crosses line boundaries and
+		// assigns the next header value to an empty field.
 		private static function header($bloco, $campo) {
 			if (!preg_match('/^' . preg_quote($campo, "/") . ':[ \t]*(.*)$/mi', $bloco, $m)) return "";
 			return trim($m[1], " <>\r\n\t");
 		}
 
-		// Quem mandou. O Return-Path era a fonte natural -- e o remetente do
-		// envelope, que nao se falsifica tao facil quanto o From --, mas o
-		// filtro de entrega o remove: ele nao pode ir para o Game Boy. Entao
-		// sobra o From, que e o que a pessoa ve no site de qualquer jeito.
+		// For webmail display, use From when delivery shaping has removed Return-Path. The latter
+		// is normally the stronger envelope identity, but must not be sent to the Game Boy.
 		private static function remetente($bloco) {
 			$rp = self::header($bloco, "hdr.return-path");
 			if ($rp !== "") return $rp;
 
-			// Sem o trim de < >: header() o faz para servir ao Return-Path,
-			// que vem entre colchetes angulares, e isso comia o ">" final do
-			// From e impedia o endereco de ser extraido.
+			// Do not trim angle brackets here. header() trims them for Return-Path, but doing so for
+			// From removes its closing > and prevents address extraction.
 			if (!preg_match('/^hdr\.from:[ \t]*(.*)$/mi', $bloco, $m)) return "";
 			$from = trim($m[1]);
 
-			// "Nome <a@b>" -- o formato de qualquer cliente de hoje.
+			// Modern client form: Display Name <a@b>.
 			if (preg_match('/<([^>]+)>/', $from, $e)) return trim($e[1]);
-			// "a@b (Nome)" -- o formato do Mobile Adapter, com o nome em
-			// comentario. O endereco e o que vem antes do parenteses.
+			// Mobile Adapter form: a@b (Display Name). Extract the address before the comment.
 			$from = trim(preg_replace('/\s*\(.*$/s', "", $from));
 			return $from;
 		}
 
-		// A data da própria mensagem ganha da hora de entrega: as que vieram
-		// da migração chegaram ao Dovecot no dia do corte, mas foram escritas
-		// semanas antes.
+		// Prefer the original message Date over delivery time, especially for older messages
+		// delivered together during migration.
 		private static function when($bloco) {
 			$d = self::header($bloco, "hdr.date");
 			if ($d === "") $d = self::header($bloco, "date.received");

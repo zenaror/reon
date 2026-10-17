@@ -2,29 +2,11 @@ const net = require("net");
 const { notify, isGameMail } = require("../lib/notifications");
 const log = require("../lib/log").child("mail-side-effects");
 
-// O que acontece ALÉM de guardar a mensagem: a cópia em Enviados de quem
-// mandou, e a linha no sino de quem recebeu.
-//
-// Isto morava no deliver.js, o nosso agente de entrega. Quando o Postfix
-// passou a entregar pelo LMTP do Dovecot, o deliver.js saiu do caminho -- e
-// levou as duas coisas junto, calado. Correspondência continuava chegando e
-// sendo servida certinho pelo POP3; só que ninguém era avisado e nada
-// aparecia em Enviados.
-//
-// Não voltou como agente de entrega porque essa vaga é do Dovecot agora.
-// Voltou como serviço: quem guarda a mensagem é o Dovecot, e quem cuida dos
-// efeitos colaterais é isto aqui. Um servidor de e-mail de verdade não some
-// com nenhum dos dois.
-//
-// Fala por TCP em 127.0.0.1, e não por socket de arquivo, pelo mesmo motivo
-// que o relayPolicy: quem chama é o filtro de entrega, que roda como vmail, e
-// acertar dono e grupo de um socket entre dois usuários de serviço custa mais
-// do que uma porta fechada na máquina.
-//
-// Protocolo, uma conexão por mensagem:
-//   linha 1: <remetente do envelope> TAB <destinatário>
-//   resto:   a mensagem inteira
-//   resposta: "OK\n" ou "ERR <motivo>\n"
+// Side effects beyond mailbox storage: a Sent copy for the sender and a notification for
+// the recipient. Dovecot LMTP owns storage; this service retains those application
+// responsibilities. Listen only on loopback TCP, also reachable by the vmail delivery
+// filter. One connection per message: first line is envelope sender TAB recipient,
+// followed by the full message; response is OK\n or ERR <reason>\n.
 
 const PORTA = 10046;
 
@@ -32,26 +14,14 @@ function iniciar(pool, porta = PORTA) {
 	const q = (sql, args) => new Promise((ok, erro) =>
 		pool.query(sql, args, (e, r) => e ? erro(e) : ok(r)));
 
-	// O pool que chega aqui é o de callback (mail/index.js monta com
-	// `createPool`, sem `.promise()`), e o `q` acima existe justamente para
-	// embrulhar isso. Mas o `notify` do lib/notifications.js espera a API de
-	// promise -- ele faz `const [r] = await conn.execute(...)`.
-	//
-	// Passar o pool cru derrubava o serviço a cada carta, e de um jeito que
-	// não parecia com o que era: dentro do notify o `await` devolvia um
-	// objeto não iterável e o try/catch dele registrava "not iterable", o
-	// que soava como um erro de dados. A morte vinha depois e de fora, no
-	// mysql2, que chamava um callback que ninguém passou -- exceção sem dono,
-	// que nenhum try/catch daqui alcança. 29 quedas em 12/09/2026.
-	//
-	// O outro chamador do notify (app/pokemon-exchange) já usa
-	// `mysql2/promise`, então a correção fica neste lado em vez de mudar a
-	// assinatura do notify e mexer em quem já funciona.
+	// mail/index.js creates a callback-based mysql2 pool, while notify expects the promise
+	// API. Pass pool.promise() here. Passing the raw pool yields a non-iterable await result
+	// and can later trigger an uncaught missing-callback error outside the surrounding
+	// try/catch. pokemon-exchange already uses mysql2/promise.
 	const poolPromise = typeof pool.promise === "function" ? pool.promise() : pool;
 
-	// Marcado por MailUtil::submitLocally() em tudo que sai do webmail, que já
-	// arquiva e notifica sozinho, com a origem certa. Repetir aqui daria duas
-	// cópias e duas linhas no sino.
+	// MailUtil::submitLocally marks webmail messages, which already archive and notify with
+	// the correct identity. Repeating those side effects here would create duplicates.
 	const doWebmail = m => /^x-reon-origin:\s*web\b/im.test(
 		String(m).split("\r\n\r\n")[0] || "");
 
@@ -61,7 +31,7 @@ function iniciar(pool, porta = PORTA) {
 		const quem = await q(
 			"select id from sys_users where username = ? or dion_email_local = ? limit 1",
 			[local, local]);
-		if (!quem.length) return;   // veio de fora: não há Enviados onde pôr
+		if (!quem.length) return;   // External sender: there is no local Sent mailbox to update.
 		await q("insert into sys_sent (user_id, recipient, origin, message) values (?, ?, 'game', ?)",
 			[quem[0]["id"], String(destino).slice(0, 254), mensagem]);
 	}
@@ -72,8 +42,8 @@ function iniciar(pool, porta = PORTA) {
 			"select id from sys_users where dion_email_local = ? or username = ? limit 1",
 			[local, local]);
 		if (!quem.length) return;
-		// O sino não substitui o contador de não lidas: aquele diz "há algo
-		// para ler", este diz "chegou a tal hora". O dono pediu os dois.
+		// The notification bell records arrival; it does not replace the unread-mail counter.
+		// Preserve both.
 		await notify(poolPromise, quem[0]["id"], "mail", {
 			key: "notify.new-mail",
 			params: { from: String(remetente).split("@")[0] },
@@ -93,10 +63,8 @@ function iniciar(pool, porta = PORTA) {
 				const [remetente, destino] = buf.slice(0, corte).split("\t");
 				const mensagem = buf.slice(corte + 1);
 
-				// Correspondência de jogo não entra em nenhum dos dois: o
-				// corpo é carga binária de cartucho, ela não aparece no
-				// webmail por decisão anterior, e quem age sobre ela levanta
-				// a própria notificação quando tem o que dizer.
+				// Exclude game mail from these webmail side effects: its body is a cartridge payload,
+				// hidden from webmail, and its game handler supplies any relevant notification.
 				if (!isGameMail(mensagem) && !doWebmail(mensagem)) {
 					await arquivarEnviada(remetente, destino, mensagem);
 					await avisar(remetente, destino, mensagem);

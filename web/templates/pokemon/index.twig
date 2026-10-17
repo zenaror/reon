@@ -20,10 +20,8 @@
 		</div>
 	</header>
 
-	{# Duas abas, não dois hubs: o Stadium não tem Mobile Adapter próprio --
-	   tudo o que ele mostra chega num cartucho de Crystal que teve um. Uma
-	   página separada diria que são dois caminhos independentes, e não são.
-	   O Crystal é a aba padrão porque é por onde se entra. #}
+	{# Use two tabs in one hub. Stadium has no independent Mobile Adapter path; its content
+	   reaches a Crystal cartridge first. Crystal is therefore the default entry tab. #}
 	{% if stadium_html %}
 		<div class="game-tabs" role="tablist" data-game-tabs
 		     aria-label="{{'pokemon-crystal'|trans}}">
@@ -57,8 +55,8 @@
 		</div>
 	</div>
 
-	{# Sem os serviços: rankings, Trade Corner e Battle Tower são do Crystal.
-	   Repeti-los aqui faria parecer que o Stadium fala com o servidor. #}
+	{# Do not duplicate Crystal rankings, Trade Corner or Battle Tower under Stadium, which
+	   does not directly contact the server. #}
 	{% if stadium_html %}
 		<div id="tab-stadium" data-tab-panel="stadium" hidden>
 			<div class="game-sections" data-sections="stadium">

@@ -56,9 +56,8 @@
 									{% for region in issue.built %}<span class="admin-pill admin-pill--off">{{ region|upper }}</span> {% endfor %}
 									<span class="admin-form__hint">{{ 'admin.news-maker-built-only'|trans }}</span>
 								{% endif %}
-								{# Fora do encadeamento acima de propósito: uma edição publicada
-								   e depois retirada continua travada, e nesse caso não há
-								   região agendada para cair no primeiro ramo. #}
+								{# Keep this outside the schedule branches: a previously published edition remains locked
+								   after removal even when it has no scheduled regions. #}
 								{% if issue.locked|default(false) %}
 									<span class="admin-form__hint">{{ 'admin.news-maker-locked-title'|trans }}</span>
 								{% endif %}
@@ -66,12 +65,9 @@
 							<td>{{ issue.saved_at|date("Y.m.d H:i") }}</td>
 							<td class="admin-row-actions">
 								<a href="/admin/news_maker.php?issue={{ issue.slug|url_encode }}">{{ 'admin.trainer-edit'|trans }}</a>
-								{# Pôr no ar hoje: só faz sentido para edição já compilada e
-								   ainda não publicada. Vive aqui, e não no editor, porque a
-								   edição precisa existir e estar compilada antes -- no editor
-								   o botão convidava a publicar um formulário em branco. As
-								   regiões são as que já estão compiladas; não há caixa para
-								   marcar nesta tela e não deve haver. #}
+								{# Publish today applies only to an existing compiled, unpublished edition. The list uses
+								   its already compiled regions; offering it on an empty editor form would imply an edition
+								   exists before validation. #}
 								{% if issue.built|default([]) is not empty and not issue.locked|default(false) %}
 									<form method="post" class="admin-row-actions__form">
 										<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">

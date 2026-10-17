@@ -8,27 +8,11 @@ final class AddUserAdapterChoice extends AbstractMigration
 {
     public function change(): void
     {
-        // A cor do adaptador e a marca de não-tarifado, por conta.
-        //
-        // Os dois já existiam como configuração única do painel, valendo
-        // para toda mobile_config.bin gerada. Continuam existindo: o que
-        // entra aqui é a escolha de cada pessoa, quando o administrador
-        // liberar (bin_user_choice).
-        //
-        // Nulas de propósito, e nulo NÃO quer dizer "azul tarifado" -- quer
-        // dizer "não escolhi". Duas consequências que a coluna com valor
-        // padrão não teria:
-        //
-        //   - quem nunca abriu a tela continua acompanhando o painel. Se o
-        //     administrador trocar o modelo global amanhã, essas contas
-        //     mudam junto, que é o que elas esperariam de não ter escolhido.
-        //   - desligar a opção no painel não apaga escolha de ninguém. As
-        //     linhas ficam, param de ser lidas, e voltam a valer se a opção
-        //     for religada.
-        //
-        // O valor é o enum mobile_adapter_device da libmobile (8 azul,
-        // 9 amarelo, 10 verde, 11 vermelho); o bit 0x80 do byte gravado no
-        // arquivo é montado na geração, não guardado aqui.
+        // Per-account adapter color and unmetered flag, used when bin_user_choice is enabled. NULL
+        // means no personal choice: the account follows the global setting. Disabling user choice
+        // preserves stored selections for later re-enabling. Values use libmobile
+        // mobile_adapter_device: 8 blue, 9 yellow, 10 green, 11 red. The generated file adds the
+        // 0x80 flag; it is not stored here.
         $this->table('sys_users')
              ->addColumn('adapter_device', 'integer', [
                  'limit' => \Phinx\Db\Adapter\MysqlAdapter::INT_TINY,

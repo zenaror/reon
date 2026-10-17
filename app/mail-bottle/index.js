@@ -22,9 +22,9 @@ program
 const options = program.opts();
 const config = JSON.parse(fs.readFileSync(options.config, "utf8"));
 
-// Escolhe o transporte: SMTP local quando `local_smtp_host` existir, senão o
-// binário de sendmail. Ver lib/rawmail.js -- e cuidado para não confundir com
-// `smtp_host`, que é o relay EXTERNO e tem significado oposto.
+// Select local SMTP when local_smtp_host is configured; otherwise use sendmail. See
+// lib/rawmail.js. smtp_host is the EXTERNAL relay and must not be used for internal
+// delivery.
 configurarEnvio(config, config["local_smtp_host"] ? require("nodemailer") : null);
 
 const dbConfig = {
@@ -78,13 +78,9 @@ async function doExchange() {
         const a = list[i - 1];
         const b = list[i];
 
-        // Entregues FALANDO SMTP, e não gravando na caixa: gravar direto só
-        // chega a alguém num servidor que use a nossa tabela, e o do REONTeam
-        // entrega pelo Dovecot. A submissão local serve aos dois.
-        //
-        // O endereço de cada lado é o que a própria garrafa trazia, e é o
-        // mesmo valor que ia para a coluna `sender` -- então quem é interno
-        // segue decidido pelo domínio, como sempre foi.
+        // Submit through local SMTP instead of inserting directly into an inbox table. This also
+        // works with the upstream Postfix/Dovecot stack. Keep the bottle-provided addresses
+        // previously stored in sender; domain checks still determine internal delivery.
         await sendRaw(a["email"], b["email"], "To: " + b["email"] + "\r\n" + a["message"]);
         await sendRaw(b["email"], a["email"], "To: " + a["email"] + "\r\n" + b["message"]);
 

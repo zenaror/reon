@@ -75,15 +75,8 @@
 			$replySentId = $_POST["reply_sent"] ?? null;
 			$threadKey = null;
 
-			// Nem o destino nem o título de uma resposta saem do formulário:
-			// os dois são re-derivados aqui da mensagem respondida, do mesmo
-			// jeito que a tela os preencheu. Os campos aparecem travados, mas
-			// travar é aparência -- a garantia é esta linha, porque um POST
-			// cru não passa por atributo nenhum de HTML.
-			//
-			// Junto vem a conversa que a resposta continua, e é ela que faz a
-			// mensagem entrar na thread certa em vez de ser adivinhada pelo
-			// título depois.
+			// Derive reply recipient, subject and thread key again from the owned original message.
+			// Locked HTML fields are only presentation and cannot constrain a handcrafted POST.
 			$ctx = $mail->replyContext($userId, $replyId, $replySentId);
 			if ($ctx !== null) {
 				$to = $ctx["to"];
@@ -136,16 +129,9 @@
 		$prefill = ["to" => trim($_GET["to"] ?? ""), "subject" => "", "body" => "",
 			"reply_id" => null, "reply_sent_id" => null];
 
-		// Responder é endereçado por id de mensagem, e nunca pela URL trazendo
-		// endereço e título prontos: as duas buscas são limitadas ao dono, de
-		// modo que só se pode responder a algo que é dele.
-		//
-		// São DOIS parâmetros porque são dois espaços de nomes diferentes --
-		// "reply" é id na caixa do Dovecot, "reply_sent" é id de linha em
-		// sys_sent. Antes havia só um, e o botão da tela de Enviados mandava
-		// o id dele pelo parâmetro da entrada: a busca não achava nada, o
-		// formulário abria com destinatário e título em branco, e os dois
-		// campos ainda por cima destravados.
+		// Resolve reply targets by owned message IDs, not recipient/subject supplied in a URL.
+		// reply addresses Dovecot incoming IDs; reply_sent addresses sys_sent IDs. Their
+		// namespaces must remain separate.
 		$prefillCtx = $mail->replyContext(
 			$userId, $_GET["reply"] ?? null, $_GET["reply_sent"] ?? null);
 		if ($prefillCtx !== null) {

@@ -1,63 +1,40 @@
-// As tratativas que a correspondência recebe antes de chegar ao Game Boy.
-//
-// Isto morava dentro do POP3, como métodos da conexão, e é de lá que veio --
-// sem uma linha alterada de lógica. Saiu porque o servidor POP3 vai deixar de
-// ser nosso: quem vai atender o jogo é o Dovecot, e as tratativas precisam
-// existir num lugar que sobreviva a isso. O mesmo código passa a ser chamado
-// pelo filtro de entrega (deliveryFilter.js) e, enquanto durar a transição,
-// pelo POP3 atual -- que é o que garante que o jogo veja os mesmos bytes nos
-// dois caminhos.
-//
-// Nada aqui conhece conexão, banco ou sessão: entra texto, sai texto.
+// Pure text transformations applied before mail reaches the Game Boy. Shared by
+// deliveryFilter.js and the optional Node POP3 reader so both paths serve the same bytes.
+// This layer has no connection, database or session state: text in, text out.
 
 const encoding = require("encoding-japanese");
 
-// O Mobile Trainer tem espaço para um título curto, então o assunto entregue
-// ao jogo é cortado neste tamanho -- as reticências contam, então um assunto
-// cortado tem 7 caracteres mais "...". É exigência do dono, reafirmada, e
-// parece acidental de fora: não remover.
+// Mobile Trainer requires a short subject. The truncation limit includes the ellipsis:
+// seven characters followed by "...". Preserve this deliberate display constraint.
 const SUBJECT_MAX_CHARS = 10;
 const SUBJECT_ELLIPSIS = "...";
 
-// Correspondência interna entregue como está gravada, menos o envelope.
-//
-// Ela é escrita pelos nossos próprios aplicativos, já no formato que o
-// jogo interpreta, então NÃO passa pela redução: a redução normaliza
-// valores de cabeçalho e corta o assunto, e mexeria em bytes que hoje
-// chegam intactos. Mas desde que os aplicativos passaram a entregar
-// falando SMTP -- em vez de gravar direto na tabela, que é o que nenhum
-// outro servidor faria -- o Postfix acrescenta o envelope dele, e esses
-// 265 bytes por carta seriam pagos em segundos de cabo serial por um
-// cliente de 2001.
-//
-// Lista fechada e curta de propósito: o que não estiver nela passa. O
-// contrário -- manter só o que se conhece -- é exatamente o que fez o
-// Trade Corner perder o X-Game-result e descartar toda troca concluída.
-// Aqui, esquecer um nome custa alguns bytes; lá, custava o recurso.
+// Internal game mail already has cartridge-compatible formatting. Preserve its payload and
+// headers; remove only the explicitly listed Postfix envelope fields. Header reduction
+// would alter trade bytes. Use a short denylist, not an allowlist: dropping an unknown
+// game header such as X-Game-result would discard completed trades.
 function stripTransportHeaders(raw) {
 	raw = raw.toString();
 	let sep = raw.indexOf("\r\n\r\n");
 	if (sep === -1) return raw;
 
-	// Date sai junto e volta logo abaixo, em _withDate, com a hora da
-	// caixa -- que é a que esta caixa sempre serviu.
+	// Remove Date here and restore it below in _withDate using the mailbox timestamp.
 	const DROP = [
 		"return-path", "received", "delivered-to", "x-original-to",
 		"message-id", "date",
-		// Carimbo interno de quem enviou (webmail), usado pelo relay de
-		// saída e pelo deliver.js. Nunca foi para o cartucho e não é
-		// agora que vai.
+		// Internal webmail sender marker used by outboundRelay and deliver.js; never expose it to
+		// the cartridge.
 		"x-reon-origin",
-		// Idem: diz ao relay em que conversa arquivar a cópia em Enviados.
-		// É recado entre as nossas peças, não parte da carta.
+		// Internal instruction identifying the Sent conversation. It is not part of the recipient
+		// message.
 		"x-reon-thread",
 	];
 
 	let out = [];
 	let dropping = false;
 	for (let line of raw.slice(0, sep).split("\r\n")) {
-		// Continuação de cabeçalho dobrado: segue o destino da linha que
-		// a abriu, senão o valor sobra solto virando cabeçalho inválido.
+		// A folded header continuation follows the treatment of its opening line; otherwise it
+		// becomes a stray invalid header.
 		if (/^[ \t]/.test(line)) {
 			if (!dropping) out.push(line);
 			continue;
@@ -82,15 +59,9 @@ function withDate(mailContent, timestamp) {
 		"\r\n" + mailContent.slice(sep + 2);
 }
 
-// "Wed, 9 Sep 2026 21:35:45 +0000".
-//
-// A formatação vinha pronta do MySQL, num concat() dentro da consulta.
-// Ao mover a consulta para a camada de armazenamento ela passou a
-// devolver o horário cru, e o JavaScript imprime Date assim:
-// "Wed Sep 09 2026 21:35:45 GMT+0000 (Coordinated Universal Time)" --
-// 23 bytes a mais, num formato que não é o do cabeçalho de e-mail, e
-// pagos em segundos de cabo serial. Formatado aqui, que é onde o
-// cabeçalho é montado, e igual para os dois armazenamentos.
+// Format the mailbox timestamp as an email Date, for example "Wed, 9 Sep 2026 21:35:45
+// +0000". Raw JavaScript Date formatting is longer and is not the email header format.
+// Apply the same format for both storage backends.
 function rfcDate(timestamp) {
 	const d = timestamp instanceof Date ? timestamp : new Date(timestamp);
 	if (isNaN(d.getTime())) return String(timestamp);
@@ -151,18 +122,15 @@ function slimMessage(raw) {
 	const KEEP = [
 		"mime-version", "from", "to", "subject",
 		"x-game-title", "x-game-code", "x-game-result", "x-gbmail-type",
-		// Mantido para o WEBMAIL, não para o cartucho: é o único fio que
-		// liga uma resposta vinda da internet à mensagem que ela responde.
-		// A redução existia no RETR do POP3, onde só o jogo a via; agora
-		// que ela acontece na entrega, o que for podado aqui some para os
-		// dois leitores. ~70 bytes, contra um teto de mensagem de 15 KB.
+		// Retain reply linkage for webmail: an internet reply needs this header to identify its
+		// original message. Delivery-time shaping affects both web and game readers, unlike the
+		// previous POP3-only reduction. The roughly 70-byte overhead fits the 15 KB message limit.
 		"in-reply-to",
 	];
 	let lines = [];
-	// O título inteiro, quando a redução o encurta. Mesmo motivo: o corte
-	// em SUBJECT_MAX_CHARS é uma exigência da tela do Game Boy, e o webmail
-	// não tem por que herdá-la. Só aparece quando houve corte de verdade,
-	// então uma carta de título curto não paga nada por isso.
+	// Preserve the full subject for webmail only when the cartridge subject was actually
+	// shortened. SUBJECT_MAX_CHARS is a Game Boy display constraint and must not truncate the
+	// website subject.
 	if (headers["subject"]) {
 		const inteiro = normalizeHeaderValue(headers["subject"].value);
 		if (truncateSubject(inteiro) !== inteiro) {

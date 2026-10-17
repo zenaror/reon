@@ -1,4 +1,4 @@
-> Converted from the [Claude artifact](https://claude.ai/code/artifact/be2e0466-bfa8-4cbb-8fd3-c2849a7fe155) on 2026-10-07. Original English version; [Português (Brasil)](DATA_PROTECTION_REGISTER.Br.md).
+> Converted from the [Claude artifact](https://claude.ai/code/artifact/be2e0466-bfa8-4cbb-8fd3-c2849a7fe155) on 2026-10-07. Original English version.
 > This preserves the source revision, including historical statements and unresolved questions. It is not a fresh audit of production or legal requirements. See [OPERATIONS](../OPERATIONS.md), [CHANGELOG](../CHANGELOG.md), and [NET_DE_GET](../NET_DE_GET.md) for subsequent project changes.
 > Personal account identifiers in examples were replaced with fictitious values on 2026-10-07; protocol structure is preserved.
 

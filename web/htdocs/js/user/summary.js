@@ -25,13 +25,9 @@ function initRevealRelayTokenButton() {
 		tokenInput.value = tokenInput.dataset["token"];
 	});
 }
-// Troca o desenho do adaptador conforme o menu. O cartão só existe quando o
-// painel libera a escolha, então sair calado é o caminho normal, não um erro.
-//
-// Os quatro desenhos já estão na página e a troca é só de visibilidade: nada
-// é baixado no momento do clique, então não há intervalo em branco entre a
-// escolha e o desenho. Usa a propriedade `hidden` em vez de mexer em `style`,
-// para o estado do elemento continuar sendo o que o atributo diz.
+// Switch adapter drawings using hidden when account choice is enabled. All images are
+// already present, avoiding fetch delays or blank transitions. Missing controls are normal
+// when policy disables this feature.
 function initAdapterArt() {
 	const menu = document.getElementById("adapterDevice");
 	const arte = document.querySelector(".adapter-art");

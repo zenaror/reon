@@ -1,14 +1,6 @@
-{# Um documento legal dentro da própria tela. Usado no cadastro: a pessoa
-   está no meio de um formulário e mandá-la para outra página para ler o que
-   está prestes a aceitar é como perder o que já digitou.
-
-   O texto vem do MESMO Markdown que /terms.php e /privacy.php servem
-   (PageUtil::html), então não existe segunda cópia para envelhecer. Vem
-   embutido, e não buscado ao abrir: é o documento que o consentimento
-   referencia, e ele tem de estar legível mesmo se a rede falhar no meio do
-   cadastro.
-
-   Espera: id, title, body, href. #}
+{# Embedded legal document for signup, rendered from the same PageUtil::html Markdown as
+   terms.php/privacy.php. It avoids duplicate text and remains readable without a second
+   network request or losing form input. Expects id, title, body and href. #}
 <div class="modal fade legal-modal" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
 	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
 		<div class="modal-content">
@@ -20,8 +12,7 @@
 				{{ body|raw }}
 			</div>
 			<div class="modal-footer">
-				{# A página inteira continua existindo, para quem quer imprimir,
-				   guardar ou mandar o link. #}
+				{# Keep a standalone document URL for printing, saving and sharing. #}
 				<a class="legal-modal__full" href="{{ href }}" target="_blank" rel="noopener">{{ 'open-full-page'|trans }}</a>
 				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ 'close'|trans }}</button>
 			</div>

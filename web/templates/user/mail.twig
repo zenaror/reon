@@ -90,14 +90,9 @@
 				</label>
 				<label>
 					<span>{{'mail.subject'|trans}}</span>
-					{# Capped to what a game's mailbox shows, but only for a player:
-					   mail leaving for the internet keeps a normal title. No
-					   maxlength attribute, since which limit applies depends on
-					   the recipient. #}
-					{# Travado ao responder pelo mesmo motivo que o destinatário:
-					   uma resposta pertence a uma conversa, e o título é parte
-					   de como ela é reconhecida. O servidor re-deriva os dois
-					   de qualquer forma. #}
+					{# Limit subjects to cartridge mailbox width only for game recipients; internet mail keeps
+					   normal titles. Do not use a universal maxlength. Lock subject on replies as part of the
+					   conversation identity; the server re-derives it and the recipient independently. #}
 					<input type="text" name="subject" id="mt-subject" value="{{ compose.subject }}" autocomplete="off" data-max-chars="{{ subject_max_chars }}"{% if is_reply %} readonly class="mt-input--locked"{% endif %}>
 				</label>
 				<label>
@@ -655,10 +650,8 @@
 						<button class="mt-btn" type="submit">{{'mail.thread-delete'|trans}}</button>
 					</form>
 				{% elseif thread.sent_ids is not empty %}
-					{# Conversa só de mensagens enviadas (ninguém respondeu ainda).
-					   Continua tendo de onde tirar destinatário e título: a
-					   última que saiu. Antes este ramo mandava só o endereço na
-					   URL, e o título abria em branco. #}
+					{# A Sent-only conversation still derives reply recipient and subject from its latest
+					   outgoing message; do not pass only an address and leave the subject blank. #}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;reply_sent={{ thread.sent_ids|last }}">{{'mail.reply'|trans}}</a>
 				{% else %}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;to={{ thread.party|url_encode }}">{{'mail.reply'|trans}}</a>
@@ -700,10 +693,8 @@
 				{% set back_to = folder != 'inbox' ? '/user/mail.php?folder=' ~ folder : (message.deleted_at ? '/user/mail.php?folder=trash' : '/user/mail.php') %}
 				<a class="mt-btn" href="{{ back_to }}">{{'mail.back'|trans}}</a>
 				{% if message.deleted_at %}
-					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
-					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
-					   acha nada -- e, pior, poderia achar uma mensagem alheia que
-					   por acaso tivesse aquele número. #}
+					{# Sent IDs belong to a different namespace from incoming mailbox IDs. Use the appropriate
+					   reply parameter to avoid a failed lookup or selecting an unrelated message. #}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">
@@ -718,10 +709,8 @@
 						<button class="mt-btn mt-btn--danger" type="submit">{{'mail.delete-forever'|trans}}</button>
 					</form>
 				{% else %}
-					{# O id de uma mensagem de Enviados é de outra tabela que o da caixa:
-					   tem de ir pelo parâmetro certo, ou a busca do outro lado não
-					   acha nada -- e, pior, poderia achar uma mensagem alheia que
-					   por acaso tivesse aquele número. #}
+					{# Sent IDs belong to a different namespace from incoming mailbox IDs. Use the appropriate
+					   reply parameter to avoid a failed lookup or selecting an unrelated message. #}
 					<a class="mt-btn" href="/user/mail.php?compose=1&amp;{{ folder == 'sent' ? 'reply_sent' : 'reply' }}={{ message.id }}">{{'mail.reply'|trans}}</a>
 					<form method="post" action="/user/mail.php">
 						<input type="hidden" name="{{ csrf_field }}" value="{{ csrf_token }}">

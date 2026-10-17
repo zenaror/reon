@@ -5,9 +5,8 @@
 	require_once("../classes/AdapterErrorUtil.php");
 	session_start();
 
-	// Os códigos vêm de web/data/adapter_errors.json (gerado) e a explicação
-	// de adapter_error_notes.<idioma>.json (escrita à mão); AdapterErrorUtil
-	// junta os dois no idioma em que a pessoa está lendo.
+	// AdapterErrorUtil joins generated adapter_errors.json with handwritten
+	// adapter_error_notes.<locale>.json for the current reader language.
 	echo TemplateUtil::render("errors", [
 		"nav_item" => "guide",
 		"errors" => AdapterErrorUtil::rows(SessionUtil::getInstance()->getLocale()),

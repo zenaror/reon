@@ -6,18 +6,9 @@
 	require_once("../../classes/AccountDataUtil.php");
 	session_start();
 
-	// Apagar a conta. Sem volta, e a tela diz isso antes de qualquer botão.
-	//
-	// Três exigências, e cada uma existe por um motivo diferente:
-	//
-	//   - token anti-CSRF, como todo POST do site: sem ele, um link em outro
-	//     lugar poderia apagar a conta de quem estivesse com a sessão aberta;
-	//   - a senha, digitada agora: sessão aberta em máquina compartilhada é
-	//     comum, e ninguém deve conseguir apagar uma conta só por achar o
-	//     computador destravado;
-	//   - o nome da conta, digitado à mão: é o degrau contra o clique no
-	//     automático. Senha a pessoa digita de olhos fechados; o próprio nome
-	//     ela só digita se estiver lendo a tela.
+	// Permanent account deletion requires CSRF validation, a freshly entered password and the
+	// exact account name. These respectively prevent cross-site deletion, abuse of an unlocked
+	// shared session and accidental confirmation.
 	if (!SessionUtil::getInstance()->isSessionActive()) {
 		header("Location: /index.php");
 		exit;
@@ -42,9 +33,8 @@
 		if (!password_verify((string)($_POST["password"] ?? ""), $conta["password"])) {
 			$erros[] = "senha";
 		}
-		// Comparação exata: "Player01" não é "player01". Aceitar variação
-		// tiraria justamente o que o degrau serve para provar, que é que a
-		// pessoa leu o que está escrito.
+		// Compare the account name exactly, including case, to confirm the user read the requested
+		// name.
 		if ((string)($_POST["confirmName"] ?? "") !== (string)$conta["username"]) {
 			$erros[] = "nome";
 		}
@@ -54,9 +44,8 @@
 			if ($feito === null || (int)$feito["conta"] === 0) {
 				$erros[] = "falhou";
 			} else {
-				// A sessão morre junto: o id dela aponta para uma conta que
-				// não existe mais, e qualquer página que o leia depois disso
-				// falharia de um jeito difícil de entender.
+				// Destroy the session with the account so later pages cannot reference deleted
+				// registration.
 				$_SESSION = [];
 				if (ini_get("session.use_cookies")) {
 					$p = session_get_cookie_params();

@@ -630,9 +630,7 @@
   line-height: 1.5;
 }
 
-/* Com o nome por extenso as oito não cabem mais numa fileira de selos; viram
-   uma grade de duas ou três colunas, que é onde "English (United States)" e
-   "English (Australia)" ficam alinhadas e comparáveis. */
+/* Use a two- or three-column grid so full region names remain aligned and comparable. */
 .news-regions {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -641,8 +639,8 @@
 
 .news-region {
   display: flex;
-  /* No topo, não ao centro: o rótulo tem duas linhas quando o destino cobre
-     mais de um cartucho, e centralizar deixaria a caixa flutuando no meio. */
+  /* Top-align the checkbox beside multi-line cartridge labels instead of floating it
+   * vertically in their center. */
   align-items: flex-start;
   gap: 8px;
   padding: 6px 10px;
@@ -657,8 +655,7 @@
   color: #fff;
 }
 
-/* A lista de cartuchos herda a cor do rótulo marcado, senão fica cinza sobre
-   azul e some. */
+/* The cartridge list inherits the selected label color to remain readable against blue. */
 .news-region:has(input:checked) .admin-form__hint {
   color: inherit;
   opacity: .8;
@@ -669,10 +666,9 @@
   font-size: .8em;
 }
 
-/* Marcada, mas sem a manchete ou sem o artigo: avisa onde foi causado, em vez
-   de desabilitar a caixa -- desabilitar o controle que a pessoa está tentando
-   usar é o que confundia antes. Ela continua marcável; o servidor é que recusa,
-   e a tela diz por quê antes de chegar lá. */
+/* For selected regions missing title or article, highlight the cause rather than disable
+ * the checkbox. The server enforces the requirement; the UI gives an earlier local
+ * explanation. */
 .news-region.is-empty {
   border-color: var(--reon-red);
 }
@@ -686,22 +682,20 @@
   line-height: 1;
 }
 
-/* Marcada e incompleta ao mesmo tempo: o fundo é azul escuro, então o vermelho
-   da borda some. O aviso passa para o branco, que lê sobre o azul. */
+/* Use a white warning border on a selected incomplete region; red disappears against the
+ * dark blue background. */
 .news-region.is-empty:has(input:checked)::after {
   color: #fff;
 }
 
-/* Os prêmios do minijogo. Um item da mesma grade do formulário, para os
-   campos ficarem alinhados com os de cima em vez de indentados dentro de uma
-   caixa própria. */
+/* Place minigame rewards in the shared form grid so their fields align with those above. */
 .news-prizes {
   display: grid;
   gap: 4px;
 }
 
-/* O fieldset existe pelo `disabled`, que é o que impede o conjunto escondido
-   de postar; visualmente ele não deve aparecer. */
+/* The fieldset supplies disabled semantics for hidden rewards; it should have no
+ * additional visible framing. */
 .news-prizes__set {
   display: grid;
   gap: 10px;
@@ -711,21 +705,21 @@
   min-width: 0;
 }
 
-/* O prêmio que o minijogo monta sozinho: legível, e claramente não editável. */
+/* Show minigame-derived rewards as readable, explicitly non-editable values. */
 .news-prizes__set input[disabled] {
   background: var(--reon-panel);
   color: inherit;
   opacity: .7;
 }
 
-/* O rótulo do bloco, com o peso dos outros rótulos do formulário -- que vêm
-   de `.admin-form label`, e este não é um label. */
+/* Match the weight of other form labels even though this block heading is not a label
+ * element. */
 .admin-form__label {
   font-weight: bold;
 }
 
-/* Célula de ações da lista: o link de editar e o formulário de "publicar
-   agora" na mesma linha, sem o formulário empurrar a linha para baixo. */
+/* Keep Edit and the Publish now form on the same action row without increasing table row
+ * height. */
 .admin-row-actions {
   display: flex;
   align-items: center;

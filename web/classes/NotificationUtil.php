@@ -303,16 +303,9 @@
 			return $n;
 		}
 
-		// Apaga o histórico inteiro de uma conta.
-		//
-		// Durante muito tempo esta classe não teve como apagar nada, e isso
-		// era proposital -- a página dizia ao usuário, em sete idiomas, que
-		// nada ali era removido. O dono pediu o botão, então a promessa
-		// mudou junto: o histórico fica guardado até que a PESSOA decida
-		// limpá-lo. Quem apaga é sempre o dono da linha, nunca o sistema.
-		//
-		// Sem lixeira e sem volta: notificação é aviso do que já aconteceu,
-		// e o que ela apontava (a mensagem, a troca) continua onde estava.
+		// Clear the requesting account entire notification history at the owner request. This is
+		// permanent; referenced mail/trades remain untouched. The system does not automatically
+		// remove these history rows.
 		public function clearForUser($userId) {
 			$db = DBUtil::getInstance()->getDB();
 			$stmt = $db->prepare("delete from sys_notifications where user_id = ?");
