@@ -69,6 +69,8 @@ Entries describe the difference between each fork's baseline and
 
 - **Mario Kart uploads:** validation of ghost checksums and route identity,
   including the cartridge's combined upload/ranking flow; region-scoped deletion.
+- **Mario Kart Mobile GP rankings:** total-entry queries use the cup-ghost table
+  that contains `gp_id`, preventing ranking responses from failing with HTTP 500.
 - **GB00 authentication:** one-time challenge/session handling and utility-session
   reuse bound to the complete authentication response.
 - **Game content boundaries:** custom minigames are kept separate from official
@@ -81,6 +83,9 @@ Entries describe the difference between each fork's baseline and
   reduced disclosure of personal data in default diagnostics.
 - Installation hardening, firewall/fail2ban integration and explicit separation
   of local dummy credentials from production configuration.
+- The web-scan jail recognizes the unserved router endpoints
+  `/cgi-bin/authLogin.cgi` and `/cgi-bin/login.cgi` while preserving the live
+  `/cgi-bin/mgb/` adapter route.
 
 ### libmobile
 

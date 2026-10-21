@@ -153,7 +153,7 @@
 
 	function getTotalRankingEntriesMobileGP($gp_id) { // total.cgb
 		$db = connectMySQL();
-		$stmt = $db->prepare("select count(*) from amk_ghosts where gp_id = ? and game_region in (?, ?)");
+		$stmt = $db->prepare("select count(*) from amk_ghosts_mobilegp where gp_id = ? and game_region in (?, ?)");
 		$regions = getDownloadGameRegions();
 		$stmt->bind_param("iss", $gp_id, $regions[0], $regions[1]);
 		$stmt->execute();
