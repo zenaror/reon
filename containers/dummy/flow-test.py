@@ -51,7 +51,11 @@ def game(path,expected=200):
  code,headers,raw=wire(path);assert code==401,(path,code)
  challenge=re.search(r'name="([^"]+)"',headers['WWW-Authenticate'])[1]
  code,headers,raw=wire(path,{'Authorization':gb_header(challenge)})
- assert code==expected,(path,code,raw[:80]);return raw
+ if code!=expected:
+  auth_state={k:v for k,v in headers.items() if k.lower()=='gb-status'}
+  auth_state.update({k:'present' for k in headers if k.lower()=='www-authenticate'})
+  raise AssertionError((path,code,auth_state))
+ return raw
 # DNS and Mobile Trainer homepage are real network requests.
 q=struct.pack('!HHHHHH',7,0x100,1,0,0,0)+b'\x07gameboy\x0adatacenter\x02ne\x02jp\0'+struct.pack('!HH',1,1)
 with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as dns:
