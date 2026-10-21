@@ -5,6 +5,9 @@ backed by MySQL and the repository's Phinx migrations. Account creation,
 preferences, device authentication and game content handlers use the REON code.
 Node simulates internal SMTP/POP3 and DNS. No Oracle secrets or production data
 are copied. The PHP dummy server image omits the .NET legality checker and production jobs.
+Its Apache/PHP runtime uses Ubuntu 26.04 packages and Ubuntu security updates.
+The local launcher and CI pass a per-build cache key so cached layers cannot hide
+newer PHP security packages.
 
 ## Start with Podman
 

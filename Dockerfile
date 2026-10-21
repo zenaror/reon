@@ -6,6 +6,7 @@ ARG NODE_VERSION=22-trixie
 ARG NODE_VERSION2=22-alpine
 ARG PHP_VERSION=8.5
 ARG DOTNET_VERSION=9.0
+ARG DUMMY_UBUNTU_VERSION=26.04
 
 ### Legality checker
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
@@ -245,10 +246,15 @@ HEALTHCHECK --interval=10s --timeout=5s CMD node health.js
 CMD ["node", "server.js"]
 
 ### Dummy server: the real REON website without the production legality checker.
-FROM php:${PHP_VERSION}-apache AS dummy-web
-RUN apt-get update && apt-get install -y --no-install-recommends libpng-dev libonig-dev libzip-dev msmtp \
-    && docker-php-ext-install mysqli pdo_mysql gd mbstring zip pcntl \
-    && a2enmod rewrite && rm -rf /var/lib/apt/lists/*
+FROM ubuntu:${DUMMY_UBUNTU_VERSION} AS dummy-web
+ARG DUMMY_APT_CACHE_BUST=local
+ENV DEBIAN_FRONTEND=noninteractive
+RUN test -n "$DUMMY_APT_CACHE_BUST" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends apache2 libapache2-mod-php8.5 php8.5-cli \
+       php8.5-mysql php8.5-gd php8.5-mbstring php8.5-zip php8.5-intl msmtp \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www/reon
 COPY --from=web-deps /app /var/www/reon/web
 COPY phinx.php ./
@@ -265,7 +271,7 @@ RUN sed -i 's|https://{{ hostname }}|http://{{ hostname }}|g' web/templates/emai
 RUN mkdir -p web/tmp /var/log/reon && chown -R www-data:www-data web/tmp /var/log/reon \
     && find web -type f -exec chmod 644 {} + \
     && find web -type d -exec chmod 755 {} +
-RUN echo 'sendmail_path=/usr/bin/msmtp -t' > /usr/local/etc/php/conf.d/dummy-mail.ini
-RUN ln -s /usr/bin/msmtp /usr/sbin/sendmail
+RUN echo 'sendmail_path=/usr/bin/msmtp -t' > /etc/php/8.5/apache2/conf.d/99-dummy-mail.ini
+RUN ln -sf /usr/bin/msmtp /usr/sbin/sendmail
 ENTRYPOINT ["php", "/var/www/reon/dummy-entry.php"]
-CMD ["apache2-foreground"]
+CMD ["apache2ctl", "-D", "FOREGROUND"]

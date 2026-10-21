@@ -18,4 +18,6 @@ if (($argv[1]??'')==='migrate') {
  require __DIR__.'/dummy-seed.php';
  passthru('php web/vendor/bin/phinx seed:run -c phinx.php -s GameboyWars3Seeder',$status);exit($status);
 }
-pcntl_exec('/usr/local/bin/docker-php-entrypoint',array_slice($argv,1));
+$command=implode(' ',array_map('escapeshellarg',array_slice($argv,1)));
+passthru('exec '.$command,$status);
+exit($status);

@@ -24,8 +24,11 @@ PYINIT
     ;;
   up)
     [[ -f "$dummy_env" ]] || { echo 'Run bash containers/dummy/stack.sh init first.' >&2; exit 1; }
+    dummy_apt_cache_bust="$(date -u +%Y%m%d%H%M%S)"
     podman build --skip-unused-stages=true --format docker --target dummy-server -t localhost/reon-dummy-server:local "$dummy_dir/../.."
-    podman build --skip-unused-stages=true --format docker --target dummy-web -t localhost/reon-dummy-web:local "$dummy_dir/../.."
+    podman build --skip-unused-stages=true --format docker --target dummy-web \
+      --build-arg "DUMMY_APT_CACHE_BUST=$dummy_apt_cache_bust" \
+      -t localhost/reon-dummy-web:local "$dummy_dir/../.."
     podman compose --env-file "$dummy_env" -p reon-dummy "${compose_files[@]}" up -d --no-build "$@"
     ;;
   standard-ports)
