@@ -14,6 +14,14 @@
 	// The utility function however seems to immediately return the requested data (this is what $immediate is for)
 	// type 0 = normal, type 1 = ranking, type 2 = utility
 	function doAuth($type = 0) {
+		// GB00 derives the PHP session ID from the first 32 challenge bytes, and
+		// later derives the authenticated session ID on the server. Strict mode
+		// replaces these intentionally supplied IDs before the game can reuse
+		// them. Limit the override to this game-auth flow; website sessions keep
+		// the host's strict-mode setting.
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			ini_set('session.use_strict_mode', '0');
+		}
 		$cost = isset($_GET["name"]) ? getCost($_GET["name"]) : null;
 		$isAuthRequired = $type == 2 ? true : !is_null($cost);
 		if($isAuthRequired && !isset($_SERVER["HTTP_GB_AUTH_ID"])) { // is the Auth ID set?
