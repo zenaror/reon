@@ -14,11 +14,11 @@
 	// The utility function however seems to immediately return the requested data (this is what $immediate is for)
 	// type 0 = normal, type 1 = ranking, type 2 = utility
 	function doAuth($type = 0) {
-		// GB00 derives the PHP session ID from the first 32 challenge bytes, and
-		// later derives the authenticated session ID on the server. Strict mode
-		// replaces these intentionally supplied IDs before the game can reuse
-		// them. Limit the override to this game-auth flow; website sessions keep
-		// the host's strict-mode setting.
+		// GB00 derives the PHP session ID from the challenge, and later derives
+		// the authenticated session ID on the server. These IDs are intentionally
+		// supplied by this protocol, so strict mode would replace them before the
+		// game can reuse them. Limit the override to this game-auth flow; website
+		// sessions keep the host's strict-mode setting.
 		if (session_status() !== PHP_SESSION_ACTIVE) {
 			ini_set('session.use_strict_mode', '0');
 		}
@@ -30,8 +30,9 @@
 				$randomBytes = random_bytes(36);
 				$challenge = base64_encode($randomBytes);
 				
-				// Temporarily store the challenge using the part that the game sends back as key
-				session_id(substr(bin2hex($randomBytes), 0, 32 * 2));
+				// Use 16 challenge bytes (32 hex characters), matching PHP's
+				// default session ID length across packaged runtimes.
+				session_id(bin2hex(substr($randomBytes, 0, 16)));
 				session_start();
 				$_SESSION['challenge'] = $challenge;
 				
@@ -43,8 +44,10 @@
 			} else {
 				$authString = substr($_SERVER["HTTP_AUTHORIZATION"], 11);
 				
-				// Get the full challenge back
-				session_id(bin2hex(base64_decode(substr($authString, 0 , 44))));
+				// The first 44 base64 characters encode the first 32 challenge
+				// bytes. Reuse their first 16 bytes as the PHP session key.
+				$challengeKey = base64_decode(substr($authString, 0, 44));
+				session_id(bin2hex(substr($challengeKey, 0, 16)));
 				session_start();
 
 				// If we've already authenticated this utility challenge session recently, accept it.
