@@ -26,4 +26,8 @@ setup-script/.setup-tmp
 ssh/
 containers/dummy/content/
 
+# MAGB TestSuite endpoints are Oracle-local diagnostics, not server content.
+web/cgb/download/01/MAGBTEST/
+web/cgb/upload/01/MAGBTEST/
+
 containers/dummy/compose.local.yml
